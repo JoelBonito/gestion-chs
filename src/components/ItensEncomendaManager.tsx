@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus, Copy } from "lucide-react";
+import { Trash2, Plus, Scale } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ItemEncomenda {
@@ -15,6 +15,8 @@ export interface ItemEncomenda {
   preco_custo: number;
   preco_venda: number;
   subtotal: number;
+  unit_weight_kg_at_order?: number;
+  line_weight_kg?: number;
 }
 
 interface Produto {
@@ -22,7 +24,8 @@ interface Produto {
   nome: string;
   marca: string;
   tipo: string;
-  tamanho: string;
+  size_label: string;
+  unit_weight_kg: number;
   preco_custo: number;
   preco_venda: number;
 }
@@ -31,9 +34,10 @@ interface ItensEncomendaManagerProps {
   itens: ItemEncomenda[];
   onItensChange: (itens: ItemEncomenda[]) => void;
   onValorTotalChange: (valor: number) => void;
+  onPesoTotalChange?: (peso: number) => void;
 }
 
-export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange }: ItensEncomendaManagerProps) {
+export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange, onPesoTotalChange }: ItensEncomendaManagerProps) {
   const [produtos, setProdutos] = useState<Produto[]>([]);
 
   useEffect(() => {
@@ -42,7 +46,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
         const { data } = await supabase
           .from("produtos")
           .select("*")
-          .eq("ativo", true) // Só carregar produtos ativos
+          .eq("ativo", true)
           .order("nome");
         
         if (data) setProdutos(data);
@@ -56,8 +60,13 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
 
   useEffect(() => {
     const valorTotal = itens.reduce((total, item) => total + item.subtotal, 0);
+    const pesoTotal = itens.reduce((total, item) => total + (item.line_weight_kg || 0), 0);
+    
     onValorTotalChange(valorTotal);
-  }, [itens, onValorTotalChange]);
+    if (onPesoTotalChange) {
+      onPesoTotalChange(pesoTotal);
+    }
+  }, [itens, onValorTotalChange, onPesoTotalChange]);
 
   const adicionarItem = () => {
     const novoItem: ItemEncomenda = {
@@ -66,6 +75,8 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       preco_custo: 0,
       preco_venda: 0,
       subtotal: 0,
+      unit_weight_kg_at_order: 0,
+      line_weight_kg: 0,
     };
     onItensChange([...itens, novoItem]);
   };
@@ -79,6 +90,8 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       preco_custo: itemOriginal.preco_custo,
       preco_venda: itemOriginal.preco_venda,
       subtotal: itemOriginal.subtotal,
+      unit_weight_kg_at_order: itemOriginal.unit_weight_kg_at_order,
+      line_weight_kg: itemOriginal.line_weight_kg,
     };
     onItensChange([...itens, itemDuplicado]);
   };
@@ -95,10 +108,16 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
     if (campo === "produto_id") {
       const produto = produtos.find(p => p.id === valor);
       if (produto) {
+        if (!produto.unit_weight_kg || produto.unit_weight_kg <= 0) {
+          alert("Este produto não possui peso unitário configurado. Por favor, configure o peso no cadastro do produto antes de adicioná-lo.");
+          return;
+        }
+        
         item.produto_id = valor;
-        item.produto_nome = `${produto.nome} - ${produto.marca} - ${produto.tipo} - ${produto.tamanho}`;
+        item.produto_nome = `${produto.nome} - ${produto.marca} - ${produto.tipo} - ${produto.size_label}`;
         item.preco_custo = produto.preco_custo;
         item.preco_venda = produto.preco_venda;
+        item.unit_weight_kg_at_order = produto.unit_weight_kg;
       }
     } else if (campo === "quantidade") {
       item.quantidade = valor;
@@ -108,18 +127,26 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       item.preco_venda = valor;
     }
     
-    // Recalcular subtotal
+    // Recalcular subtotal e peso da linha
     item.subtotal = item.quantidade * item.preco_venda;
+    item.line_weight_kg = item.quantidade * (item.unit_weight_kg_at_order || 0);
     
     novosItens[index] = item;
     onItensChange(novosItens);
+  };
+
+  const formatarPeso = (peso: number) => {
+    return `${peso.toFixed(2)} kg`;
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          Itens da Encomenda
+          <span className="flex items-center gap-2">
+            Itens da Encomenda
+            <Scale className="h-5 w-5 text-muted-foreground" />
+          </span>
           <Button type="button" variant="outline" size="sm" onClick={adicionarItem}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Item
@@ -134,7 +161,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
         ) : (
           itens.map((item, index) => (
             <Card key={index} className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-end">
                 <div className="md:col-span-2">
                   <label className="text-sm font-medium mb-2 block">Produto *</label>
                   <Select
@@ -147,7 +174,12 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
                     <SelectContent>
                       {produtos.map((produto) => (
                         <SelectItem key={produto.id} value={produto.id}>
-                          {produto.nome} - {produto.marca} - {produto.tipo} - {produto.tamanho}
+                          <div className="flex flex-col">
+                            <span>{produto.nome} - {produto.marca} - {produto.tipo} - {produto.size_label}</span>
+                            <span className="text-xs text-muted-foreground">
+                              Peso: {produto.unit_weight_kg ? formatarPeso(produto.unit_weight_kg) : "N/A"}
+                            </span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -161,6 +193,16 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
                     value={item.quantidade || ""}
                     onChange={(e) => atualizarItem(index, "quantidade", parseInt(e.target.value) || 0)}
                     placeholder="0"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Peso Linha</label>
+                  <Input
+                    type="text"
+                    value={item.line_weight_kg ? formatarPeso(item.line_weight_kg) : "0.00 kg"}
+                    readOnly
+                    className="bg-muted text-center"
                   />
                 </div>
                 
@@ -222,7 +264,13 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
         )}
         
         {itens.length > 0 && (
-          <div className="flex justify-end pt-4 border-t">
+          <div className="flex justify-end pt-4 border-t space-x-8">
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">Peso Total:</p>
+              <p className="text-lg font-semibold text-primary">
+                {formatarPeso(itens.reduce((total, item) => total + (item.line_weight_kg || 0), 0))}
+              </p>
+            </div>
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Valor Total:</p>
               <p className="text-lg font-semibold">

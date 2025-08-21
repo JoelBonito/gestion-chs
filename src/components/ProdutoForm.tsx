@@ -17,7 +17,11 @@ const produtoSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   marca: z.string().min(1, "Marca é obrigatória"),
   tipo: z.string().min(1, "Tipo é obrigatório"),
-  tamanho: z.string().min(1, "Tamanho é obrigatório"),
+  size_label: z.string().min(1, "Tamanho é obrigatório"),
+  unit_weight_kg: z.string().min(1, "Peso unitário é obrigatório").refine((val) => {
+    const num = parseFloat(val);
+    return num > 0;
+  }, "Peso unitário deve ser maior que zero"),
   preco_custo: z.string().min(1, "Preço de custo é obrigatório"),
   preco_venda: z.string().min(1, "Preço de venda é obrigatório"),
   fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
@@ -30,7 +34,8 @@ interface Produto {
   nome: string;
   marca: string;
   tipo: string;
-  tamanho: string;
+  size_label: string;
+  unit_weight_kg: number;
   preco_custo: number;
   preco_venda: number;
   fornecedor_id: string;
@@ -62,7 +67,8 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
       nome: "",
       marca: "",
       tipo: "",
-      tamanho: "",
+      size_label: "",
+      unit_weight_kg: "",
       preco_custo: "",
       preco_venda: "",
       fornecedor_id: "",
@@ -80,7 +86,8 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         nome: initialData.nome || "",
         marca: initialData.marca || "",
         tipo: initialData.tipo || "",
-        tamanho: initialData.tamanho || "",
+        size_label: initialData.size_label || "",
+        unit_weight_kg: initialData.unit_weight_kg ? initialData.unit_weight_kg.toString() : "",
         preco_custo: initialData.preco_custo ? initialData.preco_custo.toString() : "",
         preco_venda: initialData.preco_venda ? initialData.preco_venda.toString() : "",
         fornecedor_id: initialData.fornecedor_id || "",
@@ -94,7 +101,8 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         nome: "",
         marca: "",
         tipo: "",
-        tamanho: "",
+        size_label: "",
+        unit_weight_kg: "",
         preco_custo: "",
         preco_venda: "",
         fornecedor_id: "",
@@ -122,7 +130,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     try {
       const { data: produtos, error } = await supabase
         .from("produtos")
-        .select("marca, tipo, tamanho")
+        .select("marca, tipo, size_label")
         .eq("ativo", true);
 
       if (error) throw error;
@@ -130,7 +138,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
       if (produtos) {
         const marcasUnicas = [...new Set(produtos.map(p => p.marca))].filter(Boolean).sort();
         const tiposUnicos = [...new Set(produtos.map(p => p.tipo))].filter(Boolean).sort();
-        const tamanhosUnicos = [...new Set(produtos.map(p => p.tamanho))].filter(Boolean).sort();
+        const tamanhosUnicos = [...new Set(produtos.map(p => p.size_label))].filter(Boolean).sort();
 
         setMarcasExistentes(marcasUnicas);
         setTiposExistentes(tiposUnicos);
@@ -158,9 +166,9 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     } else if (campo === 'tipo') {
       setTiposExistentes(prev => [...prev, valor].sort());
       form.setValue('tipo', valor);
-    } else if (campo === 'tamanho') {
+    } else if (campo === 'size_label') {
       setTamanhosExistentes(prev => [...prev, valor].sort());
-      form.setValue('tamanho', valor);
+      form.setValue('size_label', valor);
     }
     
     setNovaOpçaoDialog({tipo: '', aberto: false});
@@ -177,7 +185,8 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             nome: data.nome,
             marca: data.marca,
             tipo: data.tipo,
-            tamanho: data.tamanho,
+            size_label: data.size_label,
+            unit_weight_kg: parseFloat(data.unit_weight_kg),
             preco_custo: parseFloat(data.preco_custo),
             preco_venda: parseFloat(data.preco_venda),
             fornecedor_id: data.fornecedor_id,
@@ -190,7 +199,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           entity: 'produto',
           entity_id: initialData.id,
           action: 'update',
-          details: { nome: data.nome }
+          details: { nome: data.nome, peso: data.unit_weight_kg }
         });
         
         toast.success("Produto atualizado com sucesso!");
@@ -201,7 +210,8 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             nome: data.nome,
             marca: data.marca,
             tipo: data.tipo,
-            tamanho: data.tamanho,
+            size_label: data.size_label,
+            unit_weight_kg: parseFloat(data.unit_weight_kg),
             preco_custo: parseFloat(data.preco_custo),
             preco_venda: parseFloat(data.preco_venda),
             fornecedor_id: data.fornecedor_id,
@@ -215,7 +225,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           entity: 'produto',
           entity_id: produto.id,
           action: 'create',
-          details: { nome: data.nome }
+          details: { nome: data.nome, peso: data.unit_weight_kg }
         });
         
         toast.success("Produto cadastrado com sucesso!");
@@ -277,156 +287,182 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="marca"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-display text-primary-dark">Marca</FormLabel>
-               <Select onValueChange={(value) => {
-                 if (value === '__nova_marca__') {
-                   handleNovaOpcao('marca');
-                 } else {
-                   field.onChange(value);
-                 }
-               }} value={field.value || ""}>
-                <FormControl>
-                  <SelectTrigger className="input-elegant">
-                    <SelectValue placeholder="Selecione uma marca" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {marcasExistentes.map((marca) => (
-                    <SelectItem key={marca} value={marca}>
-                      {marca}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="marca"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-display text-primary-dark">Marca</FormLabel>
+                 <Select onValueChange={(value) => {
+                   if (value === '__nova_marca__') {
+                     handleNovaOpcao('marca');
+                   } else {
+                     field.onChange(value);
+                   }
+                 }} value={field.value || ""}>
+                  <FormControl>
+                    <SelectTrigger className="input-elegant">
+                      <SelectValue placeholder="Selecione uma marca" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {marcasExistentes.map((marca) => (
+                      <SelectItem key={marca} value={marca}>
+                        {marca}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__nova_marca__" className="text-primary font-medium">
+                      <div className="flex items-center">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Adicionar nova marca...
+                      </div>
                     </SelectItem>
-                  ))}
-                  <SelectItem value="__nova_marca__" className="text-primary font-medium">
-                    <div className="flex items-center">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar nova marca...
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="tipo"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-display text-primary-dark">Tipo</FormLabel>
-               <Select onValueChange={(value) => {
-                 if (value === '__novo_tipo__') {
-                   handleNovaOpcao('tipo');
-                 } else {
-                   field.onChange(value);
-                 }
-               }} value={field.value || ""}>
-                <FormControl>
-                  <SelectTrigger className="input-elegant">
-                    <SelectValue placeholder="Selecione um tipo" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {tiposExistentes.map((tipo) => (
-                    <SelectItem key={tipo} value={tipo}>
-                      {tipo}
+          <FormField
+            control={form.control}
+            name="tipo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-display text-primary-dark">Tipo</FormLabel>
+                 <Select onValueChange={(value) => {
+                   if (value === '__novo_tipo__') {
+                     handleNovaOpcao('tipo');
+                   } else {
+                     field.onChange(value);
+                   }
+                 }} value={field.value || ""}>
+                  <FormControl>
+                    <SelectTrigger className="input-elegant">
+                      <SelectValue placeholder="Selecione um tipo" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {tiposExistentes.map((tipo) => (
+                      <SelectItem key={tipo} value={tipo}>
+                        {tipo}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__novo_tipo__" className="text-primary font-medium">
+                      <div className="flex items-center">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Adicionar novo tipo...
+                      </div>
                     </SelectItem>
-                  ))}
-                  <SelectItem value="__novo_tipo__" className="text-primary font-medium">
-                    <div className="flex items-center">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar novo tipo...
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-        <FormField
-          control={form.control}
-          name="tamanho"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-display text-primary-dark">Tamanho</FormLabel>
-               <Select onValueChange={(value) => {
-                 if (value === '__novo_tamanho__') {
-                   handleNovaOpcao('tamanho');
-                 } else {
-                   field.onChange(value);
-                 }
-               }} value={field.value || ""}>
-                <FormControl>
-                  <SelectTrigger className="input-elegant">
-                    <SelectValue placeholder="Selecione um tamanho" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {tamanhosExistentes.map((tamanho) => (
-                    <SelectItem key={tamanho} value={tamanho}>
-                      {tamanho}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="size_label"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-display text-primary-dark">Tamanho</FormLabel>
+                 <Select onValueChange={(value) => {
+                   if (value === '__novo_tamanho__') {
+                     handleNovaOpcao('size_label');
+                   } else {
+                     field.onChange(value);
+                   }
+                 }} value={field.value || ""}>
+                  <FormControl>
+                    <SelectTrigger className="input-elegant">
+                      <SelectValue placeholder="Selecione um tamanho" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {tamanhosExistentes.map((tamanho) => (
+                      <SelectItem key={tamanho} value={tamanho}>
+                        {tamanho}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__novo_tamanho__" className="text-primary font-medium">
+                      <div className="flex items-center">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Adicionar novo tamanho...
+                      </div>
                     </SelectItem>
-                  ))}
-                  <SelectItem value="__novo_tamanho__" className="text-primary font-medium">
-                    <div className="flex items-center">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar novo tamanho...
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="preco_custo"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-display text-primary-dark">Preço de Custo (€)</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number" 
-                  step="0.01" 
-                  placeholder="0.00"
-                  className="input-elegant"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="unit_weight_kg"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-display text-primary-dark">Peso Unitário (kg) *</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    placeholder="0.00"
+                    className="input-elegant"
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-        <FormField
-          control={form.control}
-          name="preco_venda"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-display text-primary-dark">Preço de Venda (€)</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number" 
-                  step="0.01" 
-                  placeholder="0.00"
-                  className="input-elegant"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="preco_custo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-display text-primary-dark">Preço de Custo (€)</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    placeholder="0.00"
+                    className="input-elegant"
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="preco_venda"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-display text-primary-dark">Preço de Venda (€)</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    placeholder="0.00"
+                    className="input-elegant"
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <Button 
           type="submit" 
