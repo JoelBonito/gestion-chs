@@ -17,7 +17,6 @@ const encomendaSchema = z.object({
   fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
   data_producao_estimada: z.string().optional(),
   data_entrega_estimada: z.string().optional(),
-  data_entrega: z.string().optional(),
   observacoes: z.string().optional(),
 });
 
@@ -52,7 +51,6 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
       fornecedor_id: "",
       data_producao_estimada: "",
       data_entrega_estimada: "",
-      data_entrega: "",
       observacoes: "",
     },
   });
@@ -104,7 +102,7 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
           valor_total: valorTotal,
           data_producao_estimada: data.data_producao_estimada || null,
           data_entrega_estimada: data.data_entrega_estimada || null,
-          data_entrega: data.data_entrega || null,
+          data_entrega: null,
           observacoes: data.observacoes || null,
         }])
         .select()
@@ -241,19 +239,6 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="data_entrega"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Data de Entrega Efetiva</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
 
           <ItensEncomendaManager
