@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Edit, Search, Trash2, Scale } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Edit, Search, Trash2, Copy, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ProdutoForm } from "./ProdutoForm";
@@ -30,24 +31,32 @@ export function ListaProdutos() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [filteredProdutos, setFilteredProdutos] = useState<Produto[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Produto | null>(null);
+  const [duplicatingProduct, setDuplicatingProduct] = useState<Produto | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchProdutos();
   }, []);
 
   useEffect(() => {
-    const filtered = produtos.filter((produto) =>
-      produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      produto.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      produto.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      produto.tamanho.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      produto.fornecedores?.nome?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    let filtered = produtos.filter((produto) => {
+      const matchesSearch = produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        produto.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        produto.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        produto.tamanho.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        produto.fornecedores?.nome?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus = showInactive ? !produto.ativo : produto.ativo;
+
+      return matchesSearch && matchesStatus;
+    });
+    
     setFilteredProdutos(filtered);
-  }, [produtos, searchTerm]);
+  }, [produtos, searchTerm, showInactive]);
 
   const fetchProdutos = async () => {
     try {
@@ -78,14 +87,25 @@ export function ListaProdutos() {
     setIsEditDialogOpen(true);
   };
 
+  const handleDuplicate = (produto: Produto) => {
+    setDuplicatingProduct(produto);
+    setIsDuplicateDialogOpen(true);
+  };
+
   const handleEditSuccess = () => {
     setIsEditDialogOpen(false);
     setEditingProduct(null);
     fetchProdutos();
   };
 
+  const handleDuplicateSuccess = () => {
+    setIsDuplicateDialogOpen(false);
+    setDuplicatingProduct(null);
+    fetchProdutos();
+  };
+
   const handleDelete = async (produto: Produto) => {
-    if (!confirm(`Tem certeza que deseja excluir o produto "${produto.nome}"?`)) {
+    if (!confirm(`Tem certeza que deseja ${produto.ativo ? 'inativar' : 'excluir'} o produto "${produto.nome}"?`)) {
       return;
     }
 
@@ -104,11 +124,39 @@ export function ListaProdutos() {
         details: { nome: produto.nome }
       });
 
-      toast.success("Produto desativado com sucesso!");
+      toast.success("Produto inativado com sucesso!");
       fetchProdutos();
     } catch (error) {
-      console.error("Erro ao desativar produto:", error);
-      toast.error("Erro ao desativar produto");
+      console.error("Erro ao inativar produto:", error);
+      toast.error("Erro ao inativar produto");
+    }
+  };
+
+  const handleReactivate = async (produto: Produto) => {
+    if (!confirm(`Tem certeza que deseja reativar o produto "${produto.nome}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("produtos")
+        .update({ ativo: true })
+        .eq("id", produto.id);
+
+      if (error) throw error;
+
+      await logActivity({
+        entity: 'produto',
+        entity_id: produto.id,
+        action: 'reactivate',
+        details: { nome: produto.nome }
+      });
+
+      toast.success("Produto reativado com sucesso!");
+      fetchProdutos();
+    } catch (error) {
+      console.error("Erro ao reativar produto:", error);
+      toast.error("Erro ao reativar produto");
     }
   };
 
@@ -142,6 +190,16 @@ export function ListaProdutos() {
             className="pl-10"
           />
         </div>
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="show-inactive"
+            checked={showInactive}
+            onCheckedChange={setShowInactive}
+          />
+          <Label htmlFor="show-inactive">
+            {showInactive ? "Mostrar inativos" : "Mostrar ativos"}
+          </Label>
+        </div>
       </div>
 
       <div className="rounded-md border">
@@ -152,16 +210,9 @@ export function ListaProdutos() {
               <TableHead>Marca</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Tamanho</TableHead>
-              <TableHead className="text-center">
-                <div className="flex items-center justify-center gap-1">
-                  <Scale className="h-4 w-4" />
-                  Peso (kg)
-                </div>
-              </TableHead>
               <TableHead>Preço Custo</TableHead>
               <TableHead>Preço Venda</TableHead>
               <TableHead>Fornecedor</TableHead>
-              <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -172,35 +223,44 @@ export function ListaProdutos() {
                 <TableCell>{produto.marca}</TableCell>
                 <TableCell>{produto.tipo}</TableCell>
                 <TableCell>{produto.tamanho}</TableCell>
-                <TableCell className="text-center font-mono">
-                  <div className="flex items-center justify-center gap-1">
-                    0.50 kg
-                  </div>
-                </TableCell>
                 <TableCell>{formatCurrency(produto.preco_custo)}</TableCell>
                 <TableCell>{formatCurrency(produto.preco_venda)}</TableCell>
                 <TableCell>{produto.fornecedores?.nome || "N/A"}</TableCell>
-                <TableCell>
-                  <Badge variant={produto.ativo ? "default" : "secondary"}>
-                    {produto.ativo ? "Ativo" : "Inativo"}
-                  </Badge>
-                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(produto)}
+                      title="Editar"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    {produto.ativo && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDuplicate(produto)}
+                      title="Duplicar"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    {produto.ativo ? (
                       <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => handleDelete(produto)}
+                        title="Inativar"
                       >
                         <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleReactivate(produto)}
+                        title="Reativar"
+                      >
+                        <RotateCcw className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
@@ -213,10 +273,13 @@ export function ListaProdutos() {
 
       {filteredProdutos.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-muted-foreground">Nenhum produto encontrado.</p>
+          <p className="text-muted-foreground">
+            {showInactive ? "Nenhum produto inativo encontrado." : "Nenhum produto ativo encontrado."}
+          </p>
         </div>
       )}
 
+      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-md shadow-elegant">
           <DialogHeader>
@@ -226,6 +289,20 @@ export function ListaProdutos() {
             initialData={editingProduct} 
             isEditing={true}
             onSuccess={handleEditSuccess}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Dialog */}
+      <Dialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen}>
+        <DialogContent className="max-w-md shadow-elegant">
+          <DialogHeader>
+            <DialogTitle className="font-display text-primary-dark">Duplicar Produto</DialogTitle>
+          </DialogHeader>
+          <ProdutoForm 
+            initialData={duplicatingProduct} 
+            isEditing={false}
+            onSuccess={handleDuplicateSuccess}
           />
         </DialogContent>
       </Dialog>

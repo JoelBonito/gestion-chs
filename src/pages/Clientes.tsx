@@ -41,10 +41,6 @@ export default function Clientes() {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!showInactive) {
-        query = query.eq("active", true);
-      }
-
       const { data, error } = await query;
 
       if (error) throw error;
@@ -59,7 +55,7 @@ export default function Clientes() {
 
   useEffect(() => {
     fetchClientes();
-  }, [showInactive]);
+  }, []);
 
   const handleSuccess = () => {
     setDialogOpen(false);
@@ -77,10 +73,14 @@ export default function Clientes() {
     setEditDialogOpen(true);
   };
 
-  const filteredClientes = clientes.filter(cliente =>
-    cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (cliente.email && cliente.email.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredClientes = clientes.filter(cliente => {
+    const matchesSearch = cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (cliente.email && cliente.email.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesStatus = showInactive ? !cliente.active : cliente.active;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-6">
@@ -89,25 +89,23 @@ export default function Clientes() {
           <h1 className="text-3xl font-bold text-foreground">Clientes</h1>
           <p className="text-muted-foreground">Gerencie seus distribuidores e parceiros</p>
         </div>
-        {canEdit() && (
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Cliente
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Novo Cliente</DialogTitle>
-                <DialogDescription>
-                  Cadastre um novo cliente no sistema
-                </DialogDescription>
-              </DialogHeader>
-              <ClienteForm onSuccess={handleSuccess} />
-            </DialogContent>
-          </Dialog>
-        )}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Cliente
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Novo Cliente</DialogTitle>
+              <DialogDescription>
+                Cadastre um novo cliente no sistema
+              </DialogDescription>
+            </DialogHeader>
+            <ClienteForm onSuccess={handleSuccess} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search and filters */}
@@ -128,7 +126,9 @@ export default function Clientes() {
               checked={showInactive}
               onCheckedChange={setShowInactive}
             />
-            <Label htmlFor="show-inactive">Mostrar clientes inativos</Label>
+            <Label htmlFor="show-inactive">
+              {showInactive ? "Mostrar inativos" : "Mostrar ativos"}
+            </Label>
           </div>
         </CardContent>
       </Card>
@@ -210,7 +210,9 @@ export default function Clientes() {
       {filteredClientes.length === 0 && (
         <Card className="shadow-card">
           <CardContent className="text-center py-12">
-            <p className="text-muted-foreground">Nenhum cliente encontrado</p>
+            <p className="text-muted-foreground">
+              {showInactive ? "Nenhum cliente inativo encontrado" : "Nenhum cliente ativo encontrado"}
+            </p>
           </CardContent>
         </Card>
       )}

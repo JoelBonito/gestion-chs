@@ -44,10 +44,6 @@ export default function Fornecedores() {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!showInactive) {
-        query = query.eq("active", true);
-      }
-
       const { data, error } = await query;
 
       if (error) throw error;
@@ -62,7 +58,7 @@ export default function Fornecedores() {
 
   useEffect(() => {
     fetchFornecedores();
-  }, [showInactive]);
+  }, []);
 
   const handleSuccess = () => {
     setDialogOpen(false);
@@ -80,10 +76,14 @@ export default function Fornecedores() {
     setEditDialogOpen(true);
   };
 
-  const filteredFornecedores = fornecedores.filter(fornecedor =>
-    fornecedor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (fornecedor.email && fornecedor.email.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredFornecedores = fornecedores.filter(fornecedor => {
+    const matchesSearch = fornecedor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (fornecedor.email && fornecedor.email.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchesStatus = showInactive ? !fornecedor.active : fornecedor.active;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="space-y-6">
@@ -92,25 +92,23 @@ export default function Fornecedores() {
           <h1 className="text-3xl font-bold text-foreground">Fornecedores</h1>
           <p className="text-muted-foreground">Gerencie suas fábricas e parceiros de produção</p>
         </div>
-        {canEdit() && (
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Fornecedor
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Novo Fornecedor</DialogTitle>
-                <DialogDescription>
-                  Cadastre um novo fornecedor no sistema
-                </DialogDescription>
-              </DialogHeader>
-              <FornecedorForm onSuccess={handleSuccess} />
-            </DialogContent>
-          </Dialog>
-        )}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Fornecedor
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Novo Fornecedor</DialogTitle>
+              <DialogDescription>
+                Cadastre um novo fornecedor no sistema
+              </DialogDescription>
+            </DialogHeader>
+            <FornecedorForm onSuccess={handleSuccess} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search and filters */}
@@ -131,7 +129,9 @@ export default function Fornecedores() {
               checked={showInactive}
               onCheckedChange={setShowInactive}
             />
-            <Label htmlFor="show-inactive">Mostrar fornecedores inativos</Label>
+            <Label htmlFor="show-inactive">
+              {showInactive ? "Mostrar inativos" : "Mostrar ativos"}
+            </Label>
           </div>
         </CardContent>
       </Card>
@@ -220,7 +220,9 @@ export default function Fornecedores() {
       {filteredFornecedores.length === 0 && (
         <Card className="shadow-card">
           <CardContent className="text-center py-12">
-            <p className="text-muted-foreground">Nenhum fornecedor encontrado</p>
+            <p className="text-muted-foreground">
+              {showInactive ? "Nenhum fornecedor inativo encontrado" : "Nenhum fornecedor ativo encontrado"}
+            </p>
           </CardContent>
         </Card>
       )}
