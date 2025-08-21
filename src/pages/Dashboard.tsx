@@ -46,7 +46,7 @@ export default function Dashboard() {
         
         <StatCard
           title="A Receber"
-          value="R$ 18.650"
+          value="€18.650"
           subtitle="3 clientes"
           icon={<DollarSign className="h-6 w-6" />}
           variant="success"
@@ -55,7 +55,7 @@ export default function Dashboard() {
         
         <StatCard
           title="Faturamento Mensal"
-          value="R$ 45.200"
+          value="€45.200"
           subtitle="Janeiro 2024"
           icon={<TrendingUp className="h-6 w-6" />}
           variant="success"
@@ -88,7 +88,7 @@ export default function Dashboard() {
                       <p className="text-xs text-muted-foreground">{order.date}</p>
                     </div>
                     <div className="text-right space-y-2">
-                      <p className="font-semibold text-sm">R$ {order.value.toFixed(2)}</p>
+                      <p className="font-semibold text-sm">€{order.value.toFixed(2)}</p>
                       <Badge variant={status.variant} className="text-xs">
                         {status.label}
                       </Badge>
@@ -115,7 +115,7 @@ export default function Dashboard() {
                     <p className="text-xs text-muted-foreground">Venc: {payment.dueDate}</p>
                   </div>
                   <div className="text-right space-y-2">
-                    <p className="font-semibold text-sm">R$ {payment.amount.toFixed(2)}</p>
+                    <p className="font-semibold text-sm">€{payment.amount.toFixed(2)}</p>
                     {payment.overdue && (
                       <div className="flex items-center text-destructive text-xs">
                         <AlertCircle className="h-3 w-3 mr-1" />

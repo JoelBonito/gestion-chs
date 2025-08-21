@@ -116,7 +116,7 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
               <DollarSign className="h-5 w-5 text-primary" />
               <div>
                 <p className="text-sm font-medium">Total Geral</p>
-                <p className="text-lg font-bold">R$ {totalGeral.toFixed(2)}</p>
+                <p className="text-lg font-bold">€{totalGeral.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -128,7 +128,7 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
               <CheckCircle className="h-5 w-5 text-success" />
               <div>
                 <p className="text-sm font-medium">Total Pago</p>
-                <p className="text-lg font-bold text-success">R$ {totalPago.toFixed(2)}</p>
+                <p className="text-lg font-bold text-success">€{totalPago.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -140,7 +140,7 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
               <Clock className="h-5 w-5 text-warning" />
               <div>
                 <p className="text-sm font-medium">A Receber</p>
-                <p className="text-lg font-bold text-warning">R$ {totalAPagar.toFixed(2)}</p>
+                <p className="text-lg font-bold text-warning">€{totalAPagar.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -193,14 +193,14 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
                       </TableCell>
                       <TableCell>{encomenda.cliente_nome}</TableCell>
                       <TableCell className="font-semibold">
-                        R$ {encomenda.valor_total.toFixed(2)}
+                        €{encomenda.valor_total.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-success font-semibold">
-                        R$ {encomenda.valor_pago.toFixed(2)}
+                        €{encomenda.valor_pago.toFixed(2)}
                       </TableCell>
                       <TableCell className="font-semibold">
                         <span className={encomenda.saldo_devedor > 0 ? "text-warning" : "text-success"}>
-                          R$ {encomenda.saldo_devedor.toFixed(2)}
+                          €{encomenda.saldo_devedor.toFixed(2)}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -214,7 +214,7 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
                           {encomenda.pagamentos.length > 0 ? (
                             encomenda.pagamentos.map((pagamento) => (
                               <div key={pagamento.id} className="text-xs text-muted-foreground">
-                                R$ {pagamento.valor_pagamento.toFixed(2)} ({pagamento.forma_pagamento}) - {pagamento.data_pagamento}
+                                €{pagamento.valor_pagamento.toFixed(2)} ({pagamento.forma_pagamento}) - {pagamento.data_pagamento}
                               </div>
                             ))
                           ) : (

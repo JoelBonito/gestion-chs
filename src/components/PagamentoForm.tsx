@@ -117,7 +117,7 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
                 {encomendas.map((encomenda) => (
                   <SelectItem key={encomenda.id} value={encomenda.id}>
                     {encomenda.numero_encomenda} - {encomenda.cliente_nome} 
-                    (Saldo: R$ {encomenda.saldo_devedor.toFixed(2)})
+                    (Saldo: €{encomenda.saldo_devedor.toFixed(2)})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -134,13 +134,13 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
                 Cliente: {selectedEncomenda.cliente_nome}
               </p>
               <p className="text-sm text-muted-foreground">
-                Valor Total: R$ {selectedEncomenda.valor_total.toFixed(2)}
+                Valor Total: €{selectedEncomenda.valor_total.toFixed(2)}
               </p>
               <p className="text-sm text-muted-foreground">
-                Valor Pago: R$ {selectedEncomenda.valor_pago.toFixed(2)}
+                Valor Pago: €{selectedEncomenda.valor_pago.toFixed(2)}
               </p>
               <p className="text-sm font-semibold text-warning">
-                Saldo Devedor: R$ {selectedEncomenda.saldo_devedor.toFixed(2)}
+                Saldo Devedor: €{selectedEncomenda.saldo_devedor.toFixed(2)}
               </p>
             </div>
           )}

@@ -184,7 +184,7 @@ export default function Financeiro() {
       <div className="grid gap-6 md:grid-cols-3">
         <StatCard
           title="A Receber"
-          value={`R$ ${totalReceber.toFixed(2)}`}
+          value={`€${totalReceber.toFixed(2)}`}
           subtitle="3 contas pendentes"
           icon={<TrendingUp className="h-6 w-6" />}
           variant="success"
@@ -192,7 +192,7 @@ export default function Financeiro() {
         
         <StatCard
           title="A Pagar"
-          value={`R$ ${totalPagar.toFixed(2)}`}
+          value={`€${totalPagar.toFixed(2)}`}
           subtitle="2 contas pendentes"
           icon={<TrendingDown className="h-6 w-6" />}
           variant="warning"
@@ -200,7 +200,7 @@ export default function Financeiro() {
         
         <StatCard
           title="Saldo Projetado"
-          value={`R$ ${saldoLiquido.toFixed(2)}`}
+          value={`€${saldoLiquido.toFixed(2)}`}
           subtitle={saldoLiquido > 0 ? "Positivo" : "Negativo"}
           icon={<DollarSign className="h-6 w-6" />}
           variant={saldoLiquido > 0 ? "success" : "destructive"}
@@ -233,7 +233,7 @@ export default function Financeiro() {
                         <p className="text-xs text-muted-foreground">{mov.data} • {mov.categoria}</p>
                       </div>
                       <div className={`font-bold text-sm ${mov.valor > 0 ? 'text-success' : 'text-destructive'}`}>
-                        {mov.valor > 0 ? '+' : ''}R$ {Math.abs(mov.valor).toFixed(2)}
+                        {mov.valor > 0 ? '+' : ''}€{Math.abs(mov.valor).toFixed(2)}
                       </div>
                     </div>
                   ))}
@@ -253,7 +253,7 @@ export default function Financeiro() {
                     <AlertCircle className="h-5 w-5 text-destructive mr-3 mt-0.5" />
                     <div>
                       <p className="font-medium text-sm">Conta vencida</p>
-                      <p className="text-xs text-muted-foreground">Beauty Gamma - R$ 3.200,00 (11 dias)</p>
+                      <p className="text-xs text-muted-foreground">Beauty Gamma - €3.200,00 (11 dias)</p>
                     </div>
                   </div>
                   
@@ -261,7 +261,7 @@ export default function Financeiro() {
                     <AlertCircle className="h-5 w-5 text-warning mr-3 mt-0.5" />
                     <div>
                       <p className="font-medium text-sm">Vencimento próximo</p>
-                      <p className="text-xs text-muted-foreground">Fábrica Premium Hair - R$ 1.800,00 (3 dias)</p>
+                      <p className="text-xs text-muted-foreground">Fábrica Premium Hair - €1.800,00 (3 dias)</p>
                     </div>
                   </div>
                 </div>
@@ -292,7 +292,7 @@ export default function Financeiro() {
                         <p className="text-xs text-muted-foreground">Vencimento: {conta.dataVencimento}</p>
                       </div>
                       <div className="text-right space-y-2">
-                        <p className="text-lg font-bold">R$ {conta.valor.toFixed(2)}</p>
+                        <p className="text-lg font-bold">€{conta.valor.toFixed(2)}</p>
                         <Badge variant={status.variant} className="text-xs">
                           {status.label}
                         </Badge>
@@ -323,7 +323,7 @@ export default function Financeiro() {
                         <p className="text-xs text-muted-foreground">Vencimento: {conta.dataVencimento}</p>
                       </div>
                       <div className="text-right space-y-2">
-                        <p className="text-lg font-bold text-destructive">R$ {conta.valor.toFixed(2)}</p>
+                        <p className="text-lg font-bold text-destructive">€{conta.valor.toFixed(2)}</p>
                         <Badge variant={status.variant} className="text-xs">
                           {status.label}
                         </Badge>

@@ -256,7 +256,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           name="preco_custo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Preço de Custo (R$)</FormLabel>
+              <FormLabel>Preço de Custo (€)</FormLabel>
               <FormControl>
                 <Input 
                   type="number" 
@@ -275,7 +275,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           name="preco_venda"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Preço de Venda (R$)</FormLabel>
+              <FormLabel>Preço de Venda (€)</FormLabel>
               <FormControl>
                 <Input 
                   type="number" 
