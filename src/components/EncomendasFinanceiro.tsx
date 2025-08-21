@@ -1,14 +1,14 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Search, DollarSign, Clock, CheckCircle, CreditCard } from "lucide-react";
+import { Search, DollarSign, Clock, CheckCircle, CreditCard, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import PagamentoForm from "@/components/PagamentoForm";
+import { EncomendaView } from "@/components/EncomendaView";
 
 interface Encomenda {
   id: string;
@@ -39,6 +39,8 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEncomenda, setSelectedEncomenda] = useState<Encomenda | null>(null);
   const [pagamentoDialogOpen, setPagamentoDialogOpen] = useState(false);
+  const [viewEncomendaId, setViewEncomendaId] = useState<string | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchEncomendas = async () => {
@@ -82,6 +84,11 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
   useEffect(() => {
     fetchEncomendas();
   }, []);
+
+  const handleViewClick = (encomendaId: string) => {
+    setViewEncomendaId(encomendaId);
+    setViewDialogOpen(true);
+  };
 
   const handlePagamentoClick = (encomenda: Encomenda) => {
     setSelectedEncomenda(encomenda);
@@ -229,16 +236,26 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
                         </div>
                       </TableCell>
                       <TableCell>
-                        {encomenda.saldo_devedor > 0 && (
+                        <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handlePagamentoClick(encomenda)}
+                            onClick={() => handleViewClick(encomenda.id)}
                           >
-                            <CreditCard className="h-4 w-4 mr-1" />
-                            Pagamento
+                            <Eye className="h-4 w-4 mr-1" />
+                            Visualizar
                           </Button>
-                        )}
+                          {encomenda.saldo_devedor > 0 && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handlePagamentoClick(encomenda)}
+                            >
+                              <CreditCard className="h-4 w-4 mr-1" />
+                              Pagamento
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -257,6 +274,15 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
               onSuccess={handlePagamentoSuccess}
               encomendas={[selectedEncomenda]}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Visualização */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          {viewEncomendaId && (
+            <EncomendaView encomendaId={viewEncomendaId} />
           )}
         </DialogContent>
       </Dialog>

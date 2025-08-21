@@ -1,14 +1,14 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Search, DollarSign, Clock, CheckCircle, CreditCard } from "lucide-react";
+import { Search, DollarSign, Clock, CheckCircle, CreditCard, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import PagamentoFornecedorForm from "@/components/PagamentoFornecedorForm";
+import { EncomendaViewCusto } from "@/components/EncomendaViewCusto";
 
 interface ContaPagar {
   encomenda_id: string;
@@ -32,6 +32,8 @@ export default function ContasPagar() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
   const [pagamentoDialogOpen, setPagamentoDialogOpen] = useState(false);
+  const [viewEncomendaId, setViewEncomendaId] = useState<string | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchContasPagar = async () => {
@@ -144,6 +146,11 @@ export default function ContasPagar() {
     setPagamentoDialogOpen(false);
     setSelectedConta(null);
     fetchContasPagar();
+  };
+
+  const handleViewClick = (encomendaId: string) => {
+    setViewEncomendaId(encomendaId);
+    setViewDialogOpen(true);
   };
 
   const filteredContas = contas.filter(
@@ -283,14 +290,24 @@ export default function ContasPagar() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handlePagamentoClick(conta)}
-                        >
-                          <CreditCard className="h-4 w-4 mr-1" />
-                          Pagamento
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewClick(conta.encomenda_id)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Visualizar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handlePagamentoClick(conta)}
+                          >
+                            <CreditCard className="h-4 w-4 mr-1" />
+                            Pagamento
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -309,6 +326,15 @@ export default function ContasPagar() {
               onSuccess={handlePagamentoSuccess}
               conta={selectedConta}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Visualização com Preços de Custo */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          {viewEncomendaId && (
+            <EncomendaViewCusto encomendaId={viewEncomendaId} />
           )}
         </DialogContent>
       </Dialog>
