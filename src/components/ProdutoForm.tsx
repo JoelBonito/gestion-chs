@@ -161,9 +161,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           name="nome"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome do Produto</FormLabel>
+              <FormLabel className="font-display text-primary-dark">Nome do Produto</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: Camiseta Premium" {...field} />
+                <Input 
+                  placeholder="Ex: Camiseta Premium" 
+                  className="input-elegant"
+                  {...field} 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -175,12 +179,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           name="marca"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Marca</FormLabel>
+              <FormLabel className="font-display text-primary-dark">Marca</FormLabel>
               <FormControl>
-                <div>
+                <div className="space-y-2">
                   <Input 
-                    placeholder="Digite uma marca" 
+                    placeholder="Digite uma nova marca ou selecione existente"
                     list="marcas-list"
+                    className="input-elegant"
                     {...field}
                   />
                   <datalist id="marcas-list">
@@ -188,6 +193,12 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
                       <option key={marca} value={marca} />
                     ))}
                   </datalist>
+                  {marcasExistentes.length > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      💡 Marcas existentes: {marcasExistentes.slice(0, 3).join(", ")}
+                      {marcasExistentes.length > 3 && ` e mais ${marcasExistentes.length - 3}`}
+                    </div>
+                  )}
                 </div>
               </FormControl>
               <FormMessage />
@@ -200,12 +211,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           name="tipo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tipo</FormLabel>
+              <FormLabel className="font-display text-primary-dark">Tipo</FormLabel>
               <FormControl>
-                <div>
+                <div className="space-y-2">
                   <Input 
-                    placeholder="Digite um tipo" 
+                    placeholder="Digite um novo tipo ou selecione existente"
                     list="tipos-list"
+                    className="input-elegant"
                     {...field}
                   />
                   <datalist id="tipos-list">
@@ -213,6 +225,12 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
                       <option key={tipo} value={tipo} />
                     ))}
                   </datalist>
+                  {tiposExistentes.length > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      💡 Tipos existentes: {tiposExistentes.slice(0, 3).join(", ")}
+                      {tiposExistentes.length > 3 && ` e mais ${tiposExistentes.length - 3}`}
+                    </div>
+                  )}
                 </div>
               </FormControl>
               <FormMessage />
@@ -225,12 +243,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           name="tamanho"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Tamanho</FormLabel>
+              <FormLabel className="font-display text-primary-dark">Tamanho</FormLabel>
               <FormControl>
-                <div>
+                <div className="space-y-2">
                   <Input 
-                    placeholder="Digite um tamanho" 
+                    placeholder="Digite um novo tamanho ou selecione existente"
                     list="tamanhos-list"
+                    className="input-elegant"
                     {...field}
                   />
                   <datalist id="tamanhos-list">
@@ -238,6 +257,12 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
                       <option key={tamanho} value={tamanho} />
                     ))}
                   </datalist>
+                  {tamanhosExistentes.length > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      💡 Tamanhos existentes: {tamanhosExistentes.slice(0, 5).join(", ")}
+                      {tamanhosExistentes.length > 5 && ` e mais ${tamanhosExistentes.length - 5}`}
+                    </div>
+                  )}
                 </div>
               </FormControl>
               <FormMessage />
@@ -250,12 +275,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           name="preco_custo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Preço de Custo (€)</FormLabel>
+              <FormLabel className="font-display text-primary-dark">Preço de Custo (€)</FormLabel>
               <FormControl>
                 <Input 
                   type="number" 
                   step="0.01" 
-                  placeholder="0.00" 
+                  placeholder="0.00"
+                  className="input-elegant"
                   {...field} 
                 />
               </FormControl>
@@ -269,12 +295,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           name="preco_venda"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Preço de Venda (€)</FormLabel>
+              <FormLabel className="font-display text-primary-dark">Preço de Venda (€)</FormLabel>
               <FormControl>
                 <Input 
                   type="number" 
                   step="0.01" 
-                  placeholder="0.00" 
+                  placeholder="0.00"
+                  className="input-elegant"
                   {...field} 
                 />
               </FormControl>
@@ -283,7 +310,12 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+
+        <Button 
+          type="submit" 
+          className="w-full bg-gradient-primary hover:shadow-hover transition-elegant font-display font-medium" 
+          disabled={isSubmitting}
+        >
           {isSubmitting ? (isEditing ? "Salvando..." : "Cadastrando...") : (isEditing ? "Salvar Alterações" : "Cadastrar Produto")}
         </Button>
       </form>
