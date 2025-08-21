@@ -1,10 +1,15 @@
-import { useState } from "react";
-import { Calendar, Download, TrendingUp, TrendingDown, DollarSign, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, Download, TrendingUp, TrendingDown, DollarSign, AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import StatCard from "@/components/StatCard";
+import PagamentoForm from "@/components/PagamentoForm";
+import EncomendasFinanceiro from "@/components/EncomendasFinanceiro";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock data
 const contasReceber = [
@@ -87,6 +92,50 @@ const movimentacoes = [
 
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState("resumo");
+  const [encomendas, setEncomendas] = useState<any[]>([]);
+  const [showPagamentoDialog, setShowPagamentoDialog] = useState(false);
+  const { toast } = useToast();
+
+  const fetchEncomendas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("encomendas")
+        .select(`
+          *,
+          clientes!inner(nome)
+        `)
+        .gt("saldo_devedor", 0)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      const encomendasFormatadas = data.map((encomenda: any) => ({
+        id: encomenda.id,
+        numero_encomenda: encomenda.numero_encomenda,
+        cliente_nome: encomenda.clientes.nome,
+        valor_total: parseFloat(encomenda.valor_total),
+        valor_pago: parseFloat(encomenda.valor_pago),
+        saldo_devedor: parseFloat(encomenda.saldo_devedor),
+      }));
+
+      setEncomendas(encomendasFormatadas);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar encomendas",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchEncomendas();
+  }, []);
+
+  const handlePagamentoSuccess = () => {
+    setShowPagamentoDialog(false);
+    fetchEncomendas();
+  };
 
   const getStatusBadge = (status: string, diasVencimento: number) => {
     if (status === "vencido") {
@@ -109,10 +158,26 @@ export default function Financeiro() {
           <h1 className="text-3xl font-bold text-foreground">Financeiro</h1>
           <p className="text-muted-foreground">Controle financeiro do seu negócio</p>
         </div>
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Exportar Relatório
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={showPagamentoDialog} onOpenChange={setShowPagamentoDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+                <Plus className="mr-2 h-4 w-4" />
+                Lançar Pagamento
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <PagamentoForm 
+                onSuccess={handlePagamentoSuccess}
+                encomendas={encomendas}
+              />
+            </DialogContent>
+          </Dialog>
+          <Button variant="outline">
+            <Download className="mr-2 h-4 w-4" />
+            Exportar Relatório
+          </Button>
+        </div>
       </div>
 
       {/* Financial Stats */}
@@ -144,8 +209,9 @@ export default function Financeiro() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
+          <TabsTrigger value="encomendas">Encomendas</TabsTrigger>
           <TabsTrigger value="receber">A Receber</TabsTrigger>
           <TabsTrigger value="pagar">A Pagar</TabsTrigger>
         </TabsList>
@@ -202,6 +268,10 @@ export default function Financeiro() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="encomendas">
+          <EncomendasFinanceiro />
         </TabsContent>
 
         <TabsContent value="receber" className="space-y-6">
