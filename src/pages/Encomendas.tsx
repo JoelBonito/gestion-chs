@@ -29,6 +29,8 @@ export default function Encomendas() {
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedEncomenda, setSelectedEncomenda] = useState<Encomenda | null>(null);
 
   const fetchEncomendas = async () => {
     try {
@@ -61,6 +63,17 @@ export default function Encomendas() {
   const handleSuccess = () => {
     setDialogOpen(false);
     fetchEncomendas();
+  };
+
+  const handleEditSuccess = () => {
+    setEditDialogOpen(false);
+    setSelectedEncomenda(null);
+    fetchEncomendas();
+  };
+
+  const handleEdit = (encomenda: Encomenda) => {
+    setSelectedEncomenda(encomenda);
+    setEditDialogOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -102,6 +115,23 @@ export default function Encomendas() {
               </DialogDescription>
             </DialogHeader>
             <EncomendaForm onSuccess={handleSuccess} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar Encomenda</DialogTitle>
+              <DialogDescription>
+                Edite as informações da encomenda
+              </DialogDescription>
+            </DialogHeader>
+            <EncomendaForm 
+              onSuccess={handleEditSuccess} 
+              initialData={selectedEncomenda}
+              isEditing={true}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -200,7 +230,7 @@ export default function Encomendas() {
                             <Button variant="ghost" size="sm">
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" disabled>
+                            <Button variant="ghost" size="sm" onClick={() => handleEdit(encomenda)}>
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">

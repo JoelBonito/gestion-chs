@@ -24,6 +24,8 @@ type EncomendaFormData = z.infer<typeof encomendaSchema>;
 
 interface EncomendaFormProps {
   onSuccess?: () => void;
+  initialData?: any;
+  isEditing?: boolean;
 }
 
 interface Cliente {
@@ -36,7 +38,7 @@ interface Fornecedor {
   nome: string;
 }
 
-export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
+export function EncomendaForm({ onSuccess, initialData, isEditing = false }: EncomendaFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
@@ -54,6 +56,20 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
       observacoes: "",
     },
   });
+
+  useEffect(() => {
+    if (isEditing && initialData) {
+      form.reset({
+        numero_encomenda: initialData.numero_encomenda,
+        cliente_id: initialData.cliente_id,
+        fornecedor_id: initialData.fornecedor_id,
+        data_producao_estimada: initialData.data_producao_estimada || "",
+        data_entrega_estimada: initialData.data_entrega_estimada || "",
+        observacoes: initialData.observacoes || "",
+      });
+      setValorTotal(initialData.valor_total || 0);
+    }
+  }, [form, isEditing, initialData]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -85,57 +101,73 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
   }, []);
 
   const onSubmit = async (data: EncomendaFormData) => {
-    if (itens.length === 0) {
+    if (itens.length === 0 && !isEditing) {
       toast.error("Adicione pelo menos um item à encomenda");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // Criar a encomenda
-      const { data: encomenda, error: encomendaError } = await supabase
-        .from("encomendas")
-        .insert([{
-          numero_encomenda: data.numero_encomenda,
-          cliente_id: data.cliente_id,
-          fornecedor_id: data.fornecedor_id,
-          valor_total: valorTotal,
-          data_producao_estimada: data.data_producao_estimada || null,
-          data_entrega_estimada: data.data_entrega_estimada || null,
-          data_entrega: null,
-          observacoes: data.observacoes || null,
-        }])
-        .select()
-        .single();
+      if (isEditing && initialData) {
+        // Atualizar encomenda existente
+        const { error: encomendaError } = await supabase
+          .from("encomendas")
+          .update({
+            numero_encomenda: data.numero_encomenda,
+            cliente_id: data.cliente_id,
+            fornecedor_id: data.fornecedor_id,
+            data_producao_estimada: data.data_producao_estimada || null,
+            data_entrega_estimada: data.data_entrega_estimada || null,
+            observacoes: data.observacoes || null,
+          })
+          .eq("id", initialData.id);
 
-      if (encomendaError) {
-        throw encomendaError;
+        if (encomendaError) throw encomendaError;
+        toast.success("Encomenda atualizada com sucesso!");
+      } else {
+        // Criar nova encomenda
+        const { data: encomenda, error: encomendaError } = await supabase
+          .from("encomendas")
+          .insert([{
+            numero_encomenda: data.numero_encomenda,
+            cliente_id: data.cliente_id,
+            fornecedor_id: data.fornecedor_id,
+            valor_total: valorTotal,
+            data_producao_estimada: data.data_producao_estimada || null,
+            data_entrega_estimada: data.data_entrega_estimada || null,
+            observacoes: data.observacoes || null,
+          }])
+          .select()
+          .single();
+
+        if (encomendaError) throw encomendaError;
+
+        // Criar os itens da encomenda
+        if (itens.length > 0) {
+          const itensParaInserir = itens.map(item => ({
+            encomenda_id: encomenda.id,
+            produto_id: item.produto_id,
+            quantidade: item.quantidade,
+            preco_unitario: item.preco_venda,
+          }));
+
+          const { error: itensError } = await supabase
+            .from("itens_encomenda")
+            .insert(itensParaInserir);
+
+          if (itensError) throw itensError;
+        }
+
+        toast.success("Encomenda criada com sucesso!");
+        form.reset();
+        setItens([]);
+        setValorTotal(0);
       }
 
-      // Criar os itens da encomenda
-      const itensParaInserir = itens.map(item => ({
-        encomenda_id: encomenda.id,
-        produto_id: item.produto_id,
-        quantidade: item.quantidade,
-        preco_unitario: item.preco_venda,
-      }));
-
-      const { error: itensError } = await supabase
-        .from("itens_encomenda")
-        .insert(itensParaInserir);
-
-      if (itensError) {
-        throw itensError;
-      }
-
-      toast.success("Encomenda criada com sucesso!");
-      form.reset();
-      setItens([]);
-      setValorTotal(0);
       onSuccess?.();
     } catch (error) {
-      console.error("Erro ao criar encomenda:", error);
-      toast.error("Erro ao criar encomenda");
+      console.error("Erro ao salvar encomenda:", error);
+      toast.error("Erro ao salvar encomenda");
     } finally {
       setIsSubmitting(false);
     }
@@ -166,7 +198,7 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Cliente *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um cliente" />
@@ -191,7 +223,7 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Fornecedor *</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um fornecedor" />
@@ -263,9 +295,9 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
           <Button 
             type="submit" 
             className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
-            disabled={isSubmitting || itens.length === 0}
+            disabled={isSubmitting || (!isEditing && itens.length === 0)}
           >
-            {isSubmitting ? "Criando..." : "Criar Encomenda"}
+            {isSubmitting ? (isEditing ? "Salvando..." : "Criando...") : (isEditing ? "Salvar Alterações" : "Criar Encomenda")}
           </Button>
         </form>
       </Form>
