@@ -60,13 +60,24 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [clientesRes, fornecedoresRes] = await Promise.all([
+        const [clientesRes, fornecedoresRes, encomendasRes] = await Promise.all([
           supabase.from("clientes").select("id, nome"),
-          supabase.from("fornecedores").select("id, nome")
+          supabase.from("fornecedores").select("id, nome"),
+          supabase.from("encomendas").select("numero_encomenda").order("created_at", { ascending: false }).limit(1)
         ]);
 
         if (clientesRes.data) setClientes(clientesRes.data);
         if (fornecedoresRes.data) setFornecedores(fornecedoresRes.data);
+        
+        // Gerar próximo número de encomenda
+        let proximoNumero = "ENV-001";
+        if (encomendasRes.data && encomendasRes.data.length > 0) {
+          const ultimaEncomenda = encomendasRes.data[0].numero_encomenda;
+          const numero = parseInt(ultimaEncomenda.split("-")[1]) + 1;
+          proximoNumero = `ENV-${numero.toString().padStart(3, "0")}`;
+        }
+        
+        form.setValue("numero_encomenda", proximoNumero);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
       }
@@ -143,9 +154,9 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
               name="numero_encomenda"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Número da Encomenda *</FormLabel>
+                  <FormLabel>Número da Encomenda (Automático)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: ENV-001" {...field} />
+                    <Input placeholder="Ex: ENV-001" {...field} readOnly className="bg-muted" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
