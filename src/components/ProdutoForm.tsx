@@ -133,7 +133,10 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         .select("marca, tipo, size_label")
         .eq("ativo", true);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao carregar opções existentes:", error);
+        return;
+      }
 
       if (produtos) {
         const marcasUnicas = [...new Set(produtos.map(p => p.marca))].filter(Boolean).sort();

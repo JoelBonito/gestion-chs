@@ -45,11 +45,24 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       try {
         const { data } = await supabase
           .from("produtos")
-          .select("*")
+          .select("id, nome, marca, tipo, size_label, unit_weight_kg, preco_custo, preco_venda")
           .eq("ativo", true)
           .order("nome");
         
-        if (data) setProdutos(data);
+        if (data) {
+          // Map the data to ensure we have all required fields
+          const mappedData: Produto[] = data.map(item => ({
+            id: item.id,
+            nome: item.nome,
+            marca: item.marca,
+            tipo: item.tipo,
+            size_label: item.size_label || '',
+            unit_weight_kg: item.unit_weight_kg || 0,
+            preco_custo: item.preco_custo,
+            preco_venda: item.preco_venda
+          }));
+          setProdutos(mappedData);
+        }
       } catch (error) {
         console.error("Erro ao carregar produtos:", error);
       }

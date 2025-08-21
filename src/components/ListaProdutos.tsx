@@ -64,7 +64,13 @@ export function ListaProdutos() {
       if (error) throw error;
 
       if (data) {
-        setProdutos(data);
+        // Map the data to ensure we have the correct field names
+        const mappedData: Produto[] = data.map(item => ({
+          ...item,
+          size_label: item.size_label || item.tamanho || '',
+          unit_weight_kg: item.unit_weight_kg || 0,
+        })) as Produto[];
+        setProdutos(mappedData);
       }
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);
