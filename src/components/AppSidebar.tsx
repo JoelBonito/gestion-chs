@@ -66,8 +66,12 @@ export function AppSidebar() {
     <Sidebar className={collapsed ? "w-16" : "w-72"} collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border p-6 bg-sidebar">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-glow rounded-xl flex items-center justify-center shadow-button">
-            <Home className="h-5 w-5 text-primary-foreground" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+            <img 
+              src="/lovable-uploads/3dbf60d5-1815-4a4a-8b20-f09cff4a551b.png" 
+              alt="Gestão CHS Logo" 
+              className="w-10 h-10 object-contain"
+            />
           </div>
           {!collapsed && (
             <div>

@@ -27,8 +27,12 @@ const App = () => (
           <header className="bg-background border-b border-border px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center shadow-button">
-                  <Box className="h-5 w-5 text-primary-foreground" />
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                  <img 
+                    src="/lovable-uploads/3dbf60d5-1815-4a4a-8b20-f09cff4a551b.png" 
+                    alt="Gestão CHS Logo" 
+                    className="w-10 h-10 object-contain"
+                  />
                 </div>
                 <div>
                   <h1 className="text-xl font-display font-medium text-foreground">Gestão CHS</h1>
