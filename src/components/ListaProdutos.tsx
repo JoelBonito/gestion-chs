@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Edit, Copy } from "lucide-react";
+import { Edit, Copy, Trash2 } from "lucide-react";
 import { ProdutoForm } from "./ProdutoForm";
 import { toast } from "sonner";
 
@@ -72,6 +72,25 @@ export function ListaProdutos() {
     carregarProdutos();
   };
 
+  const handleDelete = async (produto: Produto) => {
+    if (confirm(`Tem certeza que deseja deletar o produto "${produto.nome}"?`)) {
+      try {
+        const { error } = await supabase
+          .from("produtos")
+          .delete()
+          .eq("id", produto.id);
+
+        if (error) throw error;
+        
+        toast.success("Produto deletado com sucesso!");
+        carregarProdutos();
+      } catch (error) {
+        console.error("Erro ao deletar produto:", error);
+        toast.error("Erro ao deletar produto");
+      }
+    }
+  };
+
   const formatarMoeda = (valor: number) => {
     return new Intl.NumberFormat("pt-PT", {
       style: "currency",
@@ -122,6 +141,9 @@ export function ListaProdutos() {
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(produto)} title="Editar produto">
                       <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(produto)} title="Deletar produto" className="text-destructive hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>
