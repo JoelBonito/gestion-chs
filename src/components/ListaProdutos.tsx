@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,7 +17,11 @@ interface Produto {
   tamanho: string;
   preco_custo: number;
   preco_venda: number;
+  fornecedor_id: string;
   created_at: string;
+  fornecedores?: {
+    nome: string;
+  };
 }
 
 export function ListaProdutos() {
@@ -42,7 +47,8 @@ export function ListaProdutos() {
         produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
         produto.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
         produto.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        produto.tamanho.toLowerCase().includes(searchTerm.toLowerCase())
+        produto.tamanho.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        produto.fornecedores?.nome.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setProdutosFiltrados(filtrados);
     }
@@ -53,7 +59,10 @@ export function ListaProdutos() {
       setLoading(true);
       const { data, error } = await supabase
         .from("produtos")
-        .select("*")
+        .select(`
+          *,
+          fornecedores(nome)
+        `)
         .eq("ativo", true) // Só carregar produtos ativos
         .order("nome", { ascending: true });
 
@@ -168,7 +177,7 @@ export function ListaProdutos() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Pesquisar produtos por nome, marca, tipo ou tamanho..."
+            placeholder="Pesquisar produtos por nome, marca, tipo, tamanho ou fornecedor..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 input-elegant"
@@ -199,13 +208,14 @@ export function ListaProdutos() {
         <Table>
           <TableHeader>
             <TableRow className="bg-primary/3 hover:bg-primary/6 border-b border-primary/10">
-              <TableHead className="w-[25%] min-w-[150px] font-display font-medium text-primary-dark">Nome</TableHead>
-              <TableHead className="w-[15%] min-w-[100px] font-display font-medium text-primary-dark">Marca</TableHead>
-              <TableHead className="w-[15%] min-w-[100px] font-display font-medium text-primary-dark">Tipo</TableHead>
-              <TableHead className="w-[10%] min-w-[80px] font-display font-medium text-primary-dark">Tamanho</TableHead>
-              <TableHead className="w-[12%] min-w-[100px] text-right font-display font-medium text-primary-dark">Preço Custo</TableHead>
-              <TableHead className="w-[12%] min-w-[100px] text-right font-display font-medium text-primary-dark">Preço Venda</TableHead>
-              <TableHead className="w-[11%] min-w-[120px] text-right font-display font-medium text-primary-dark">Ações</TableHead>
+              <TableHead className="w-[20%] min-w-[150px] font-display font-medium text-primary-dark">Nome</TableHead>
+              <TableHead className="w-[12%] min-w-[100px] font-display font-medium text-primary-dark">Marca</TableHead>
+              <TableHead className="w-[12%] min-w-[100px] font-display font-medium text-primary-dark">Tipo</TableHead>
+              <TableHead className="w-[8%] min-w-[80px] font-display font-medium text-primary-dark">Tamanho</TableHead>
+              <TableHead className="w-[15%] min-w-[120px] font-display font-medium text-primary-dark">Fornecedor</TableHead>
+              <TableHead className="w-[10%] min-w-[100px] text-right font-display font-medium text-primary-dark">Preço Custo</TableHead>
+              <TableHead className="w-[10%] min-w-[100px] text-right font-display font-medium text-primary-dark">Preço Venda</TableHead>
+              <TableHead className="w-[13%] min-w-[120px] text-right font-display font-medium text-primary-dark">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -221,6 +231,9 @@ export function ListaProdutos() {
                   {produto.tipo}
                 </TableCell>
                 <TableCell className="text-center text-muted-foreground font-body">{produto.tamanho}</TableCell>
+                <TableCell className="truncate max-w-[120px] text-muted-foreground font-body" title={produto.fornecedores?.nome}>
+                  {produto.fornecedores?.nome || "Não informado"}
+                </TableCell>
                 <TableCell className="text-right font-mono text-sm text-muted-foreground">
                   {formatarMoeda(produto.preco_custo)}
                 </TableCell>
