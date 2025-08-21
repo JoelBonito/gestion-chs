@@ -93,28 +93,60 @@ export function ListaProdutos() {
   const handleDelete = async (produto: Produto) => {
     console.log("handleDelete chamado para produto:", produto);
     
-    if (confirm(`Tem certeza que deseja inativar o produto "${produto.nome}"? Ele ficará oculto mas será preservado no histórico das encomendas.`)) {
-      try {
-        console.log("Inativando produto:", produto.id);
-        const { error } = await supabase
-          .from("produtos")
-          .update({ ativo: false })
-          .eq("id", produto.id);
+    try {
+      // Verificar se o produto está sendo usado em alguma encomenda
+      const { data: itensEncomenda, error: checkError } = await supabase
+        .from("itens_encomenda")
+        .select("id")
+        .eq("produto_id", produto.id);
 
-        if (error) {
-          console.error("Erro do Supabase:", error);
-          throw error;
-        }
-        
-        console.log("Produto inativado com sucesso");
-        toast.success("Produto inativado com sucesso!");
-        carregarProdutos();
-      } catch (error) {
-        console.error("Erro ao inativar produto:", error);
-        toast.error("Erro ao inativar produto");
+      if (checkError) {
+        console.error("Erro ao verificar uso do produto:", checkError);
+        throw checkError;
       }
-    } else {
-      console.log("Inativação cancelada pelo usuário");
+
+      const produtoEmUso = itensEncomenda && itensEncomenda.length > 0;
+
+      if (produtoEmUso) {
+        // Produto usado em encomendas -> Soft delete
+        if (confirm(`O produto "${produto.nome}" está sendo usado em encomendas. Deseja inativá-lo? Ele ficará oculto mas será preservado no histórico das encomendas.`)) {
+          console.log("Inativando produto usado:", produto.id);
+          const { error } = await supabase
+            .from("produtos")
+            .update({ ativo: false })
+            .eq("id", produto.id);
+
+          if (error) {
+            console.error("Erro ao inativar produto:", error);
+            throw error;
+          }
+          
+          console.log("Produto inativado com sucesso");
+          toast.success("Produto inativado com sucesso!");
+          carregarProdutos();
+        }
+      } else {
+        // Produto nunca usado -> Delete físico
+        if (confirm(`O produto "${produto.nome}" nunca foi usado. Tem certeza que deseja deletá-lo permanentemente?`)) {
+          console.log("Deletando produto não usado:", produto.id);
+          const { error } = await supabase
+            .from("produtos")
+            .delete()
+            .eq("id", produto.id);
+
+          if (error) {
+            console.error("Erro ao deletar produto:", error);
+            throw error;
+          }
+          
+          console.log("Produto deletado permanentemente");
+          toast.success("Produto deletado com sucesso!");
+          carregarProdutos();
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao processar produto:", error);
+      toast.error("Erro ao processar produto");
     }
   };
 
@@ -219,8 +251,8 @@ export function ListaProdutos() {
                       variant="ghost" 
                       size="sm" 
                       onClick={() => handleDelete(produto)} 
-                      title="Inativar produto" 
-                      className="text-orange-600 hover:bg-orange-50 hover:text-orange-700 transition-colors"
+                      title="Deletar/Inativar produto" 
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
