@@ -69,8 +69,7 @@ export function ItensEncomendaManager({
   }, []);
 
   useEffect(() => {
-    // Calcular valor total apenas dos itens com subtotal > 0 para exibição
-    // Mas manter todos os itens na lista, incluindo os com preço 0
+    // Calcular valor total de todos os itens
     const valorTotal = itens.reduce((total, item) => total + (item.subtotal || 0), 0);
     onValorTotalChange(valorTotal);
   }, [itens, onValorTotalChange]);
@@ -114,11 +113,16 @@ export function ItensEncomendaManager({
       item.preco_venda = valor;
     }
     
-    // Recalcular subtotal (permitir 0)
+    // Recalcular subtotal
     item.subtotal = item.quantidade * item.preco_venda;
     
     novosItens[index] = item;
     onItensChange(novosItens);
+  };
+
+  // Verificar se é item de frete
+  const isFreteItem = (item: ItemEncomenda) => {
+    return item.produto_id === "00000000-0000-0000-0000-000000000001";
   };
 
   return (
@@ -141,106 +145,173 @@ export function ItensEncomendaManager({
           </p>
         ) : (
           <div className="space-y-4">
-            {itens.map((item, index) => (
-              <Card key={index} className="p-4 bg-muted/30">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Produto *</label>
-                      <Select
-                        value={item.produto_id}
-                        onValueChange={(value) => atualizarItem(index, "produto_id", value)}
-                        disabled={isTransportMode}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um produto" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {produtos.map((produto) => (
-                            <SelectItem key={produto.id} value={produto.id}>
-                              {produto.nome} - {produto.marca} - {produto.tipo}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Quantidade *</label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={item.quantidade || ""}
-                        onChange={(e) => atualizarItem(index, "quantidade", parseInt(e.target.value) || 1)}
-                        placeholder="0"
-                        disabled={!isTransportMode && item.produto_id === ""}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Peso Unitário</label>
-                      <Input
-                        type="text"
-                        value={item.peso_produto ? `${item.peso_produto}g` : "0g"}
-                        readOnly
-                        className="bg-muted"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Preço Custo (€)</label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={item.preco_custo || ""}
-                        onChange={(e) => atualizarItem(index, "preco_custo", parseFloat(e.target.value) || 0)}
-                        placeholder="0.00"
-                        disabled={isTransportMode}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Preço Venda (€) *</label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={item.preco_venda || ""}
-                        onChange={(e) => atualizarItem(index, "preco_venda", parseFloat(e.target.value) || 0)}
-                        placeholder="0.00"
-                        disabled={!isTransportMode && item.produto_id === ""}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Subtotal (€)</label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="text"
-                          value={`€${(item.subtotal || 0).toFixed(2)}`}
-                          readOnly
-                          className="bg-muted font-semibold"
-                        />
-                        {!isTransportMode && (
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => removerItem(index)}
-                            title="Remover item"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+            {itens.map((item, index) => {
+              const isFrete = isFreteItem(item);
+              
+              return (
+                <Card key={index} className={`p-4 ${isFrete ? 'bg-blue-50 border-blue-200' : 'bg-muted/30'}`}>
+                  <div className="space-y-4">
+                    {isFrete ? (
+                      // Layout especial para item de frete
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                          <label className="text-sm font-medium mb-2 block text-blue-700">Descrição</label>
+                          <Input
+                            type="text"
+                            value="FRETE SÃO PAULO - MARSELHA"
+                            readOnly
+                            className="bg-blue-100 font-semibold"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium mb-2 block text-blue-700">Peso Total (kg)</label>
+                          <Input
+                            type="number"
+                            step="0.001"
+                            value={item.quantidade || ""}
+                            onChange={(e) => atualizarItem(index, "quantidade", parseFloat(e.target.value) || 0)}
+                            placeholder="0"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium mb-2 block text-blue-700">Preço por kg (€)</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={item.preco_venda || ""}
+                            onChange={(e) => atualizarItem(index, "preco_venda", parseFloat(e.target.value) || 0)}
+                            placeholder="5.85"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium mb-2 block text-blue-700">Total Frete (€)</label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="text"
+                              value={`€${(item.subtotal || 0).toFixed(2)}`}
+                              readOnly
+                              className="bg-blue-100 font-semibold"
+                            />
+                            {isTransportMode && (
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => removerItem(index)}
+                                title="Remover frete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      // Layout normal para produtos
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Produto *</label>
+                            <Select
+                              value={item.produto_id}
+                              onValueChange={(value) => atualizarItem(index, "produto_id", value)}
+                              disabled={isTransportMode}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione um produto" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {produtos.map((produto) => (
+                                  <SelectItem key={produto.id} value={produto.id}>
+                                    {produto.nome} - {produto.marca} - {produto.tipo}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Quantidade *</label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantidade || ""}
+                              onChange={(e) => atualizarItem(index, "quantidade", parseInt(e.target.value) || 1)}
+                              placeholder="0"
+                              disabled={!isTransportMode && item.produto_id === ""}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Peso Unitário</label>
+                            <Input
+                              type="text"
+                              value={item.peso_produto ? `${item.peso_produto}g` : "0g"}
+                              readOnly
+                              className="bg-muted"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Preço Custo (€)</label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={item.preco_custo || ""}
+                              onChange={(e) => atualizarItem(index, "preco_custo", parseFloat(e.target.value) || 0)}
+                              placeholder="0.00"
+                              disabled={isTransportMode}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Preço Venda (€) *</label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={item.preco_venda || ""}
+                              onChange={(e) => atualizarItem(index, "preco_venda", parseFloat(e.target.value) || 0)}
+                              placeholder="0.00"
+                              disabled={!isTransportMode && item.produto_id === ""}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Subtotal (€)</label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="text"
+                                value={`€${(item.subtotal || 0).toFixed(2)}`}
+                                readOnly
+                                className="bg-muted font-semibold"
+                              />
+                              {!isTransportMode && (
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => removerItem(index)}
+                                  title="Remover item"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
-                </div>
-              </Card>
-            ))}
+                </Card>
+              );
+            })}
           </div>
         )}
         

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -69,7 +68,7 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
         setValorFrete(encomenda.valor_frete || 0);
         setPesoTotal(encomenda.peso_total || 0);
 
-        // Buscar itens da encomenda
+        // Buscar itens da encomenda (incluindo frete)
         const { data: itensData, error: itensError } = await supabase
           .from("itens_encomenda")
           .select(`
@@ -102,9 +101,9 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
     fetchEncomendaData();
   }, [encomendaId, form]);
 
-  const handleFreteCalculated = (novoValorFrete: number, novoPesoTotal: number) => {
-    setValorFrete(novoValorFrete);
-    setPesoTotal(novoPesoTotal);
+  const handleFreteAdded = () => {
+    // Recarregar dados após adicionar frete
+    window.location.reload();
   };
 
   const onSubmit = async (data: TransportFormData) => {
@@ -147,7 +146,12 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
     }
   };
 
-  const itensComPeso = itens.map(item => ({
+  // Filtrar itens sem frete para o cálculo
+  const itensSemFrete = itens.filter(item => 
+    item.produto_id !== "00000000-0000-0000-0000-000000000001"
+  );
+
+  const itensComPeso = itensSemFrete.map(item => ({
     produto_id: item.produto_id,
     quantidade: item.quantidade,
     peso_produto: item.peso_produto || 0,
@@ -246,30 +250,17 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
               <FreteCalculator
                 encomendaId={encomendaId}
                 itens={itensComPeso}
-                onFreteCalculated={handleFreteCalculated}
+                onFreteAdded={handleFreteAdded}
                 freteJaCalculado={valorFrete > 0}
                 valorFreteAtual={valorFrete}
+                pesoTotalAtual={pesoTotal}
               />
-
-              {valorFrete > 0 && (
-                <Card className="bg-primary/5 border-primary/20">
-                  <CardContent className="pt-6">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="font-medium">FRETE SÃO PAULO - MARSELHA</p>
-                        <p className="text-sm text-muted-foreground">Peso total: {pesoTotal}g</p>
-                      </div>
-                      <p className="text-lg font-bold text-primary">€{valorFrete.toFixed(2)}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
               <div className="flex justify-end pt-4 border-t">
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">Valor Total (com frete):</p>
                   <p className="text-2xl font-bold text-primary">
-                    €{(valorTotal + valorFrete).toFixed(2)}
+                    €{valorTotal.toFixed(2)}
                   </p>
                 </div>
               </div>
