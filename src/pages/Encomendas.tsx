@@ -94,7 +94,7 @@ export default function Encomendas() {
               Nova Encomenda
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto">`
+          <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Nova Encomenda</DialogTitle>
               <DialogDescription>
@@ -200,7 +200,7 @@ export default function Encomendas() {
                             <Button variant="ghost" size="sm">
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" disabled>
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">

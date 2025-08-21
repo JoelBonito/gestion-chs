@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -19,11 +20,25 @@ const produtoSchema = z.object({
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 
-interface ProdutoFormProps {
-  onSuccess?: () => void;
+interface Produto {
+  id: string;
+  nome: string;
+  marca: string;
+  tipo: string;
+  tamanho: string;
+  preco_custo: number;
+  preco_venda: number;
 }
 
-export function ProdutoForm({ onSuccess }: ProdutoFormProps) {
+interface ProdutoFormProps {
+  onSuccess?: () => void;
+  initialData?: Produto | null;
+  isEditing?: boolean;
+}
+
+export function ProdutoForm({ onSuccess, initialData, isEditing = false }: ProdutoFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
     defaultValues: {
@@ -36,29 +51,60 @@ export function ProdutoForm({ onSuccess }: ProdutoFormProps) {
     },
   });
 
-  const onSubmit = async (data: ProdutoFormData) => {
-    try {
-      const { error } = await supabase.from("produtos").insert([
-        {
-          nome: data.nome,
-          marca: data.marca,
-          tipo: data.tipo,
-          tamanho: data.tamanho,
-          preco_custo: parseFloat(data.preco_custo),
-          preco_venda: parseFloat(data.preco_venda),
-        },
-      ]);
+  useEffect(() => {
+    if (isEditing && initialData) {
+      form.reset({
+        nome: initialData.nome,
+        marca: initialData.marca,
+        tipo: initialData.tipo,
+        tamanho: initialData.tamanho,
+        preco_custo: initialData.preco_custo.toString(),
+        preco_venda: initialData.preco_venda.toString(),
+      });
+    }
+  }, [form, isEditing, initialData]);
 
-      if (error) {
-        throw error;
+  const onSubmit = async (data: ProdutoFormData) => {
+    setIsSubmitting(true);
+    try {
+      if (isEditing && initialData) {
+        const { error } = await supabase
+          .from("produtos")
+          .update({
+            nome: data.nome,
+            marca: data.marca,
+            tipo: data.tipo,
+            tamanho: data.tamanho,
+            preco_custo: parseFloat(data.preco_custo),
+            preco_venda: parseFloat(data.preco_venda),
+          })
+          .eq("id", initialData.id);
+
+        if (error) throw error;
+        toast.success("Produto atualizado com sucesso!");
+      } else {
+        const { error } = await supabase.from("produtos").insert([
+          {
+            nome: data.nome,
+            marca: data.marca,
+            tipo: data.tipo,
+            tamanho: data.tamanho,
+            preco_custo: parseFloat(data.preco_custo),
+            preco_venda: parseFloat(data.preco_venda),
+          },
+        ]);
+
+        if (error) throw error;
+        toast.success("Produto cadastrado com sucesso!");
       }
 
-      toast.success("Produto cadastrado com sucesso!");
-      form.reset();
+      if (!isEditing) form.reset();
       onSuccess?.();
     } catch (error) {
-      console.error("Erro ao cadastrar produto:", error);
-      toast.error("Erro ao cadastrar produto");
+      console.error("Erro ao salvar produto:", error);
+      toast.error("Erro ao salvar produto");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -159,8 +205,8 @@ export function ProdutoForm({ onSuccess }: ProdutoFormProps) {
           )}
         />
 
-        <Button type="submit" className="w-full">
-          Cadastrar Produto
+        <Button type="submit" className="w-full" disabled={isSubmitting}>
+          {isSubmitting ? (isEditing ? "Salvando..." : "Cadastrando...") : (isEditing ? "Salvar Alterações" : "Cadastrar Produto")}
         </Button>
       </form>
     </Form>

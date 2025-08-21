@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Edit } from "lucide-react";
+import { ProdutoForm } from "./ProdutoForm";
 import { toast } from "sonner";
 
 interface Produto {
@@ -17,6 +21,8 @@ interface Produto {
 export function ListaProdutos() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
 
   useEffect(() => {
     carregarProdutos();
@@ -42,6 +48,17 @@ export function ListaProdutos() {
     }
   };
 
+  const handleEdit = (produto: Produto) => {
+    setSelectedProduto(produto);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    setEditDialogOpen(false);
+    setSelectedProduto(null);
+    carregarProdutos();
+  };
+
   const formatarMoeda = (valor: number) => {
     return new Intl.NumberFormat("pt-PT", {
       style: "currency",
@@ -62,31 +79,53 @@ export function ListaProdutos() {
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nome</TableHead>
-            <TableHead>Marca</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Tamanho</TableHead>
-            <TableHead>Preço de Custo</TableHead>
-            <TableHead>Preço de Venda</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {produtos.map((produto) => (
-            <TableRow key={produto.id}>
-              <TableCell className="font-medium">{produto.nome}</TableCell>
-              <TableCell>{produto.marca}</TableCell>
-              <TableCell>{produto.tipo}</TableCell>
-              <TableCell>{produto.tamanho}</TableCell>
-              <TableCell>{formatarMoeda(produto.preco_custo)}</TableCell>
-              <TableCell>{formatarMoeda(produto.preco_venda)}</TableCell>
+    <>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Marca</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Tamanho</TableHead>
+              <TableHead>Preço de Custo</TableHead>
+              <TableHead>Preço de Venda</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {produtos.map((produto) => (
+              <TableRow key={produto.id}>
+                <TableCell className="font-medium">{produto.nome}</TableCell>
+                <TableCell>{produto.marca}</TableCell>
+                <TableCell>{produto.tipo}</TableCell>
+                <TableCell>{produto.tamanho}</TableCell>
+                <TableCell>{formatarMoeda(produto.preco_custo)}</TableCell>
+                <TableCell>{formatarMoeda(produto.preco_venda)}</TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="sm" onClick={() => handleEdit(produto)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Produto</DialogTitle>
+          </DialogHeader>
+          <ProdutoForm 
+            onSuccess={handleEditSuccess}
+            initialData={selectedProduto}
+            isEditing={true}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

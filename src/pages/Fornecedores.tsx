@@ -22,6 +22,8 @@ interface Fornecedor {
 export default function Fornecedores() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,6 +54,17 @@ export default function Fornecedores() {
   const handleSuccess = () => {
     setDialogOpen(false);
     fetchFornecedores();
+  };
+
+  const handleEditSuccess = () => {
+    setEditDialogOpen(false);
+    setSelectedFornecedor(null);
+    fetchFornecedores();
+  };
+
+  const handleEdit = (fornecedor: Fornecedor) => {
+    setSelectedFornecedor(fornecedor);
+    setEditDialogOpen(true);
   };
 
   const filteredFornecedores = fornecedores.filter(fornecedor =>
@@ -85,6 +98,23 @@ export default function Fornecedores() {
               </DialogDescription>
             </DialogHeader>
             <FornecedorForm onSuccess={handleSuccess} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Editar Fornecedor</DialogTitle>
+              <DialogDescription>
+                Edite as informações do fornecedor
+              </DialogDescription>
+            </DialogHeader>
+            <FornecedorForm 
+              onSuccess={handleEditSuccess} 
+              initialData={selectedFornecedor}
+              isEditing={true}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -163,7 +193,7 @@ export default function Fornecedores() {
                     <Button variant="outline" size="sm" className="flex-1">
                       Ver Catálogo
                     </Button>
-                    <Button variant="ghost" size="sm" className="flex-1">
+                    <Button variant="ghost" size="sm" className="flex-1" onClick={() => handleEdit(fornecedor)}>
                       Editar
                     </Button>
                   </div>

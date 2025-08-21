@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -18,11 +18,21 @@ const clienteSchema = z.object({
 
 type ClienteFormData = z.infer<typeof clienteSchema>;
 
-interface ClienteFormProps {
-  onSuccess?: () => void;
+interface Cliente {
+  id: string;
+  nome: string;
+  email?: string;
+  telefone?: string;
+  endereco?: string;
 }
 
-export function ClienteForm({ onSuccess }: ClienteFormProps) {
+interface ClienteFormProps {
+  onSuccess?: () => void;
+  initialData?: Cliente | null;
+  isEditing?: boolean;
+}
+
+export function ClienteForm({ onSuccess, initialData, isEditing = false }: ClienteFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ClienteFormData>({
@@ -35,28 +45,52 @@ export function ClienteForm({ onSuccess }: ClienteFormProps) {
     },
   });
 
+  useEffect(() => {
+    if (isEditing && initialData) {
+      form.reset({
+        nome: initialData.nome,
+        email: initialData.email || "",
+        telefone: initialData.telefone || "",
+        endereco: initialData.endereco || "",
+      });
+    }
+  }, [form, isEditing, initialData]);
+
   const onSubmit = async (data: ClienteFormData) => {
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("clientes")
-        .insert([{
-          nome: data.nome,
-          email: data.email || null,
-          telefone: data.telefone || null,
-          endereco: data.endereco || null,
-        }]);
+      if (isEditing && initialData) {
+        const { error } = await supabase
+          .from("clientes")
+          .update({
+            nome: data.nome,
+            email: data.email || null,
+            telefone: data.telefone || null,
+            endereco: data.endereco || null,
+          })
+          .eq("id", initialData.id);
 
-      if (error) {
-        throw error;
+        if (error) throw error;
+        toast.success("Cliente atualizado com sucesso!");
+      } else {
+        const { error } = await supabase
+          .from("clientes")
+          .insert([{
+            nome: data.nome,
+            email: data.email || null,
+            telefone: data.telefone || null,
+            endereco: data.endereco || null,
+          }]);
+
+        if (error) throw error;
+        toast.success("Cliente cadastrado com sucesso!");
       }
 
-      toast.success("Cliente cadastrado com sucesso!");
-      form.reset();
+      if (!isEditing) form.reset();
       onSuccess?.();
     } catch (error) {
-      console.error("Erro ao cadastrar cliente:", error);
-      toast.error("Erro ao cadastrar cliente");
+      console.error("Erro ao salvar cliente:", error);
+      toast.error("Erro ao salvar cliente");
     } finally {
       setIsSubmitting(false);
     }
@@ -126,7 +160,7 @@ export function ClienteForm({ onSuccess }: ClienteFormProps) {
           className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Cadastrando..." : "Cadastrar Cliente"}
+          {isSubmitting ? (isEditing ? "Salvando..." : "Cadastrando...") : (isEditing ? "Salvar Alterações" : "Cadastrar Cliente")}
         </Button>
       </form>
     </Form>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -19,11 +19,22 @@ const fornecedorSchema = z.object({
 
 type FornecedorFormData = z.infer<typeof fornecedorSchema>;
 
-interface FornecedorFormProps {
-  onSuccess?: () => void;
+interface Fornecedor {
+  id: string;
+  nome: string;
+  email?: string;
+  telefone?: string;
+  endereco?: string;
+  contato?: string;
 }
 
-export function FornecedorForm({ onSuccess }: FornecedorFormProps) {
+interface FornecedorFormProps {
+  onSuccess?: () => void;
+  initialData?: Fornecedor | null;
+  isEditing?: boolean;
+}
+
+export function FornecedorForm({ onSuccess, initialData, isEditing = false }: FornecedorFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FornecedorFormData>({
@@ -37,29 +48,55 @@ export function FornecedorForm({ onSuccess }: FornecedorFormProps) {
     },
   });
 
+  useEffect(() => {
+    if (isEditing && initialData) {
+      form.reset({
+        nome: initialData.nome,
+        email: initialData.email || "",
+        telefone: initialData.telefone || "",
+        endereco: initialData.endereco || "",
+        contato: initialData.contato || "",
+      });
+    }
+  }, [form, isEditing, initialData]);
+
   const onSubmit = async (data: FornecedorFormData) => {
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("fornecedores")
-        .insert([{
-          nome: data.nome,
-          email: data.email || null,
-          telefone: data.telefone || null,
-          endereco: data.endereco || null,
-          contato: data.contato || null,
-        }]);
+      if (isEditing && initialData) {
+        const { error } = await supabase
+          .from("fornecedores")
+          .update({
+            nome: data.nome,
+            email: data.email || null,
+            telefone: data.telefone || null,
+            endereco: data.endereco || null,
+            contato: data.contato || null,
+          })
+          .eq("id", initialData.id);
 
-      if (error) {
-        throw error;
+        if (error) throw error;
+        toast.success("Fornecedor atualizado com sucesso!");
+      } else {
+        const { error } = await supabase
+          .from("fornecedores")
+          .insert([{
+            nome: data.nome,
+            email: data.email || null,
+            telefone: data.telefone || null,
+            endereco: data.endereco || null,
+            contato: data.contato || null,
+          }]);
+
+        if (error) throw error;
+        toast.success("Fornecedor cadastrado com sucesso!");
       }
 
-      toast.success("Fornecedor cadastrado com sucesso!");
-      form.reset();
+      if (!isEditing) form.reset();
       onSuccess?.();
     } catch (error) {
-      console.error("Erro ao cadastrar fornecedor:", error);
-      toast.error("Erro ao cadastrar fornecedor");
+      console.error("Erro ao salvar fornecedor:", error);
+      toast.error("Erro ao salvar fornecedor");
     } finally {
       setIsSubmitting(false);
     }
@@ -143,7 +180,7 @@ export function FornecedorForm({ onSuccess }: FornecedorFormProps) {
           className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Cadastrando..." : "Cadastrar Fornecedor"}
+          {isSubmitting ? (isEditing ? "Salvando..." : "Cadastrando...") : (isEditing ? "Salvar Alterações" : "Cadastrar Fornecedor")}
         </Button>
       </form>
     </Form>

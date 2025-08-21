@@ -21,6 +21,8 @@ interface Cliente {
 export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -51,6 +53,17 @@ export default function Clientes() {
   const handleSuccess = () => {
     setDialogOpen(false);
     fetchClientes();
+  };
+
+  const handleEditSuccess = () => {
+    setEditDialogOpen(false);
+    setSelectedCliente(null);
+    fetchClientes();
+  };
+
+  const handleEdit = (cliente: Cliente) => {
+    setSelectedCliente(cliente);
+    setEditDialogOpen(true);
   };
 
   const filteredClientes = clientes.filter(cliente =>
@@ -84,6 +97,23 @@ export default function Clientes() {
               </DialogDescription>
             </DialogHeader>
             <ClienteForm onSuccess={handleSuccess} />
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Editar Cliente</DialogTitle>
+              <DialogDescription>
+                Edite as informações do cliente
+              </DialogDescription>
+            </DialogHeader>
+            <ClienteForm 
+              onSuccess={handleEditSuccess} 
+              initialData={selectedCliente}
+              isEditing={true}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -156,7 +186,7 @@ export default function Clientes() {
                     <Button variant="outline" size="sm" className="flex-1">
                       Ver Detalhes
                     </Button>
-                    <Button variant="ghost" size="sm" className="flex-1">
+                    <Button variant="ghost" size="sm" className="flex-1" onClick={() => handleEdit(cliente)}>
                       Editar
                     </Button>
                   </div>
