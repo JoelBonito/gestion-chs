@@ -61,16 +61,29 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
 
   useEffect(() => {
     if (initialData) {
+      // Aguarda um pouco para garantir que o form está pronto
+      setTimeout(() => {
+        form.reset({
+          nome: initialData.nome || "",
+          marca: initialData.marca || "",
+          tipo: initialData.tipo || "",
+          tamanho: initialData.tamanho || "",
+          preco_custo: initialData.preco_custo ? initialData.preco_custo.toString() : "",
+          preco_venda: initialData.preco_venda ? initialData.preco_venda.toString() : "",
+        });
+      }, 100);
+    } else if (!isEditing) {
+      // Limpa o formulário quando não é edição
       form.reset({
-        nome: initialData.nome,
-        marca: initialData.marca,
-        tipo: initialData.tipo,
-        tamanho: initialData.tamanho,
-        preco_custo: initialData.preco_custo.toString(),
-        preco_venda: initialData.preco_venda.toString(),
+        nome: "",
+        marca: "",
+        tipo: "",
+        tamanho: "",
+        preco_custo: "",
+        preco_venda: "",
       });
     }
-  }, [form, initialData]);
+  }, [form, initialData, isEditing]);
 
   const carregarOpcoesExistentes = async () => {
     try {
