@@ -75,10 +75,11 @@ export default {
 				}
 			},
 			fontFamily: {
-				'display': ['Playfair Display', 'serif'],
-				'inter': ['Inter', 'sans-serif'],
-				'body': ['Inter', 'sans-serif'],
-				sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+				'display': ['Poppins', 'sans-serif'],
+				'body': ['DM Sans', 'sans-serif'],
+				'poppins': ['Poppins', 'sans-serif'],
+				'dm-sans': ['DM Sans', 'sans-serif'],
+				sans: ['DM Sans', 'Poppins', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

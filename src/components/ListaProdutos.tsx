@@ -115,33 +115,33 @@ export function ListaProdutos() {
       <div className="rounded-lg border border-border overflow-hidden shadow-card bg-gradient-card">
         <Table>
           <TableHeader>
-            <TableRow className="bg-primary/5 hover:bg-primary/10 border-b border-primary/20">
-              <TableHead className="w-[25%] min-w-[150px] font-display font-semibold text-primary-dark">Nome</TableHead>
-              <TableHead className="w-[15%] min-w-[100px] font-display font-semibold text-primary-dark">Marca</TableHead>
-              <TableHead className="w-[15%] min-w-[100px] font-display font-semibold text-primary-dark">Tipo</TableHead>
-              <TableHead className="w-[10%] min-w-[80px] font-display font-semibold text-primary-dark">Tamanho</TableHead>
-              <TableHead className="w-[12%] min-w-[100px] text-right font-display font-semibold text-primary-dark">Preço Custo</TableHead>
-              <TableHead className="w-[12%] min-w-[100px] text-right font-display font-semibold text-primary-dark">Preço Venda</TableHead>
-              <TableHead className="w-[11%] min-w-[120px] text-right font-display font-semibold text-primary-dark">Ações</TableHead>
+            <TableRow className="bg-primary/3 hover:bg-primary/6 border-b border-primary/10">
+              <TableHead className="w-[25%] min-w-[150px] font-display font-medium text-primary-dark">Nome</TableHead>
+              <TableHead className="w-[15%] min-w-[100px] font-display font-medium text-primary-dark">Marca</TableHead>
+              <TableHead className="w-[15%] min-w-[100px] font-display font-medium text-primary-dark">Tipo</TableHead>
+              <TableHead className="w-[10%] min-w-[80px] font-display font-medium text-primary-dark">Tamanho</TableHead>
+              <TableHead className="w-[12%] min-w-[100px] text-right font-display font-medium text-primary-dark">Preço Custo</TableHead>
+              <TableHead className="w-[12%] min-w-[100px] text-right font-display font-medium text-primary-dark">Preço Venda</TableHead>
+              <TableHead className="w-[11%] min-w-[120px] text-right font-display font-medium text-primary-dark">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {produtos.map((produto) => (
-              <TableRow key={produto.id} className="hover:bg-primary/5 transition-all duration-200 border-b border-primary/10">
-                <TableCell className="font-medium truncate max-w-[150px] font-inter" title={produto.nome}>
+              <TableRow key={produto.id} className="hover:bg-primary/3 transition-all duration-200 border-b border-primary/5">
+                <TableCell className="font-medium truncate max-w-[150px] font-body" title={produto.nome}>
                   {produto.nome}
                 </TableCell>
-                <TableCell className="truncate max-w-[100px] text-muted-foreground" title={produto.marca}>
+                <TableCell className="truncate max-w-[100px] text-muted-foreground font-body" title={produto.marca}>
                   {produto.marca}
                 </TableCell>
-                <TableCell className="truncate max-w-[100px] text-muted-foreground" title={produto.tipo}>
+                <TableCell className="truncate max-w-[100px] text-muted-foreground font-body" title={produto.tipo}>
                   {produto.tipo}
                 </TableCell>
-                <TableCell className="text-center text-muted-foreground">{produto.tamanho}</TableCell>
+                <TableCell className="text-center text-muted-foreground font-body">{produto.tamanho}</TableCell>
                 <TableCell className="text-right font-mono text-sm text-muted-foreground">
                   {formatarMoeda(produto.preco_custo)}
                 </TableCell>
-                <TableCell className="text-right font-mono text-sm font-semibold text-primary-dark">
+                <TableCell className="text-right font-mono text-sm font-medium text-primary-dark">
                   {formatarMoeda(produto.preco_venda)}
                 </TableCell>
                 <TableCell className="text-right">
