@@ -59,15 +59,32 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
   useEffect(() => {
     if (isEditing && initialData) {
+      console.log("Dados recebidos para edição:", initialData);
+      
       form.reset({
-        numero_encomenda: initialData.numero_encomenda,
-        cliente_id: initialData.cliente_id,
-        fornecedor_id: initialData.fornecedor_id,
+        numero_encomenda: initialData.numero_encomenda || "",
+        cliente_id: initialData.cliente_id || "",
+        fornecedor_id: initialData.fornecedor_id || "",
         data_producao_estimada: initialData.data_producao_estimada || "",
         data_entrega_estimada: initialData.data_entrega_estimada || "",
         observacoes: initialData.observacoes || "",
       });
+      
       setValorTotal(initialData.valor_total || 0);
+
+      // Carregar itens da encomenda se existirem
+      if (initialData.itens_encomenda && initialData.itens_encomenda.length > 0) {
+        const itensFormatados = initialData.itens_encomenda.map((item: any) => ({
+          id: item.id,
+          produto_id: item.produto_id,
+          produto_nome: item.produtos ? `${item.produtos.nome} - ${item.produtos.marca} - ${item.produtos.tipo} - ${item.produtos.tamanho}` : "",
+          quantidade: item.quantidade,
+          preco_custo: 0, // Não temos no banco, será atualizado quando selecionar produto
+          preco_venda: item.preco_unitario,
+          subtotal: item.subtotal,
+        }));
+        setItens(itensFormatados);
+      }
     }
   }, [form, isEditing, initialData]);
 
@@ -83,15 +100,17 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         if (clientesRes.data) setClientes(clientesRes.data);
         if (fornecedoresRes.data) setFornecedores(fornecedoresRes.data);
         
-        // Gerar próximo número de encomenda
-        let proximoNumero = "ENV-001";
-        if (encomendasRes.data && encomendasRes.data.length > 0) {
-          const ultimaEncomenda = encomendasRes.data[0].numero_encomenda;
-          const numero = parseInt(ultimaEncomenda.split("-")[1]) + 1;
-          proximoNumero = `ENV-${numero.toString().padStart(3, "0")}`;
+        // Só gerar próximo número se não estiver editando
+        if (!isEditing) {
+          let proximoNumero = "ENV-001";
+          if (encomendasRes.data && encomendasRes.data.length > 0) {
+            const ultimaEncomenda = encomendasRes.data[0].numero_encomenda;
+            const numero = parseInt(ultimaEncomenda.split("-")[1]) + 1;
+            proximoNumero = `ENV-${numero.toString().padStart(3, "0")}`;
+          }
+          
+          form.setValue("numero_encomenda", proximoNumero);
         }
-        
-        form.setValue("numero_encomenda", proximoNumero);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
       }
@@ -183,9 +202,9 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
               name="numero_encomenda"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Número da Encomenda (Automático)</FormLabel>
+                  <FormLabel>{isEditing ? "Número da Encomenda" : "Número da Encomenda (Automático)"}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: ENV-001" {...field} readOnly className="bg-muted" />
+                    <Input placeholder="Ex: ENV-001" {...field} readOnly={!isEditing} className={!isEditing ? "bg-muted" : ""} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

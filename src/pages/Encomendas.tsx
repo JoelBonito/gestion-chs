@@ -71,9 +71,37 @@ export default function Encomendas() {
     fetchEncomendas();
   };
 
-  const handleEdit = (encomenda: Encomenda) => {
-    setSelectedEncomenda(encomenda);
-    setEditDialogOpen(true);
+  const handleEdit = async (encomenda: Encomenda) => {
+    try {
+      // Carregar dados completos da encomenda para edição
+      const { data: encomendaCompleta, error } = await supabase
+        .from("encomendas")
+        .select(`
+          *,
+          clientes(id, nome),
+          fornecedores(id, nome),
+          itens_encomenda(
+            id,
+            produto_id,
+            quantidade,
+            preco_unitario,
+            subtotal,
+            produtos(id, nome, marca, tipo, tamanho)
+          )
+        `)
+        .eq("id", encomenda.id)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      setSelectedEncomenda(encomendaCompleta);
+      setEditDialogOpen(true);
+    } catch (error) {
+      console.error("Erro ao carregar encomenda:", error);
+      toast.error("Erro ao carregar dados da encomenda");
+    }
   };
 
   const getStatusBadge = (status: string) => {
