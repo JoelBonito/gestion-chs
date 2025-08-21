@@ -176,7 +176,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
               <FormLabel>Marca</FormLabel>
               <FormControl>
                 <div className="space-y-2">
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione uma marca existente" />
                     </SelectTrigger>
@@ -190,7 +190,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
                   </Select>
                   <Input 
                     placeholder="Ou digite uma nova marca" 
-                    value={field.value}
+                    value={field.value || ""}
                     onChange={field.onChange}
                   />
                 </div>
@@ -208,7 +208,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
               <FormLabel>Tipo</FormLabel>
               <FormControl>
                 <div className="space-y-2">
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione um tipo existente" />
                     </SelectTrigger>
@@ -222,7 +222,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
                   </Select>
                   <Input 
                     placeholder="Ou digite um novo tipo" 
-                    value={field.value}
+                    value={field.value || ""}
                     onChange={field.onChange}
                   />
                 </div>
@@ -240,7 +240,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
               <FormLabel>Tamanho</FormLabel>
               <FormControl>
                 <div className="space-y-2">
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione um tamanho existente" />
                     </SelectTrigger>
@@ -254,7 +254,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
                   </Select>
                   <Input 
                     placeholder="Ou digite um novo tamanho" 
-                    value={field.value}
+                    value={field.value || ""}
                     onChange={field.onChange}
                   />
                 </div>
