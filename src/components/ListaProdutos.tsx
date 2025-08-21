@@ -209,7 +209,6 @@ export function ListaProdutos() {
               <TableHead>Nome</TableHead>
               <TableHead>Marca</TableHead>
               <TableHead>Tipo</TableHead>
-              <TableHead>Tamanho (ml)</TableHead>
               <TableHead>Preço Custo</TableHead>
               <TableHead>Preço Venda</TableHead>
               <TableHead>Fornecedor</TableHead>
@@ -222,7 +221,6 @@ export function ListaProdutos() {
                 <TableCell className="font-medium">{produto.nome}</TableCell>
                 <TableCell>{produto.marca}</TableCell>
                 <TableCell>{produto.tipo}</TableCell>
-                <TableCell>{produto.tamanho_ml}ml</TableCell>
                 <TableCell>{formatCurrency(produto.preco_custo)}</TableCell>
                 <TableCell>{formatCurrency(produto.preco_venda)}</TableCell>
                 <TableCell>{produto.fornecedores?.nome || "N/A"}</TableCell>

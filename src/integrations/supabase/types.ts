@@ -287,7 +287,6 @@ export type Database = {
           nome: string
           preco_custo: number
           preco_venda: number
-          tamanho: string
           tipo: string
           updated_at: string
         }
@@ -300,7 +299,6 @@ export type Database = {
           nome: string
           preco_custo: number
           preco_venda: number
-          tamanho: string
           tipo: string
           updated_at?: string
         }
@@ -313,7 +311,6 @@ export type Database = {
           nome?: string
           preco_custo?: number
           preco_venda?: number
-          tamanho?: string
           tipo?: string
           updated_at?: string
         }
