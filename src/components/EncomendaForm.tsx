@@ -251,7 +251,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Cliente *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                   <Select onValueChange={field.onChange} value={field.value || ""} defaultValue={field.value || ""}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um cliente" />
@@ -276,7 +276,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Fornecedor *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value || ""} defaultValue={field.value || ""}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um fornecedor" />

@@ -207,13 +207,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-display text-primary-dark">Marca</FormLabel>
-              <Select onValueChange={(value) => {
-                if (value === '__nova_marca__') {
-                  handleNovaOpcao('marca');
-                } else {
-                  field.onChange(value);
-                }
-              }} value={field.value || ""}>
+               <Select onValueChange={(value) => {
+                 if (value === '__nova_marca__') {
+                   handleNovaOpcao('marca');
+                 } else {
+                   field.onChange(value);
+                 }
+               }} value={field.value || ""} defaultValue={field.value || ""}>
                 <FormControl>
                   <SelectTrigger className="input-elegant">
                     <SelectValue placeholder="Selecione uma marca" />
@@ -244,13 +244,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-display text-primary-dark">Tipo</FormLabel>
-              <Select onValueChange={(value) => {
-                if (value === '__novo_tipo__') {
-                  handleNovaOpcao('tipo');
-                } else {
-                  field.onChange(value);
-                }
-              }} value={field.value || ""}>
+               <Select onValueChange={(value) => {
+                 if (value === '__novo_tipo__') {
+                   handleNovaOpcao('tipo');
+                 } else {
+                   field.onChange(value);
+                 }
+               }} value={field.value || ""} defaultValue={field.value || ""}>
                 <FormControl>
                   <SelectTrigger className="input-elegant">
                     <SelectValue placeholder="Selecione um tipo" />
@@ -281,13 +281,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-display text-primary-dark">Tamanho</FormLabel>
-              <Select onValueChange={(value) => {
-                if (value === '__novo_tamanho__') {
-                  handleNovaOpcao('tamanho');
-                } else {
-                  field.onChange(value);
-                }
-              }} value={field.value || ""}>
+               <Select onValueChange={(value) => {
+                 if (value === '__novo_tamanho__') {
+                   handleNovaOpcao('tamanho');
+                 } else {
+                   field.onChange(value);
+                 }
+               }} value={field.value || ""} defaultValue={field.value || ""}>
                 <FormControl>
                   <SelectTrigger className="input-elegant">
                     <SelectValue placeholder="Selecione um tamanho" />
