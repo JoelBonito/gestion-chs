@@ -9,12 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { ItensEncomendaManager, type ItemEncomenda } from "./ItensEncomendaManager";
 
 const encomendaSchema = z.object({
   numero_encomenda: z.string().min(1, "Número da encomenda é obrigatório"),
   cliente_id: z.string().min(1, "Cliente é obrigatório"),
   fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
-  valor_total: z.number().min(0.01, "Valor deve ser maior que zero"),
+  data_producao_estimada: z.string().optional(),
+  data_entrega_estimada: z.string().optional(),
   data_entrega: z.string().optional(),
   observacoes: z.string().optional(),
 });
@@ -39,6 +41,8 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  const [itens, setItens] = useState<ItemEncomenda[]>([]);
+  const [valorTotal, setValorTotal] = useState(0);
 
   const form = useForm<EncomendaFormData>({
     resolver: zodResolver(encomendaSchema),
@@ -46,7 +50,8 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
       numero_encomenda: "",
       cliente_id: "",
       fornecedor_id: "",
-      valor_total: 0,
+      data_producao_estimada: "",
+      data_entrega_estimada: "",
       data_entrega: "",
       observacoes: "",
     },
@@ -71,25 +76,54 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
   }, []);
 
   const onSubmit = async (data: EncomendaFormData) => {
+    if (itens.length === 0) {
+      toast.error("Adicione pelo menos um item à encomenda");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
+      // Criar a encomenda
+      const { data: encomenda, error: encomendaError } = await supabase
         .from("encomendas")
         .insert([{
           numero_encomenda: data.numero_encomenda,
           cliente_id: data.cliente_id,
           fornecedor_id: data.fornecedor_id,
-          valor_total: data.valor_total,
+          valor_total: valorTotal,
+          data_producao_estimada: data.data_producao_estimada || null,
+          data_entrega_estimada: data.data_entrega_estimada || null,
           data_entrega: data.data_entrega || null,
           observacoes: data.observacoes || null,
-        }]);
+        }])
+        .select()
+        .single();
 
-      if (error) {
-        throw error;
+      if (encomendaError) {
+        throw encomendaError;
+      }
+
+      // Criar os itens da encomenda
+      const itensParaInserir = itens.map(item => ({
+        encomenda_id: encomenda.id,
+        produto_id: item.produto_id,
+        quantidade: item.quantidade,
+        preco_unitario: item.preco_venda,
+        subtotal: item.subtotal,
+      }));
+
+      const { error: itensError } = await supabase
+        .from("itens_encomenda")
+        .insert(itensParaInserir);
+
+      if (itensError) {
+        throw itensError;
       }
 
       toast.success("Encomenda criada com sucesso!");
       form.reset();
+      setItens([]);
+      setValorTotal(0);
       onSuccess?.();
     } catch (error) {
       console.error("Erro ao criar encomenda:", error);
@@ -100,128 +134,146 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="numero_encomenda"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Número da Encomenda *</FormLabel>
-              <FormControl>
-                <Input placeholder="Ex: ENV-001" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <div className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="numero_encomenda"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Número da Encomenda *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: ENV-001" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <FormField
-          control={form.control}
-          name="cliente_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Cliente *</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <FormField
+              control={form.control}
+              name="cliente_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cliente *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um cliente" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {clientes.map((cliente) => (
+                        <SelectItem key={cliente.id} value={cliente.id}>
+                          {cliente.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="fornecedor_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fornecedor *</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um fornecedor" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {fornecedores.map((fornecedor) => (
+                        <SelectItem key={fornecedor.id} value={fornecedor.id}>
+                          {fornecedor.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="data_producao_estimada"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Data de Produção Estimada</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="data_entrega_estimada"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Data de Entrega Estimada</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="data_entrega"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Data de Entrega Efetiva</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <ItensEncomendaManager
+            itens={itens}
+            onItensChange={setItens}
+            onValorTotalChange={setValorTotal}
+          />
+
+          <FormField
+            control={form.control}
+            name="observacoes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Observações</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um cliente" />
-                  </SelectTrigger>
+                  <Textarea placeholder="Observações sobre a encomenda" {...field} />
                 </FormControl>
-                <SelectContent>
-                  {clientes.map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.id}>
-                      {cliente.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="fornecedor_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Fornecedor *</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um fornecedor" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {fornecedores.map((fornecedor) => (
-                    <SelectItem key={fornecedor.id} value={fornecedor.id}>
-                      {fornecedor.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="valor_total"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Valor Total (€) *</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number" 
-                  step="0.01"
-                  placeholder="0.00" 
-                  {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="data_entrega"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Data de Entrega</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="observacoes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Observações</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Observações sobre a encomenda" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <Button 
-          type="submit" 
-          className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Criando..." : "Criar Encomenda"}
-        </Button>
-      </form>
-    </Form>
+          <Button 
+            type="submit" 
+            className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
+            disabled={isSubmitting || itens.length === 0}
+          >
+            {isSubmitting ? "Criando..." : "Criar Encomenda"}
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 }
