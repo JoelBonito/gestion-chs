@@ -189,9 +189,9 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         if (newEncomenda && newEncomenda.length > 0) {
           const encomendaId = newEncomenda[0].id;
 
-          // Associar itens à encomenda
+          // Associar itens à encomenda sem incluir o subtotal (é calculado automaticamente)
           for (const item of itens) {
-            await supabase
+            const { error: itemError } = await supabase
               .from("itens_encomenda")
               .insert([
                 {
@@ -199,9 +199,13 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
                   produto_id: item.produto_id,
                   quantidade: item.quantidade,
                   preco_unitario: item.preco_venda,
-                  subtotal: item.subtotal,
                 },
               ]);
+
+            if (itemError) {
+              console.error("Erro ao inserir item:", itemError);
+              throw itemError;
+            }
           }
 
           toast.success("Encomenda criada com sucesso!");
