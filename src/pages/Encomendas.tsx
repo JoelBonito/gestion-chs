@@ -174,7 +174,7 @@ export default function Encomendas() {
   };
 
   const calcularValorFrete = (pesoBruto: number) => {
-    return pesoBruto * 5.85;
+    return pesoBruto * 4.50;
   };
 
   return (
