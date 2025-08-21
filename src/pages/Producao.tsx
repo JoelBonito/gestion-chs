@@ -245,20 +245,19 @@ export default function Producao() {
                   <TableHead className="w-[100px] text-right">Valor</TableHead>
                   <TableHead className="w-[140px] text-center">Data Produção</TableHead>
                   <TableHead className="w-[140px] text-center">Data Envio</TableHead>
-                  <TableHead className="w-[100px] text-center">Status</TableHead>
-                  <TableHead className="w-[140px] text-center">Alterar Status</TableHead>
+                  <TableHead className="w-[120px] text-center">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       Carregando encomendas...
                     </TableCell>
                   </TableRow>
                 ) : filteredEncomendas.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Nenhuma encomenda encontrada
                     </TableCell>
                   </TableRow>
@@ -339,28 +338,37 @@ export default function Producao() {
                             </PopoverContent>
                           </Popover>
                         </TableCell>
-                        <TableCell className="w-[100px]">
+                        <TableCell className="w-[120px]">
                           <div className="flex justify-center">
-                            <Badge variant={status.variant} className="flex items-center gap-1 w-fit text-xs whitespace-nowrap">
-                              <StatusIcon className="h-3 w-3 flex-shrink-0" />
-                              <span className="truncate">{status.label}</span>
-                            </Badge>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Badge 
+                                  variant={status.variant} 
+                                  className="flex items-center gap-1 w-fit text-xs whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity"
+                                >
+                                  <StatusIcon className="h-3 w-3 flex-shrink-0" />
+                                  <span className="truncate">{status.label}</span>
+                                </Badge>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="center">
+                                <div className="p-2">
+                                  <Select
+                                    value={encomenda.status_producao}
+                                    onValueChange={(novoStatus) => atualizarStatusProducao(encomenda.id, novoStatus)}
+                                  >
+                                    <SelectTrigger className="w-full text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="PEDIDO">Pedido</SelectItem>
+                                      <SelectItem value="PRODUCAO">Produção</SelectItem>
+                                      <SelectItem value="ENTREGA">Entrega</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                           </div>
-                        </TableCell>
-                        <TableCell className="w-[140px]">
-                          <Select
-                            value={encomenda.status_producao}
-                            onValueChange={(novoStatus) => atualizarStatusProducao(encomenda.id, novoStatus)}
-                          >
-                            <SelectTrigger className="w-full text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="PEDIDO">Pedido</SelectItem>
-                              <SelectItem value="PRODUCAO">Produção</SelectItem>
-                              <SelectItem value="ENTREGA">Entrega</SelectItem>
-                            </SelectContent>
-                          </Select>
                         </TableCell>
                       </TableRow>
                     );
