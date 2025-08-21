@@ -110,7 +110,8 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
   const onSubmit = async (data: ProdutoFormData) => {
     setIsSubmitting(true);
     try {
-      if (isEditing && initialData) {
+      if (isEditing && initialData && initialData.id) {
+        console.log("Editando produto:", initialData.id, data);
         const { error } = await supabase
           .from("produtos")
           .update({
@@ -126,6 +127,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         if (error) throw error;
         toast.success("Produto atualizado com sucesso!");
       } else {
+        console.log("Criando novo produto:", data);
         const { error } = await supabase.from("produtos").insert([
           {
             nome: data.nome,
