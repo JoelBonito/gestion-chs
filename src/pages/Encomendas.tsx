@@ -1,36 +1,46 @@
+
 import { useState, useEffect } from "react";
-import { Plus, Search, Filter, Eye, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Eye, Edit, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { EncomendaForm } from "@/components/EncomendaForm";
+import { EncomendaView } from "@/components/EncomendaView";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface Encomenda {
   id: string;
   numero_encomenda: string;
-  valor_total: number;
   status: string;
+  status_producao?: string;
+  valor_total: number;
+  valor_pago: number;
   data_criacao: string;
   data_entrega?: string;
   observacoes?: string;
+  cliente_id: string;
+  fornecedor_id: string;
   clientes?: { nome: string };
   fornecedores?: { nome: string };
 }
 
 export default function Encomendas() {
+  const { canEdit } = useUserRole();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("todos");
-  const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [showCompleted, setShowCompleted] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedEncomenda, setSelectedEncomenda] = useState<Encomenda | null>(null);
+  const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchEncomendas = async () => {
     try {
@@ -43,10 +53,7 @@ export default function Encomendas() {
         `)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
       setEncomendas(data || []);
     } catch (error) {
       console.error("Erro ao carregar encomendas:", error);
@@ -71,147 +78,112 @@ export default function Encomendas() {
     fetchEncomendas();
   };
 
-  const handleEdit = async (encomenda: Encomenda) => {
-    try {
-      // Carregar dados completos da encomenda para edição
-      const { data: encomendaCompleta, error } = await supabase
-        .from("encomendas")
-        .select(`
-          *,
-          clientes(id, nome),
-          fornecedores(id, nome),
-          itens_encomenda(
-            id,
-            produto_id,
-            quantidade,
-            preco_unitario,
-            subtotal,
-            produtos(id, nome, marca, tipo, tamanho, preco_custo)
-          )
-        `)
-        .eq("id", encomenda.id)
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      setSelectedEncomenda(encomendaCompleta);
-      setEditDialogOpen(true);
-    } catch (error) {
-      console.error("Erro ao carregar encomenda:", error);
-      toast.error("Erro ao carregar dados da encomenda");
-    }
+  const handleEdit = (encomenda: Encomenda) => {
+    setSelectedEncomenda(encomenda);
+    setEditDialogOpen(true);
   };
 
-  const handleView = async (encomenda: Encomenda) => {
-    try {
-      // Carregar dados completos da encomenda para visualização
-      const { data: encomendaCompleta, error } = await supabase
-        .from("encomendas")
-        .select(`
-          *,
-          clientes(id, nome),
-          fornecedores(id, nome),
-          itens_encomenda(
-            id,
-            produto_id,
-            quantidade,
-            preco_unitario,
-            subtotal,
-            produtos(id, nome, marca, tipo, tamanho, preco_custo)
-          )
-        `)
-        .eq("id", encomenda.id)
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      // Por enquanto, abrir no modo de edição para visualizar
-      // Futuramente pode criar um modal específico de visualização
-      setSelectedEncomenda(encomendaCompleta);
-      setEditDialogOpen(true);
-    } catch (error) {
-      console.error("Erro ao carregar encomenda:", error);
-      toast.error("Erro ao carregar dados da encomenda");
-    }
-  };
-
-  const handleDelete = async (encomenda: Encomenda) => {
-    if (confirm(`Tem certeza que deseja deletar a encomenda ${encomenda.numero_encomenda}?`)) {
-      try {
-        // Primeiro deletar os itens da encomenda
-        const { error: itemsError } = await supabase
-          .from("itens_encomenda")
-          .delete()
-          .eq("encomenda_id", encomenda.id);
-
-        if (itemsError) throw itemsError;
-
-        // Depois deletar a encomenda
-        const { error } = await supabase
-          .from("encomendas")
-          .delete()
-          .eq("id", encomenda.id);
-
-        if (error) throw error;
-        
-        toast.success("Encomenda deletada com sucesso!");
-        fetchEncomendas();
-      } catch (error) {
-        console.error("Erro ao deletar encomenda:", error);
-        toast.error("Erro ao deletar encomenda");
-      }
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      pendente: { label: "Pendente", variant: "secondary" as const },
-      enviado: { label: "Enviado", variant: "default" as const },
-      entregue: { label: "Entregue", variant: "outline" as const }
-    };
-    return variants[status as keyof typeof variants] || variants.pendente;
+  const handleView = (encomenda: Encomenda) => {
+    setSelectedEncomenda(encomenda);
+    setViewDialogOpen(true);
   };
 
   const filteredEncomendas = encomendas.filter(encomenda => {
-    const clienteNome = encomenda.clientes?.nome || "";
-    const matchesSearch = clienteNome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         encomenda.numero_encomenda.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "todos" || encomenda.status === statusFilter;
+    const matchesSearch = encomenda.numero_encomenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (encomenda.clientes?.nome && encomenda.clientes.nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (encomenda.fornecedores?.nome && encomenda.fornecedores.nome.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesStatus = showCompleted ? encomenda.status === 'entregue' : encomenda.status !== 'entregue';
+    
     return matchesSearch && matchesStatus;
   });
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-PT', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(value);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pendente': return 'bg-yellow-500';
+      case 'producao': return 'bg-blue-500';
+      case 'enviado': return 'bg-purple-500';
+      case 'entregue': return 'bg-green-500';
+      default: return 'bg-gray-500';
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Encomendas</h1>
-          <p className="text-muted-foreground">Gerencie todas as encomendas dos seus clientes</p>
+          <p className="text-muted-foreground">Gerencie os pedidos dos seus clientes</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Encomenda
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Nova Encomenda</DialogTitle>
-              <DialogDescription>
-                Crie uma nova encomenda para um cliente
-              </DialogDescription>
-            </DialogHeader>
-            <EncomendaForm onSuccess={handleSuccess} />
-          </DialogContent>
-        </Dialog>
+        {canEdit && (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Encomenda
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Nova Encomenda</DialogTitle>
+                <DialogDescription>
+                  Crie uma nova encomenda no sistema
+                </DialogDescription>
+              </DialogHeader>
+              <EncomendaForm onSuccess={handleSuccess} />
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
 
-        {/* Edit Dialog */}
+      {/* Search and filters */}
+      <Card className="shadow-card">
+        <CardContent className="pt-6 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Buscar por número, cliente ou fornecedor..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="show-completed"
+              checked={showCompleted}
+              onCheckedChange={setShowCompleted}
+            />
+            <Label htmlFor="show-completed">
+              {showCompleted ? "Mostrar entregues" : "Mostrar pendentes"}
+            </Label>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* View Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Visualizar Encomenda</DialogTitle>
+          </DialogHeader>
+          {selectedEncomenda && (
+            <EncomendaView encomendaId={selectedEncomenda.id} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      {canEdit && (
         <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Editar Encomenda</DialogTitle>
               <DialogDescription>
@@ -225,119 +197,85 @@ export default function Encomendas() {
             />
           </DialogContent>
         </Dialog>
-      </div>
+      )}
 
-      {/* Filters */}
-      <Card className="shadow-card">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Buscar por cliente ou ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-48">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os Status</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="enviado">Enviado</SelectItem>
-                <SelectItem value="entregue">Entregue</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Orders Grid */}
+      {loading ? (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Carregando encomendas...</p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {filteredEncomendas.map((encomenda) => (
+            <Card key={encomenda.id} className="shadow-card hover:shadow-elevated transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div>
+                      <p className="font-semibold">#{encomenda.numero_encomenda}</p>
+                      <p className="text-sm text-muted-foreground">{encomenda.clientes?.nome}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Fornecedor</p>
+                      <p className="font-medium">{encomenda.fornecedores?.nome}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Valor Total</p>
+                      <p className="font-semibold">{formatCurrency(encomenda.valor_total)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Saldo Devedor</p>
+                      <p className="font-semibold text-red-600">
+                        {formatCurrency(encomenda.valor_total - encomenda.valor_pago)}
+                      </p>
+                    </div>
+                    <div>
+                      <Badge className={`${getStatusColor(encomenda.status)} text-white`}>
+                        {encomenda.status}
+                      </Badge>
+                      {encomenda.status_producao && (
+                        <Badge variant="outline" className="ml-2">
+                          {encomenda.status_producao}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleView(encomenda)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Visualizar
+                      </DropdownMenuItem>
+                      {canEdit && (
+                        <DropdownMenuItem onClick={() => handleEdit(encomenda)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Editar
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
-      {/* Orders Table */}
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle>Lista de Encomendas</CardTitle>
-          <CardDescription>
-            {filteredEncomendas.length} encomenda(s) encontrada(s)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Fornecedor</TableHead>
-                  <TableHead>Produtos</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Data Entrega</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      Carregando encomendas...
-                    </TableCell>
-                  </TableRow>
-                ) : filteredEncomendas.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      Nenhuma encomenda encontrada
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredEncomendas.map((encomenda) => {
-                    const status = getStatusBadge(encomenda.status);
-                    return (
-                      <TableRow key={encomenda.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">{encomenda.numero_encomenda}</TableCell>
-                        <TableCell>{encomenda.clientes?.nome || "N/A"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {encomenda.fornecedores?.nome || "N/A"}
-                        </TableCell>
-                        <TableCell className="max-w-48 truncate text-sm">
-                          {encomenda.observacoes || "Sem descrição"}
-                        </TableCell>
-                        <TableCell className="font-semibold">
-                          € {encomenda.valor_total.toFixed(2)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={status.variant}>
-                            {status.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {encomenda.data_entrega ? new Date(encomenda.data_entrega).toLocaleDateString() : "N/A"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => handleView(encomenda)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={() => handleEdit(encomenda)}>
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(encomenda)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      {filteredEncomendas.length === 0 && (
+        <Card className="shadow-card">
+          <CardContent className="text-center py-12">
+            <p className="text-muted-foreground">
+              {showCompleted ? "Nenhuma encomenda entregue encontrada" : "Nenhuma encomenda pendente encontrada"}
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

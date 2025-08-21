@@ -149,7 +149,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     setNovoValor('');
   };
 
-  const adicionarNovaOpcao = () => {
+  const adicionarNovaOpcao = async () => {
     if (!novoValor.trim()) return;
     
     const campo = novaOpçaoDialog.tipo;
@@ -164,6 +164,27 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     } else if (campo === 'tamanho') {
       setTamanhosExistentes(prev => [...prev, valor].sort());
       form.setValue('tamanho', valor);
+    } else if (campo === 'fornecedor') {
+      try {
+        const { data: novoFornecedor, error } = await supabase
+          .from("fornecedores")
+          .insert([{
+            nome: valor,
+            active: true
+          }])
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        setFornecedores(prev => [...prev, novoFornecedor].sort((a, b) => a.nome.localeCompare(b.nome)));
+        form.setValue('fornecedor_id', novoFornecedor.id);
+        toast.success("Fornecedor adicionado com sucesso!");
+      } catch (error) {
+        console.error("Erro ao adicionar fornecedor:", error);
+        toast.error("Erro ao adicionar fornecedor");
+        return;
+      }
     }
     
     setNovaOpçaoDialog({tipo: '', aberto: false});
@@ -261,7 +282,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-display text-primary-dark">Fornecedor *</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={(value) => {
+                if (value === '__novo_fornecedor__') {
+                  handleNovaOpcao('fornecedor');
+                } else {
+                  field.onChange(value);
+                }
+              }} value={field.value}>
                 <FormControl>
                   <SelectTrigger className="input-elegant">
                     <SelectValue placeholder="Selecione um fornecedor" />
@@ -273,6 +300,12 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
                       {fornecedor.nome}
                     </SelectItem>
                   ))}
+                  <SelectItem value="__novo_fornecedor__" className="text-primary font-medium">
+                    <div className="flex items-center">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar novo fornecedor...
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -356,52 +389,42 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="tamanho"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-display text-primary-dark">Tamanho</FormLabel>
-                 <Select onValueChange={(value) => {
-                   if (value === '__novo_tamanho__') {
-                     handleNovaOpcao('tamanho');
-                   } else {
-                     field.onChange(value);
-                   }
-                 }} value={field.value || ""}>
-                  <FormControl>
-                    <SelectTrigger className="input-elegant">
-                      <SelectValue placeholder="Selecione um tamanho" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {tamanhosExistentes.map((tamanho) => (
-                      <SelectItem key={tamanho} value={tamanho}>
-                        {tamanho}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="__novo_tamanho__" className="text-primary font-medium">
-                      <div className="flex items-center">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Adicionar novo tamanho...
-                      </div>
+        <FormField
+          control={form.control}
+          name="tamanho"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-display text-primary-dark">Tamanho e Peso</FormLabel>
+              <Select onValueChange={(value) => {
+                if (value === '__novo_tamanho__') {
+                  handleNovaOpcao('tamanho');
+                } else {
+                  field.onChange(value);
+                }
+              }} value={field.value || ""}>
+                <FormControl>
+                  <SelectTrigger className="input-elegant">
+                    <SelectValue placeholder="Ex: M - 350g" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {tamanhosExistentes.map((tamanho) => (
+                    <SelectItem key={tamanho} value={tamanho}>
+                      {tamanho}
                     </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="flex items-end">
-            <div className="bg-muted p-3 rounded text-sm text-muted-foreground flex-1">
-              <div className="flex items-center gap-2">
-                📦 Peso: 0.50 kg (padrão)
-              </div>
-            </div>
-          </div>
-        </div>
+                  ))}
+                  <SelectItem value="__novo_tamanho__" className="text-primary font-medium">
+                    <div className="flex items-center">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar novo tamanho...
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
@@ -459,18 +482,27 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         <DialogContent className="max-w-md shadow-elegant">
           <DialogHeader>
             <DialogTitle className="font-display text-primary-dark">
-              Adicionar Nova {novaOpçaoDialog.tipo === 'marca' ? 'Marca' : novaOpçaoDialog.tipo === 'tipo' ? 'Tipo' : 'Tamanho'}
+              Adicionar {novaOpçaoDialog.tipo === 'marca' ? 'Nova Marca' : 
+                         novaOpçaoDialog.tipo === 'tipo' ? 'Novo Tipo' : 
+                         novaOpçaoDialog.tipo === 'tamanho' ? 'Novo Tamanho' : 
+                         'Novo Fornecedor'}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <label className="font-display text-primary-dark">
-                {novaOpçaoDialog.tipo === 'marca' ? 'Nome da Marca' : novaOpçaoDialog.tipo === 'tipo' ? 'Nome do Tipo' : 'Tamanho'}
+                {novaOpçaoDialog.tipo === 'marca' ? 'Nome da Marca' : 
+                 novaOpçaoDialog.tipo === 'tipo' ? 'Nome do Tipo' : 
+                 novaOpçaoDialog.tipo === 'tamanho' ? 'Tamanho e Peso (Ex: M - 350g)' : 
+                 'Nome do Fornecedor'}
               </label>
               <Input
                 value={novoValor}
                 onChange={(e) => setNovoValor(e.target.value)}
-                placeholder={`Digite ${novaOpçaoDialog.tipo === 'marca' ? 'a nova marca' : novaOpçaoDialog.tipo === 'tipo' ? 'o novo tipo' : 'o novo tamanho'}`}
+                placeholder={novaOpçaoDialog.tipo === 'marca' ? 'Digite a nova marca' : 
+                           novaOpçaoDialog.tipo === 'tipo' ? 'Digite o novo tipo' : 
+                           novaOpçaoDialog.tipo === 'tamanho' ? 'Ex: L - 400g' : 
+                           'Digite o nome do fornecedor'}
                 className="input-elegant mt-2"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
