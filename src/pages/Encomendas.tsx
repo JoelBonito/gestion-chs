@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { EncomendaForm } from "@/components/EncomendaForm";
 import { EncomendaView } from "@/components/EncomendaView";
 import { EncomendaActions } from "@/components/EncomendaActions";
 import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
+import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -40,6 +40,7 @@ export default function Encomendas() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [transportDialogOpen, setTransportDialogOpen] = useState(false);
   const [selectedEncomenda, setSelectedEncomenda] = useState<Encomenda | null>(null);
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +81,12 @@ export default function Encomendas() {
     fetchEncomendas();
   };
 
+  const handleTransportSuccess = () => {
+    setTransportDialogOpen(false);
+    setSelectedEncomenda(null);
+    fetchEncomendas();
+  };
+
   const handleEdit = (encomenda: Encomenda) => {
     setSelectedEncomenda(encomenda);
     setEditDialogOpen(true);
@@ -94,7 +101,16 @@ export default function Encomendas() {
     fetchEncomendas();
   };
 
-  const handleStatusChange = () => {
+  const handleStatusChange = async (encomendaId: string, novoStatus: StatusEncomenda) => {
+    // Se o status mudou para TRANSPORTE, abrir o formulário especial
+    if (novoStatus === 'TRANSPORTE') {
+      const encomenda = encomendas.find(e => e.id === encomendaId);
+      if (encomenda) {
+        setSelectedEncomenda(encomenda);
+        setTransportDialogOpen(true);
+      }
+    }
+    
     fetchEncomendas();
   };
 
@@ -171,6 +187,24 @@ export default function Encomendas() {
         </CardContent>
       </Card>
 
+      {/* Transport Dialog */}
+      <Dialog open={transportDialogOpen} onOpenChange={setTransportDialogOpen}>
+        <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Ajustar Encomenda para Transporte</DialogTitle>
+            <DialogDescription>
+              Ajuste as datas, quantidades finais e calcule o frete
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEncomenda && (
+            <EncomendaTransportForm 
+              encomendaId={selectedEncomenda.id}
+              onSuccess={handleTransportSuccess}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* View Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
@@ -226,7 +260,7 @@ export default function Encomendas() {
                         encomendaId={encomenda.id}
                         currentStatus={encomenda.status}
                         numeroEncomenda={encomenda.numero_encomenda}
-                        onStatusChange={handleStatusChange}
+                        onStatusChange={() => handleStatusChange(encomenda.id, encomenda.status)}
                       />
                     </div>
                     <div>

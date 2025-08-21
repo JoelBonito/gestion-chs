@@ -86,13 +86,16 @@ export type Database = {
           data_envio_estimada: string | null
           data_producao_estimada: string | null
           fornecedor_id: string
+          frete_calculado: boolean | null
           id: string
           numero_encomenda: string
           observacoes: string | null
+          peso_total: number | null
           saldo_devedor: number | null
           status: Database["public"]["Enums"]["status_encomenda"]
           status_producao: string | null
           updated_at: string | null
+          valor_frete: number | null
           valor_pago: number
           valor_total: number
         }
@@ -104,13 +107,16 @@ export type Database = {
           data_envio_estimada?: string | null
           data_producao_estimada?: string | null
           fornecedor_id: string
+          frete_calculado?: boolean | null
           id?: string
           numero_encomenda: string
           observacoes?: string | null
+          peso_total?: number | null
           saldo_devedor?: number | null
           status?: Database["public"]["Enums"]["status_encomenda"]
           status_producao?: string | null
           updated_at?: string | null
+          valor_frete?: number | null
           valor_pago?: number
           valor_total?: number
         }
@@ -122,13 +128,16 @@ export type Database = {
           data_envio_estimada?: string | null
           data_producao_estimada?: string | null
           fornecedor_id?: string
+          frete_calculado?: boolean | null
           id?: string
           numero_encomenda?: string
           observacoes?: string | null
+          peso_total?: number | null
           saldo_devedor?: number | null
           status?: Database["public"]["Enums"]["status_encomenda"]
           status_producao?: string | null
           updated_at?: string | null
+          valor_frete?: number | null
           valor_pago?: number
           valor_total?: number
         }
@@ -188,6 +197,36 @@ export type Database = {
           nome?: string
           telefone?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      frete_encomenda: {
+        Row: {
+          created_at: string
+          descricao: string
+          encomenda_id: string
+          id: string
+          peso_total: number
+          updated_at: string
+          valor_frete: number
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string
+          encomenda_id: string
+          id?: string
+          peso_total: number
+          updated_at?: string
+          valor_frete: number
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          encomenda_id?: string
+          id?: string
+          peso_total?: number
+          updated_at?: string
+          valor_frete?: number
         }
         Relationships: []
       }

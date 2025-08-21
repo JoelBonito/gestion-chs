@@ -15,6 +15,7 @@ export interface ItemEncomenda {
   preco_custo: number;
   preco_venda: number;
   subtotal: number;
+  peso_produto?: number;
 }
 
 interface Produto {
@@ -24,15 +25,22 @@ interface Produto {
   tipo: string;
   preco_custo: number;
   preco_venda: number;
+  size_weight: number;
 }
 
 interface ItensEncomendaManagerProps {
   itens: ItemEncomenda[];
   onItensChange: (itens: ItemEncomenda[]) => void;
   onValorTotalChange: (valor: number) => void;
+  isTransportMode?: boolean;
 }
 
-export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange }: ItensEncomendaManagerProps) {
+export function ItensEncomendaManager({ 
+  itens, 
+  onItensChange, 
+  onValorTotalChange, 
+  isTransportMode = false 
+}: ItensEncomendaManagerProps) {
   const [produtos, setProdutos] = useState<Produto[]>([]);
 
   useEffect(() => {
@@ -40,7 +48,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       try {
         const { data, error } = await supabase
           .from("produtos")
-          .select("id, nome, marca, tipo, preco_custo, preco_venda")
+          .select("id, nome, marca, tipo, preco_custo, preco_venda, size_weight")
           .eq("ativo", true)
           .order("nome");
         
@@ -50,14 +58,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
         }
 
         if (data) {
-          setProdutos(data.map(item => ({
-            id: item.id,
-            nome: item.nome,
-            marca: item.marca,
-            tipo: item.tipo,
-            preco_custo: item.preco_custo,
-            preco_venda: item.preco_venda
-          })));
+          setProdutos(data);
         }
       } catch (error) {
         console.error("Erro ao carregar produtos:", error);
@@ -79,6 +80,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       preco_custo: 0,
       preco_venda: 0,
       subtotal: 0,
+      peso_produto: 0,
     };
     // Adicionar novo item no início da lista (topo)
     onItensChange([novoItem, ...itens]);
@@ -100,6 +102,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
         item.produto_nome = `${produto.nome} - ${produto.marca} - ${produto.tipo}`;
         item.preco_custo = produto.preco_custo;
         item.preco_venda = produto.preco_venda;
+        item.peso_produto = produto.size_weight;
       }
     } else if (campo === "quantidade") {
       item.quantidade = valor;
@@ -121,16 +124,18 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           Itens da Encomenda
-          <Button type="button" variant="outline" size="sm" onClick={adicionarItem}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar Item
-          </Button>
+          {!isTransportMode && (
+            <Button type="button" variant="outline" size="sm" onClick={adicionarItem}>
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar Item
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {itens.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">
-            Nenhum item adicionado. Clique em "Adicionar Item" para começar.
+            Nenhum item adicionado. {!isTransportMode && 'Clique em "Adicionar Item" para começar.'}
           </p>
         ) : (
           <div className="space-y-4">
@@ -143,6 +148,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
                       <Select
                         value={item.produto_id}
                         onValueChange={(value) => atualizarItem(index, "produto_id", value)}
+                        disabled={isTransportMode}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione um produto" />
@@ -165,11 +171,22 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
                         value={item.quantidade || ""}
                         onChange={(e) => atualizarItem(index, "quantidade", parseInt(e.target.value) || 1)}
                         placeholder="0"
+                        disabled={!isTransportMode && item.produto_id === ""}
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Peso Unitário</label>
+                      <Input
+                        type="text"
+                        value={item.peso_produto ? `${item.peso_produto}g` : "0g"}
+                        readOnly
+                        className="bg-muted"
+                      />
+                    </div>
+                    
                     <div>
                       <label className="text-sm font-medium mb-2 block">Preço Custo (€)</label>
                       <Input
@@ -179,6 +196,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
                         value={item.preco_custo || ""}
                         onChange={(e) => atualizarItem(index, "preco_custo", parseFloat(e.target.value) || 0)}
                         placeholder="0.00"
+                        disabled={isTransportMode}
                       />
                     </div>
                     
@@ -191,6 +209,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
                         value={item.preco_venda || ""}
                         onChange={(e) => atualizarItem(index, "preco_venda", parseFloat(e.target.value) || 0)}
                         placeholder="0.00"
+                        disabled={!isTransportMode && item.produto_id === ""}
                       />
                     </div>
                     
@@ -203,15 +222,17 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
                           readOnly
                           className="bg-muted font-semibold"
                         />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => removerItem(index)}
-                          title="Remover item"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {!isTransportMode && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removerItem(index)}
+                            title="Remover item"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
