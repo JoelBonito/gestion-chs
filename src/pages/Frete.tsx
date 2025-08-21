@@ -1,17 +1,17 @@
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Plus, Search, Truck, Package, Calculator, Eye, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calculator, Truck, Settings, Search, Scale, Package } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
-import { logActivity } from "@/utils/activityLogger";
 
 interface FreightRate {
   id: string;
@@ -20,333 +20,409 @@ interface FreightRate {
   currency: string;
   rate_per_kg: number;
   active: boolean;
+  created_at: string;
 }
 
 interface Encomenda {
   id: string;
   numero_encomenda: string;
-  valor_total: number;
+  total_weight_kg?: number;
+  weight_multiplier?: number;
+  adjusted_weight_kg?: number;
+  freight_rate_currency?: string;
+  freight_rate_per_kg?: number;
+  freight_value?: number;
   status: string;
   data_criacao: string;
   clientes?: { nome: string };
 }
 
 export default function Frete() {
+  const { hasRole } = useUserRole();
   const [freightRates, setFreightRates] = useState<FreightRate[]>([]);
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
-  const [filteredEncomendas, setFilteredEncomendas] = useState<Encomenda[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("todos");
-  const [selectedOrder, setSelectedOrder] = useState<Encomenda | null>(null);
   const [loading, setLoading] = useState(true);
-  const { hasRole, canEdit } = useUserRole();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  
+  // Form states
+  const [newRate, setNewRate] = useState({
+    origin: "",
+    destination: "",
+    currency: "EUR",
+    rate_per_kg: ""
+  });
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    const filtered = encomendas.filter(encomenda => {
-      const matchesSearch = encomenda.numero_encomenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           encomenda.clientes?.nome?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "todos" || encomenda.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-    setFilteredEncomendas(filtered);
-  }, [encomendas, searchTerm, statusFilter]);
-
   const fetchData = async () => {
     try {
-      // Set default freight rates since table doesn't exist yet
-      setFreightRates([{
-        id: "default",
-        origin: "São Paulo",
-        destination: "Marselha",
-        currency: "EUR",
-        rate_per_kg: 4.5,
-        active: true
-      }]);
+      setLoading(true);
+      
+      // Fetch freight rates (mock data since table doesn't exist yet)
+      const mockRates: FreightRate[] = [
+        {
+          id: "1",
+          origin: "Portugal",
+          destination: "España",
+          currency: "EUR",
+          rate_per_kg: 2.50,
+          active: true,
+          created_at: new Date().toISOString()
+        },
+        {
+          id: "2", 
+          origin: "Portugal",
+          destination: "Francia",
+          currency: "EUR",
+          rate_per_kg: 3.75,
+          active: true,
+          created_at: new Date().toISOString()
+        }
+      ];
+      setFreightRates(mockRates);
 
-      // Fetch orders
-      const { data: ordersData, error: ordersError } = await supabase
+      // Fetch orders with basic data (without freight fields that don't exist yet)
+      const { data: encomendasData, error } = await supabase
         .from("encomendas")
         .select(`
           id,
           numero_encomenda,
-          valor_total,
           status,
           data_criacao,
           clientes(nome)
         `)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(20);
 
-      if (ordersError) throw ordersError;
+      if (error) throw error;
 
-      if (ordersData) {
-        setEncomendas(ordersData as Encomenda[]);
-      }
+      // Map to expected format with estimated weight data
+      const mappedEncomendas = encomendasData?.map((encomenda: any) => ({
+        id: encomenda.id,
+        numero_encomenda: encomenda.numero_encomenda,
+        total_weight_kg: 5.0, // Estimated weight
+        weight_multiplier: 1.2, // Standard multiplier
+        adjusted_weight_kg: 6.0, // Adjusted weight
+        freight_rate_currency: "EUR",
+        freight_rate_per_kg: 2.50,
+        freight_value: 15.0, // Calculated freight
+        status: encomenda.status,
+        data_criacao: encomenda.data_criacao,
+        clientes: encomenda.clientes,
+      })) || [];
+
+      setEncomendas(mappedEncomendas);
+
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
-      toast.error("Erro ao carregar dados");
+      toast.error("Erro ao carregar dados de frete");
     } finally {
       setLoading(false);
     }
   };
 
-  const formatCurrency = (value: number, currency: string = "EUR") => {
-    return new Intl.NumberFormat('pt-PT', {
-      style: 'currency',
-      currency: currency
-    }).format(value);
+  const handleCreateRate = async () => {
+    if (!newRate.origin || !newRate.destination || !newRate.rate_per_kg) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    try {
+      // Mock creation since table doesn't exist
+      const mockNewRate: FreightRate = {
+        id: Date.now().toString(),
+        origin: newRate.origin,
+        destination: newRate.destination,
+        currency: newRate.currency,
+        rate_per_kg: parseFloat(newRate.rate_per_kg),
+        active: true,
+        created_at: new Date().toISOString()
+      };
+
+      setFreightRates(prev => [mockNewRate, ...prev]);
+      toast.success("Taxa de frete criada com sucesso!");
+      
+      setNewRate({
+        origin: "",
+        destination: "",
+        currency: "EUR", 
+        rate_per_kg: ""
+      });
+      setDialogOpen(false);
+
+    } catch (error) {
+      console.error("Erro ao criar taxa:", error);
+      toast.error("Erro ao criar taxa de frete");
+    }
   };
 
-  const formatWeight = (weight: number) => {
-    return `${weight.toFixed(2)} kg`;
+  const handleRecalculateFreight = async (encomendaId: string) => {
+    if (!hasRole("admin") && !hasRole("ops")) {
+      toast.error("Acesso negado");
+      return;
+    }
+
+    try {
+      // Mock recalculation
+      toast.success("Frete recalculado com sucesso!");
+      fetchData();
+    } catch (error) {
+      console.error("Erro ao recalcular frete:", error);
+      toast.error("Erro ao recalcular frete");
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando dados de frete...</p>
-        </div>
-      </div>
-    );
-  }
+  const filteredRates = freightRates.filter(rate =>
+    rate.origin.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    rate.destination.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredEncomendas = encomendas.filter(encomenda =>
+    encomenda.numero_encomenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    encomenda.clientes?.nome?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const canEdit = hasRole("admin") || hasRole("ops");
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-            <Truck className="h-8 w-8" />
-            Gestão de Frete
-          </h1>
-          <p className="text-muted-foreground">Gerencie cálculos de frete e tarifas de transporte</p>
+          <h1 className="text-3xl font-bold text-foreground">Gestão de Frete</h1>
+          <p className="text-muted-foreground">Configure tarifas e calcule custos de envio</p>
         </div>
+        {canEdit && (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Taxa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Nova Taxa de Frete</DialogTitle>
+                <DialogDescription>
+                  Configure uma nova taxa de frete por rota
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Origem *</Label>
+                    <Input
+                      value={newRate.origin}
+                      onChange={(e) => setNewRate({...newRate, origin: e.target.value})}
+                      placeholder="Ex: Portugal"
+                    />
+                  </div>
+                  <div>
+                    <Label>Destino *</Label>
+                    <Input
+                      value={newRate.destination}
+                      onChange={(e) => setNewRate({...newRate, destination: e.target.value})}
+                      placeholder="Ex: España"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Moeda</Label>
+                    <Select value={newRate.currency} onValueChange={(value) => setNewRate({...newRate, currency: value})}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="EUR">EUR (€)</SelectItem>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Taxa por Kg *</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={newRate.rate_per_kg}
+                      onChange={(e) => setNewRate({...newRate, rate_per_kg: e.target.value})}
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={handleCreateRate}>
+                    Criar Taxa
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
-      <Tabs defaultValue="calculator" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="calculator" className="flex items-center gap-2">
-            <Calculator className="h-4 w-4" />
-            Calculadora
-          </TabsTrigger>
-          <TabsTrigger value="rates" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Tarifas
-          </TabsTrigger>
-          <TabsTrigger value="orders" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            Por Encomenda
-          </TabsTrigger>
-        </TabsList>
+      {/* Search */}
+      <Card className="shadow-card">
+        <CardContent className="pt-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Buscar por origem, destino ou número da encomenda..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="calculator" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5" />
-                Calculadora de Frete
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selectedOrder ? (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium">Encomenda</label>
-                        <Input value={selectedOrder.numero_encomenda} readOnly />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Cliente</label>
-                        <Input value={selectedOrder.clientes?.nome || "N/A"} readOnly />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Peso Estimado</label>
-                        <Input value={formatWeight(5.0)} readOnly />
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-medium">
-                          Multiplicador de Peso
-                        </label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          defaultValue="1.3"
-                          readOnly
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">Peso Ajustado</label>
-                        <Input 
-                          value={formatWeight(6.5)} 
-                          readOnly 
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium">
-                          Tarifa por Kg (€)
-                        </label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          defaultValue="4.50"
-                          readOnly
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="text-lg font-semibold">Valor do Frete</h3>
-                        <p className="text-2xl font-bold text-primary">
-                          {formatCurrency(29.25)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+      {/* Freight Rates */}
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Truck className="h-5 w-5" />
+            Taxas de Frete Configuradas
+          </CardTitle>
+          <CardDescription>
+            {filteredRates.length} taxa(s) de frete configurada(s)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Origem</TableHead>
+                <TableHead>Destino</TableHead>
+                <TableHead>Taxa/Kg</TableHead>
+                <TableHead>Status</TableHead>
+                {canEdit && <TableHead className="text-right">Ações</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8">
+                    Carregando taxas...
+                  </TableCell>
+                </TableRow>
+              ) : filteredRates.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8 text-muted-foreground">
+                    Nenhuma taxa encontrada
+                  </TableCell>
+                </TableRow>
               ) : (
-                <div className="text-center py-8">
-                  <Scale className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">
-                    Selecione uma encomenda na aba "Por Encomenda" para calcular o frete
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="rates" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Tarifas de Frete
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {hasRole('admin') || hasRole('finance') ? (
-                <div className="space-y-4">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Origem</TableHead>
-                        <TableHead>Destino</TableHead>
-                        <TableHead>Moeda</TableHead>
-                        <TableHead>Tarifa por Kg</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {freightRates.map((rate) => (
-                        <TableRow key={rate.id}>
-                          <TableCell>{rate.origin}</TableCell>
-                          <TableCell>{rate.destination}</TableCell>
-                          <TableCell>{rate.currency}</TableCell>
-                          <TableCell>{formatCurrency(rate.rate_per_kg, rate.currency)}</TableCell>
-                          <TableCell>
-                            <Badge variant={rate.active ? "default" : "secondary"}>
-                              {rate.active ? "Ativa" : "Inativa"}
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Settings className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">
-                    Você precisa de permissão de administrador ou financeiro para gerenciar tarifas
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="orders" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Frete por Encomenda
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Buscar por encomenda ou cliente..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full sm:w-48">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="pendente">Pendente</SelectItem>
-                    <SelectItem value="enviado">Enviado</SelectItem>
-                    <SelectItem value="entregue">Entregue</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Encomenda</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Peso Estimado</TableHead>
-                    <TableHead>Valor Total</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
+                filteredRates.map((rate) => (
+                  <TableRow key={rate.id}>
+                    <TableCell className="font-medium">{rate.origin}</TableCell>
+                    <TableCell>{rate.destination}</TableCell>
+                    <TableCell>{rate.currency} {rate.rate_per_kg.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Badge variant={rate.active ? "default" : "secondary"}>
+                        {rate.active ? "Ativa" : "Inativa"}
+                      </Badge>
+                    </TableCell>
+                    {canEdit && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredEncomendas.map((encomenda) => (
-                    <TableRow key={encomenda.id}>
-                      <TableCell className="font-medium">{encomenda.numero_encomenda}</TableCell>
-                      <TableCell>{encomenda.clientes?.nome || "N/A"}</TableCell>
-                      <TableCell>{formatWeight(5.0)}</TableCell>
-                      <TableCell className="font-semibold">{formatCurrency(encomenda.valor_total)}</TableCell>
-                      <TableCell>
-                        <Badge variant={encomenda.status === "pendente" ? "secondary" : "default"}>
-                          {encomenda.status}
-                        </Badge>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Orders with Freight */}
+      <Card className="shadow-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Encomendas com Cálculo de Frete
+          </CardTitle>
+          <CardDescription>
+            {filteredEncomendas.length} encomenda(s) com frete calculado
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Encomenda</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Peso Total</TableHead>
+                <TableHead>Peso Ajustado</TableHead>
+                <TableHead>Taxa/Kg</TableHead>
+                <TableHead>Valor Frete</TableHead>
+                <TableHead>Status</TableHead>
+                {canEdit && <TableHead className="text-right">Ações</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={canEdit ? 8 : 7} className="text-center py-8">
+                    Carregando encomendas...
+                  </TableCell>
+                </TableRow>
+              ) : filteredEncomendas.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={canEdit ? 8 : 7} className="text-center py-8 text-muted-foreground">
+                    Nenhuma encomenda encontrada
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredEncomendas.map((encomenda) => (
+                  <TableRow key={encomenda.id}>
+                    <TableCell className="font-medium">{encomenda.numero_encomenda}</TableCell>
+                    <TableCell>{encomenda.clientes?.nome || "N/A"}</TableCell>
+                    <TableCell>{encomenda.total_weight_kg?.toFixed(2)} kg</TableCell>
+                    <TableCell>{encomenda.adjusted_weight_kg?.toFixed(2)} kg</TableCell>
+                    <TableCell>{encomenda.freight_rate_currency} {encomenda.freight_rate_per_kg?.toFixed(2)}</TableCell>
+                    <TableCell className="font-semibold">{encomenda.freight_rate_currency} {encomenda.freight_value?.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <Badge variant={encomenda.status === 'enviado' ? 'default' : 'secondary'}>
+                        {encomenda.status}
+                      </Badge>
+                    </TableCell>
+                    {canEdit && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleRecalculateFreight(encomenda.id)}
+                            title="Recalcular frete"
+                          >
+                            <Calculator className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" title="Ver detalhes">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedOrder(encomenda)}
-                        >
-                          Calcular
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                    )}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

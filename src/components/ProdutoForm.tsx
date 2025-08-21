@@ -397,8 +397,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           <div className="flex items-end">
             <div className="bg-muted p-3 rounded text-sm text-muted-foreground flex-1">
               <div className="flex items-center gap-2">
-                <Scale className="h-4 w-4" />
-                Peso: 0.50 kg (padrão)
+                📦 Peso: 0.50 kg (padrão)
               </div>
             </div>
           </div>
