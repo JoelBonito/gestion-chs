@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Search, Phone, Mail, MapPin, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,68 +6,60 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ClienteForm } from "@/components/ClienteForm";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-// Mock data
-const clientes = [
-  {
-    id: 1,
-    nome: "Distribuidora Alpha",
-    email: "contato@alpha.com",
-    telefone: "(11) 9999-1111",
-    endereco: "São Paulo, SP",
-    totalCompras: 25600.00,
-    ultimaCompra: "2024-01-15",
-    status: "ativo",
-    encomendasAbertas: 2
-  },
-  {
-    id: 2,
-    nome: "Cosméticos Beta",
-    email: "vendas@beta.com",
-    telefone: "(21) 8888-2222",
-    endereco: "Rio de Janeiro, RJ",
-    totalCompras: 18900.00,
-    ultimaCompra: "2024-01-14",
-    status: "ativo",
-    encomendasAbertas: 1
-  },
-  {
-    id: 3,
-    nome: "Beauty Gamma",
-    email: "compras@gamma.com",
-    telefone: "(31) 7777-3333",
-    endereco: "Belo Horizonte, MG",
-    totalCompras: 32100.00,
-    ultimaCompra: "2024-01-13",
-    status: "ativo",
-    encomendasAbertas: 0
-  },
-  {
-    id: 4,
-    nome: "Hair Delta",
-    email: "pedidos@delta.com",
-    telefone: "(41) 6666-4444",
-    endereco: "Curitiba, PR",
-    totalCompras: 12300.00,
-    ultimaCompra: "2024-01-12",
-    status: "inativo",
-    encomendasAbertas: 1
-  }
-];
+interface Cliente {
+  id: string;
+  nome: string;
+  email?: string;
+  telefone?: string;
+  endereco?: string;
+  created_at: string;
+}
 
 export default function Clientes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchClientes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("clientes")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      setClientes(data || []);
+    } catch (error) {
+      console.error("Erro ao carregar clientes:", error);
+      toast.error("Erro ao carregar clientes");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClientes();
+  }, []);
+
+  const handleSuccess = () => {
+    setDialogOpen(false);
+    fetchClientes();
+  };
 
   const filteredClientes = clientes.filter(cliente =>
     cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cliente.email.toLowerCase().includes(searchTerm.toLowerCase())
+    (cliente.email && cliente.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const getStatusBadge = (status: string) => {
-    return status === "ativo" 
-      ? { label: "Ativo", variant: "default" as const }
-      : { label: "Inativo", variant: "secondary" as const };
+  const getStatusBadge = () => {
+    return { label: "Ativo", variant: "default" as const };
   };
 
   return (
@@ -91,7 +83,7 @@ export default function Clientes() {
                 Cadastre um novo cliente no sistema
               </DialogDescription>
             </DialogHeader>
-            <ClienteForm onSuccess={() => setDialogOpen(false)} />
+            <ClienteForm onSuccess={handleSuccess} />
           </DialogContent>
         </Dialog>
       </div>
@@ -112,71 +104,68 @@ export default function Clientes() {
       </Card>
 
       {/* Clients Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredClientes.map((cliente) => {
-          const status = getStatusBadge(cliente.status);
-          return (
-            <Card key={cliente.id} className="shadow-card hover:shadow-elevated transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{cliente.nome}</CardTitle>
-                    <CardDescription className="flex items-center mt-1">
-                      <Mail className="h-3 w-3 mr-1" />
-                      {cliente.email}
-                    </CardDescription>
+      {loading ? (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Carregando clientes...</p>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredClientes.map((cliente) => {
+            const status = getStatusBadge();
+            return (
+              <Card key={cliente.id} className="shadow-card hover:shadow-elevated transition-shadow">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg">{cliente.nome}</CardTitle>
+                      {cliente.email && (
+                        <CardDescription className="flex items-center mt-1">
+                          <Mail className="h-3 w-3 mr-1" />
+                          {cliente.email}
+                        </CardDescription>
+                      )}
+                    </div>
+                    <Badge variant={status.variant}>
+                      {status.label}
+                    </Badge>
                   </div>
-                  <Badge variant={status.variant}>
-                    {status.label}
-                  </Badge>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center text-muted-foreground">
-                    <Phone className="h-3 w-3 mr-2" />
-                    {cliente.telefone}
+                </CardHeader>
+                
+                <CardContent className="space-y-4">
+                  <div className="space-y-2 text-sm">
+                    {cliente.telefone && (
+                      <div className="flex items-center text-muted-foreground">
+                        <Phone className="h-3 w-3 mr-2" />
+                        {cliente.telefone}
+                      </div>
+                    )}
+                    {cliente.endereco && (
+                      <div className="flex items-center text-muted-foreground">
+                        <MapPin className="h-3 w-3 mr-2" />
+                        {cliente.endereco}
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center text-muted-foreground">
-                    <MapPin className="h-3 w-3 mr-2" />
-                    {cliente.endereco}
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-primary">
-                      R$ {(cliente.totalCompras / 1000).toFixed(0)}K
-                    </p>
-                    <p className="text-xs text-muted-foreground">Total Compras</p>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+                    <span>Cadastrado em:</span>
+                    <span>{new Date(cliente.created_at).toLocaleDateString()}</span>
                   </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-accent">
-                      {cliente.encomendasAbertas}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Encomendas Abertas</p>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button variant="outline" size="sm" className="flex-1">
+                      Ver Detalhes
+                    </Button>
+                    <Button variant="ghost" size="sm" className="flex-1">
+                      Editar
+                    </Button>
                   </div>
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
-                  <span>Última compra:</span>
-                  <span>{cliente.ultimaCompra}</span>
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1">
-                    Ver Detalhes
-                  </Button>
-                  <Button variant="ghost" size="sm" className="flex-1">
-                    Editar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {filteredClientes.length === 0 && (
         <Card className="shadow-card">
