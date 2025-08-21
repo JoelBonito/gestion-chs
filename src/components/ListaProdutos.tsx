@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Edit, Copy, Trash2 } from "lucide-react";
+import { Edit, Copy, Trash2, Search } from "lucide-react";
 import { ProdutoForm } from "./ProdutoForm";
 import { toast } from "sonner";
 
@@ -20,7 +21,9 @@ interface Produto {
 
 export function ListaProdutos() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [produtosFiltrados, setProdutosFiltrados] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
@@ -29,6 +32,21 @@ export function ListaProdutos() {
   useEffect(() => {
     carregarProdutos();
   }, []);
+
+  // Filtrar produtos baseado no termo de pesquisa
+  useEffect(() => {
+    if (!searchTerm) {
+      setProdutosFiltrados(produtos);
+    } else {
+      const filtrados = produtos.filter(produto =>
+        produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        produto.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        produto.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        produto.tamanho.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setProdutosFiltrados(filtrados);
+    }
+  }, [produtos, searchTerm]);
 
   const carregarProdutos = async () => {
     try {
@@ -42,6 +60,7 @@ export function ListaProdutos() {
       }
 
       setProdutos(data || []);
+      setProdutosFiltrados(data || []);
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);
       toast.error("Erro ao carregar produtos");
@@ -102,16 +121,40 @@ export function ListaProdutos() {
     return <div className="text-center py-4">Carregando produtos...</div>;
   }
 
-  if (produtos.length === 0) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        Nenhum produto cadastrado ainda.
-      </div>
-    );
-  }
-
   return (
     <>
+      {/* Barra de Pesquisa */}
+      <div className="mb-6 flex gap-4 items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Pesquisar produtos por nome, marca, tipo ou tamanho..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 input-elegant"
+          />
+        </div>
+        {searchTerm && (
+          <Button
+            variant="outline"
+            onClick={() => setSearchTerm("")}
+            className="px-3"
+          >
+            Limpar
+          </Button>
+        )}
+      </div>
+
+      {produtosFiltrados.length === 0 && searchTerm ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <p className="text-lg font-medium">Nenhum produto encontrado</p>
+          <p className="text-sm">Tente ajustar os termos da pesquisa</p>
+        </div>
+      ) : produtosFiltrados.length === 0 && !searchTerm ? (
+        <div className="text-center py-8 text-muted-foreground">
+          Nenhum produto cadastrado ainda.
+        </div>
+      ) : (
       <div className="rounded-lg border border-border overflow-hidden shadow-card bg-gradient-card">
         <Table>
           <TableHeader>
@@ -126,7 +169,7 @@ export function ListaProdutos() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {produtos.map((produto) => (
+            {produtosFiltrados.map((produto) => (
               <TableRow key={produto.id} className="hover:bg-primary/3 transition-all duration-200 border-b border-primary/5">
                 <TableCell className="font-medium truncate max-w-[150px] font-body" title={produto.nome}>
                   {produto.nome}
@@ -180,6 +223,14 @@ export function ListaProdutos() {
           </TableBody>
         </Table>
       </div>
+      )}
+
+      {/* Estatísticas da pesquisa */}
+      {searchTerm && (
+        <div className="mt-4 text-sm text-muted-foreground text-center">
+          Mostrando {produtosFiltrados.length} de {produtos.length} produtos
+        </div>
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
