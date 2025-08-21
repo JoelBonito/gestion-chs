@@ -1,16 +1,17 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logActivity } from "@/utils/activityLogger";
 
 const produtoSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
@@ -19,6 +20,7 @@ const produtoSchema = z.object({
   tamanho: z.string().min(1, "Tamanho é obrigatório"),
   preco_custo: z.string().min(1, "Preço de custo é obrigatório"),
   preco_venda: z.string().min(1, "Preço de venda é obrigatório"),
+  fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
 });
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
@@ -31,6 +33,12 @@ interface Produto {
   tamanho: string;
   preco_custo: number;
   preco_venda: number;
+  fornecedor_id: string;
+}
+
+interface Fornecedor {
+  id: string;
+  nome: string;
 }
 
 interface ProdutoFormProps {
@@ -41,6 +49,7 @@ interface ProdutoFormProps {
 
 export function ProdutoForm({ onSuccess, initialData, isEditing = false }: ProdutoFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [marcasExistentes, setMarcasExistentes] = useState<string[]>([]);
   const [tiposExistentes, setTiposExistentes] = useState<string[]>([]);
   const [tamanhosExistentes, setTamanhosExistentes] = useState<string[]>([]);
@@ -56,17 +65,17 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
       tamanho: "",
       preco_custo: "",
       preco_venda: "",
+      fornecedor_id: "",
     },
   });
 
   useEffect(() => {
+    carregarFornecedores();
     carregarOpcoesExistentes();
   }, []);
 
   useEffect(() => {
-    console.log("ProdutoForm useEffect - initialData:", initialData);
     if (initialData) {
-      // Se tem dados iniciais, sempre preenche (seja para editar ou duplicar)
       const formData = {
         nome: initialData.nome || "",
         marca: initialData.marca || "",
@@ -74,15 +83,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         tamanho: initialData.tamanho || "",
         preco_custo: initialData.preco_custo ? initialData.preco_custo.toString() : "",
         preco_venda: initialData.preco_venda ? initialData.preco_venda.toString() : "",
+        fornecedor_id: initialData.fornecedor_id || "",
       };
-      console.log("ProdutoForm - Preenchendo formulário com:", formData);
       
-      // Aguarda um pouco para garantir que as opções foram carregadas
       setTimeout(() => {
         form.reset(formData);
       }, 200);
     } else {
-      // Se não tem dados iniciais, limpa o formulário
       form.reset({
         nome: "",
         marca: "",
@@ -90,16 +97,33 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         tamanho: "",
         preco_custo: "",
         preco_venda: "",
+        fornecedor_id: "",
       });
     }
-  }, [form, initialData, marcasExistentes, tiposExistentes, tamanhosExistentes]);
+  }, [form, initialData]);
+
+  const carregarFornecedores = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("fornecedores")
+        .select("id, nome")
+        .eq("active", true)
+        .order("nome");
+
+      if (error) throw error;
+      setFornecedores(data || []);
+    } catch (error) {
+      console.error("Erro ao carregar fornecedores:", error);
+      toast.error("Erro ao carregar fornecedores");
+    }
+  };
 
   const carregarOpcoesExistentes = async () => {
     try {
       const { data: produtos, error } = await supabase
         .from("produtos")
         .select("marca, tipo, tamanho")
-        .eq("ativo", true); // Só carregar opções de produtos ativos
+        .eq("ativo", true);
 
       if (error) throw error;
 
@@ -108,8 +132,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         const tiposUnicos = [...new Set(produtos.map(p => p.tipo))].filter(Boolean).sort();
         const tamanhosUnicos = [...new Set(produtos.map(p => p.tamanho))].filter(Boolean).sort();
 
-        console.log("Opções carregadas:", { marcasUnicas, tiposUnicos, tamanhosUnicos });
-        
         setMarcasExistentes(marcasUnicas);
         setTiposExistentes(tiposUnicos);
         setTamanhosExistentes(tamanhosUnicos);
@@ -130,7 +152,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     const campo = novaOpçaoDialog.tipo;
     const valor = novoValor.trim();
     
-    // Adiciona à lista correspondente
     if (campo === 'marca') {
       setMarcasExistentes(prev => [...prev, valor].sort());
       form.setValue('marca', valor);
@@ -150,7 +171,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     setIsSubmitting(true);
     try {
       if (isEditing && initialData && initialData.id) {
-        console.log("Editando produto:", initialData.id, data);
         const { error } = await supabase
           .from("produtos")
           .update({
@@ -160,25 +180,44 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             tamanho: data.tamanho,
             preco_custo: parseFloat(data.preco_custo),
             preco_venda: parseFloat(data.preco_venda),
+            fornecedor_id: data.fornecedor_id,
           })
           .eq("id", initialData.id);
 
         if (error) throw error;
+        
+        await logActivity({
+          entity: 'produto',
+          entity_id: initialData.id,
+          action: 'update',
+          details: { nome: data.nome }
+        });
+        
         toast.success("Produto atualizado com sucesso!");
       } else {
-        console.log("Criando novo produto:", data);
-        const { error } = await supabase.from("produtos").insert([
-          {
+        const { data: produto, error } = await supabase
+          .from("produtos")
+          .insert([{
             nome: data.nome,
             marca: data.marca,
             tipo: data.tipo,
             tamanho: data.tamanho,
             preco_custo: parseFloat(data.preco_custo),
             preco_venda: parseFloat(data.preco_venda),
-          },
-        ]);
+            fornecedor_id: data.fornecedor_id,
+          }])
+          .select()
+          .single();
 
         if (error) throw error;
+        
+        await logActivity({
+          entity: 'produto',
+          entity_id: produto.id,
+          action: 'create',
+          details: { nome: data.nome }
+        });
+        
         toast.success("Produto cadastrado com sucesso!");
       }
 
@@ -215,6 +254,31 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
 
         <FormField
           control={form.control}
+          name="fornecedor_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-display text-primary-dark">Fornecedor *</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger className="input-elegant">
+                    <SelectValue placeholder="Selecione um fornecedor" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {fornecedores.map((fornecedor) => (
+                    <SelectItem key={fornecedor.id} value={fornecedor.id}>
+                      {fornecedor.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
           name="marca"
           render={({ field }) => (
             <FormItem>
@@ -225,7 +289,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
                  } else {
                    field.onChange(value);
                  }
-               }} value={field.value || ""} defaultValue={field.value || ""}>
+               }} value={field.value || ""}>
                 <FormControl>
                   <SelectTrigger className="input-elegant">
                     <SelectValue placeholder="Selecione uma marca" />
@@ -262,7 +326,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
                  } else {
                    field.onChange(value);
                  }
-               }} value={field.value || ""} defaultValue={field.value || ""}>
+               }} value={field.value || ""}>
                 <FormControl>
                   <SelectTrigger className="input-elegant">
                     <SelectValue placeholder="Selecione um tipo" />
@@ -299,7 +363,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
                  } else {
                    field.onChange(value);
                  }
-               }} value={field.value || ""} defaultValue={field.value || ""}>
+               }} value={field.value || ""}>
                 <FormControl>
                   <SelectTrigger className="input-elegant">
                     <SelectValue placeholder="Selecione um tamanho" />
@@ -364,7 +428,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           )}
         />
 
-
         <Button 
           type="submit" 
           className="w-full bg-gradient-primary hover:shadow-hover transition-elegant font-display font-medium" 
@@ -384,9 +447,9 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="font-display text-primary-dark">
+              <label className="font-display text-primary-dark">
                 {novaOpçaoDialog.tipo === 'marca' ? 'Nome da Marca' : novaOpçaoDialog.tipo === 'tipo' ? 'Nome do Tipo' : 'Tamanho'}
-              </Label>
+              </label>
               <Input
                 value={novoValor}
                 onChange={(e) => setNovoValor(e.target.value)}

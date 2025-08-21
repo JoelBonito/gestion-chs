@@ -14,8 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action: string
+          by_user: string | null
+          details: Json | null
+          entity: string
+          entity_id: string
+          id: string
+          timestamp: string
+        }
+        Insert: {
+          action: string
+          by_user?: string | null
+          details?: Json | null
+          entity: string
+          entity_id: string
+          id?: string
+          timestamp?: string
+        }
+        Update: {
+          action?: string
+          by_user?: string | null
+          details?: Json | null
+          entity?: string
+          entity_id?: string
+          id?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
       clientes: {
         Row: {
+          active: boolean
           created_at: string | null
           email: string | null
           endereco: string | null
@@ -25,6 +56,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          active?: boolean
           created_at?: string | null
           email?: string | null
           endereco?: string | null
@@ -34,6 +66,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          active?: boolean
           created_at?: string | null
           email?: string | null
           endereco?: string | null
@@ -118,6 +151,9 @@ export type Database = {
       }
       fornecedores: {
         Row: {
+          active: boolean
+          catalog_file: string | null
+          catalog_url: string | null
           contato: string | null
           created_at: string | null
           email: string | null
@@ -128,6 +164,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          active?: boolean
+          catalog_file?: string | null
+          catalog_url?: string | null
           contato?: string | null
           created_at?: string | null
           email?: string | null
@@ -138,6 +177,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          active?: boolean
+          catalog_file?: string | null
+          catalog_url?: string | null
           contato?: string | null
           created_at?: string | null
           email?: string | null
@@ -239,6 +281,7 @@ export type Database = {
         Row: {
           ativo: boolean
           created_at: string
+          fornecedor_id: string | null
           id: string
           marca: string
           nome: string
@@ -251,6 +294,7 @@ export type Database = {
         Insert: {
           ativo?: boolean
           created_at?: string
+          fornecedor_id?: string | null
           id?: string
           marca: string
           nome: string
@@ -263,6 +307,7 @@ export type Database = {
         Update: {
           ativo?: boolean
           created_at?: string
+          fornecedor_id?: string | null
           id?: string
           marca?: string
           nome?: string
@@ -272,6 +317,35 @@ export type Database = {
           tipo?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          user_id?: string
+        }
         Relationships: []
       }
     }
@@ -279,10 +353,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_edit: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "ops" | "client" | "factory"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -409,6 +493,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["admin", "ops", "client", "factory"],
+    },
   },
 } as const
