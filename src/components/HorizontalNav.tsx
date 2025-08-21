@@ -30,11 +30,15 @@ export function HorizontalNav() {
     <nav className="flex items-center justify-between bg-background border-b border-border px-6 py-4">
       {/* Logo/Brand Section */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-10 h-10 bg-gradient-primary rounded-lg">
-          <span className="text-white font-bold text-xl">C</span>
+        <div className="flex items-center justify-center w-10 h-10">
+          <img 
+            src="/lovable-uploads/5a7fe4c3-0b51-4642-93c2-a36f8321067f.png" 
+            alt="CHS Logo" 
+            className="w-8 h-8 object-contain"
+          />
         </div>
         <div className="flex flex-col">
-          <h1 className="text-xl font-bold text-primary font-display">CHS</h1>
+          <h1 className="text-xl font-bold text-primary font-display">GESTION CHS</h1>
           <span className="text-xs text-muted-foreground font-body">Cosméticos Capilares</span>
         </div>
       </div>
