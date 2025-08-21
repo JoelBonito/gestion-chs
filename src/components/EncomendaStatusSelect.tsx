@@ -2,12 +2,16 @@
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 
 interface EncomendaStatusSelectProps {
+  encomendaId: string;
   currentStatus: StatusEncomenda;
-  onStatusChange: (newStatus: StatusEncomenda) => Promise<void> | void;
+  numeroEncomenda: string;
+  onStatusChange: () => void;
 }
 
 const STATUS_OPTIONS: StatusEncomenda[] = [
@@ -30,7 +34,9 @@ const getStatusColor = (status: StatusEncomenda) => {
 };
 
 export function EncomendaStatusSelect({ 
+  encomendaId, 
   currentStatus, 
+  numeroEncomenda,
   onStatusChange 
 }: EncomendaStatusSelectProps) {
   const [isUpdating, setIsUpdating] = useState(false);
@@ -40,7 +46,18 @@ export function EncomendaStatusSelect({
 
     setIsUpdating(true);
     try {
-      await onStatusChange(newStatus);
+      const { error } = await supabase
+        .from("encomendas")
+        .update({ status: newStatus })
+        .eq("id", encomendaId);
+
+      if (error) throw error;
+
+      toast.success(`Status da encomenda ${numeroEncomenda} atualizado para ${newStatus}`);
+      onStatusChange();
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+      toast.error("Erro ao atualizar status da encomenda");
     } finally {
       setIsUpdating(false);
     }
