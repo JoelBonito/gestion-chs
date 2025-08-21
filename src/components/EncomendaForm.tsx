@@ -15,7 +15,7 @@ import { ClienteFormDialog } from "./ClienteFormDialog";
 import { FornecedorFormDialog } from "./FornecedorFormDialog";
 
 const encomendaSchema = z.object({
-  numero_encomenda: z.string().min(1, "Número da encomenda é obrigatório"),
+  numero_encomenda: z.string().optional(),
   cliente_id: z.string().min(1, "Cliente é obrigatório"),
   fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
   data_producao_estimada: z.string().optional(),
@@ -316,8 +316,8 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
                     <Input 
                       placeholder="Ex: ENV-001" 
                       {...field} 
-                      readOnly={!isEditing} 
-                      className={!isEditing ? "bg-muted" : ""} 
+                      readOnly 
+                      className="bg-muted" 
                     />
                   </FormControl>
                   <FormMessage />
