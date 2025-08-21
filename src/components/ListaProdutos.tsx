@@ -112,28 +112,38 @@ export function ListaProdutos() {
 
   return (
     <>
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Marca</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Tamanho</TableHead>
-              <TableHead>Preço de Custo</TableHead>
-              <TableHead>Preço de Venda</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="w-[25%] min-w-[150px]">Nome</TableHead>
+              <TableHead className="w-[15%] min-w-[100px]">Marca</TableHead>
+              <TableHead className="w-[15%] min-w-[100px]">Tipo</TableHead>
+              <TableHead className="w-[10%] min-w-[80px]">Tamanho</TableHead>
+              <TableHead className="w-[12%] min-w-[100px] text-right">Preço Custo</TableHead>
+              <TableHead className="w-[12%] min-w-[100px] text-right">Preço Venda</TableHead>
+              <TableHead className="w-[11%] min-w-[120px] text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {produtos.map((produto) => (
-              <TableRow key={produto.id}>
-                <TableCell className="font-medium">{produto.nome}</TableCell>
-                <TableCell>{produto.marca}</TableCell>
-                <TableCell>{produto.tipo}</TableCell>
-                <TableCell>{produto.tamanho}</TableCell>
-                <TableCell>{formatarMoeda(produto.preco_custo)}</TableCell>
-                <TableCell>{formatarMoeda(produto.preco_venda)}</TableCell>
+              <TableRow key={produto.id} className="hover:bg-muted/50">
+                <TableCell className="font-medium truncate max-w-[150px]" title={produto.nome}>
+                  {produto.nome}
+                </TableCell>
+                <TableCell className="truncate max-w-[100px]" title={produto.marca}>
+                  {produto.marca}
+                </TableCell>
+                <TableCell className="truncate max-w-[100px]" title={produto.tipo}>
+                  {produto.tipo}
+                </TableCell>
+                <TableCell className="text-center">{produto.tamanho}</TableCell>
+                <TableCell className="text-right font-mono text-sm">
+                  {formatarMoeda(produto.preco_custo)}
+                </TableCell>
+                <TableCell className="text-right font-mono text-sm font-semibold">
+                  {formatarMoeda(produto.preco_venda)}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex gap-1 justify-end">
                     <Button variant="ghost" size="sm" onClick={() => handleDuplicate(produto)} title="Duplicar produto">
