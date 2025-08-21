@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Edit } from "lucide-react";
+import { Edit, Copy } from "lucide-react";
 import { ProdutoForm } from "./ProdutoForm";
 import { toast } from "sonner";
 
@@ -22,7 +22,9 @@ export function ListaProdutos() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
+  const [productToDuplicate, setProductToDuplicate] = useState<Produto | null>(null);
 
   useEffect(() => {
     carregarProdutos();
@@ -53,9 +55,20 @@ export function ListaProdutos() {
     setEditDialogOpen(true);
   };
 
+  const handleDuplicate = (produto: Produto) => {
+    setProductToDuplicate(produto);
+    setDuplicateDialogOpen(true);
+  };
+
   const handleEditSuccess = () => {
     setEditDialogOpen(false);
     setSelectedProduto(null);
+    carregarProdutos();
+  };
+
+  const handleDuplicateSuccess = () => {
+    setDuplicateDialogOpen(false);
+    setProductToDuplicate(null);
     carregarProdutos();
   };
 
@@ -103,9 +116,14 @@ export function ListaProdutos() {
                 <TableCell>{formatarMoeda(produto.preco_custo)}</TableCell>
                 <TableCell>{formatarMoeda(produto.preco_venda)}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" onClick={() => handleEdit(produto)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-1 justify-end">
+                    <Button variant="ghost" size="sm" onClick={() => handleDuplicate(produto)} title="Duplicar produto">
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(produto)} title="Editar produto">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -123,6 +141,20 @@ export function ListaProdutos() {
             onSuccess={handleEditSuccess}
             initialData={selectedProduto}
             isEditing={true}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Dialog */}
+      <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Duplicar Produto</DialogTitle>
+          </DialogHeader>
+          <ProdutoForm 
+            onSuccess={handleDuplicateSuccess}
+            initialData={productToDuplicate}
+            isEditing={false}
           />
         </DialogContent>
       </Dialog>

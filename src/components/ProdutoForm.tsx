@@ -52,7 +52,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
   });
 
   useEffect(() => {
-    if (isEditing && initialData) {
+    if (initialData) {
       form.reset({
         nome: initialData.nome,
         marca: initialData.marca,
@@ -62,7 +62,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         preco_venda: initialData.preco_venda.toString(),
       });
     }
-  }, [form, isEditing, initialData]);
+  }, [form, initialData]);
 
   const onSubmit = async (data: ProdutoFormData) => {
     setIsSubmitting(true);
