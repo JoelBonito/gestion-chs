@@ -175,24 +175,17 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             <FormItem>
               <FormLabel>Marca</FormLabel>
               <FormControl>
-                <div className="space-y-2">
-                  <Select onValueChange={field.onChange} value={field.value || ""}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma marca existente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {marcasExistentes.map((marca) => (
-                        <SelectItem key={marca} value={marca}>
-                          {marca}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div>
                   <Input 
-                    placeholder="Ou digite uma nova marca" 
-                    value={field.value || ""}
-                    onChange={field.onChange}
+                    placeholder="Digite uma marca" 
+                    list="marcas-list"
+                    {...field}
                   />
+                  <datalist id="marcas-list">
+                    {marcasExistentes.map((marca) => (
+                      <option key={marca} value={marca} />
+                    ))}
+                  </datalist>
                 </div>
               </FormControl>
               <FormMessage />
@@ -207,24 +200,17 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             <FormItem>
               <FormLabel>Tipo</FormLabel>
               <FormControl>
-                <div className="space-y-2">
-                  <Select onValueChange={field.onChange} value={field.value || ""}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um tipo existente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tiposExistentes.map((tipo) => (
-                        <SelectItem key={tipo} value={tipo}>
-                          {tipo}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div>
                   <Input 
-                    placeholder="Ou digite um novo tipo" 
-                    value={field.value || ""}
-                    onChange={field.onChange}
+                    placeholder="Digite um tipo" 
+                    list="tipos-list"
+                    {...field}
                   />
+                  <datalist id="tipos-list">
+                    {tiposExistentes.map((tipo) => (
+                      <option key={tipo} value={tipo} />
+                    ))}
+                  </datalist>
                 </div>
               </FormControl>
               <FormMessage />
@@ -239,24 +225,17 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             <FormItem>
               <FormLabel>Tamanho</FormLabel>
               <FormControl>
-                <div className="space-y-2">
-                  <Select onValueChange={field.onChange} value={field.value || ""}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um tamanho existente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tamanhosExistentes.map((tamanho) => (
-                        <SelectItem key={tamanho} value={tamanho}>
-                          {tamanho}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div>
                   <Input 
-                    placeholder="Ou digite um novo tamanho" 
-                    value={field.value || ""}
-                    onChange={field.onChange}
+                    placeholder="Digite um tamanho" 
+                    list="tamanhos-list"
+                    {...field}
                   />
+                  <datalist id="tamanhos-list">
+                    {tamanhosExistentes.map((tamanho) => (
+                      <option key={tamanho} value={tamanho} />
+                    ))}
+                  </datalist>
                 </div>
               </FormControl>
               <FormMessage />
