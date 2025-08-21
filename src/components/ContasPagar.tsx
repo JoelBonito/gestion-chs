@@ -36,47 +36,91 @@ export default function ContasPagar() {
 
   const fetchContasPagar = async () => {
     try {
-      // Buscar encomendas com seus itens e calcular o valor total de custo
-      const { data, error } = await supabase
+      console.log("Buscando contas a pagar...");
+      
+      // Buscar encomendas com seus itens e pagamentos fornecedor
+      const { data: encomendasData, error: encomendasError } = await supabase
         .from("encomendas")
         .select(`
           id,
           numero_encomenda,
+          valor_total_custo,
+          valor_pago_fornecedor,
+          saldo_devedor_fornecedor,
           fornecedores!inner(nome),
           itens_encomenda(
             quantidade,
             produtos!inner(preco_custo)
-          ),
-          pagamentos_fornecedor:pagamentos!pagamentos_fornecedor_encomenda_id_fkey(*)
+          )
         `)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (encomendasError) {
+        console.error("Erro ao buscar encomendas:", encomendasError);
+        throw encomendasError;
+      }
 
-      const contasFormatadas = data.map((encomenda: any) => {
-        // Calcular o valor total de custo dos itens
-        const valorTotalCusto = encomenda.itens_encomenda.reduce((sum: number, item: any) => {
-          return sum + (item.quantidade * parseFloat(item.produtos.preco_custo));
-        }, 0);
+      console.log("Encomendas encontradas:", encomendasData?.length || 0);
+
+      // Buscar pagamentos de fornecedores separadamente
+      const { data: pagamentosData, error: pagamentosError } = await supabase
+        .from("pagamentos_fornecedor")
+        .select("*");
+
+      if (pagamentosError) {
+        console.error("Erro ao buscar pagamentos fornecedor:", pagamentosError);
+        // Não vamos falhar se não conseguir buscar pagamentos
+      }
+
+      console.log("Pagamentos fornecedor encontrados:", pagamentosData?.length || 0);
+
+      const contasFormatadas = encomendasData?.map((encomenda: any) => {
+        // Calcular o valor total de custo dos itens se não estiver definido
+        let valorTotalCusto = encomenda.valor_total_custo || 0;
+        
+        if (valorTotalCusto === 0 && encomenda.itens_encomenda?.length > 0) {
+          valorTotalCusto = encomenda.itens_encomenda.reduce((sum: number, item: any) => {
+            const precoCusto = parseFloat(item.produtos?.preco_custo || 0);
+            return sum + (item.quantidade * precoCusto);
+          }, 0);
+        }
+
+        // Buscar pagamentos desta encomenda
+        const pagamentosFornecedor = pagamentosData?.filter(
+          (pagamento: any) => pagamento.encomenda_id === encomenda.id
+        ) || [];
 
         // Calcular valor pago ao fornecedor
-        const valorPagoFornecedor = encomenda.pagamentos_fornecedor?.reduce((sum: number, pagamento: any) => {
-          return sum + parseFloat(pagamento.valor_pagamento);
-        }, 0) || 0;
+        const valorPagoFornecedor = pagamentosFornecedor.reduce((sum: number, pagamento: any) => {
+          return sum + parseFloat(pagamento.valor_pagamento || 0);
+        }, 0);
+
+        // Calcular saldo devedor
+        const saldoDevedorFornecedor = valorTotalCusto - valorPagoFornecedor;
 
         return {
           encomenda_id: encomenda.id,
           numero_encomenda: encomenda.numero_encomenda,
-          fornecedor_nome: encomenda.fornecedores.nome,
+          fornecedor_nome: encomenda.fornecedores?.nome || "N/A",
           valor_total_custo: valorTotalCusto,
           valor_pago_fornecedor: valorPagoFornecedor,
-          saldo_devedor_fornecedor: valorTotalCusto - valorPagoFornecedor,
-          pagamentos_fornecedor: encomenda.pagamentos_fornecedor || [],
+          saldo_devedor_fornecedor: saldoDevedorFornecedor,
+          pagamentos_fornecedor: pagamentosFornecedor.map((p: any) => ({
+            id: p.id,
+            valor_pagamento: parseFloat(p.valor_pagamento),
+            forma_pagamento: p.forma_pagamento,
+            data_pagamento: p.data_pagamento,
+            observacoes: p.observacoes
+          })),
         };
-      });
+      }) || [];
+
+      console.log("Contas formatadas:", contasFormatadas.length);
+      console.log("Primeira conta:", contasFormatadas[0]);
 
       setContas(contasFormatadas);
     } catch (error: any) {
+      console.error("Erro completo:", error);
       toast({
         title: "Erro ao carregar contas a pagar",
         description: error.message,
@@ -184,52 +228,61 @@ export default function ContasPagar() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nº Encomenda</TableHead>
-                  <TableHead>Fornecedor</TableHead>
-                  <TableHead>Valor Total (Custo)</TableHead>
-                  <TableHead>Valor Pago</TableHead>
-                  <TableHead>Saldo Devedor</TableHead>
-                  <TableHead>Pagamentos</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredContas.map((conta) => (
-                  <TableRow key={conta.encomenda_id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">
-                      {conta.numero_encomenda}
-                    </TableCell>
-                    <TableCell>{conta.fornecedor_nome}</TableCell>
-                    <TableCell className="font-semibold">
-                      €{conta.valor_total_custo.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-success font-semibold">
-                      €{conta.valor_pago_fornecedor.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="font-semibold">
-                      <span className={conta.saldo_devedor_fornecedor > 0 ? "text-warning" : "text-success"}>
-                        €{conta.saldo_devedor_fornecedor.toFixed(2)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {conta.pagamentos_fornecedor.length > 0 ? (
-                          conta.pagamentos_fornecedor.map((pagamento) => (
-                            <div key={pagamento.id} className="text-xs text-muted-foreground">
-                              €{pagamento.valor_pagamento.toFixed(2)} ({pagamento.forma_pagamento}) - {pagamento.data_pagamento}
-                            </div>
-                          ))
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Nenhum pagamento</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {conta.saldo_devedor_fornecedor > 0 && (
+          {contas.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                Nenhuma conta a pagar encontrada. 
+                {" "}
+                <br />
+                Certifique-se de que existem encomendas com itens e fornecedores cadastrados.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nº Encomenda</TableHead>
+                    <TableHead>Fornecedor</TableHead>
+                    <TableHead>Valor Total (Custo)</TableHead>
+                    <TableHead>Valor Pago</TableHead>
+                    <TableHead>Saldo Devedor</TableHead>
+                    <TableHead>Pagamentos</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredContas.map((conta) => (
+                    <TableRow key={conta.encomenda_id} className="hover:bg-muted/50">
+                      <TableCell className="font-medium">
+                        {conta.numero_encomenda}
+                      </TableCell>
+                      <TableCell>{conta.fornecedor_nome}</TableCell>
+                      <TableCell className="font-semibold">
+                        €{conta.valor_total_custo.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-success font-semibold">
+                        €{conta.valor_pago_fornecedor.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        <span className={conta.saldo_devedor_fornecedor > 0 ? "text-warning" : "text-success"}>
+                          €{conta.saldo_devedor_fornecedor.toFixed(2)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {conta.pagamentos_fornecedor.length > 0 ? (
+                            conta.pagamentos_fornecedor.map((pagamento) => (
+                              <div key={pagamento.id} className="text-xs text-muted-foreground">
+                                €{pagamento.valor_pagamento.toFixed(2)} ({pagamento.forma_pagamento}) - {pagamento.data_pagamento}
+                              </div>
+                            ))
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Nenhum pagamento</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         <Button
                           size="sm"
                           variant="outline"
@@ -238,13 +291,13 @@ export default function ContasPagar() {
                           <CreditCard className="h-4 w-4 mr-1" />
                           Pagamento
                         </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
