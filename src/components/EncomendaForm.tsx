@@ -58,20 +58,15 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
   });
 
   useEffect(() => {
-    if (isEditing && initialData) {
-      console.log("Dados recebidos para edição:", initialData);
-      
-      // Aguardar os dados de clientes e fornecedores serem carregados
-      setTimeout(() => {
-        form.reset({
-          numero_encomenda: initialData.numero_encomenda || "",
-          cliente_id: initialData.cliente_id || "",
-          fornecedor_id: initialData.fornecedor_id || "",
-          data_producao_estimada: initialData.data_producao_estimada || "",
-          data_envio_estimada: initialData.data_envio_estimada || "",
-          observacoes: initialData.observacoes || "",
-        });
-      }, 100);
+    if (initialData) {
+      form.reset({
+        numero_encomenda: initialData.numero_encomenda || "",
+        cliente_id: initialData.cliente_id || "",
+        fornecedor_id: initialData.fornecedor_id || "",
+        data_producao_estimada: initialData.data_producao_estimada || "",
+        data_envio_estimada: initialData.data_envio_estimada || "",
+        observacoes: initialData.observacoes || "",
+      });
       
       setValorTotal(initialData.valor_total || 0);
 
@@ -82,14 +77,25 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
           produto_id: item.produto_id,
           produto_nome: item.produtos ? `${item.produtos.nome} - ${item.produtos.marca} - ${item.produtos.tipo} - ${item.produtos.tamanho}` : "",
           quantidade: item.quantidade,
-          preco_custo: item.produtos?.preco_custo || 0, // Buscar do produto relacionado
+          preco_custo: item.produtos?.preco_custo || 0,
           preco_venda: item.preco_unitario,
           subtotal: item.subtotal,
         }));
         setItens(itensFormatados);
       }
+    } else if (!isEditing) {
+      form.reset({
+        numero_encomenda: "",
+        cliente_id: "",
+        fornecedor_id: "",
+        data_producao_estimada: "",
+        data_envio_estimada: "",
+        observacoes: "",
+      });
+      setItens([]);
+      setValorTotal(0);
     }
-  }, [form, isEditing, initialData, clientes, fornecedores]);
+  }, [form, initialData, isEditing]);
 
   useEffect(() => {
     const fetchData = async () => {

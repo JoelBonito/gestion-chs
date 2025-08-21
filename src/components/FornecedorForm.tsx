@@ -49,16 +49,24 @@ export function FornecedorForm({ onSuccess, initialData, isEditing = false }: Fo
   });
 
   useEffect(() => {
-    if (isEditing && initialData) {
+    if (initialData) {
       form.reset({
-        nome: initialData.nome,
+        nome: initialData.nome || "",
         email: initialData.email || "",
         telefone: initialData.telefone || "",
         endereco: initialData.endereco || "",
         contato: initialData.contato || "",
       });
+    } else if (!isEditing) {
+      form.reset({
+        nome: "",
+        email: "",
+        telefone: "",
+        endereco: "",
+        contato: "",
+      });
     }
-  }, [form, isEditing, initialData]);
+  }, [form, initialData, isEditing]);
 
   const onSubmit = async (data: FornecedorFormData) => {
     setIsSubmitting(true);

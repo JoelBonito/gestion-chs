@@ -46,15 +46,22 @@ export function ClienteForm({ onSuccess, initialData, isEditing = false }: Clien
   });
 
   useEffect(() => {
-    if (isEditing && initialData) {
+    if (initialData) {
       form.reset({
-        nome: initialData.nome,
+        nome: initialData.nome || "",
         email: initialData.email || "",
         telefone: initialData.telefone || "",
         endereco: initialData.endereco || "",
       });
+    } else if (!isEditing) {
+      form.reset({
+        nome: "",
+        email: "",
+        telefone: "",
+        endereco: "",
+      });
     }
-  }, [form, isEditing, initialData]);
+  }, [form, initialData, isEditing]);
 
   const onSubmit = async (data: ClienteFormData) => {
     setIsSubmitting(true);
