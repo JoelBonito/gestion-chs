@@ -80,7 +80,8 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       preco_venda: 0,
       subtotal: 0,
     };
-    onItensChange([...itens, novoItem]);
+    // Adicionar novo item no início da lista (topo)
+    onItensChange([novoItem, ...itens]);
   };
 
   const removerItem = (index: number) => {

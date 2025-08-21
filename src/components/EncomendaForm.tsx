@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -137,9 +138,15 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         observacoes: initialData.observacoes || "",
       };
       
-      setTimeout(() => {
-        form.reset(formData);
-      }, 200);
+      // Aguardar que clientes e fornecedores sejam carregados antes de definir os valores
+      const waitForData = () => {
+        if (clientes.length > 0 && fornecedores.length > 0) {
+          form.reset(formData);
+        } else {
+          setTimeout(waitForData, 100);
+        }
+      };
+      waitForData();
       
       setValorTotal(initialData.valor_total || 0);
 
@@ -156,7 +163,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
       form.setValue("data_producao_estimada", dataProducao.toISOString().split('T')[0]);
       form.setValue("data_envio_estimada", dataEnvio.toISOString().split('T')[0]);
     }
-  }, [initialData, form, isEditing]);
+  }, [initialData, form, isEditing, clientes.length, fornecedores.length]);
 
   const fetchItensEncomenda = async () => {
     if (!initialData?.id) return;

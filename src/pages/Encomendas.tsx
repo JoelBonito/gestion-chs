@@ -23,6 +23,8 @@ interface Encomenda {
   valor_pago: number;
   data_criacao: string;
   data_entrega?: string;
+  data_producao_estimada?: string;
+  data_envio_estimada?: string;
   observacoes?: string;
   cliente_id: string;
   fornecedor_id: string;
@@ -105,6 +107,11 @@ export default function Encomendas() {
       style: 'currency',
       currency: 'EUR'
     }).format(value);
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('pt-PT');
   };
 
   const getStatusColor = (status: string) => {
@@ -207,7 +214,7 @@ export default function Encomendas() {
             <Card key={encomenda.id} className="shadow-card hover:shadow-elevated transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div>
                       <p className="font-semibold">#{encomenda.numero_encomenda}</p>
                       <p className="text-sm text-muted-foreground">{encomenda.clientes?.nome}</p>
@@ -217,14 +224,16 @@ export default function Encomendas() {
                       <p className="font-medium">{encomenda.fornecedores?.nome}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Valor Total</p>
-                      <p className="font-semibold">{formatCurrency(encomenda.valor_total)}</p>
+                      <p className="text-sm text-muted-foreground">Produção Estimada</p>
+                      <p className="font-medium">{formatDate(encomenda.data_producao_estimada)}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Saldo Devedor</p>
-                      <p className="font-semibold text-red-600">
-                        {formatCurrency(encomenda.valor_total - encomenda.valor_pago)}
-                      </p>
+                      <p className="text-sm text-muted-foreground">Entrega Estimada</p>
+                      <p className="font-medium">{formatDate(encomenda.data_envio_estimada)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Valor Total</p>
+                      <p className="font-semibold">{formatCurrency(encomenda.valor_total)}</p>
                     </div>
                   </div>
                   

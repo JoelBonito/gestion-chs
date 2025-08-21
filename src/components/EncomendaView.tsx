@@ -1,6 +1,6 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -121,12 +121,6 @@ export function EncomendaView({ encomendaId }: EncomendaViewProps) {
               <p className="text-muted-foreground mt-1">
                 Criada em {formatDate(encomenda.data_criacao)}
               </p>
-            </div>
-            <div className="flex gap-2">
-              <Badge variant="outline">{encomenda.status}</Badge>
-              {encomenda.status_producao && (
-                <Badge variant="secondary">{encomenda.status_producao}</Badge>
-              )}
             </div>
           </div>
         </CardHeader>
