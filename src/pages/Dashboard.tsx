@@ -32,7 +32,7 @@ export default function Dashboard() {
       if (error) throw error;
       
       const total = data?.reduce((sum, encomenda) => {
-        return sum + (parseFloat(encomenda.saldo_devedor) || 0);
+        return sum + (parseFloat(encomenda.saldo_devedor || '0') || 0);
       }, 0) || 0;
 
       return total;
@@ -50,7 +50,7 @@ export default function Dashboard() {
       if (error) throw error;
       
       const total = data?.reduce((sum, encomenda) => {
-        return sum + (parseFloat(encomenda.saldo_devedor_fornecedor) || 0);
+        return sum + (parseFloat(encomenda.saldo_devedor_fornecedor || '0') || 0);
       }, 0) || 0;
 
       return total;
@@ -74,8 +74,8 @@ export default function Dashboard() {
       if (error) return 0;
       
       const totalCommission = data?.reduce((sum, encomenda) => {
-        const valorTotal = parseFloat(encomenda.valor_total) || 0;
-        const valorCusto = parseFloat(encomenda.valor_total_custo) || 0;
+        const valorTotal = parseFloat(encomenda.valor_total || '0') || 0;
+        const valorCusto = parseFloat(encomenda.valor_total_custo || '0') || 0;
         return sum + (valorTotal - valorCusto);
       }, 0) || 0;
       
@@ -98,8 +98,8 @@ export default function Dashboard() {
       if (error) return 0;
       
       const totalCommission = data?.reduce((sum, encomenda) => {
-        const valorTotal = parseFloat(encomenda.valor_total) || 0;
-        const valorCusto = parseFloat(encomenda.valor_total_custo) || 0;
+        const valorTotal = parseFloat(encomenda.valor_total || '0') || 0;
+        const valorCusto = parseFloat(encomenda.valor_total_custo || '0') || 0;
         return sum + (valorTotal - valorCusto);
       }, 0) || 0;
       
@@ -271,7 +271,7 @@ export default function Dashboard() {
                         <p className="text-xs text-muted-foreground">{formatDate(order.data_criacao)}</p>
                       </div>
                       <div className="text-right space-y-2">
-                        <p className="font-semibold text-sm">{formatCurrency(parseFloat(order.valor_total))}</p>
+                        <p className="font-semibold text-sm">{formatCurrency(parseFloat(order.valor_total || '0'))}</p>
                         <Badge variant={status.variant} className="text-xs">
                           {status.label}
                         </Badge>
@@ -305,7 +305,7 @@ export default function Dashboard() {
                       <p className="text-xs text-muted-foreground">Data: {formatDate(payment.data_criacao)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-sm">{formatCurrency(parseFloat(payment.saldo_devedor))}</p>
+                      <p className="font-semibold text-sm">{formatCurrency(parseFloat(payment.saldo_devedor || '0'))}</p>
                     </div>
                   </div>
                 ))
@@ -335,7 +335,7 @@ export default function Dashboard() {
                       <p className="text-xs text-muted-foreground">Data: {formatDate(payment.data_criacao)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-sm">{formatCurrency(parseFloat(payment.saldo_devedor_fornecedor))}</p>
+                      <p className="font-semibold text-sm">{formatCurrency(parseFloat(payment.saldo_devedor_fornecedor || '0'))}</p>
                     </div>
                   </div>
                 ))
