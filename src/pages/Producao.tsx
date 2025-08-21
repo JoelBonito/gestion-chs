@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -131,6 +131,7 @@ export default function Producao() {
 
   const fetchItensEncomenda = async (encomendaId: string) => {
     setLoadingItens(true);
+    console.log("Buscando itens para encomenda:", encomendaId);
     try {
       const { data, error } = await supabase
         .from("itens_encomenda")
@@ -141,9 +142,11 @@ export default function Producao() {
         .eq("encomenda_id", encomendaId);
 
       if (error) {
+        console.error("Erro na query dos itens:", error);
         throw error;
       }
 
+      console.log("Itens encontrados:", data);
       setItensEncomenda(data || []);
     } catch (error) {
       console.error("Erro ao carregar itens da encomenda:", error);
@@ -428,6 +431,9 @@ export default function Producao() {
                               <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                                 <DialogHeader>
                                   <DialogTitle>Detalhes da Encomenda {encomenda.numero_encomenda}</DialogTitle>
+                                  <DialogDescription>
+                                    Visualize todas as informações da encomenda e seus produtos
+                                  </DialogDescription>
                                 </DialogHeader>
                                 <div className="space-y-6">
                                   {selectedEncomenda && (
