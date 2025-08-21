@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { StatCard } from "@/components/StatCard";
+import StatCard from "@/components/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -14,7 +14,7 @@ export default function Dashboard() {
       const { data, error } = await supabase
         .from('encomendas')
         .select('*')
-        .neq('status', 'Entregue');
+        .neq('status', 'ENTREGUE');
       
       if (error) throw error;
       return data?.length || 0;
@@ -118,7 +118,7 @@ export default function Dashboard() {
           *,
           clientes (nome)
         `)
-        .neq('status', 'Entregue')
+        .neq('status', 'ENTREGUE')
         .order('data_criacao', { ascending: false })
         .limit(5);
       
@@ -167,15 +167,15 @@ export default function Dashboard() {
 
   const getStatusInfo = (status: string) => {
     switch (status) {
-      case 'Pendente':
-        return { label: 'Pendente', variant: 'secondary' as const };
-      case 'Em Produção':
-        return { label: 'Em Produção', variant: 'default' as const };
-      case 'Pronto':
-        return { label: 'Pronto', variant: 'outline' as const };
-      case 'Enviado':
-        return { label: 'Enviado', variant: 'default' as const };
-      case 'Entregue':
+      case 'NOVO PEDIDO':
+        return { label: 'Novo Pedido', variant: 'secondary' as const };
+      case 'PRODUÇÃO':
+        return { label: 'Produção', variant: 'default' as const };
+      case 'EMBALAGEM':
+        return { label: 'Embalagem', variant: 'outline' as const };
+      case 'TRANSPORTE':
+        return { label: 'Transporte', variant: 'default' as const };
+      case 'ENTREGUE':
         return { label: 'Entregue', variant: 'default' as const };
       default:
         return { label: status || 'N/A', variant: 'secondary' as const };
@@ -196,22 +196,26 @@ export default function Dashboard() {
         <StatCard
           title="Encomendas Ativas"
           value={encomendasAtivas.toString()}
-          description="Encomendas não entregues"
+          subtitle="Encomendas não entregues"
+          icon={<div />}
         />
         <StatCard
           title="A Receber"
           value={formatCurrency(aReceber)}
-          description="Valor pendente de clientes"
+          subtitle="Valor pendente de clientes"
+          icon={<div />}
         />
         <StatCard
           title="A Pagar"
           value={formatCurrency(aPagar)}
-          description="Valor pendente a fornecedores"
+          subtitle="Valor pendente a fornecedores"
+          icon={<div />}
         />
         <StatCard
           title="Comissões (Mês)"
           value={formatCurrency(comissoesMensais)}
-          description="Lucro do mês atual"
+          subtitle="Lucro do mês atual"
+          icon={<div />}
         />
       </div>
 
@@ -220,7 +224,8 @@ export default function Dashboard() {
         <StatCard
           title="Comissões (Ano)"
           value={formatCurrency(comissoesAnuais)}
-          description="Lucro do ano atual"
+          subtitle="Lucro do ano atual"
+          icon={<div />}
         />
       </div>
 
