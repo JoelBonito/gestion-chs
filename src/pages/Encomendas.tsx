@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -175,7 +174,7 @@ export default function Encomendas() {
   };
 
   const calcularValorFrete = (pesoBruto: number) => {
-    return pesoBruto * 4.85;
+    return pesoBruto * 5.85;
   };
 
   return (

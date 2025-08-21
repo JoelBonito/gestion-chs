@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -97,10 +96,11 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
   useEffect(() => {
     if (initialData && isEditing) {
+      // Preencher todos os campos do formulário, incluindo cliente_id e fornecedor_id
       form.reset({
         numero_encomenda: initialData.numero_encomenda || "",
-        cliente_id: initialData.cliente_id || "",
-        fornecedor_id: initialData.fornecedor_id || "",
+        cliente_id: initialData.cliente_id || "", // Garantir que o cliente_id seja mantido
+        fornecedor_id: initialData.fornecedor_id || "", // Garantir que o fornecedor_id seja mantido
         data_producao_estimada: initialData.data_producao_estimada || "",
         data_envio_estimada: initialData.data_envio_estimada || "",
         observacoes: initialData.observacoes || "",
