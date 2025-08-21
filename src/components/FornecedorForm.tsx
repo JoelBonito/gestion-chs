@@ -50,6 +50,7 @@ export function FornecedorForm({ onSuccess, initialData, isEditing = false }: Fo
 
   useEffect(() => {
     if (initialData) {
+      // Se tem dados iniciais, sempre preenche (seja para editar ou duplicar)
       form.reset({
         nome: initialData.nome || "",
         email: initialData.email || "",
@@ -57,7 +58,8 @@ export function FornecedorForm({ onSuccess, initialData, isEditing = false }: Fo
         endereco: initialData.endereco || "",
         contato: initialData.contato || "",
       });
-    } else if (!isEditing) {
+    } else {
+      // Se não tem dados iniciais, limpa o formulário
       form.reset({
         nome: "",
         email: "",
@@ -66,7 +68,7 @@ export function FornecedorForm({ onSuccess, initialData, isEditing = false }: Fo
         contato: "",
       });
     }
-  }, [form, initialData, isEditing]);
+  }, [form, initialData]);
 
   const onSubmit = async (data: FornecedorFormData) => {
     setIsSubmitting(true);

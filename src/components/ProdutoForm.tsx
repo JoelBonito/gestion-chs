@@ -65,6 +65,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
 
   useEffect(() => {
     if (initialData) {
+      // Se tem dados iniciais, sempre preenche (seja para editar ou duplicar)
       form.reset({
         nome: initialData.nome || "",
         marca: initialData.marca || "",
@@ -73,7 +74,8 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         preco_custo: initialData.preco_custo ? initialData.preco_custo.toString() : "",
         preco_venda: initialData.preco_venda ? initialData.preco_venda.toString() : "",
       });
-    } else if (!isEditing) {
+    } else {
+      // Se não tem dados iniciais, limpa o formulário
       form.reset({
         nome: "",
         marca: "",
@@ -83,7 +85,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         preco_venda: "",
       });
     }
-  }, [form, initialData, isEditing]);
+  }, [form, initialData]);
 
   const carregarOpcoesExistentes = async () => {
     try {

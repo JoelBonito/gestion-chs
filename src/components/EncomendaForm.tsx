@@ -59,6 +59,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
   useEffect(() => {
     if (initialData) {
+      // Se tem dados iniciais, sempre preenche (seja para editar ou duplicar)
       form.reset({
         numero_encomenda: initialData.numero_encomenda || "",
         cliente_id: initialData.cliente_id || "",
@@ -83,7 +84,8 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         }));
         setItens(itensFormatados);
       }
-    } else if (!isEditing) {
+    } else {
+      // Se não tem dados iniciais, limpa o formulário
       form.reset({
         numero_encomenda: "",
         cliente_id: "",
@@ -95,7 +97,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
       setItens([]);
       setValorTotal(0);
     }
-  }, [form, initialData, isEditing]);
+  }, [form, initialData]);
 
   useEffect(() => {
     const fetchData = async () => {

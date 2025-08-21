@@ -47,13 +47,15 @@ export function ClienteForm({ onSuccess, initialData, isEditing = false }: Clien
 
   useEffect(() => {
     if (initialData) {
+      // Se tem dados iniciais, sempre preenche (seja para editar ou duplicar)
       form.reset({
         nome: initialData.nome || "",
         email: initialData.email || "",
         telefone: initialData.telefone || "",
         endereco: initialData.endereco || "",
       });
-    } else if (!isEditing) {
+    } else {
+      // Se não tem dados iniciais, limpa o formulário
       form.reset({
         nome: "",
         email: "",
@@ -61,7 +63,7 @@ export function ClienteForm({ onSuccess, initialData, isEditing = false }: Clien
         endereco: "",
       });
     }
-  }, [form, initialData, isEditing]);
+  }, [form, initialData]);
 
   const onSubmit = async (data: ClienteFormData) => {
     setIsSubmitting(true);
