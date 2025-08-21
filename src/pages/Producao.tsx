@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, Package, Clock, Truck } from "lucide-react";
+import { Search, Filter, Package, Clock, Truck, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -16,7 +20,7 @@ interface Encomenda {
   status_producao: string;
   data_criacao: string;
   data_producao_estimada?: string;
-  data_entrega_estimada?: string;
+  data_envio_estimada?: string;
   observacoes?: string;
   clientes?: { nome: string };
   fornecedores?: { nome: string };
@@ -72,6 +76,44 @@ export default function Producao() {
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
       toast.error("Erro ao atualizar status");
+    }
+  };
+
+  const atualizarDataProducao = async (encomendaId: string, novaData: Date | undefined) => {
+    try {
+      const { error } = await supabase
+        .from("encomendas")
+        .update({ data_producao_estimada: novaData ? format(novaData, "yyyy-MM-dd") : null })
+        .eq("id", encomendaId);
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Data de produção atualizada!");
+      fetchEncomendas();
+    } catch (error) {
+      console.error("Erro ao atualizar data:", error);
+      toast.error("Erro ao atualizar data");
+    }
+  };
+
+  const atualizarDataEnvio = async (encomendaId: string, novaData: Date | undefined) => {
+    try {
+      const { error } = await supabase
+        .from("encomendas")
+        .update({ data_envio_estimada: novaData ? format(novaData, "yyyy-MM-dd") : null })
+        .eq("id", encomendaId);
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Data de envio atualizada!");
+      fetchEncomendas();
+    } catch (error) {
+      console.error("Erro ao atualizar data:", error);
+      toast.error("Erro ao atualizar data");
     }
   };
 
@@ -202,7 +244,7 @@ export default function Producao() {
                   <TableHead>Fornecedor</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Data Produção</TableHead>
-                  <TableHead>Data Entrega</TableHead>
+                  <TableHead>Data Envio</TableHead>
                   <TableHead>Status Atual</TableHead>
                   <TableHead>Alterar Status</TableHead>
                 </TableRow>
@@ -235,11 +277,63 @@ export default function Producao() {
                         <TableCell className="font-semibold">
                           € {encomenda.valor_total.toFixed(2)}
                         </TableCell>
-                        <TableCell className="text-sm">
-                          {encomenda.data_producao_estimada ? new Date(encomenda.data_producao_estimada).toLocaleDateString() : "N/A"}
+                        <TableCell>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-32 justify-start text-left font-normal",
+                                  !encomenda.data_producao_estimada && "text-muted-foreground"
+                                )}
+                                size="sm"
+                              >
+                                <CalendarIcon className="mr-2 h-3 w-3" />
+                                {encomenda.data_producao_estimada 
+                                  ? format(new Date(encomenda.data_producao_estimada), "dd/MM/yy")
+                                  : "Definir"
+                                }
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={encomenda.data_producao_estimada ? new Date(encomenda.data_producao_estimada) : undefined}
+                                onSelect={(date) => atualizarDataProducao(encomenda.id, date)}
+                                initialFocus
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </TableCell>
-                        <TableCell className="text-sm">
-                          {encomenda.data_entrega_estimada ? new Date(encomenda.data_entrega_estimada).toLocaleDateString() : "N/A"}
+                        <TableCell>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-32 justify-start text-left font-normal",
+                                  !encomenda.data_envio_estimada && "text-muted-foreground"
+                                )}
+                                size="sm"
+                              >
+                                <CalendarIcon className="mr-2 h-3 w-3" />
+                                {encomenda.data_envio_estimada 
+                                  ? format(new Date(encomenda.data_envio_estimada), "dd/MM/yy")
+                                  : "Definir"
+                                }
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={encomenda.data_envio_estimada ? new Date(encomenda.data_envio_estimada) : undefined}
+                                onSelect={(date) => atualizarDataEnvio(encomenda.id, date)}
+                                initialFocus
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </TableCell>
                         <TableCell>
                           <Badge variant={status.variant} className="flex items-center gap-1 w-fit">

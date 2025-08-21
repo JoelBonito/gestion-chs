@@ -50,7 +50,7 @@ export type Database = {
           created_at: string | null
           data_criacao: string
           data_entrega: string | null
-          data_entrega_estimada: string | null
+          data_envio_estimada: string | null
           data_producao_estimada: string | null
           fornecedor_id: string
           id: string
@@ -68,7 +68,7 @@ export type Database = {
           created_at?: string | null
           data_criacao?: string
           data_entrega?: string | null
-          data_entrega_estimada?: string | null
+          data_envio_estimada?: string | null
           data_producao_estimada?: string | null
           fornecedor_id: string
           id?: string
@@ -86,7 +86,7 @@ export type Database = {
           created_at?: string | null
           data_criacao?: string
           data_entrega?: string | null
-          data_entrega_estimada?: string | null
+          data_envio_estimada?: string | null
           data_producao_estimada?: string | null
           fornecedor_id?: string
           id?: string

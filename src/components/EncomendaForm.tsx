@@ -16,7 +16,7 @@ const encomendaSchema = z.object({
   cliente_id: z.string().min(1, "Cliente é obrigatório"),
   fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
   data_producao_estimada: z.string().optional(),
-  data_entrega_estimada: z.string().optional(),
+  data_envio_estimada: z.string().optional(),
   observacoes: z.string().optional(),
 });
 
@@ -52,7 +52,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
       cliente_id: "",
       fornecedor_id: "",
       data_producao_estimada: "",
-      data_entrega_estimada: "",
+      data_envio_estimada: "",
       observacoes: "",
     },
   });
@@ -66,7 +66,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         cliente_id: initialData.cliente_id || "",
         fornecedor_id: initialData.fornecedor_id || "",
         data_producao_estimada: initialData.data_producao_estimada || "",
-        data_entrega_estimada: initialData.data_entrega_estimada || "",
+        data_envio_estimada: initialData.data_envio_estimada || "",
         observacoes: initialData.observacoes || "",
       });
       
@@ -136,7 +136,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
             cliente_id: data.cliente_id,
             fornecedor_id: data.fornecedor_id,
             data_producao_estimada: data.data_producao_estimada || null,
-            data_entrega_estimada: data.data_entrega_estimada || null,
+            data_envio_estimada: data.data_envio_estimada || null,
             observacoes: data.observacoes || null,
           })
           .eq("id", initialData.id);
@@ -153,7 +153,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
             fornecedor_id: data.fornecedor_id,
             valor_total: valorTotal,
             data_producao_estimada: data.data_producao_estimada || null,
-            data_entrega_estimada: data.data_entrega_estimada || null,
+            data_envio_estimada: data.data_envio_estimada || null,
             observacoes: data.observacoes || null,
           }])
           .select()
@@ -277,10 +277,10 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
             <FormField
               control={form.control}
-              name="data_entrega_estimada"
+              name="data_envio_estimada"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Data de Entrega Estimada</FormLabel>
+                  <FormLabel>Data de Envio Estimada</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>
