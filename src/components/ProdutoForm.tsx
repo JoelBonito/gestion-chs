@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -219,7 +218,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
       } else {
         const { data: produto, error } = await supabase
           .from("produtos")
-          .insert([{
+          .insert({
             nome: data.nome,
             marca: data.marca,
             tipo: data.tipo,
@@ -228,7 +227,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             preco_custo: parseFloat(data.preco_custo),
             preco_venda: parseFloat(data.preco_venda),
             fornecedor_id: data.fornecedor_id,
-          }])
+          })
           .select()
           .single();
 
@@ -461,7 +460,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         </Button>
       </form>
 
-      {/* Dialog para adicionar nova opção */}
       <Dialog open={novaOpçaoDialog.aberto} onOpenChange={(aberto) => setNovaOpçaoDialog({...novaOpçaoDialog, aberto})}>
         <DialogContent className="max-w-md shadow-elegant">
           <DialogHeader>
