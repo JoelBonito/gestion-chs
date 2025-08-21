@@ -42,6 +42,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
         const { data } = await supabase
           .from("produtos")
           .select("*")
+          .eq("ativo", true) // Só carregar produtos ativos
           .order("nome");
         
         if (data) setProdutos(data);

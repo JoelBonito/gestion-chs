@@ -98,7 +98,8 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     try {
       const { data: produtos, error } = await supabase
         .from("produtos")
-        .select("marca, tipo, tamanho");
+        .select("marca, tipo, tamanho")
+        .eq("ativo", true); // Só carregar opções de produtos ativos
 
       if (error) throw error;
 

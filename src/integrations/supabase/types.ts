@@ -237,6 +237,7 @@ export type Database = {
       }
       produtos: {
         Row: {
+          ativo: boolean
           created_at: string
           id: string
           marca: string
@@ -248,6 +249,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ativo?: boolean
           created_at?: string
           id?: string
           marca: string
@@ -259,6 +261,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ativo?: boolean
           created_at?: string
           id?: string
           marca?: string
