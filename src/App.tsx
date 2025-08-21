@@ -31,8 +31,8 @@ const App = () => (
                   <Box className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-display font-medium text-foreground">Sistema de Cosméticos</h1>
-                  <p className="text-sm text-muted-foreground font-body">Gestão completa do seu negócio</p>
+                  <h1 className="text-xl font-display font-medium text-foreground">Gestão CHS</h1>
+                  <p className="text-sm text-muted-foreground font-body">Sistema de Cosméticos Capilares</p>
                 </div>
               </div>
               <div className="text-sm text-muted-foreground flex items-center gap-2">

@@ -71,8 +71,8 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div>
-              <h1 className="text-xl font-bold text-sidebar-foreground">GestãoPro</h1>
-              <p className="text-sm text-sidebar-foreground/70">Sistema de Gestão</p>
+              <h1 className="text-xl font-bold text-sidebar-foreground">Gestão CHS</h1>
+              <p className="text-sm text-sidebar-foreground/70">Cosméticos Capilares</p>
             </div>
           )}
         </div>
