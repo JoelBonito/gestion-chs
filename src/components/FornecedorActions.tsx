@@ -2,12 +2,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Trash2, Edit, ExternalLink, FileDown, Package } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logActivity } from '@/utils/activityLogger';
-import { useUserRole } from '@/hooks/useUserRole';
 
 interface Fornecedor {
   id: string;
@@ -28,19 +26,7 @@ interface FornecedorActionsProps {
 }
 
 export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorActionsProps) {
-  const { canEdit } = useUserRole();
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const handleCatalogClick = () => {
-    if (fornecedor.catalog_url) {
-      window.open(fornecedor.catalog_url, '_blank');
-    } else if (fornecedor.catalog_file) {
-      // Aqui você pode implementar o download do arquivo
-      toast.info('Funcionalidade de download em desenvolvimento');
-    }
-  };
-
-  const hasCatalog = fornecedor.catalog_url || fornecedor.catalog_file;
 
   const handleDelete = async () => {
     setIsDeleting(true);
@@ -107,74 +93,42 @@ export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorA
 
   return (
     <div className="flex gap-2 pt-2">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex-1"
-              onClick={handleCatalogClick}
-              disabled={!hasCatalog}
-            >
-              {fornecedor.catalog_url ? (
-                <ExternalLink className="h-3 w-3 mr-1" />
-              ) : fornecedor.catalog_file ? (
-                <FileDown className="h-3 w-3 mr-1" />
-              ) : (
-                <Package className="h-3 w-3 mr-1" />
-              )}
-              Ver Catálogo
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {hasCatalog 
-              ? (fornecedor.catalog_url ? 'Abrir catálogo online' : 'Baixar arquivo do catálogo')
-              : 'Fornecedor sem catálogo'
-            }
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="flex-1" 
+        onClick={() => onEdit(fornecedor)}
+      >
+        <Edit className="h-3 w-3 mr-1" />
+        Editar
+      </Button>
       
-      {canEdit() && (
-        <>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex-1" 
-            onClick={() => onEdit(fornecedor)}
-          >
-            <Edit className="h-3 w-3 mr-1" />
-            Editar
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+            <Trash2 className="h-3 w-3" />
           </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Tem certeza que deseja excluir o fornecedor "{fornecedor.nome}"?
-                  {fornecedor.active ? ' Se houver vínculos, será desativado ao invés de removido.' : ''}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  {isDeleting ? 'Excluindo...' : 'Excluir'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )}
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o fornecedor "{fornecedor.nome}"?
+              {fornecedor.active ? ' Se houver vínculos, será desativado ao invés de removido.' : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

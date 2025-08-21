@@ -12,7 +12,6 @@ import { FornecedorForm } from "@/components/FornecedorForm";
 import { FornecedorActions } from "@/components/FornecedorActions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useUserRole } from "@/hooks/useUserRole";
 
 interface Fornecedor {
   id: string;
@@ -28,7 +27,6 @@ interface Fornecedor {
 }
 
 export default function Fornecedores() {
-  const { canEdit } = useUserRole();
   const [searchTerm, setSearchTerm] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);

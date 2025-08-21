@@ -16,7 +16,6 @@ const produtoSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   marca: z.string().min(1, "Marca é obrigatória"),
   tipo: z.string().min(1, "Tipo é obrigatório"),
-  tamanho_ml: z.string().min(1, "Tamanho é obrigatório").regex(/^\d+$/, "Tamanho deve conter apenas números"),
   preco_custo: z.string().min(1, "Preço de custo é obrigatório"),
   preco_venda: z.string().min(1, "Preço de venda é obrigatório"),
   fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
@@ -61,7 +60,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
       nome: "",
       marca: "",
       tipo: "",
-      tamanho_ml: "",
       preco_custo: "",
       preco_venda: "",
       fornecedor_id: "",
@@ -79,7 +77,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         nome: initialData.nome || "",
         marca: initialData.marca || "",
         tipo: initialData.tipo || "",
-        tamanho_ml: initialData.tamanho_ml ? initialData.tamanho_ml.toString() : "",
         preco_custo: initialData.preco_custo ? initialData.preco_custo.toString() : "",
         preco_venda: initialData.preco_venda ? initialData.preco_venda.toString() : "",
         fornecedor_id: initialData.fornecedor_id || "",
@@ -93,7 +90,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         nome: "",
         marca: "",
         tipo: "",
-        tamanho_ml: "",
         preco_custo: "",
         preco_venda: "",
         fornecedor_id: "",
@@ -188,8 +184,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
   const onSubmit = async (data: ProdutoFormData) => {
     setIsSubmitting(true);
     try {
-      const tamanhoNumerico = parseInt(data.tamanho_ml);
-      
       if (isEditing && initialData && initialData.id) {
         const { error } = await supabase
           .from("produtos")
@@ -197,8 +191,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             nome: data.nome,
             marca: data.marca,
             tipo: data.tipo,
-            tamanho_ml: tamanhoNumerico,
-            peso_gramas: tamanhoNumerico, // Mesmo valor para ml e gramas
             preco_custo: parseFloat(data.preco_custo),
             preco_venda: parseFloat(data.preco_venda),
             fornecedor_id: data.fornecedor_id,
@@ -222,8 +214,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             nome: data.nome,
             marca: data.marca,
             tipo: data.tipo,
-            tamanho_ml: tamanhoNumerico,
-            peso_gramas: tamanhoNumerico, // Mesmo valor para ml e gramas
             preco_custo: parseFloat(data.preco_custo),
             preco_venda: parseFloat(data.preco_venda),
             fornecedor_id: data.fornecedor_id,
@@ -386,28 +376,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             )}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="tamanho_ml"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-display text-primary-dark">Tamanho (ml)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Ex: 1000"
-                  className="input-elegant"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-              <p className="text-xs text-muted-foreground">
-                Este valor será usado tanto para ml quanto para gramas (peso para frete)
-              </p>
-            </FormItem>
-          )}
-        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
