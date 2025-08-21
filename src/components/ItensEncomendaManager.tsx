@@ -202,7 +202,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
                       onClick={() => duplicarItem(index)}
                       title="Duplicar item"
                     >
-                      <Copy className="h-4 w-4" />
+                      <Plus className="h-4 w-4" />
                     </Button>
                     <Button
                       type="button"
