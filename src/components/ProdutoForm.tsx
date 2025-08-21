@@ -18,6 +18,7 @@ const produtoSchema = z.object({
   tipo: z.string().min(1, "Tipo é obrigatório"),
   preco_custo: z.string().min(1, "Preço de custo é obrigatório"),
   preco_venda: z.string().min(1, "Preço de venda é obrigatório"),
+  size_weight: z.string().min(1, "Tamanho e peso é obrigatório"),
   fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
 });
 
@@ -32,6 +33,7 @@ interface Produto {
   peso_gramas: number;
   preco_custo: number;
   preco_venda: number;
+  size_weight: number;
   fornecedor_id: string;
 }
 
@@ -62,6 +64,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
       tipo: "",
       preco_custo: "",
       preco_venda: "",
+      size_weight: "",
       fornecedor_id: "",
     },
   });
@@ -79,6 +82,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         tipo: initialData.tipo || "",
         preco_custo: initialData.preco_custo ? initialData.preco_custo.toString() : "",
         preco_venda: initialData.preco_venda ? initialData.preco_venda.toString() : "",
+        size_weight: initialData.size_weight ? initialData.size_weight.toString() : "0",
         fornecedor_id: initialData.fornecedor_id || "",
       };
       
@@ -92,6 +96,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         tipo: "",
         preco_custo: "",
         preco_venda: "",
+        size_weight: "",
         fornecedor_id: "",
       });
     }
@@ -193,6 +198,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             tipo: data.tipo,
             preco_custo: parseFloat(data.preco_custo),
             preco_venda: parseFloat(data.preco_venda),
+            size_weight: parseFloat(data.size_weight),
             fornecedor_id: data.fornecedor_id,
           })
           .eq("id", initialData.id);
@@ -216,6 +222,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             tipo: data.tipo,
             preco_custo: parseFloat(data.preco_custo),
             preco_venda: parseFloat(data.preco_venda),
+            size_weight: parseFloat(data.size_weight),
             fornecedor_id: data.fornecedor_id,
           })
           .select()
@@ -376,6 +383,26 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             )}
           />
         </div>
+
+        <FormField
+          control={form.control}
+          name="size_weight"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-display text-primary-dark">Tamanho e Peso</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number" 
+                  step="0.01" 
+                  placeholder="Ex.: 500 (para 500ml/500g)"
+                  className="input-elegant"
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField

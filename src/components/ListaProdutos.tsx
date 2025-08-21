@@ -20,6 +20,7 @@ interface Produto {
   peso_gramas: number;
   preco_custo: number;
   preco_venda: number;
+  size_weight: number;
   ativo: boolean;
   created_at: string;
   updated_at: string;
@@ -47,7 +48,7 @@ export function ListaProdutos() {
       const matchesSearch = produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
         produto.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
         produto.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        produto.tamanho_ml.toString().includes(searchTerm) ||
+        produto.size_weight.toString().includes(searchTerm) ||
         produto.fornecedores?.nome?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesStatus = showInactive ? !produto.ativo : produto.ativo;
@@ -209,6 +210,7 @@ export function ListaProdutos() {
               <TableHead>Nome</TableHead>
               <TableHead>Marca</TableHead>
               <TableHead>Tipo</TableHead>
+              <TableHead>Tamanho</TableHead>
               <TableHead>Preço Custo</TableHead>
               <TableHead>Preço Venda</TableHead>
               <TableHead>Fornecedor</TableHead>
@@ -221,6 +223,7 @@ export function ListaProdutos() {
                 <TableCell className="font-medium">{produto.nome}</TableCell>
                 <TableCell>{produto.marca}</TableCell>
                 <TableCell>{produto.tipo}</TableCell>
+                <TableCell>{produto.size_weight} ml</TableCell>
                 <TableCell>{formatCurrency(produto.preco_custo)}</TableCell>
                 <TableCell>{formatCurrency(produto.preco_venda)}</TableCell>
                 <TableCell>{produto.fornecedores?.nome || "N/A"}</TableCell>
