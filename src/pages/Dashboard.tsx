@@ -54,18 +54,19 @@ export default function Dashboard() {
         />
         
         <StatCard
-          title="Faturamento Mensal"
-          value="€45.200"
-          subtitle="Janeiro 2024"
-          icon={<TrendingUp className="h-6 w-6" />}
-          variant="success"
+          title="A Pagar"
+          value="€5.240"
+          subtitle="2 fornecedores"
+          icon={<AlertCircle className="h-6 w-6" />}
+          variant="warning"
         />
         
         <StatCard
-          title="Clientes Ativos"
-          value={8}
-          subtitle="2 novos este mês"
-          icon={<Users className="h-6 w-6" />}
+          title="Comissões Mensais"
+          value="€4.520"
+          subtitle="Janeiro 2024"
+          icon={<TrendingUp className="h-6 w-6" />}
+          variant="success"
         />
       </div>
 
