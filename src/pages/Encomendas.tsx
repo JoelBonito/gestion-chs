@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,11 +11,13 @@ import { EncomendaForm } from "@/components/EncomendaForm";
 import { EncomendaView } from "@/components/EncomendaView";
 import { EncomendaActions } from "@/components/EncomendaActions";
 import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
+import { EncomendaStatusFilter } from "@/components/EncomendaStatusFilter";
 import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
+type StatusFilter = StatusEncomenda | "TODOS";
 
 interface Encomenda {
   id: string;
@@ -37,6 +40,7 @@ interface Encomenda {
 export default function Encomendas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("TODOS");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
@@ -151,9 +155,11 @@ export default function Encomendas() {
       (encomenda.clientes?.nome && encomenda.clientes.nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (encomenda.fornecedores?.nome && encomenda.fornecedores.nome.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesStatus = showCompleted ? encomenda.status === 'ENTREGUE' : encomenda.status !== 'ENTREGUE';
+    const matchesCompletedFilter = showCompleted ? encomenda.status === 'ENTREGUE' : encomenda.status !== 'ENTREGUE';
     
-    return matchesSearch && matchesStatus;
+    const matchesStatusFilter = selectedStatus === 'TODOS' || encomenda.status === selectedStatus;
+    
+    return matchesSearch && matchesCompletedFilter && matchesStatusFilter;
   });
 
   const formatCurrency = (value: number) => {
@@ -210,15 +216,23 @@ export default function Encomendas() {
               className="pl-10"
             />
           </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="show-completed"
-              checked={showCompleted}
-              onCheckedChange={setShowCompleted}
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="show-completed"
+                checked={showCompleted}
+                onCheckedChange={setShowCompleted}
+              />
+              <Label htmlFor="show-completed">
+                {showCompleted ? "Mostrar pedidos entregues" : "Mostrar pedidos entregues"}
+              </Label>
+            </div>
+            
+            <EncomendaStatusFilter 
+              selectedStatus={selectedStatus}
+              onStatusChange={setSelectedStatus}
             />
-            <Label htmlFor="show-completed">
-              {showCompleted ? "Mostrar pedidos entregues" : "Mostrar pendentes"}
-            </Label>
           </div>
         </CardContent>
       </Card>
