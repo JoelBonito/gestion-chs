@@ -104,6 +104,69 @@ export default function Encomendas() {
     }
   };
 
+  const handleView = async (encomenda: Encomenda) => {
+    try {
+      // Carregar dados completos da encomenda para visualização
+      const { data: encomendaCompleta, error } = await supabase
+        .from("encomendas")
+        .select(`
+          *,
+          clientes(id, nome),
+          fornecedores(id, nome),
+          itens_encomenda(
+            id,
+            produto_id,
+            quantidade,
+            preco_unitario,
+            subtotal,
+            produtos(id, nome, marca, tipo, tamanho, preco_custo)
+          )
+        `)
+        .eq("id", encomenda.id)
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      // Por enquanto, abrir no modo de edição para visualizar
+      // Futuramente pode criar um modal específico de visualização
+      setSelectedEncomenda(encomendaCompleta);
+      setEditDialogOpen(true);
+    } catch (error) {
+      console.error("Erro ao carregar encomenda:", error);
+      toast.error("Erro ao carregar dados da encomenda");
+    }
+  };
+
+  const handleDelete = async (encomenda: Encomenda) => {
+    if (confirm(`Tem certeza que deseja deletar a encomenda ${encomenda.numero_encomenda}?`)) {
+      try {
+        // Primeiro deletar os itens da encomenda
+        const { error: itemsError } = await supabase
+          .from("itens_encomenda")
+          .delete()
+          .eq("encomenda_id", encomenda.id);
+
+        if (itemsError) throw itemsError;
+
+        // Depois deletar a encomenda
+        const { error } = await supabase
+          .from("encomendas")
+          .delete()
+          .eq("id", encomenda.id);
+
+        if (error) throw error;
+        
+        toast.success("Encomenda deletada com sucesso!");
+        fetchEncomendas();
+      } catch (error) {
+        console.error("Erro ao deletar encomenda:", error);
+        toast.error("Erro ao deletar encomenda");
+      }
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const variants = {
       pendente: { label: "Pendente", variant: "secondary" as const },
@@ -255,13 +318,13 @@ export default function Encomendas() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" onClick={() => handleView(encomenda)}>
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button variant="ghost" size="sm" onClick={() => handleEdit(encomenda)}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(encomenda)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
