@@ -57,36 +57,36 @@ export function AppSidebar() {
 
   const getNavClassName = ({ isActive }: { isActive: boolean }) =>
     isActive 
-      ? "bg-primary text-primary-foreground font-medium hover:bg-primary/90" 
-      : "hover:bg-muted/50 text-muted-foreground hover:text-foreground";
+      ? "px-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold shadow-button hover:shadow-hover transition-all duration-200" 
+      : "px-4 py-3 rounded-xl hover:bg-sidebar-accent text-sidebar-foreground/80 hover:text-sidebar-foreground font-medium transition-all duration-200";
 
   return (
-    <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
-      <SidebarHeader className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-primary to-primary-glow rounded-lg flex items-center justify-center">
-            <Home className="h-4 w-4 text-primary-foreground" />
+    <Sidebar className={collapsed ? "w-16" : "w-72"} collapsible="icon">
+      <SidebarHeader className="border-b border-sidebar-border p-6 bg-sidebar">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-glow rounded-xl flex items-center justify-center shadow-button">
+            <Home className="h-5 w-5 text-primary-foreground" />
           </div>
           {!collapsed && (
             <div>
-              <h1 className="text-lg font-bold text-foreground">GestãoPro</h1>
-              <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
+              <h1 className="text-xl font-bold text-sidebar-foreground">GestãoPro</h1>
+              <p className="text-sm text-sidebar-foreground/70">Sistema de Gestão</p>
             </div>
           )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
-        {navigationGroups.map((group) => (
-          <SidebarGroup key={group.title}>
+      <SidebarContent className="bg-sidebar p-4">
+        {navigationGroups.map((group, index) => (
+          <SidebarGroup key={group.title} className={index > 0 ? "mt-6" : ""}>
             {!collapsed && (
-              <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              <SidebarGroupLabel className="text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-3 px-3">
                 {group.title}
               </SidebarGroupLabel>
             )}
             
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="space-y-1">
                 {group.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
@@ -95,8 +95,8 @@ export function AppSidebar() {
                         className={getNavClassName}
                         end
                       >
-                        <item.icon className="h-4 w-4 shrink-0" />
-                        {!collapsed && <span className="ml-2">{item.title}</span>}
+                        <item.icon className="h-5 w-5 shrink-0" />
+                        {!collapsed && <span className="ml-3 font-medium">{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -107,18 +107,18 @@ export function AppSidebar() {
         ))}
 
         {/* Configurações no final */}
-        <SidebarGroup className="mt-auto">
+        <SidebarGroup className="mt-auto border-t border-sidebar-border pt-4">
           {!collapsed && (
-            <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <SidebarGroupLabel className="text-xs font-bold text-sidebar-foreground/60 uppercase tracking-wider mb-3 px-3">
               Sistema
             </SidebarGroupLabel>
           )}
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Settings className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span className="ml-2">Configurações</span>}
+                <SidebarMenuButton className="px-4 py-3 rounded-xl hover:bg-sidebar-accent text-sidebar-foreground/80 hover:text-sidebar-foreground font-medium transition-all duration-200">
+                  <Settings className="h-5 w-5 shrink-0" />
+                  {!collapsed && <span className="ml-3 font-medium">Configurações</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

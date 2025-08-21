@@ -26,14 +26,20 @@ const App = () => (
             <AppSidebar />
             
             <div className="flex-1 flex flex-col">
-              <header className="h-14 border-b bg-background flex items-center px-4 sticky top-0 z-40 shadow-sm">
-                <SidebarTrigger className="mr-4 border border-muted hover:bg-muted" />
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold text-foreground">Painel de Controle</h2>
+              <header className="h-16 border-b bg-card/95 backdrop-blur-md flex items-center px-6 sticky top-0 z-40 shadow-card">
+                <SidebarTrigger className="mr-4 hover:bg-secondary/80 border border-border shadow-button hover:shadow-hover transition-all duration-200" />
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary-glow rounded-lg flex items-center justify-center shadow-button">
+                    <span className="text-primary-foreground font-bold text-sm">G</span>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">GestãoPro</h2>
+                    <p className="text-xs text-muted-foreground">Sistema de Gestão</p>
+                  </div>
                 </div>
               </header>
               
-              <main className="flex-1 p-6 overflow-auto">
+              <main className="flex-1 p-8 overflow-auto bg-background">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/encomendas" element={<Encomendas />} />
