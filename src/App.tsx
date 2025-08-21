@@ -26,8 +26,8 @@ const App = () => (
             <AppSidebar />
             
             <div className="flex-1 flex flex-col">
-              <header className="h-14 border-b bg-background flex items-center px-4 sticky top-0 z-40">
-                <SidebarTrigger className="mr-4" />
+              <header className="h-14 border-b bg-background flex items-center px-4 sticky top-0 z-40 shadow-sm">
+                <SidebarTrigger className="mr-4 border border-muted hover:bg-muted" />
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-semibold text-foreground">Painel de Controle</h2>
                 </div>
