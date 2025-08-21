@@ -1,127 +1,133 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Apple-inspired design system with perfect contrast and elegant colors */
+/* Cosmetic Hair Shop inspired design system */
 
 @layer base {
   :root {
-    /* Base colors - Elegant grays inspired by Apple */
-    --background: 0 0% 98%;
-    --foreground: 0 0% 7%;
+    /* Base colors - Inspired by Cosmetic Hair Shop */
+    --background: 45 20% 98%;
+    --foreground: 25 15% 15%;
 
-    /* Card system - Clean whites with subtle shadows */
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 7%;
+    /* Card system - Elegant with subtle warmth */
+    --card: 42 20% 96%;
+    --card-foreground: 25 15% 15%;
 
     /* Popover system */
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
+    --popover: 42 20% 98%;
+    --popover-foreground: 25 15% 15%;
 
-    /* Primary brand - Apple blue inspired */
-    --primary: 212 100% 47%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 212 100% 55%;
+    /* Primary brand - Elegant gold/amber from the site */
+    --primary: 38 70% 55%;
+    --primary-foreground: 45 20% 98%;
+    --primary-light: 42 85% 65%;
+    --primary-dark: 35 65% 45%;
+    --primary-glow: 40 80% 65%;
 
-    /* Secondary - Elegant gray */
-    --secondary: 240 6% 90%;
-    --secondary-foreground: 0 0% 7%;
+    /* Secondary - Soft blue-grey from the site */
+    --secondary: 210 15% 85%;
+    --secondary-foreground: 25 15% 25%;
 
-    /* Muted - Perfect for backgrounds */
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
+    /* Muted - Warm neutrals */
+    --muted: 42 15% 92%;
+    --muted-foreground: 25 15% 45%;
 
-    /* Accent - Apple green inspired */
-    --accent: 142 76% 36%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent - Warm amber */
+    --accent: 40 80% 88%;
+    --accent-foreground: 25 15% 25%;
 
-    /* Success - Clean green */
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
+    /* Success - Elegant green */
+    --success: 140 50% 45%;
+    --success-foreground: 45 20% 98%;
 
-    /* Warning - Apple orange */
-    --warning: 25 95% 53%;
-    --warning-foreground: 0 0% 100%;
+    /* Warning - Warm orange */
+    --warning: 25 80% 55%;
+    --warning-foreground: 45 20% 98%;
 
-    /* Destructive - Apple red */
-    --destructive: 0 100% 67%;
-    --destructive-foreground: 0 0% 100%;
+    /* Destructive - Elegant red */
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 45 20% 98%;
 
     /* Form elements */
-    --border: 240 6% 90%;
-    --input: 0 0% 100%;
-    --ring: 212 100% 47%;
+    --border: 42 25% 88%;
+    --input: 42 25% 88%;
+    --ring: 38 70% 55%;
 
-    /* Sidebar - Clean and elegant */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 7%;
-    --sidebar-primary: 212 100% 47%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 5% 96%;
-    --sidebar-accent-foreground: 0 0% 7%;
-    --sidebar-border: 240 6% 90%;
-    --sidebar-ring: 212 100% 47%;
+    /* Sidebar - Elegant and warm */
+    --sidebar-background: 45 20% 96%;
+    --sidebar-foreground: 25 15% 15%;
+    --sidebar-primary: 38 70% 55%;
+    --sidebar-primary-foreground: 45 20% 98%;
+    --sidebar-accent: 42 15% 92%;
+    --sidebar-accent-foreground: 25 15% 25%;
+    --sidebar-border: 42 25% 88%;
+    --sidebar-ring: 38 70% 55%;
 
-    /* Apple-inspired gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(212 100% 47%), hsl(212 100% 55%));
-    --gradient-secondary: linear-gradient(145deg, hsl(0 0% 100%), hsl(240 5% 96%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(0 0% 98%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 45%));
+    /* Elegant gradients inspired by the site */
+    --gradient-primary: linear-gradient(135deg, hsl(38 70% 55%), hsl(42 85% 65%));
+    --gradient-hero: linear-gradient(135deg, hsl(38 70% 55% / 0.9), hsl(42 85% 65% / 0.8));
+    --gradient-card: linear-gradient(145deg, hsl(42 20% 98%), hsl(42 20% 96%));
+    --gradient-secondary: linear-gradient(145deg, hsl(210 15% 85%), hsl(210 15% 88%));
 
-    /* Apple-style shadows */
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-    --shadow-elevated: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-button: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
+    /* Elegant shadows with warm tones */
+    --shadow-card: 0 2px 10px hsl(25 15% 15% / 0.05);
+    --shadow-elevated: 0 4px 20px hsl(38 70% 55% / 0.1);
+    --shadow-button: 0 1px 3px hsl(25 15% 15% / 0.1);
+    --shadow-hover: 0 8px 30px hsl(38 70% 55% / 0.15);
+    --shadow-elegant: 0 4px 20px hsl(38 70% 55% / 0.1);
 
-    /* Apple-style radius */
+    /* Elegant radius */
     --radius: 0.75rem;
   }
 
   .dark {
-    /* Dark mode - Apple-inspired */
-    --background: 0 0% 7%;
-    --foreground: 0 0% 98%;
+    /* Dark mode with warm undertones */
+    --background: 25 15% 8%;
+    --foreground: 42 20% 95%;
 
-    --card: 0 0% 9%;
-    --card-foreground: 0 0% 98%;
+    --card: 25 15% 10%;
+    --card-foreground: 42 20% 95%;
 
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 25 15% 8%;
+    --popover-foreground: 42 20% 95%;
 
-    --primary: 212 100% 60%;
-    --primary-foreground: 0 0% 7%;
+    --primary: 38 70% 60%;
+    --primary-foreground: 25 15% 8%;
+    --primary-light: 42 85% 70%;
+    --primary-dark: 35 65% 50%;
 
-    --secondary: 240 4% 16%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 25 15% 15%;
+    --secondary-foreground: 42 20% 85%;
 
-    --muted: 240 4% 14%;
-    --muted-foreground: 240 5% 64%;
+    --muted: 25 15% 15%;
+    --muted-foreground: 42 20% 65%;
 
-    --accent: 142 76% 45%;
-    --accent-foreground: 0 0% 7%;
+    --accent: 25 15% 15%;
+    --accent-foreground: 42 20% 85%;
 
-    --success: 142 76% 45%;
-    --success-foreground: 0 0% 7%;
+    --success: 140 50% 50%;
+    --success-foreground: 25 15% 8%;
 
-    --warning: 25 95% 60%;
-    --warning-foreground: 0 0% 7%;
+    --warning: 25 80% 60%;
+    --warning-foreground: 25 15% 8%;
 
-    --destructive: 0 100% 70%;
-    --destructive-foreground: 0 0% 7%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 42 20% 95%;
 
-    --border: 240 4% 16%;
-    --input: 240 4% 14%;
-    --ring: 212 100% 60%;
+    --border: 25 15% 20%;
+    --input: 25 15% 20%;
+    --ring: 38 70% 60%;
 
-    --sidebar-background: 0 0% 8%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 212 100% 60%;
-    --sidebar-primary-foreground: 0 0% 7%;
-    --sidebar-accent: 240 4% 14%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 4% 16%;
-    --sidebar-ring: 212 100% 60%;
+    --sidebar-background: 25 15% 9%;
+    --sidebar-foreground: 42 20% 95%;
+    --sidebar-primary: 38 70% 60%;
+    --sidebar-primary-foreground: 25 15% 8%;
+    --sidebar-accent: 25 15% 15%;
+    --sidebar-accent-foreground: 42 20% 85%;
+    --sidebar-border: 25 15% 20%;
+    --sidebar-ring: 38 70% 60%;
   }
 }
 
@@ -131,13 +137,26 @@
   }
 
   body {
-    @apply bg-background text-foreground font-medium;
+    @apply bg-background text-foreground font-inter;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Apple-style button improvements */
+  /* Typography classes */
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Elegant button improvements */
   button {
-    @apply transition-all duration-200 ease-out;
+    @apply transition-all duration-300 ease-out;
   }
 
   /* Card improvements */
@@ -157,33 +176,54 @@
     box-shadow: var(--shadow-hover);
   }
 
+  .shadow-elegant {
+    box-shadow: var(--shadow-elegant);
+  }
+
   /* Smooth transitions */
-  .transition-apple {
-    @apply transition-all duration-200 ease-out;
+  .transition-elegant {
+    @apply transition-all duration-300 ease-out;
   }
 }
 
 @layer components {
-  /* Apple-style button variants */
-  .btn-apple {
-    @apply px-6 py-3 rounded-xl font-semibold transition-apple shadow-button hover:shadow-hover;
+  /* Elegant button variants */
+  .btn-elegant {
+    @apply px-6 py-3 rounded-xl font-medium transition-elegant shadow-button hover:shadow-hover;
   }
 
   .btn-primary {
-    @apply btn-apple bg-primary text-primary-foreground hover:opacity-90;
+    @apply btn-elegant bg-gradient-primary text-primary-foreground hover:shadow-hover;
   }
 
   .btn-secondary {
-    @apply btn-apple bg-secondary text-secondary-foreground hover:bg-secondary/80;
+    @apply btn-elegant bg-secondary text-secondary-foreground hover:bg-secondary/80;
   }
 
-  /* Apple-style cards */
-  .card-apple {
-    @apply bg-card text-card-foreground rounded-2xl shadow-card hover:shadow-elevated transition-apple;
+  /* Elegant cards */
+  .card-elegant {
+    @apply bg-gradient-card text-card-foreground rounded-2xl shadow-card hover:shadow-elevated transition-elegant;
   }
 
-  /* Apple-style inputs */
-  .input-apple {
-    @apply px-4 py-3 rounded-xl border border-border bg-input text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent transition-apple;
+  /* Elegant inputs */
+  .input-elegant {
+    @apply px-4 py-3 rounded-xl border border-border bg-input text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent transition-elegant;
+  }
+
+  /* Gradient backgrounds */
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .bg-gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .bg-gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .bg-gradient-secondary {
+    background: var(--gradient-secondary);
   }
 }

@@ -112,47 +112,65 @@ export function ListaProdutos() {
 
   return (
     <>
-      <div className="rounded-md border overflow-x-auto">
+      <div className="rounded-lg border border-border overflow-hidden shadow-card bg-gradient-card">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-[25%] min-w-[150px]">Nome</TableHead>
-              <TableHead className="w-[15%] min-w-[100px]">Marca</TableHead>
-              <TableHead className="w-[15%] min-w-[100px]">Tipo</TableHead>
-              <TableHead className="w-[10%] min-w-[80px]">Tamanho</TableHead>
-              <TableHead className="w-[12%] min-w-[100px] text-right">Preço Custo</TableHead>
-              <TableHead className="w-[12%] min-w-[100px] text-right">Preço Venda</TableHead>
-              <TableHead className="w-[11%] min-w-[120px] text-right">Ações</TableHead>
+            <TableRow className="bg-primary/5 hover:bg-primary/10 border-b border-primary/20">
+              <TableHead className="w-[25%] min-w-[150px] font-display font-semibold text-primary-dark">Nome</TableHead>
+              <TableHead className="w-[15%] min-w-[100px] font-display font-semibold text-primary-dark">Marca</TableHead>
+              <TableHead className="w-[15%] min-w-[100px] font-display font-semibold text-primary-dark">Tipo</TableHead>
+              <TableHead className="w-[10%] min-w-[80px] font-display font-semibold text-primary-dark">Tamanho</TableHead>
+              <TableHead className="w-[12%] min-w-[100px] text-right font-display font-semibold text-primary-dark">Preço Custo</TableHead>
+              <TableHead className="w-[12%] min-w-[100px] text-right font-display font-semibold text-primary-dark">Preço Venda</TableHead>
+              <TableHead className="w-[11%] min-w-[120px] text-right font-display font-semibold text-primary-dark">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {produtos.map((produto) => (
-              <TableRow key={produto.id} className="hover:bg-muted/50">
-                <TableCell className="font-medium truncate max-w-[150px]" title={produto.nome}>
+              <TableRow key={produto.id} className="hover:bg-primary/5 transition-all duration-200 border-b border-primary/10">
+                <TableCell className="font-medium truncate max-w-[150px] font-inter" title={produto.nome}>
                   {produto.nome}
                 </TableCell>
-                <TableCell className="truncate max-w-[100px]" title={produto.marca}>
+                <TableCell className="truncate max-w-[100px] text-muted-foreground" title={produto.marca}>
                   {produto.marca}
                 </TableCell>
-                <TableCell className="truncate max-w-[100px]" title={produto.tipo}>
+                <TableCell className="truncate max-w-[100px] text-muted-foreground" title={produto.tipo}>
                   {produto.tipo}
                 </TableCell>
-                <TableCell className="text-center">{produto.tamanho}</TableCell>
-                <TableCell className="text-right font-mono text-sm">
+                <TableCell className="text-center text-muted-foreground">{produto.tamanho}</TableCell>
+                <TableCell className="text-right font-mono text-sm text-muted-foreground">
                   {formatarMoeda(produto.preco_custo)}
                 </TableCell>
-                <TableCell className="text-right font-mono text-sm font-semibold">
+                <TableCell className="text-right font-mono text-sm font-semibold text-primary-dark">
                   {formatarMoeda(produto.preco_venda)}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex gap-1 justify-end">
-                    <Button variant="ghost" size="sm" onClick={() => handleDuplicate(produto)} title="Duplicar produto">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDuplicate(produto)} 
+                      title="Duplicar produto"
+                      className="hover:bg-primary/10 hover:text-primary transition-colors"
+                    >
                       <Copy className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(produto)} title="Editar produto">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleEdit(produto)} 
+                      title="Editar produto"
+                      className="hover:bg-primary/10 hover:text-primary transition-colors"
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(produto)} title="Deletar produto" className="text-destructive hover:text-destructive">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDelete(produto)} 
+                      title="Deletar produto" 
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>

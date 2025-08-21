@@ -27,6 +27,8 @@ export default {
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))',
+					light: 'hsl(var(--primary-light))',
+					dark: 'hsl(var(--primary-dark))',
 					glow: 'hsl(var(--primary-glow))'
 				},
 				secondary: {
@@ -73,6 +75,9 @@ export default {
 				}
 			},
 			fontFamily: {
+				'display': ['Playfair Display', 'serif'],
+				'inter': ['Inter', 'sans-serif'],
+				'body': ['Inter', 'sans-serif'],
 				sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
 			},
 			borderRadius: {
@@ -86,7 +91,8 @@ export default {
 				'card': 'var(--shadow-card)',
 				'elevated': 'var(--shadow-elevated)',
 				'button': 'var(--shadow-button)',
-				'hover': 'var(--shadow-hover)'
+				'hover': 'var(--shadow-hover)',
+				'elegant': 'var(--shadow-elegant)'
 			},
 			keyframes: {
 				'accordion-down': {

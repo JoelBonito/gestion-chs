@@ -10,30 +10,33 @@ export default function Produtos() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Produtos</h1>
+        <div>
+          <h1 className="text-4xl font-display font-bold text-primary-dark mb-2">Produtos</h1>
+          <p className="text-muted-foreground font-inter">Gerencie o catálogo de produtos da sua loja</p>
+        </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-gradient-primary hover:shadow-hover transition-all duration-300 font-inter font-medium px-6">
               <Plus className="mr-2 h-4 w-4" />
               Cadastrar Produto
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md shadow-elegant">
             <DialogHeader>
-              <DialogTitle>Cadastrar Novo Produto</DialogTitle>
+              <DialogTitle className="font-display text-primary-dark">Cadastrar Novo Produto</DialogTitle>
             </DialogHeader>
             <ProdutoForm onSuccess={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Lista de Produtos</CardTitle>
+      <Card className="shadow-card border-primary/20 bg-gradient-card">
+        <CardHeader className="bg-primary/5 border-b border-primary/20">
+          <CardTitle className="font-display text-primary-dark text-xl">Lista de Produtos</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <ListaProdutos />
         </CardContent>
       </Card>
