@@ -19,6 +19,12 @@ const pendingPayments = [
   { client: "Hair Delta", amount: 950.00, dueDate: "2024-01-25", overdue: false },
 ];
 
+const paymentsToMake = [
+  { supplier: "Fornecedor ABC", amount: 1200.00, dueDate: "2024-01-25", description: "Matéria-prima" },
+  { supplier: "Químicos XYZ", amount: 850.00, dueDate: "2024-01-30", description: "Ingredientes ativos" },
+  { supplier: "Embalagens Ltd", amount: 650.00, dueDate: "2024-02-05", description: "Frascos e rótulos" },
+];
+
 export default function Dashboard() {
   // Calculate monthly commissions
   const { data: monthlyCommissions } = useQuery({
@@ -156,7 +162,7 @@ export default function Dashboard() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Orders in Progress */}
         <Card className="shadow-card">
           <CardHeader>
@@ -187,10 +193,10 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Pending Payments */}
+        {/* Payments to Receive */}
         <Card className="shadow-card">
           <CardHeader>
-            <CardTitle>Pagamentos Pendentes</CardTitle>
+            <CardTitle>Pagamentos por Receber</CardTitle>
             <CardDescription>Valores a receber dos clientes</CardDescription>
           </CardHeader>
           <CardContent>
@@ -209,6 +215,30 @@ export default function Dashboard() {
                         Vencido
                       </div>
                     )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Payments to Make */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle>Pagamentos a Realizar</CardTitle>
+            <CardDescription>Valores a pagar aos fornecedores</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {paymentsToMake.map((payment, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                  <div className="space-y-1">
+                    <p className="font-medium text-sm">{payment.supplier}</p>
+                    <p className="text-xs text-muted-foreground">{payment.description}</p>
+                    <p className="text-xs text-muted-foreground">Venc: {payment.dueDate}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-sm">€{payment.amount.toFixed(2)}</p>
                   </div>
                 </div>
               ))}
