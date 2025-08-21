@@ -168,6 +168,10 @@ export default function Encomendas() {
     return new Date(dateString).toLocaleDateString('pt-PT');
   };
 
+  const calcularValorFrete = (pesoBruto: number) => {
+    return pesoBruto * 4.85;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -213,7 +217,7 @@ export default function Encomendas() {
               onCheckedChange={setShowCompleted}
             />
             <Label htmlFor="show-completed">
-              {showCompleted ? "Mostrar entregues" : "Mostrar pendentes"}
+              {showCompleted ? "Mostrar pedidos entregues" : "Mostrar pendentes"}
             </Label>
           </div>
         </CardContent>
@@ -273,59 +277,73 @@ export default function Encomendas() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {filteredEncomendas.map((encomenda) => (
-            <Card key={encomenda.id} className="shadow-card hover:shadow-elevated transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-7 gap-4">
-                    <div>
-                      <p className="font-semibold">#{encomenda.numero_encomenda}</p>
-                      <p className="text-sm text-muted-foreground">{encomenda.clientes?.nome}</p>
+          {filteredEncomendas.map((encomenda) => {
+            const pesoBruto = pesoTransporte[encomenda.id] || 0;
+            const valorFrete = calcularValorFrete(pesoBruto);
+            
+            return (
+              <Card key={encomenda.id} className="shadow-card hover:shadow-elevated transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-9 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Pedido</p>
+                        <p className="font-semibold">#{encomenda.numero_encomenda}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Cliente</p>
+                        <p className="font-medium">{encomenda.clientes?.nome}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Fornecedor</p>
+                        <p className="font-medium">{encomenda.fornecedores?.nome}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Data Produção</p>
+                        <p className="font-medium">{formatDate(encomenda.data_producao_estimada)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Data Entrega</p>
+                        <p className="font-medium">{formatDate(encomenda.data_envio_estimada)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Peso Bruto</p>
+                        <p className="font-medium text-blue-600">
+                          {pesoBruto.toFixed(2)} kg
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Valor Frete</p>
+                        <p className="font-medium text-orange-600">
+                          {formatCurrency(valorFrete)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Status</p>
+                        <EncomendaStatusSelect
+                          encomendaId={encomenda.id}
+                          currentStatus={encomenda.status}
+                          numeroEncomenda={encomenda.numero_encomenda}
+                          onStatusChange={() => handleStatusChange(encomenda.id, encomenda.status)}
+                        />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Valor Total</p>
+                        <p className="font-semibold">{formatCurrency(encomenda.valor_total)}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Fornecedor</p>
-                      <p className="font-medium">{encomenda.fornecedores?.nome}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Status</p>
-                      <EncomendaStatusSelect
-                        encomendaId={encomenda.id}
-                        currentStatus={encomenda.status}
-                        numeroEncomenda={encomenda.numero_encomenda}
-                        onStatusChange={() => handleStatusChange(encomenda.id, encomenda.status)}
-                      />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Peso p/ Transporte</p>
-                      <p className="font-medium text-blue-600">
-                        {pesoTransporte[encomenda.id]?.toFixed(2) || '0.00'} kg
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Produção Estimada</p>
-                      <p className="font-medium">{formatDate(encomenda.data_producao_estimada)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Entrega Estimada</p>
-                      <p className="font-medium">{formatDate(encomenda.data_envio_estimada)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Valor Total</p>
-                      <p className="font-semibold">{formatCurrency(encomenda.valor_total)}</p>
-                    </div>
+                    
+                    <EncomendaActions
+                      encomenda={encomenda}
+                      onView={() => handleView(encomenda)}
+                      onEdit={() => handleEdit(encomenda)}
+                      onDelete={handleDelete}
+                    />
                   </div>
-                  
-                  <EncomendaActions
-                    encomenda={encomenda}
-                    onView={() => handleView(encomenda)}
-                    onEdit={() => handleEdit(encomenda)}
-                    onDelete={handleDelete}
-                    onTransport={() => handleTransport(encomenda)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
