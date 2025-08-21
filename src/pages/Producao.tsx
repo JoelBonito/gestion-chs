@@ -489,6 +489,12 @@ export default function Producao() {
                                         <h3 className="text-lg font-semibold mb-4">Itens da Encomenda</h3>
                                         {loadingItens ? (
                                           <div className="text-center py-4">Carregando itens...</div>
+                                        ) : itensEncomenda.length === 0 ? (
+                                          <div className="text-center py-8 text-muted-foreground">
+                                            <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                                            <p>Nenhum produto encontrado para esta encomenda</p>
+                                            <p className="text-xs mt-1">Os produtos devem ser adicionados ao criar/editar a encomenda</p>
+                                          </div>
                                         ) : (
                                           <Table>
                                             <TableHeader>
