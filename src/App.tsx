@@ -1,59 +1,126 @@
 
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { HorizontalNav } from "@/components/HorizontalNav";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import UserMenu from "@/components/UserMenu";
+import AuthGuard from "@/components/AuthGuard";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Produtos from "./pages/Produtos";
 import Clientes from "./pages/Clientes";
 import Fornecedores from "./pages/Fornecedores";
 import Encomendas from "./pages/Encomendas";
 import Producao from "./pages/Producao";
-import Financeiro from "./pages/Financeiro";
 import Frete from "./pages/Frete";
+import Financeiro from "./pages/Financeiro";
 import NotFound from "./pages/NotFound";
 
-// Create QueryClient instance outside component to avoid recreating on re-renders
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-    },
-  },
-});
+const queryClient = new QueryClient();
 
-const App = () => {
+function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <main className="flex-1 flex flex-col">
+          <div className="border-b border-primary/10 p-4 flex justify-end">
+            <UserMenu />
+          </div>
+          <div className="flex-1 p-6">
+            {children}
+          </div>
+        </main>
+      </div>
+    </SidebarProvider>
+  );
+}
+
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
+        <Sonner />
         <BrowserRouter>
-          <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/20">
-            <HorizontalNav />
-            <main className="flex-1">
-              <div className="container mx-auto p-6">
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/produtos" element={<Produtos />} />
-                  <Route path="/clientes" element={<Clientes />} />
-                  <Route path="/fornecedores" element={<Fornecedores />} />
-                  <Route path="/encomendas" element={<Encomendas />} />
-                  <Route path="/producao" element={<Producao />} />
-                  <Route path="/financeiro" element={<Financeiro />} />
-                  <Route path="/frete" element={<Frete />} />
-                  <Route path="/welcome" element={<Index />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </div>
-            </main>
-          </div>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            
+            <Route path="/dashboard" element={
+              <AuthGuard>
+                <AppLayout>
+                  <Dashboard />
+                </AppLayout>
+              </AuthGuard>
+            } />
+            
+            <Route path="/produtos" element={
+              <AuthGuard requiredRoles={['admin', 'ops']}>
+                <AppLayout>
+                  <Produtos />
+                </AppLayout>
+              </AuthGuard>
+            } />
+            
+            <Route path="/clientes" element={
+              <AuthGuard requiredRoles={['admin', 'ops']}>
+                <AppLayout>
+                  <Clientes />
+                </AppLayout>
+              </AuthGuard>
+            } />
+            
+            <Route path="/fornecedores" element={
+              <AuthGuard requiredRoles={['admin', 'ops']}>
+                <AppLayout>
+                  <Fornecedores />
+                </AppLayout>
+              </AuthGuard>
+            } />
+            
+            <Route path="/encomendas" element={
+              <AuthGuard>
+                <AppLayout>
+                  <Encomendas />
+                </AppLayout>
+              </AuthGuard>
+            } />
+            
+            <Route path="/producao" element={
+              <AuthGuard requiredRoles={['admin', 'ops', 'factory']}>
+                <AppLayout>
+                  <Producao />
+                </AppLayout>
+              </AuthGuard>
+            } />
+            
+            <Route path="/frete" element={
+              <AuthGuard requiredRoles={['admin', 'ops']}>
+                <AppLayout>
+                  <Frete />
+                </AppLayout>
+              </AuthGuard>
+            } />
+            
+            <Route path="/financeiro" element={
+              <AuthGuard requiredRoles={['admin', 'ops']}>
+                <AppLayout>
+                  <Financeiro />
+                </AppLayout>
+              </AuthGuard>
+            } />
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;
