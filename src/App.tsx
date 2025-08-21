@@ -35,7 +35,7 @@ const App = () => {
             <main className="flex-1">
               <div className="container mx-auto p-6">
                 <Routes>
-                  <Route path="/" element={<Index />} />
+                  <Route path="/" element={<Dashboard />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/produtos" element={<Produtos />} />
                   <Route path="/clientes" element={<Clientes />} />
@@ -44,6 +44,7 @@ const App = () => {
                   <Route path="/producao" element={<Producao />} />
                   <Route path="/financeiro" element={<Financeiro />} />
                   <Route path="/frete" element={<Frete />} />
+                  <Route path="/welcome" element={<Index />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </div>
