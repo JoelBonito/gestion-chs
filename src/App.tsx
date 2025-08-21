@@ -84,7 +84,7 @@ function App() {
             } />
             
             <Route path="/encomendas" element={
-              <AuthGuard>
+              <AuthGuard requiredRoles={['admin', 'ops', 'factory', 'client']}>
                 <AppLayout>
                   <Encomendas />
                 </AppLayout>
@@ -108,7 +108,7 @@ function App() {
             } />
             
             <Route path="/financeiro" element={
-              <AuthGuard requiredRoles={['admin', 'ops']}>
+              <AuthGuard requiredRoles={['admin', 'ops', 'factory', 'client']}>
                 <AppLayout>
                   <Financeiro />
                 </AppLayout>
