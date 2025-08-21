@@ -17,7 +17,7 @@ const produtoSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   marca: z.string().min(1, "Marca é obrigatória"),
   tipo: z.string().min(1, "Tipo é obrigatório"),
-  tamanho: z.string().min(1, "Tamanho é obrigatório"),
+  tamanho_ml: z.string().min(1, "Tamanho é obrigatório").regex(/^\d+$/, "Tamanho deve conter apenas números"),
   preco_custo: z.string().min(1, "Preço de custo é obrigatório"),
   preco_venda: z.string().min(1, "Preço de venda é obrigatório"),
   fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
@@ -30,7 +30,8 @@ interface Produto {
   nome: string;
   marca: string;
   tipo: string;
-  tamanho: string;
+  tamanho_ml: number;
+  peso_gramas: number;
   preco_custo: number;
   preco_venda: number;
   fornecedor_id: string;
@@ -52,7 +53,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [marcasExistentes, setMarcasExistentes] = useState<string[]>([]);
   const [tiposExistentes, setTiposExistentes] = useState<string[]>([]);
-  const [tamanhosExistentes, setTamanhosExistentes] = useState<string[]>([]);
   const [novaOpçaoDialog, setNovaOpçaoDialog] = useState<{tipo: string, aberto: boolean}>({tipo: '', aberto: false});
   const [novoValor, setNovoValor] = useState('');
 
@@ -62,7 +62,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
       nome: "",
       marca: "",
       tipo: "",
-      tamanho: "",
+      tamanho_ml: "",
       preco_custo: "",
       preco_venda: "",
       fornecedor_id: "",
@@ -80,7 +80,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         nome: initialData.nome || "",
         marca: initialData.marca || "",
         tipo: initialData.tipo || "",
-        tamanho: initialData.tamanho || "",
+        tamanho_ml: initialData.tamanho_ml ? initialData.tamanho_ml.toString() : "",
         preco_custo: initialData.preco_custo ? initialData.preco_custo.toString() : "",
         preco_venda: initialData.preco_venda ? initialData.preco_venda.toString() : "",
         fornecedor_id: initialData.fornecedor_id || "",
@@ -94,7 +94,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         nome: "",
         marca: "",
         tipo: "",
-        tamanho: "",
+        tamanho_ml: "",
         preco_custo: "",
         preco_venda: "",
         fornecedor_id: "",
@@ -122,7 +122,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     try {
       const { data: produtos, error } = await supabase
         .from("produtos")
-        .select("marca, tipo, tamanho")
+        .select("marca, tipo")
         .eq("ativo", true);
 
       if (error) {
@@ -133,11 +133,9 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
       if (produtos) {
         const marcasUnicas = [...new Set(produtos.map(p => p.marca))].filter(Boolean).sort();
         const tiposUnicos = [...new Set(produtos.map(p => p.tipo))].filter(Boolean).sort();
-        const tamanhosUnicos = [...new Set(produtos.map(p => p.tamanho))].filter(Boolean).sort();
 
         setMarcasExistentes(marcasUnicas);
         setTiposExistentes(tiposUnicos);
-        setTamanhosExistentes(tamanhosUnicos);
       }
     } catch (error) {
       console.error("Erro ao carregar opções existentes:", error);
@@ -161,9 +159,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     } else if (campo === 'tipo') {
       setTiposExistentes(prev => [...prev, valor].sort());
       form.setValue('tipo', valor);
-    } else if (campo === 'tamanho') {
-      setTamanhosExistentes(prev => [...prev, valor].sort());
-      form.setValue('tamanho', valor);
     } else if (campo === 'fornecedor') {
       try {
         const { data: novoFornecedor, error } = await supabase
@@ -194,6 +189,8 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
   const onSubmit = async (data: ProdutoFormData) => {
     setIsSubmitting(true);
     try {
+      const tamanhoNumerico = parseInt(data.tamanho_ml);
+      
       if (isEditing && initialData && initialData.id) {
         const { error } = await supabase
           .from("produtos")
@@ -201,7 +198,8 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             nome: data.nome,
             marca: data.marca,
             tipo: data.tipo,
-            tamanho: data.tamanho,
+            tamanho_ml: tamanhoNumerico,
+            peso_gramas: tamanhoNumerico, // Mesmo valor para ml e gramas
             preco_custo: parseFloat(data.preco_custo),
             preco_venda: parseFloat(data.preco_venda),
             fornecedor_id: data.fornecedor_id,
@@ -225,7 +223,8 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             nome: data.nome,
             marca: data.marca,
             tipo: data.tipo,
-            tamanho: data.tamanho,
+            tamanho_ml: tamanhoNumerico,
+            peso_gramas: tamanhoNumerico, // Mesmo valor para ml e gramas
             preco_custo: parseFloat(data.preco_custo),
             preco_venda: parseFloat(data.preco_venda),
             fornecedor_id: data.fornecedor_id,
@@ -266,7 +265,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
               <FormLabel className="font-display text-primary-dark">Nome do Produto</FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="Ex: Camiseta Premium" 
+                  placeholder="Ex: Shampoo Premium" 
                   className="input-elegant"
                   {...field} 
                 />
@@ -391,37 +390,22 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
 
         <FormField
           control={form.control}
-          name="tamanho"
+          name="tamanho_ml"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-display text-primary-dark">Tamanho e Peso</FormLabel>
-              <Select onValueChange={(value) => {
-                if (value === '__novo_tamanho__') {
-                  handleNovaOpcao('tamanho');
-                } else {
-                  field.onChange(value);
-                }
-              }} value={field.value || ""}>
-                <FormControl>
-                  <SelectTrigger className="input-elegant">
-                    <SelectValue placeholder="Ex: M - 350g" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {tamanhosExistentes.map((tamanho) => (
-                    <SelectItem key={tamanho} value={tamanho}>
-                      {tamanho}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="__novo_tamanho__" className="text-primary font-medium">
-                    <div className="flex items-center">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar novo tamanho...
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <FormLabel className="font-display text-primary-dark">Tamanho (ml)</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  placeholder="Ex: 1000"
+                  className="input-elegant"
+                  {...field}
+                />
+              </FormControl>
               <FormMessage />
+              <p className="text-xs text-muted-foreground">
+                Este valor será usado tanto para ml quanto para gramas (peso para frete)
+              </p>
             </FormItem>
           )}
         />
@@ -484,7 +468,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             <DialogTitle className="font-display text-primary-dark">
               Adicionar {novaOpçaoDialog.tipo === 'marca' ? 'Nova Marca' : 
                          novaOpçaoDialog.tipo === 'tipo' ? 'Novo Tipo' : 
-                         novaOpçaoDialog.tipo === 'tamanho' ? 'Novo Tamanho' : 
                          'Novo Fornecedor'}
             </DialogTitle>
           </DialogHeader>
@@ -493,7 +476,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
               <label className="font-display text-primary-dark">
                 {novaOpçaoDialog.tipo === 'marca' ? 'Nome da Marca' : 
                  novaOpçaoDialog.tipo === 'tipo' ? 'Nome do Tipo' : 
-                 novaOpçaoDialog.tipo === 'tamanho' ? 'Tamanho e Peso (Ex: M - 350g)' : 
                  'Nome do Fornecedor'}
               </label>
               <Input
@@ -501,7 +483,6 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
                 onChange={(e) => setNovoValor(e.target.value)}
                 placeholder={novaOpçaoDialog.tipo === 'marca' ? 'Digite a nova marca' : 
                            novaOpçaoDialog.tipo === 'tipo' ? 'Digite o novo tipo' : 
-                           novaOpçaoDialog.tipo === 'tamanho' ? 'Ex: L - 400g' : 
                            'Digite o nome do fornecedor'}
                 className="input-elegant mt-2"
                 onKeyDown={(e) => {
