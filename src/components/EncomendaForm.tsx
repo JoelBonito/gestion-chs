@@ -71,6 +71,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
     setPesoBruto(pesoBrutoCalculado);
   }, [itens]);
 
+  // Carregar clientes e fornecedores
   useEffect(() => {
     const fetchData = async () => {
       // Carregar clientes
@@ -80,7 +81,10 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         .eq("active", true)
         .order("nome");
       
-      if (clientesData) setClientes(clientesData);
+      if (clientesData) {
+        console.log("Clientes carregados:", clientesData);
+        setClientes(clientesData);
+      }
 
       // Carregar fornecedores
       const { data: fornecedoresData } = await supabase
@@ -89,25 +93,37 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         .eq("active", true)
         .order("nome");
       
-      if (fornecedoresData) setFornecedores(fornecedoresData);
+      if (fornecedoresData) {
+        console.log("Fornecedores carregados:", fornecedoresData);
+        setFornecedores(fornecedoresData);
+      }
     };
 
     fetchData();
   }, []);
 
+  // Carregar dados para edição
   useEffect(() => {
     if (initialData && isEditing) {
       console.log("Carregando dados para edição:", initialData);
       
-      // Preencher todos os campos do formulário
-      form.reset({
-        numero_encomenda: initialData.numero_encomenda || "",
-        cliente_id: initialData.cliente_id || "",
-        fornecedor_id: initialData.fornecedor_id || "",
-        data_producao_estimada: initialData.data_producao_estimada || "",
-        data_envio_estimada: initialData.data_envio_estimada || "",
-        observacoes: initialData.observacoes || "",
-      });
+      // Aguardar um pouco para garantir que clientes e fornecedores foram carregados
+      setTimeout(() => {
+        // Preencher todos os campos do formulário
+        form.reset({
+          numero_encomenda: initialData.numero_encomenda || "",
+          cliente_id: initialData.cliente_id || "",
+          fornecedor_id: initialData.fornecedor_id || "",
+          data_producao_estimada: initialData.data_producao_estimada || "",
+          data_envio_estimada: initialData.data_envio_estimada || "",
+          observacoes: initialData.observacoes || "",
+        });
+
+        console.log("Formulário resetado com:", {
+          cliente_id: initialData.cliente_id,
+          fornecedor_id: initialData.fornecedor_id
+        });
+      }, 100);
 
       // Carregar itens da encomenda
       const fetchItens = async () => {
@@ -135,13 +151,14 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
             subtotal: item.subtotal,
             peso_produto: item.produtos?.size_weight || 0,
           }));
+          console.log("Itens formatados:", itensFormatados);
           setItens(itensFormatados);
         }
       };
 
       fetchItens();
     }
-  }, [initialData, isEditing, form]);
+  }, [initialData, isEditing, form, clientes, fornecedores]);
 
   const generateOrderNumber = () => {
     const now = new Date();

@@ -127,6 +127,7 @@ export default function Encomendas() {
   };
 
   const handleEdit = (encomenda: Encomenda) => {
+    console.log("Editando encomenda:", encomenda);
     setSelectedEncomenda(encomenda);
     setEditDialogOpen(true);
   };
@@ -145,7 +146,7 @@ export default function Encomendas() {
     setTransportDialogOpen(true);
   };
 
-  const handleStatusChange = async (encomendaId: string, novoStatus: StatusEncomenda) => {
+  const handleStatusChange = async () => {
     fetchEncomendas();
   };
 
@@ -275,11 +276,13 @@ export default function Encomendas() {
               Edite as informações da encomenda
             </DialogDescription>
           </DialogHeader>
-          <EncomendaForm 
-            onSuccess={handleEditSuccess} 
-            initialData={selectedEncomenda}
-            isEditing={true}
-          />
+          {selectedEncomenda && (
+            <EncomendaForm 
+              onSuccess={handleEditSuccess} 
+              initialData={selectedEncomenda}
+              isEditing={true}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
@@ -333,9 +336,12 @@ export default function Encomendas() {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Status</p>
-                        <div className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground px-2 py-1 rounded text-xs font-medium w-fit">
-                          {encomenda.status}
-                        </div>
+                        <EncomendaStatusSelect
+                          encomendaId={encomenda.id}
+                          currentStatus={encomenda.status}
+                          numeroEncomenda={encomenda.numero_encomenda}
+                          onStatusChange={handleStatusChange}
+                        />
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Valor Total</p>
