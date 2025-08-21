@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { FornecedorForm } from "@/components/FornecedorForm";
 
 // Mock data
 const fornecedores = [
@@ -39,6 +41,7 @@ const fornecedores = [
 
 export default function Fornecedores() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const filteredFornecedores = fornecedores.filter(fornecedor =>
     fornecedor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -58,10 +61,23 @@ export default function Fornecedores() {
           <h1 className="text-3xl font-bold text-foreground">Fornecedores</h1>
           <p className="text-muted-foreground">Gerencie suas fábricas e parceiros de produção</p>
         </div>
-        <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Fornecedor
-        </Button>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Fornecedor
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Novo Fornecedor</DialogTitle>
+              <DialogDescription>
+                Cadastre um novo fornecedor no sistema
+              </DialogDescription>
+            </DialogHeader>
+            <FornecedorForm onSuccess={() => setDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search */}
