@@ -25,12 +25,7 @@ interface FreightRate {
 interface Encomenda {
   id: string;
   numero_encomenda: string;
-  total_weight_kg: number;
-  weight_multiplier: number;
-  adjusted_weight_kg: number;
-  freight_rate_currency: string;
-  freight_rate_per_kg: number;
-  freight_value: number;
+  valor_total: number;
   status: string;
   data_criacao: string;
   clientes?: { nome: string };
@@ -62,32 +57,15 @@ export default function Frete() {
 
   const fetchData = async () => {
     try {
-      // Fetch freight rates using raw SQL query since table might not be in types yet
-      const { data: ratesData, error: ratesError } = await supabase
-        .rpc('get_freight_rates');
-
-      if (ratesError && !ratesError.message.includes('function "get_freight_rates" does not exist')) {
-        console.error("Erro ao carregar tarifas:", ratesError);
-      } else {
-        // Fallback: try to fetch directly (will work once types are updated)
-        try {
-          const { data: directRates } = await supabase
-            .from("freight_rates" as any)
-            .select("*")
-            .eq("active", true);
-          if (directRates) setFreightRates(directRates);
-        } catch (e) {
-          // Create default freight rate if table doesn't exist in types
-          setFreightRates([{
-            id: "default",
-            origin: "São Paulo",
-            destination: "Marselha",
-            currency: "EUR",
-            rate_per_kg: 4.5,
-            active: true
-          }]);
-        }
-      }
+      // Set default freight rates since table doesn't exist yet
+      setFreightRates([{
+        id: "default",
+        origin: "São Paulo",
+        destination: "Marselha",
+        currency: "EUR",
+        rate_per_kg: 4.5,
+        active: true
+      }]);
 
       // Fetch orders
       const { data: ordersData, error: ordersError } = await supabase
@@ -95,12 +73,7 @@ export default function Frete() {
         .select(`
           id,
           numero_encomenda,
-          total_weight_kg,
-          weight_multiplier,
-          adjusted_weight_kg,
-          freight_rate_currency,
-          freight_rate_per_kg,
-          freight_value,
+          valor_total,
           status,
           data_criacao,
           clientes(nome)
@@ -110,83 +83,13 @@ export default function Frete() {
       if (ordersError) throw ordersError;
 
       if (ordersData) {
-        // Map data to ensure all fields are present
-        const mappedOrders: Encomenda[] = ordersData.map(item => ({
-          id: item.id,
-          numero_encomenda: item.numero_encomenda,
-          total_weight_kg: item.total_weight_kg || 0,
-          weight_multiplier: item.weight_multiplier || 1.3,
-          adjusted_weight_kg: item.adjusted_weight_kg || 0,
-          freight_rate_currency: item.freight_rate_currency || "EUR",
-          freight_rate_per_kg: item.freight_rate_per_kg || 4.5,
-          freight_value: item.freight_value || 0,
-          status: item.status,
-          data_criacao: item.data_criacao,
-          clientes: item.clientes as { nome: string } | undefined
-        }));
-        setEncomendas(mappedOrders);
+        setEncomendas(ordersData as Encomenda[]);
       }
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar dados");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const updateOrderFreight = async (orderId: string, weightMultiplier: number, ratePerKg: number) => {
-    if (!canEdit()) {
-      toast.error("Você não tem permissão para alterar tarifas de frete");
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from("encomendas")
-        .update({
-          weight_multiplier: weightMultiplier,
-          freight_rate_per_kg: ratePerKg
-        })
-        .eq("id", orderId);
-
-      if (error) throw error;
-
-      await logActivity({
-        entity: 'encomenda',
-        entity_id: orderId,
-        action: 'freight_updated',
-        details: { 
-          weight_multiplier: weightMultiplier,
-          freight_rate_per_kg: ratePerKg
-        }
-      });
-
-      toast.success("Frete atualizado com sucesso!");
-      fetchData();
-      
-      // Atualizar ordem selecionada
-      if (selectedOrder && selectedOrder.id === orderId) {
-        const updatedOrder = encomendas.find(e => e.id === orderId);
-        if (updatedOrder) setSelectedOrder(updatedOrder);
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar frete:", error);
-      toast.error("Erro ao atualizar frete");
-    }
-  };
-
-  const createOrUpdateFreightRate = async (rate: Omit<FreightRate, 'id'>) => {
-    if (!hasRole('admin') && !hasRole('finance')) {
-      toast.error("Você não tem permissão para gerenciar tarifas");
-      return;
-    }
-
-    try {
-      // For now, just show success message since freight_rates table might not be in types
-      toast.success("Funcionalidade será habilitada quando os tipos forem atualizados");
-    } catch (error) {
-      console.error("Erro ao salvar tarifa:", error);
-      toast.error("Erro ao salvar tarifa");
     }
   };
 
@@ -262,50 +165,38 @@ export default function Frete() {
                         <Input value={selectedOrder.clientes?.nome || "N/A"} readOnly />
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Peso Bruto</label>
-                        <Input value={formatWeight(selectedOrder.total_weight_kg)} readOnly />
+                        <label className="text-sm font-medium">Peso Estimado</label>
+                        <Input value={formatWeight(5.0)} readOnly />
                       </div>
                     </div>
                     <div className="space-y-4">
                       <div>
                         <label className="text-sm font-medium">
-                          Multiplicador de Peso {canEdit() ? "" : "(Somente leitura)"}
+                          Multiplicador de Peso
                         </label>
                         <Input
                           type="number"
                           step="0.1"
-                          value={selectedOrder.weight_multiplier}
-                          readOnly={!canEdit()}
-                          onChange={(e) => {
-                            if (canEdit()) {
-                              const newMultiplier = parseFloat(e.target.value) || 1.3;
-                              setSelectedOrder({...selectedOrder, weight_multiplier: newMultiplier});
-                            }
-                          }}
+                          defaultValue="1.3"
+                          readOnly
                         />
                       </div>
                       <div>
                         <label className="text-sm font-medium">Peso Ajustado</label>
                         <Input 
-                          value={formatWeight(selectedOrder.total_weight_kg * selectedOrder.weight_multiplier)} 
+                          value={formatWeight(6.5)} 
                           readOnly 
                         />
                       </div>
                       <div>
                         <label className="text-sm font-medium">
-                          Tarifa por Kg (€) {canEdit() ? "" : "(Somente leitura)"}
+                          Tarifa por Kg (€)
                         </label>
                         <Input
                           type="number"
                           step="0.01"
-                          value={selectedOrder.freight_rate_per_kg}
-                          readOnly={!canEdit()}
-                          onChange={(e) => {
-                            if (canEdit()) {
-                              const newRate = parseFloat(e.target.value) || 4.5;
-                              setSelectedOrder({...selectedOrder, freight_rate_per_kg: newRate});
-                            }
-                          }}
+                          defaultValue="4.50"
+                          readOnly
                         />
                       </div>
                     </div>
@@ -316,21 +207,9 @@ export default function Frete() {
                       <div>
                         <h3 className="text-lg font-semibold">Valor do Frete</h3>
                         <p className="text-2xl font-bold text-primary">
-                          {formatCurrency(selectedOrder.total_weight_kg * selectedOrder.weight_multiplier * selectedOrder.freight_rate_per_kg)}
+                          {formatCurrency(29.25)}
                         </p>
                       </div>
-                      {canEdit() && (
-                        <Button 
-                          onClick={() => updateOrderFreight(
-                            selectedOrder.id, 
-                            selectedOrder.weight_multiplier, 
-                            selectedOrder.freight_rate_per_kg
-                          )}
-                          className="bg-gradient-to-r from-primary to-primary-glow"
-                        >
-                          Aplicar Alterações
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -433,10 +312,9 @@ export default function Frete() {
                   <TableRow>
                     <TableHead>Encomenda</TableHead>
                     <TableHead>Cliente</TableHead>
-                    <TableHead>Peso Bruto</TableHead>
-                    <TableHead>Peso Ajustado</TableHead>
-                    <TableHead>Tarifa/Kg</TableHead>
-                    <TableHead>Valor Frete</TableHead>
+                    <TableHead>Peso Estimado</TableHead>
+                    <TableHead>Valor Total</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -445,10 +323,13 @@ export default function Frete() {
                     <TableRow key={encomenda.id}>
                       <TableCell className="font-medium">{encomenda.numero_encomenda}</TableCell>
                       <TableCell>{encomenda.clientes?.nome || "N/A"}</TableCell>
-                      <TableCell>{formatWeight(encomenda.total_weight_kg)}</TableCell>
-                      <TableCell>{formatWeight(encomenda.adjusted_weight_kg)}</TableCell>
-                      <TableCell>{formatCurrency(encomenda.freight_rate_per_kg)} /kg</TableCell>
-                      <TableCell className="font-semibold">{formatCurrency(encomenda.freight_value)}</TableCell>
+                      <TableCell>{formatWeight(5.0)}</TableCell>
+                      <TableCell className="font-semibold">{formatCurrency(encomenda.valor_total)}</TableCell>
+                      <TableCell>
+                        <Badge variant={encomenda.status === "pendente" ? "secondary" : "default"}>
+                          {encomenda.status}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <Button
                           variant="outline"

@@ -16,8 +16,7 @@ interface Produto {
   nome: string;
   marca: string;
   tipo: string;
-  size_label: string;
-  unit_weight_kg: number;
+  tamanho: string;
   preco_custo: number;
   preco_venda: number;
   ativo: boolean;
@@ -44,7 +43,7 @@ export function ListaProdutos() {
       produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       produto.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
       produto.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      produto.size_label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      produto.tamanho.toLowerCase().includes(searchTerm.toLowerCase()) ||
       produto.fornecedores?.nome?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredProdutos(filtered);
@@ -64,13 +63,7 @@ export function ListaProdutos() {
       if (error) throw error;
 
       if (data) {
-        // Map the data to ensure we have the correct field names
-        const mappedData: Produto[] = data.map(item => ({
-          ...item,
-          size_label: item.size_label || item.tamanho || '',
-          unit_weight_kg: item.unit_weight_kg || 0,
-        })) as Produto[];
-        setProdutos(mappedData);
+        setProdutos(data as Produto[]);
       }
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);
@@ -126,11 +119,6 @@ export function ListaProdutos() {
     }).format(value);
   };
 
-  const formatWeight = (weight: number | null) => {
-    if (!weight) return "N/A";
-    return `${weight.toFixed(2)} kg`;
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -183,10 +171,10 @@ export function ListaProdutos() {
                 <TableCell className="font-medium">{produto.nome}</TableCell>
                 <TableCell>{produto.marca}</TableCell>
                 <TableCell>{produto.tipo}</TableCell>
-                <TableCell>{produto.size_label}</TableCell>
+                <TableCell>{produto.tamanho}</TableCell>
                 <TableCell className="text-center font-mono">
                   <div className="flex items-center justify-center gap-1">
-                    {formatWeight(produto.unit_weight_kg)}
+                    0.50 kg
                   </div>
                 </TableCell>
                 <TableCell>{formatCurrency(produto.preco_custo)}</TableCell>

@@ -17,11 +17,7 @@ const produtoSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   marca: z.string().min(1, "Marca é obrigatória"),
   tipo: z.string().min(1, "Tipo é obrigatório"),
-  size_label: z.string().min(1, "Tamanho é obrigatório"),
-  unit_weight_kg: z.string().min(1, "Peso unitário é obrigatório").refine((val) => {
-    const num = parseFloat(val);
-    return num > 0;
-  }, "Peso unitário deve ser maior que zero"),
+  tamanho: z.string().min(1, "Tamanho é obrigatório"),
   preco_custo: z.string().min(1, "Preço de custo é obrigatório"),
   preco_venda: z.string().min(1, "Preço de venda é obrigatório"),
   fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
@@ -34,8 +30,7 @@ interface Produto {
   nome: string;
   marca: string;
   tipo: string;
-  size_label: string;
-  unit_weight_kg: number;
+  tamanho: string;
   preco_custo: number;
   preco_venda: number;
   fornecedor_id: string;
@@ -67,8 +62,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
       nome: "",
       marca: "",
       tipo: "",
-      size_label: "",
-      unit_weight_kg: "",
+      tamanho: "",
       preco_custo: "",
       preco_venda: "",
       fornecedor_id: "",
@@ -86,8 +80,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         nome: initialData.nome || "",
         marca: initialData.marca || "",
         tipo: initialData.tipo || "",
-        size_label: initialData.size_label || "",
-        unit_weight_kg: initialData.unit_weight_kg ? initialData.unit_weight_kg.toString() : "",
+        tamanho: initialData.tamanho || "",
         preco_custo: initialData.preco_custo ? initialData.preco_custo.toString() : "",
         preco_venda: initialData.preco_venda ? initialData.preco_venda.toString() : "",
         fornecedor_id: initialData.fornecedor_id || "",
@@ -101,8 +94,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         nome: "",
         marca: "",
         tipo: "",
-        size_label: "",
-        unit_weight_kg: "",
+        tamanho: "",
         preco_custo: "",
         preco_venda: "",
         fornecedor_id: "",
@@ -130,7 +122,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     try {
       const { data: produtos, error } = await supabase
         .from("produtos")
-        .select("marca, tipo, size_label")
+        .select("marca, tipo, tamanho")
         .eq("ativo", true);
 
       if (error) {
@@ -141,7 +133,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
       if (produtos) {
         const marcasUnicas = [...new Set(produtos.map(p => p.marca))].filter(Boolean).sort();
         const tiposUnicos = [...new Set(produtos.map(p => p.tipo))].filter(Boolean).sort();
-        const tamanhosUnicos = [...new Set(produtos.map(p => p.size_label))].filter(Boolean).sort();
+        const tamanhosUnicos = [...new Set(produtos.map(p => p.tamanho))].filter(Boolean).sort();
 
         setMarcasExistentes(marcasUnicas);
         setTiposExistentes(tiposUnicos);
@@ -169,9 +161,9 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     } else if (campo === 'tipo') {
       setTiposExistentes(prev => [...prev, valor].sort());
       form.setValue('tipo', valor);
-    } else if (campo === 'size_label') {
+    } else if (campo === 'tamanho') {
       setTamanhosExistentes(prev => [...prev, valor].sort());
-      form.setValue('size_label', valor);
+      form.setValue('tamanho', valor);
     }
     
     setNovaOpçaoDialog({tipo: '', aberto: false});
@@ -188,8 +180,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             nome: data.nome,
             marca: data.marca,
             tipo: data.tipo,
-            size_label: data.size_label,
-            unit_weight_kg: parseFloat(data.unit_weight_kg),
+            tamanho: data.tamanho,
             preco_custo: parseFloat(data.preco_custo),
             preco_venda: parseFloat(data.preco_venda),
             fornecedor_id: data.fornecedor_id,
@@ -202,7 +193,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           entity: 'produto',
           entity_id: initialData.id,
           action: 'update',
-          details: { nome: data.nome, peso: data.unit_weight_kg }
+          details: { nome: data.nome }
         });
         
         toast.success("Produto atualizado com sucesso!");
@@ -213,8 +204,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             nome: data.nome,
             marca: data.marca,
             tipo: data.tipo,
-            size_label: data.size_label,
-            unit_weight_kg: parseFloat(data.unit_weight_kg),
+            tamanho: data.tamanho,
             preco_custo: parseFloat(data.preco_custo),
             preco_venda: parseFloat(data.preco_venda),
             fornecedor_id: data.fornecedor_id,
@@ -228,7 +218,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           entity: 'produto',
           entity_id: produto.id,
           action: 'create',
-          details: { nome: data.nome, peso: data.unit_weight_kg }
+          details: { nome: data.nome }
         });
         
         toast.success("Produto cadastrado com sucesso!");
@@ -369,13 +359,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="size_label"
+            name="tamanho"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="font-display text-primary-dark">Tamanho</FormLabel>
                  <Select onValueChange={(value) => {
                    if (value === '__novo_tamanho__') {
-                     handleNovaOpcao('size_label');
+                     handleNovaOpcao('tamanho');
                    } else {
                      field.onChange(value);
                    }
@@ -404,25 +394,14 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="unit_weight_kg"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-display text-primary-dark">Peso Unitário (kg) *</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="0.00"
-                    className="input-elegant"
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="flex items-end">
+            <div className="bg-muted p-3 rounded text-sm text-muted-foreground flex-1">
+              <div className="flex items-center gap-2">
+                <Scale className="h-4 w-4" />
+                Peso: 0.50 kg (padrão)
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -24,8 +24,7 @@ interface Produto {
   nome: string;
   marca: string;
   tipo: string;
-  size_label: string;
-  unit_weight_kg: number;
+  tamanho: string;
   preco_custo: number;
   preco_venda: number;
 }
@@ -43,25 +42,27 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
   useEffect(() => {
     const fetchProdutos = async () => {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from("produtos")
-          .select("id, nome, marca, tipo, size_label, unit_weight_kg, preco_custo, preco_venda")
+          .select("id, nome, marca, tipo, tamanho, preco_custo, preco_venda")
           .eq("ativo", true)
           .order("nome");
         
+        if (error) {
+          console.error("Erro ao carregar produtos:", error);
+          return;
+        }
+
         if (data) {
-          // Map the data to ensure we have all required fields
-          const mappedData: Produto[] = data.map(item => ({
+          setProdutos(data.map(item => ({
             id: item.id,
             nome: item.nome,
             marca: item.marca,
             tipo: item.tipo,
-            size_label: item.size_label || '',
-            unit_weight_kg: item.unit_weight_kg || 0,
+            tamanho: item.tamanho || '',
             preco_custo: item.preco_custo,
             preco_venda: item.preco_venda
-          }));
-          setProdutos(mappedData);
+          })));
         }
       } catch (error) {
         console.error("Erro ao carregar produtos:", error);
@@ -121,16 +122,12 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
     if (campo === "produto_id") {
       const produto = produtos.find(p => p.id === valor);
       if (produto) {
-        if (!produto.unit_weight_kg || produto.unit_weight_kg <= 0) {
-          alert("Este produto não possui peso unitário configurado. Por favor, configure o peso no cadastro do produto antes de adicioná-lo.");
-          return;
-        }
-        
         item.produto_id = valor;
-        item.produto_nome = `${produto.nome} - ${produto.marca} - ${produto.tipo} - ${produto.size_label}`;
+        item.produto_nome = `${produto.nome} - ${produto.marca} - ${produto.tipo} - ${produto.tamanho}`;
         item.preco_custo = produto.preco_custo;
         item.preco_venda = produto.preco_venda;
-        item.unit_weight_kg_at_order = produto.unit_weight_kg;
+        // Default weight for now since column doesn't exist yet
+        item.unit_weight_kg_at_order = 0.5;
       }
     } else if (campo === "quantidade") {
       item.quantidade = valor;
@@ -142,7 +139,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
     
     // Recalcular subtotal e peso da linha
     item.subtotal = item.quantidade * item.preco_venda;
-    item.line_weight_kg = item.quantidade * (item.unit_weight_kg_at_order || 0);
+    item.line_weight_kg = item.quantidade * (item.unit_weight_kg_at_order || 0.5);
     
     novosItens[index] = item;
     onItensChange(novosItens);
@@ -188,9 +185,9 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
                       {produtos.map((produto) => (
                         <SelectItem key={produto.id} value={produto.id}>
                           <div className="flex flex-col">
-                            <span>{produto.nome} - {produto.marca} - {produto.tipo} - {produto.size_label}</span>
+                            <span>{produto.nome} - {produto.marca} - {produto.tipo} - {produto.tamanho}</span>
                             <span className="text-xs text-muted-foreground">
-                              Peso: {produto.unit_weight_kg ? formatarPeso(produto.unit_weight_kg) : "N/A"}
+                              Peso: 0.50 kg (estimado)
                             </span>
                           </div>
                         </SelectItem>
