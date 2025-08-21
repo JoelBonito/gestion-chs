@@ -43,9 +43,9 @@ export function ListaProdutos() {
   };
 
   const formatarMoeda = (valor: number) => {
-    return new Intl.NumberFormat("pt-BR", {
+    return new Intl.NumberFormat("pt-PT", {
       style: "currency",
-      currency: "BRL",
+      currency: "EUR",
     }).format(valor);
   };
 
