@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -42,6 +44,8 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
   const [marcasExistentes, setMarcasExistentes] = useState<string[]>([]);
   const [tiposExistentes, setTiposExistentes] = useState<string[]>([]);
   const [tamanhosExistentes, setTamanhosExistentes] = useState<string[]>([]);
+  const [novaOpçaoDialog, setNovaOpçaoDialog] = useState<{tipo: string, aberto: boolean}>({tipo: '', aberto: false});
+  const [novoValor, setNovoValor] = useState('');
 
   const form = useForm<ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
@@ -105,6 +109,33 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     } catch (error) {
       console.error("Erro ao carregar opções existentes:", error);
     }
+  };
+
+  const handleNovaOpcao = (tipo: string) => {
+    setNovaOpçaoDialog({tipo, aberto: true});
+    setNovoValor('');
+  };
+
+  const adicionarNovaOpcao = () => {
+    if (!novoValor.trim()) return;
+    
+    const campo = novaOpçaoDialog.tipo;
+    const valor = novoValor.trim();
+    
+    // Adiciona à lista correspondente
+    if (campo === 'marca') {
+      setMarcasExistentes(prev => [...prev, valor].sort());
+      form.setValue('marca', valor);
+    } else if (campo === 'tipo') {
+      setTiposExistentes(prev => [...prev, valor].sort());
+      form.setValue('tipo', valor);
+    } else if (campo === 'tamanho') {
+      setTamanhosExistentes(prev => [...prev, valor].sort());
+      form.setValue('tamanho', valor);
+    }
+    
+    setNovaOpçaoDialog({tipo: '', aberto: false});
+    setNovoValor('');
   };
 
   const onSubmit = async (data: ProdutoFormData) => {
@@ -180,27 +211,32 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-display text-primary-dark">Marca</FormLabel>
-              <FormControl>
-                <div className="space-y-2">
-                  <Input 
-                    placeholder="Digite uma nova marca ou selecione existente"
-                    list="marcas-list"
-                    className="input-elegant"
-                    {...field}
-                  />
-                  <datalist id="marcas-list">
-                    {marcasExistentes.map((marca) => (
-                      <option key={marca} value={marca} />
-                    ))}
-                  </datalist>
-                  {marcasExistentes.length > 0 && (
-                    <div className="text-xs text-muted-foreground">
-                      💡 Marcas existentes: {marcasExistentes.slice(0, 3).join(", ")}
-                      {marcasExistentes.length > 3 && ` e mais ${marcasExistentes.length - 3}`}
+              <Select onValueChange={(value) => {
+                if (value === '__nova_marca__') {
+                  handleNovaOpcao('marca');
+                } else {
+                  field.onChange(value);
+                }
+              }} value={field.value || ""}>
+                <FormControl>
+                  <SelectTrigger className="input-elegant">
+                    <SelectValue placeholder="Selecione uma marca" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {marcasExistentes.map((marca) => (
+                    <SelectItem key={marca} value={marca}>
+                      {marca}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__nova_marca__" className="text-primary font-medium">
+                    <div className="flex items-center">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar nova marca...
                     </div>
-                  )}
-                </div>
-              </FormControl>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -212,27 +248,32 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-display text-primary-dark">Tipo</FormLabel>
-              <FormControl>
-                <div className="space-y-2">
-                  <Input 
-                    placeholder="Digite um novo tipo ou selecione existente"
-                    list="tipos-list"
-                    className="input-elegant"
-                    {...field}
-                  />
-                  <datalist id="tipos-list">
-                    {tiposExistentes.map((tipo) => (
-                      <option key={tipo} value={tipo} />
-                    ))}
-                  </datalist>
-                  {tiposExistentes.length > 0 && (
-                    <div className="text-xs text-muted-foreground">
-                      💡 Tipos existentes: {tiposExistentes.slice(0, 3).join(", ")}
-                      {tiposExistentes.length > 3 && ` e mais ${tiposExistentes.length - 3}`}
+              <Select onValueChange={(value) => {
+                if (value === '__novo_tipo__') {
+                  handleNovaOpcao('tipo');
+                } else {
+                  field.onChange(value);
+                }
+              }} value={field.value || ""}>
+                <FormControl>
+                  <SelectTrigger className="input-elegant">
+                    <SelectValue placeholder="Selecione um tipo" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {tiposExistentes.map((tipo) => (
+                    <SelectItem key={tipo} value={tipo}>
+                      {tipo}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__novo_tipo__" className="text-primary font-medium">
+                    <div className="flex items-center">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar novo tipo...
                     </div>
-                  )}
-                </div>
-              </FormControl>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -244,27 +285,32 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-display text-primary-dark">Tamanho</FormLabel>
-              <FormControl>
-                <div className="space-y-2">
-                  <Input 
-                    placeholder="Digite um novo tamanho ou selecione existente"
-                    list="tamanhos-list"
-                    className="input-elegant"
-                    {...field}
-                  />
-                  <datalist id="tamanhos-list">
-                    {tamanhosExistentes.map((tamanho) => (
-                      <option key={tamanho} value={tamanho} />
-                    ))}
-                  </datalist>
-                  {tamanhosExistentes.length > 0 && (
-                    <div className="text-xs text-muted-foreground">
-                      💡 Tamanhos existentes: {tamanhosExistentes.slice(0, 5).join(", ")}
-                      {tamanhosExistentes.length > 5 && ` e mais ${tamanhosExistentes.length - 5}`}
+              <Select onValueChange={(value) => {
+                if (value === '__novo_tamanho__') {
+                  handleNovaOpcao('tamanho');
+                } else {
+                  field.onChange(value);
+                }
+              }} value={field.value || ""}>
+                <FormControl>
+                  <SelectTrigger className="input-elegant">
+                    <SelectValue placeholder="Selecione um tamanho" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {tamanhosExistentes.map((tamanho) => (
+                    <SelectItem key={tamanho} value={tamanho}>
+                      {tamanho}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="__novo_tamanho__" className="text-primary font-medium">
+                    <div className="flex items-center">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar novo tamanho...
                     </div>
-                  )}
-                </div>
-              </FormControl>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
@@ -319,6 +365,51 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           {isSubmitting ? (isEditing ? "Salvando..." : "Cadastrando...") : (isEditing ? "Salvar Alterações" : "Cadastrar Produto")}
         </Button>
       </form>
+
+      {/* Dialog para adicionar nova opção */}
+      <Dialog open={novaOpçaoDialog.aberto} onOpenChange={(aberto) => setNovaOpçaoDialog({...novaOpçaoDialog, aberto})}>
+        <DialogContent className="max-w-md shadow-elegant">
+          <DialogHeader>
+            <DialogTitle className="font-display text-primary-dark">
+              Adicionar Nova {novaOpçaoDialog.tipo === 'marca' ? 'Marca' : novaOpçaoDialog.tipo === 'tipo' ? 'Tipo' : 'Tamanho'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="font-display text-primary-dark">
+                {novaOpçaoDialog.tipo === 'marca' ? 'Nome da Marca' : novaOpçaoDialog.tipo === 'tipo' ? 'Nome do Tipo' : 'Tamanho'}
+              </Label>
+              <Input
+                value={novoValor}
+                onChange={(e) => setNovoValor(e.target.value)}
+                placeholder={`Digite ${novaOpçaoDialog.tipo === 'marca' ? 'a nova marca' : novaOpçaoDialog.tipo === 'tipo' ? 'o novo tipo' : 'o novo tamanho'}`}
+                className="input-elegant mt-2"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    adicionarNovaOpcao();
+                  }
+                }}
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => setNovaOpçaoDialog({tipo: '', aberto: false})}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={adicionarNovaOpcao}
+                className="bg-gradient-primary"
+                disabled={!novoValor.trim()}
+              >
+                Adicionar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Form>
   );
 }
