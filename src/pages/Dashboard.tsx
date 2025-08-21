@@ -1,3 +1,4 @@
+
 import { Package, DollarSign, TrendingUp, Users, AlertCircle, Calendar } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,28 +6,58 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
-// Mock data
-const recentOrders = [
-  { id: "ENV-001", client: "Distribuidora Alpha", value: 2500.00, status: "pending", date: "2024-01-15" },
-  { id: "ENV-002", client: "Cosméticos Beta", value: 1800.00, status: "sent", date: "2024-01-14" },
-  { id: "ENV-003", client: "Beauty Gamma", value: 3200.00, status: "delivered", date: "2024-01-13" },
-  { id: "ENV-004", client: "Hair Delta", value: 950.00, status: "pending", date: "2024-01-12" },
-];
-
-const pendingPayments = [
-  { client: "Distribuidora Alpha", amount: 2500.00, dueDate: "2024-01-20", overdue: false },
-  { client: "Beauty Gamma", amount: 3200.00, dueDate: "2024-01-10", overdue: true },
-  { client: "Hair Delta", amount: 950.00, dueDate: "2024-01-25", overdue: false },
-];
-
-const paymentsToMake = [
-  { supplier: "Fornecedor ABC", amount: 1200.00, dueDate: "2024-01-25", description: "Matéria-prima" },
-  { supplier: "Químicos XYZ", amount: 850.00, dueDate: "2024-01-30", description: "Ingredientes ativos" },
-  { supplier: "Embalagens Ltd", amount: 650.00, dueDate: "2024-02-05", description: "Frascos e rótulos" },
-];
-
 export default function Dashboard() {
-  // Calculate monthly commissions
+  // Fetch encomendas ativas (não entregues)
+  const { data: encomendasAtivas } = useQuery({
+    queryKey: ['encomendas-ativas'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('encomendas')
+        .select('*')
+        .neq('status', 'ENTREGUE');
+
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch dados para A RECEBER (saldo devedor de todas as encomendas)
+  const { data: totalAReceber } = useQuery({
+    queryKey: ['total-a-receber'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('encomendas')
+        .select('saldo_devedor');
+
+      if (error) throw error;
+      
+      const total = data?.reduce((sum, encomenda) => {
+        return sum + (parseFloat(encomenda.saldo_devedor) || 0);
+      }, 0) || 0;
+
+      return total;
+    }
+  });
+
+  // Fetch dados para A PAGAR (saldo devedor fornecedor de todas as encomendas)
+  const { data: totalAPagar } = useQuery({
+    queryKey: ['total-a-pagar'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('encomendas')
+        .select('saldo_devedor_fornecedor');
+
+      if (error) throw error;
+      
+      const total = data?.reduce((sum, encomenda) => {
+        return sum + (parseFloat(encomenda.saldo_devedor_fornecedor) || 0);
+      }, 0) || 0;
+
+      return total;
+    }
+  });
+
+  // Calculate monthly commissions (diferença entre a receber e a pagar do mês atual)
   const { data: monthlyCommissions } = useQuery({
     queryKey: ['monthly-commissions'],
     queryFn: async () => {
@@ -36,80 +67,138 @@ export default function Dashboard() {
       
       const { data, error } = await supabase
         .from('encomendas')
-        .select(`
-          id,
-          data_criacao,
-          itens_encomenda (
-            quantidade,
-            preco_unitario,
-            produtos (
-              preco_custo
-            )
-          )
-        `)
+        .select('valor_total, valor_total_custo')
         .gte('data_criacao', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
         .lt('data_criacao', `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`);
 
       if (error) return 0;
       
-      let totalCommission = 0;
-      data?.forEach(encomenda => {
-        encomenda.itens_encomenda?.forEach(item => {
-          if (item.produtos && item.preco_unitario && item.produtos.preco_custo) {
-            const profit = (item.preco_unitario - item.produtos.preco_custo) * item.quantidade;
-            totalCommission += profit;
-          }
-        });
-      });
+      const totalCommission = data?.reduce((sum, encomenda) => {
+        const valorTotal = parseFloat(encomenda.valor_total) || 0;
+        const valorCusto = parseFloat(encomenda.valor_total_custo) || 0;
+        return sum + (valorTotal - valorCusto);
+      }, 0) || 0;
       
       return totalCommission;
     }
   });
 
-  // Calculate annual commissions for 2025
+  // Calculate annual commissions for current year
   const { data: annualCommissions } = useQuery({
-    queryKey: ['annual-commissions-2025'],
+    queryKey: ['annual-commissions'],
+    queryFn: async () => {
+      const currentYear = new Date().getFullYear();
+      
+      const { data, error } = await supabase
+        .from('encomendas')
+        .select('valor_total, valor_total_custo')
+        .gte('data_criacao', `${currentYear}-01-01`)
+        .lt('data_criacao', `${currentYear + 1}-01-01`);
+
+      if (error) return 0;
+      
+      const totalCommission = data?.reduce((sum, encomenda) => {
+        const valorTotal = parseFloat(encomenda.valor_total) || 0;
+        const valorCusto = parseFloat(encomenda.valor_total_custo) || 0;
+        return sum + (valorTotal - valorCusto);
+      }, 0) || 0;
+      
+      return totalCommission;
+    }
+  });
+
+  // Fetch recent orders data
+  const { data: recentOrders } = useQuery({
+    queryKey: ['recent-orders'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('encomendas')
         .select(`
           id,
+          numero_encomenda,
+          status,
+          valor_total,
           data_criacao,
-          itens_encomenda (
-            quantidade,
-            preco_unitario,
-            produtos (
-              preco_custo
-            )
-          )
+          clientes(nome)
         `)
-        .gte('data_criacao', '2025-01-01')
-        .lt('data_criacao', '2026-01-01');
+        .order('created_at', { ascending: false })
+        .limit(4);
 
-      if (error) return 0;
-      
-      let totalCommission = 0;
-      data?.forEach(encomenda => {
-        encomenda.itens_encomenda?.forEach(item => {
-          if (item.produtos && item.preco_unitario && item.produtos.preco_custo) {
-            const profit = (item.preco_unitario - item.produtos.preco_custo) * item.quantidade;
-            totalCommission += profit;
-          }
-        });
-      });
-      
-      return totalCommission;
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch pending payments
+  const { data: pendingPayments } = useQuery({
+    queryKey: ['pending-payments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('encomendas')
+        .select(`
+          id,
+          numero_encomenda,
+          saldo_devedor,
+          data_criacao,
+          clientes(nome)
+        `)
+        .gt('saldo_devedor', 0)
+        .order('data_criacao', { ascending: true })
+        .limit(3);
+
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Fetch payments to make
+  const { data: paymentsToMake } = useQuery({
+    queryKey: ['payments-to-make'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('encomendas')
+        .select(`
+          id,
+          numero_encomenda,
+          saldo_devedor_fornecedor,
+          data_criacao,
+          fornecedores(nome)
+        `)
+        .gt('saldo_devedor_fornecedor', 0)
+        .order('data_criacao', { ascending: true })
+        .limit(3);
+
+      if (error) throw error;
+      return data || [];
     }
   });
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      pending: { label: "Pendente", variant: "secondary" as const },
-      sent: { label: "Enviado", variant: "default" as const },
-      delivered: { label: "Entregue", variant: "outline" as const }
+      "NOVO PEDIDO": { label: "Novo Pedido", variant: "secondary" as const },
+      "PRODUÇÃO": { label: "Produção", variant: "default" as const },
+      "EMBALAGEM": { label: "Embalagem", variant: "default" as const },
+      "TRANSPORTE": { label: "Transporte", variant: "default" as const },
+      "ENTREGUE": { label: "Entregue", variant: "outline" as const }
     };
-    return variants[status as keyof typeof variants] || variants.pending;
+    return variants[status as keyof typeof variants] || variants["NOVO PEDIDO"];
   };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-PT', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(value);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-PT');
+  };
+
+  // Count encomendas pendentes
+  const encomendasPendentes = encomendasAtivas?.filter(e => 
+    e.status === 'NOVO PEDIDO' || e.status === 'PRODUÇÃO'
+  ).length || 0;
 
   return (
     <div className="space-y-6">
@@ -122,16 +211,16 @@ export default function Dashboard() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
         <StatCard
           title="Encomendas Ativas"
-          value={12}
-          subtitle="4 pendentes"
+          value={encomendasAtivas?.length || 0}
+          subtitle={`${encomendasPendentes} pendentes`}
           icon={<Package className="h-6 w-6" />}
           trend={{ value: 8.2, isPositive: true }}
         />
         
         <StatCard
           title="A Receber"
-          value="€18.650"
-          subtitle="3 clientes"
+          value={formatCurrency(totalAReceber || 0)}
+          subtitle="Saldo devedor clientes"
           icon={<DollarSign className="h-6 w-6" />}
           variant="success"
           trend={{ value: 12.5, isPositive: true }}
@@ -139,24 +228,24 @@ export default function Dashboard() {
         
         <StatCard
           title="A Pagar"
-          value="€5.240"
-          subtitle="2 fornecedores"
+          value={formatCurrency(totalAPagar || 0)}
+          subtitle="Saldo devedor fornecedores"
           icon={<AlertCircle className="h-6 w-6" />}
           variant="warning"
         />
         
         <StatCard
           title="Comissões Mensais"
-          value={`€${(monthlyCommissions || 0).toFixed(2)}`}
+          value={formatCurrency(monthlyCommissions || 0)}
           subtitle={`${new Date().toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })}`}
           icon={<TrendingUp className="h-6 w-6" />}
           variant="success"
         />
         
         <StatCard
-          title="Comissões Anuais 2025"
-          value={`€${(annualCommissions || 0).toFixed(2)}`}
-          subtitle="Total do ano"
+          title="Comissões Anuais"
+          value={formatCurrency(annualCommissions || 0)}
+          subtitle={`Ano ${new Date().getFullYear()}`}
           icon={<Calendar className="h-6 w-6" />}
           variant="success"
         />
@@ -171,24 +260,30 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentOrders.map((order) => {
-                const status = getStatusBadge(order.status);
-                return (
-                  <div key={order.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <div className="space-y-1">
-                      <p className="font-medium text-sm">{order.id}</p>
-                      <p className="text-xs text-muted-foreground">{order.client}</p>
-                      <p className="text-xs text-muted-foreground">{order.date}</p>
+              {recentOrders && recentOrders.length > 0 ? (
+                recentOrders.map((order) => {
+                  const status = getStatusBadge(order.status);
+                  return (
+                    <div key={order.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="space-y-1">
+                        <p className="font-medium text-sm">{order.numero_encomenda}</p>
+                        <p className="text-xs text-muted-foreground">{order.clientes?.nome}</p>
+                        <p className="text-xs text-muted-foreground">{formatDate(order.data_criacao)}</p>
+                      </div>
+                      <div className="text-right space-y-2">
+                        <p className="font-semibold text-sm">{formatCurrency(parseFloat(order.valor_total))}</p>
+                        <Badge variant={status.variant} className="text-xs">
+                          {status.label}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="text-right space-y-2">
-                      <p className="font-semibold text-sm">€{order.value.toFixed(2)}</p>
-                      <Badge variant={status.variant} className="text-xs">
-                        {status.label}
-                      </Badge>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhuma encomenda recente
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -201,23 +296,24 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {pendingPayments.map((payment, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                  <div className="space-y-1">
-                    <p className="font-medium text-sm">{payment.client}</p>
-                    <p className="text-xs text-muted-foreground">Venc: {payment.dueDate}</p>
+              {pendingPayments && pendingPayments.length > 0 ? (
+                pendingPayments.map((payment) => (
+                  <div key={payment.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="space-y-1">
+                      <p className="font-medium text-sm">{payment.clientes?.nome}</p>
+                      <p className="text-xs text-muted-foreground">Pedido: {payment.numero_encomenda}</p>
+                      <p className="text-xs text-muted-foreground">Data: {formatDate(payment.data_criacao)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-sm">{formatCurrency(parseFloat(payment.saldo_devedor))}</p>
+                    </div>
                   </div>
-                  <div className="text-right space-y-2">
-                    <p className="font-semibold text-sm">€{payment.amount.toFixed(2)}</p>
-                    {payment.overdue && (
-                      <div className="flex items-center text-destructive text-xs">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        Vencido
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum pagamento pendente
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -230,18 +326,24 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {paymentsToMake.map((payment, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                  <div className="space-y-1">
-                    <p className="font-medium text-sm">{payment.supplier}</p>
-                    <p className="text-xs text-muted-foreground">{payment.description}</p>
-                    <p className="text-xs text-muted-foreground">Venc: {payment.dueDate}</p>
+              {paymentsToMake && paymentsToMake.length > 0 ? (
+                paymentsToMake.map((payment) => (
+                  <div key={payment.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="space-y-1">
+                      <p className="font-medium text-sm">{payment.fornecedores?.nome}</p>
+                      <p className="text-xs text-muted-foreground">Pedido: {payment.numero_encomenda}</p>
+                      <p className="text-xs text-muted-foreground">Data: {formatDate(payment.data_criacao)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-sm">{formatCurrency(parseFloat(payment.saldo_devedor_fornecedor))}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-sm">€{payment.amount.toFixed(2)}</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum pagamento a fazer
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
