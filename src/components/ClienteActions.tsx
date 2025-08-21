@@ -6,7 +6,6 @@ import { Trash2, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logActivity } from '@/utils/activityLogger';
-import { useUserRole } from '@/hooks/useUserRole';
 
 interface Cliente {
   id: string;
@@ -24,7 +23,6 @@ interface ClienteActionsProps {
 }
 
 export function ClienteActions({ cliente, onEdit, onRefresh }: ClienteActionsProps) {
-  const { canEdit } = useUserRole();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -83,10 +81,6 @@ export function ClienteActions({ cliente, onEdit, onRefresh }: ClienteActionsPro
       setIsDeleting(false);
     }
   };
-
-  if (!canEdit()) {
-    return null;
-  }
 
   return (
     <div className="flex gap-2 pt-2">
