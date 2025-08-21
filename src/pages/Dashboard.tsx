@@ -157,11 +157,11 @@ export default function Dashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Recent Orders */}
+        {/* Orders in Progress */}
         <Card className="shadow-card">
           <CardHeader>
-            <CardTitle>Encomendas Recentes</CardTitle>
-            <CardDescription>Últimas movimentações do sistema</CardDescription>
+            <CardTitle>Encomendas em Curso</CardTitle>
+            <CardDescription>Encomendas em andamento no sistema</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
