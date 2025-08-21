@@ -182,7 +182,7 @@ export function ItensEncomendaManager({
                             step="0.01"
                             value={item.preco_venda || ""}
                             onChange={(e) => atualizarItem(index, "preco_venda", parseFloat(e.target.value) || 0)}
-                            placeholder="5.85"
+                            placeholder="4.50"
                           />
                         </div>
                         

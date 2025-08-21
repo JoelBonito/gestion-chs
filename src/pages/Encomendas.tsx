@@ -328,7 +328,7 @@ export default function Encomendas() {
                       <div>
                         <p className="text-sm text-muted-foreground">Valor Frete</p>
                         <p className="font-medium text-orange-600">
-                          €{(pesoBruto * 5.85).toFixed(2)}
+                          €{(pesoBruto * 4.50).toFixed(2)}
                         </p>
                       </div>
                       <div>
