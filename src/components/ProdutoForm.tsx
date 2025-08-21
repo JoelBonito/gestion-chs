@@ -64,16 +64,23 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
   }, []);
 
   useEffect(() => {
+    console.log("ProdutoForm useEffect - initialData:", initialData);
     if (initialData) {
       // Se tem dados iniciais, sempre preenche (seja para editar ou duplicar)
-      form.reset({
+      const formData = {
         nome: initialData.nome || "",
         marca: initialData.marca || "",
         tipo: initialData.tipo || "",
         tamanho: initialData.tamanho || "",
         preco_custo: initialData.preco_custo ? initialData.preco_custo.toString() : "",
         preco_venda: initialData.preco_venda ? initialData.preco_venda.toString() : "",
-      });
+      };
+      console.log("ProdutoForm - Preenchendo formulário com:", formData);
+      
+      // Aguarda um pouco para garantir que as opções foram carregadas
+      setTimeout(() => {
+        form.reset(formData);
+      }, 200);
     } else {
       // Se não tem dados iniciais, limpa o formulário
       form.reset({
@@ -85,7 +92,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         preco_venda: "",
       });
     }
-  }, [form, initialData]);
+  }, [form, initialData, marcasExistentes, tiposExistentes, tamanhosExistentes]);
 
   const carregarOpcoesExistentes = async () => {
     try {
@@ -100,6 +107,8 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         const tiposUnicos = [...new Set(produtos.map(p => p.tipo))].filter(Boolean).sort();
         const tamanhosUnicos = [...new Set(produtos.map(p => p.tamanho))].filter(Boolean).sort();
 
+        console.log("Opções carregadas:", { marcasUnicas, tiposUnicos, tamanhosUnicos });
+        
         setMarcasExistentes(marcasUnicas);
         setTiposExistentes(tiposUnicos);
         setTamanhosExistentes(tamanhosUnicos);
