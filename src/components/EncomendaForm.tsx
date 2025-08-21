@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -90,6 +89,58 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
     }
   };
 
+  const generateUniqueOrderNumber = async (): Promise<string> => {
+    try {
+      // Buscar o último número de encomenda
+      const { data: encomendasRes } = await supabase
+        .from("encomendas")
+        .select("numero_encomenda")
+        .order("created_at", { ascending: false })
+        .limit(10); // Pegar mais registros para ter certeza
+
+      let proximoNumero = 1;
+      
+      if (encomendasRes && encomendasRes.length > 0) {
+        // Extrair todos os números existentes e encontrar o maior
+        const numerosExistentes = encomendasRes
+          .map(e => {
+            const match = e.numero_encomenda.match(/ENV-(\d+)/);
+            return match ? parseInt(match[1]) : 0;
+          })
+          .filter(num => num > 0);
+        
+        if (numerosExistentes.length > 0) {
+          proximoNumero = Math.max(...numerosExistentes) + 1;
+        }
+      }
+
+      // Verificar se o número já existe (loop de segurança)
+      let tentativas = 0;
+      while (tentativas < 100) {
+        const numeroTentativa = `ENV-${proximoNumero.toString().padStart(3, "0")}`;
+        
+        const { data: existente } = await supabase
+          .from("encomendas")
+          .select("id")
+          .eq("numero_encomenda", numeroTentativa)
+          .limit(1);
+
+        if (!existente || existente.length === 0) {
+          return numeroTentativa;
+        }
+        
+        proximoNumero++;
+        tentativas++;
+      }
+
+      // Fallback: usar timestamp se não conseguir gerar número único
+      return `ENV-${Date.now().toString().slice(-6)}`;
+    } catch (error) {
+      console.error("Erro ao gerar número da encomenda:", error);
+      return `ENV-${Date.now().toString().slice(-6)}`;
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       await Promise.all([fetchClientes(), fetchFornecedores()]);
@@ -97,20 +148,8 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
       // Só gerar próximo número se não estiver editando
       if (!isEditing && !initialData) {
         try {
-          const { data: encomendasRes } = await supabase
-            .from("encomendas")
-            .select("numero_encomenda")
-            .order("created_at", { ascending: false })
-            .limit(1);
-          
-          let proximoNumero = "ENV-001";
-          if (encomendasRes && encomendasRes.length > 0) {
-            const ultimaEncomenda = encomendasRes[0].numero_encomenda;
-            const numero = parseInt(ultimaEncomenda.split("-")[1]) + 1;
-            proximoNumero = `ENV-${numero.toString().padStart(3, "0")}`;
-          }
-          
-          form.setValue("numero_encomenda", proximoNumero);
+          const numeroUnico = await generateUniqueOrderNumber();
+          form.setValue("numero_encomenda", numeroUnico);
         } catch (error) {
           console.error("Erro ao gerar número da encomenda:", error);
         }
@@ -198,20 +237,31 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
   };
 
   const handleClienteCreated = () => {
-    fetchClientes(); // Refresh the clients list
+    fetchClientes();
     toast.success("Cliente criado com sucesso!");
   };
 
   const handleFornecedorCreated = () => {
-    fetchFornecedores(); // Refresh the suppliers list
+    fetchFornecedores();
     toast.success("Fornecedor criado com sucesso!");
   };
 
   const onSubmit = async (data: EncomendaFormData) => {
-    if (itens.length === 0 && !isEditing) {
-      toast.error("Adicione pelo menos um item à encomenda");
+    // Validar itens antes de enviar
+    const itensValidos = itens.filter(item => 
+      item.produto_id && 
+      item.produto_id.trim() !== '' && 
+      item.quantidade > 0 && 
+      item.preco_venda > 0
+    );
+
+    if (itensValidos.length === 0 && !isEditing) {
+      toast.error("Adicione pelo menos um item válido à encomenda");
       return;
     }
+
+    console.log("Dados a serem enviados:", data);
+    console.log("Itens válidos:", itensValidos);
 
     setIsSubmitting(true);
     try {
@@ -239,9 +289,9 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
         if (deleteError) throw deleteError;
 
-        // Inserir os novos itens
-        if (itens.length > 0) {
-          const itensParaInserir = itens.map(item => ({
+        // Inserir os novos itens válidos
+        if (itensValidos.length > 0) {
+          const itensParaInserir = itensValidos.map(item => ({
             encomenda_id: initialData.id,
             produto_id: item.produto_id,
             quantidade: item.quantidade,
@@ -274,9 +324,9 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
         if (encomendaError) throw encomendaError;
 
-        // Criar os itens da encomenda
-        if (itens.length > 0) {
-          const itensParaInserir = itens.map(item => ({
+        // Criar os itens válidos da encomenda
+        if (itensValidos.length > 0) {
+          const itensParaInserir = itensValidos.map(item => ({
             encomenda_id: encomenda.id,
             produto_id: item.produto_id,
             quantidade: item.quantidade,
@@ -441,7 +491,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
           <Button 
             type="submit" 
             className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
-            disabled={isSubmitting || (!isEditing && itens.length === 0)}
+            disabled={isSubmitting}
           >
             {isSubmitting ? (isEditing ? "Salvando..." : "Criando...") : (isEditing ? "Salvar Alterações" : "Criar Encomenda")}
           </Button>
