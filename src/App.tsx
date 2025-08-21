@@ -16,7 +16,6 @@ import Clientes from "./pages/Clientes";
 import Fornecedores from "./pages/Fornecedores";
 import Encomendas from "./pages/Encomendas";
 import Producao from "./pages/Producao";
-import Frete from "./pages/Frete";
 import Financeiro from "./pages/Financeiro";
 import NotFound from "./pages/NotFound";
 
@@ -95,14 +94,6 @@ function App() {
               <AuthGuard>
                 <AppLayout>
                   <Producao />
-                </AppLayout>
-              </AuthGuard>
-            } />
-            
-            <Route path="/frete" element={
-              <AuthGuard>
-                <AppLayout>
-                  <Frete />
                 </AppLayout>
               </AuthGuard>
             } />

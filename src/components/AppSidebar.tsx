@@ -1,5 +1,5 @@
 
-import { Home, Package, Users, Building2, ShoppingCart, Factory, Calculator, Truck } from "lucide-react";
+import { Home, Package, Users, Building2, ShoppingCart, Factory, Calculator } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -42,11 +42,6 @@ const items = [
     title: "Produção",
     url: "/producao",
     icon: Factory,
-  },
-  {
-    title: "Frete",
-    url: "/frete",
-    icon: Truck,
   },
   {
     title: "Financeiro",
