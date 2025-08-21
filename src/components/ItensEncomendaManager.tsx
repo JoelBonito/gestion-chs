@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus, Scale } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ItemEncomenda {
@@ -14,8 +15,6 @@ export interface ItemEncomenda {
   preco_custo: number;
   preco_venda: number;
   subtotal: number;
-  unit_weight_kg_at_order?: number;
-  line_weight_kg?: number;
 }
 
 interface Produto {
@@ -31,10 +30,9 @@ interface ItensEncomendaManagerProps {
   itens: ItemEncomenda[];
   onItensChange: (itens: ItemEncomenda[]) => void;
   onValorTotalChange: (valor: number) => void;
-  onPesoTotalChange?: (peso: number) => void;
 }
 
-export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange, onPesoTotalChange }: ItensEncomendaManagerProps) {
+export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange }: ItensEncomendaManagerProps) {
   const [produtos, setProdutos] = useState<Produto[]>([]);
 
   useEffect(() => {
@@ -71,13 +69,8 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
 
   useEffect(() => {
     const valorTotal = itens.reduce((total, item) => total + item.subtotal, 0);
-    const pesoTotal = itens.reduce((total, item) => total + (item.line_weight_kg || 0), 0);
-    
     onValorTotalChange(valorTotal);
-    if (onPesoTotalChange) {
-      onPesoTotalChange(pesoTotal);
-    }
-  }, [itens, onValorTotalChange, onPesoTotalChange]);
+  }, [itens, onValorTotalChange]);
 
   const adicionarItem = () => {
     const novoItem: ItemEncomenda = {
@@ -86,25 +79,8 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       preco_custo: 0,
       preco_venda: 0,
       subtotal: 0,
-      unit_weight_kg_at_order: 0,
-      line_weight_kg: 0,
     };
     onItensChange([...itens, novoItem]);
-  };
-
-  const duplicarItem = (index: number) => {
-    const itemOriginal = itens[index];
-    const itemDuplicado: ItemEncomenda = {
-      produto_id: itemOriginal.produto_id,
-      produto_nome: itemOriginal.produto_nome,
-      quantidade: itemOriginal.quantidade,
-      preco_custo: itemOriginal.preco_custo,
-      preco_venda: itemOriginal.preco_venda,
-      subtotal: itemOriginal.subtotal,
-      unit_weight_kg_at_order: itemOriginal.unit_weight_kg_at_order,
-      line_weight_kg: itemOriginal.line_weight_kg,
-    };
-    onItensChange([...itens, itemDuplicado]);
   };
 
   const removerItem = (index: number) => {
@@ -123,8 +99,6 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
         item.produto_nome = `${produto.nome} - ${produto.marca} - ${produto.tipo}`;
         item.preco_custo = produto.preco_custo;
         item.preco_venda = produto.preco_venda;
-        // Default weight for now since column doesn't exist yet
-        item.unit_weight_kg_at_order = 0.5;
       }
     } else if (campo === "quantidade") {
       item.quantidade = valor;
@@ -134,153 +108,123 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       item.preco_venda = valor;
     }
     
-    // Recalcular subtotal e peso da linha
+    // Recalcular subtotal
     item.subtotal = item.quantidade * item.preco_venda;
-    item.line_weight_kg = item.quantidade * (item.unit_weight_kg_at_order || 0.5);
     
     novosItens[index] = item;
     onItensChange(novosItens);
-  };
-
-  const formatarPeso = (peso: number) => {
-    return `${peso.toFixed(2)} kg`;
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            Itens da Encomenda
-            <Scale className="h-5 w-5 text-muted-foreground" />
-          </span>
+          Itens da Encomenda
           <Button type="button" variant="outline" size="sm" onClick={adicionarItem}>
             <Plus className="h-4 w-4 mr-2" />
             Adicionar Item
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {itens.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">
+          <p className="text-muted-foreground text-center py-8">
             Nenhum item adicionado. Clique em "Adicionar Item" para começar.
           </p>
         ) : (
-          itens.map((item, index) => (
-            <Card key={index} className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-7 gap-4 items-end">
-                <div className="md:col-span-2">
-                  <label className="text-sm font-medium mb-2 block">Produto *</label>
-                  <Select
-                    value={item.produto_id}
-                    onValueChange={(value) => atualizarItem(index, "produto_id", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um produto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {produtos.map((produto) => (
-                        <SelectItem key={produto.id} value={produto.id}>
-                          <div className="flex flex-col">
-                            <span>{produto.nome} - {produto.marca} - {produto.tipo}</span>
-                            <span className="text-xs text-muted-foreground">
-                              Peso: 0.50 kg (estimado)
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Quantidade *</label>
-                  <Input
-                    type="number"
-                    value={item.quantidade || ""}
-                    onChange={(e) => atualizarItem(index, "quantidade", parseInt(e.target.value) || 0)}
-                    placeholder="0"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Peso Linha</label>
-                  <Input
-                    type="text"
-                    value={item.line_weight_kg ? formatarPeso(item.line_weight_kg) : "0.00 kg"}
-                    readOnly
-                    className="bg-muted text-center"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Preço Custo (€)</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={item.preco_custo}
-                    onChange={(e) => atualizarItem(index, "preco_custo", parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Preço Venda (€) *</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={item.preco_venda}
-                    onChange={(e) => atualizarItem(index, "preco_venda", parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <div className="flex-1">
-                    <label className="text-sm font-medium mb-2 block">Subtotal (€)</label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={item.subtotal.toFixed(2)}
-                      readOnly
-                      className="bg-muted"
-                    />
+          <div className="space-y-4">
+            {itens.map((item, index) => (
+              <Card key={index} className="p-4 bg-muted/30">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Produto *</label>
+                      <Select
+                        value={item.produto_id}
+                        onValueChange={(value) => atualizarItem(index, "produto_id", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um produto" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {produtos.map((produto) => (
+                            <SelectItem key={produto.id} value={produto.id}>
+                              {produto.nome} - {produto.marca} - {produto.tipo}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Quantidade *</label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={item.quantidade || ""}
+                        onChange={(e) => atualizarItem(index, "quantidade", parseInt(e.target.value) || 1)}
+                        placeholder="0"
+                      />
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1 mt-6">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => duplicarItem(index)}
-                      title="Duplicar item"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => removerItem(index)}
-                      title="Remover item"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Preço Custo (€)</label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={item.preco_custo || ""}
+                        onChange={(e) => atualizarItem(index, "preco_custo", parseFloat(e.target.value) || 0)}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Preço Venda (€) *</label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={item.preco_venda || ""}
+                        onChange={(e) => atualizarItem(index, "preco_venda", parseFloat(e.target.value) || 0)}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Subtotal (€)</label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="text"
+                          value={`€${item.subtotal.toFixed(2)}`}
+                          readOnly
+                          className="bg-muted font-semibold"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removerItem(index)}
+                          title="Remover item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          ))
+              </Card>
+            ))}
+          </div>
         )}
         
         {itens.length > 0 && (
-          <div className="flex justify-end pt-4 border-t space-x-8">
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Peso Total:</p>
-              <p className="text-lg font-semibold text-primary">
-                {formatarPeso(itens.reduce((total, item) => total + (item.line_weight_kg || 0), 0))}
-              </p>
-            </div>
+          <div className="flex justify-end pt-4 border-t">
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Valor Total:</p>
-              <p className="text-lg font-semibold">
+              <p className="text-2xl font-bold text-primary">
                 €{itens.reduce((total, item) => total + item.subtotal, 0).toFixed(2)}
               </p>
             </div>

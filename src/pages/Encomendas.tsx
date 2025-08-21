@@ -1,19 +1,18 @@
 
 import { useState, useEffect } from "react";
-import { Plus, Search, Eye, Edit, MoreHorizontal } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { EncomendaForm } from "@/components/EncomendaForm";
 import { EncomendaView } from "@/components/EncomendaView";
+import { EncomendaActions } from "@/components/EncomendaActions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useUserRole } from "@/hooks/useUserRole";
 
 interface Encomenda {
   id: string;
@@ -32,7 +31,6 @@ interface Encomenda {
 }
 
 export default function Encomendas() {
-  const { canEdit } = useUserRole();
   const [searchTerm, setSearchTerm] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -88,6 +86,10 @@ export default function Encomendas() {
     setViewDialogOpen(true);
   };
 
+  const handleDelete = () => {
+    fetchEncomendas();
+  };
+
   const filteredEncomendas = encomendas.filter(encomenda => {
     const matchesSearch = encomenda.numero_encomenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (encomenda.clientes?.nome && encomenda.clientes.nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -107,7 +109,6 @@ export default function Encomendas() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pendente': return 'bg-yellow-500';
       case 'producao': return 'bg-blue-500';
       case 'enviado': return 'bg-purple-500';
       case 'entregue': return 'bg-green-500';
@@ -122,25 +123,23 @@ export default function Encomendas() {
           <h1 className="text-3xl font-bold text-foreground">Encomendas</h1>
           <p className="text-muted-foreground">Gerencie os pedidos dos seus clientes</p>
         </div>
-        {canEdit && (
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
-                <Plus className="mr-2 h-4 w-4" />
-                Nova Encomenda
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Nova Encomenda</DialogTitle>
-                <DialogDescription>
-                  Crie uma nova encomenda no sistema
-                </DialogDescription>
-              </DialogHeader>
-              <EncomendaForm onSuccess={handleSuccess} />
-            </DialogContent>
-          </Dialog>
-        )}
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Encomenda
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[1000px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Nova Encomenda</DialogTitle>
+              <DialogDescription>
+                Crie uma nova encomenda no sistema
+              </DialogDescription>
+            </DialogHeader>
+            <EncomendaForm onSuccess={handleSuccess} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search and filters */}
@@ -181,23 +180,21 @@ export default function Encomendas() {
       </Dialog>
 
       {/* Edit Dialog */}
-      {canEdit && (
-        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Editar Encomenda</DialogTitle>
-              <DialogDescription>
-                Edite as informações da encomenda
-              </DialogDescription>
-            </DialogHeader>
-            <EncomendaForm 
-              onSuccess={handleEditSuccess} 
-              initialData={selectedEncomenda}
-              isEditing={true}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[1000px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Encomenda</DialogTitle>
+            <DialogDescription>
+              Edite as informações da encomenda
+            </DialogDescription>
+          </DialogHeader>
+          <EncomendaForm 
+            onSuccess={handleEditSuccess} 
+            initialData={selectedEncomenda}
+            isEditing={true}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Orders Grid */}
       {loading ? (
@@ -210,7 +207,7 @@ export default function Encomendas() {
             <Card key={encomenda.id} className="shadow-card hover:shadow-elevated transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       <p className="font-semibold">#{encomenda.numero_encomenda}</p>
                       <p className="text-sm text-muted-foreground">{encomenda.clientes?.nome}</p>
@@ -229,37 +226,14 @@ export default function Encomendas() {
                         {formatCurrency(encomenda.valor_total - encomenda.valor_pago)}
                       </p>
                     </div>
-                    <div>
-                      <Badge className={`${getStatusColor(encomenda.status)} text-white`}>
-                        {encomenda.status}
-                      </Badge>
-                      {encomenda.status_producao && (
-                        <Badge variant="outline" className="ml-2">
-                          {encomenda.status_producao}
-                        </Badge>
-                      )}
-                    </div>
                   </div>
                   
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleView(encomenda)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Visualizar
-                      </DropdownMenuItem>
-                      {canEdit && (
-                        <DropdownMenuItem onClick={() => handleEdit(encomenda)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Editar
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <EncomendaActions
+                    encomenda={encomenda}
+                    onView={() => handleView(encomenda)}
+                    onEdit={() => handleEdit(encomenda)}
+                    onDelete={handleDelete}
+                  />
                 </div>
               </CardContent>
             </Card>
