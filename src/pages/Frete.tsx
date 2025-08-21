@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
 import { logActivity } from "@/utils/activityLogger";
+import type { UserRole } from "@/integrations/supabase/types";
 
 interface FreightRate {
   id: string;
@@ -53,7 +54,7 @@ export default function Frete() {
   useEffect(() => {
     const filtered = encomendas.filter(encomenda => {
       const matchesSearch = encomenda.numero_encomenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           encomenda.clientes?.nome.toLowerCase().includes(searchTerm.toLowerCase());
+                           encomenda.clientes?.nome?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === "todos" || encomenda.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -122,7 +123,7 @@ export default function Frete() {
   };
 
   const createOrUpdateFreightRate = async (rate: Omit<FreightRate, 'id'>) => {
-    if (!hasRole('admin') && !hasRole('finance')) {
+    if (!hasRole('admin' as UserRole) && !hasRole('finance' as UserRole)) {
       toast.error("Você não tem permissão para gerenciar tarifas");
       return;
     }
@@ -315,7 +316,7 @@ export default function Frete() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {hasRole('admin') || hasRole('finance') ? (
+              {hasRole('admin' as UserRole) || hasRole('finance' as UserRole) ? (
                 <div className="space-y-4">
                   <Table>
                     <TableHeader>

@@ -1,15 +1,14 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Edit, Trash2, Search, Plus } from "lucide-react";
-import { ProdutoForm } from "./ProdutoForm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Edit, Search, Trash2, Scale } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useUserRole } from "@/hooks/useUserRole";
+import { ProdutoForm } from "./ProdutoForm";
 import { logActivity } from "@/utils/activityLogger";
 
 interface Produto {
@@ -21,40 +20,52 @@ interface Produto {
   unit_weight_kg: number;
   preco_custo: number;
   preco_venda: number;
-  fornecedor_id: string;
-  created_at: string;
-  fornecedores?: {
-    nome: string;
-  };
   ativo: boolean;
+  created_at: string;
+  updated_at: string;
+  fornecedor_id: string;
+  fornecedores?: { nome: string };
 }
 
 export function ListaProdutos() {
   const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [produtosFiltrados, setProdutosFiltrados] = useState<Produto[]>([]);
+  const [filteredProdutos, setFilteredProdutos] = useState<Produto[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [editDialog, setEditDialog] = useState<{open: boolean, produto: Produto | null}>({
-    open: false,
-    produto: null
-  });
-  const { canEdit } = useUserRole();
+  const [editingProduct, setEditingProduct] = useState<Produto | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  useEffect(() => {
+    fetchProdutos();
+  }, []);
+
+  useEffect(() => {
+    const filtered = produtos.filter((produto) =>
+      produto.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      produto.marca.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      produto.tipo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      produto.size_label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      produto.fornecedores?.nome?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredProdutos(filtered);
+  }, [produtos, searchTerm]);
 
   const fetchProdutos = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from("produtos")
         .select(`
           *,
-          fornecedores (
-            nome
-          )
+          fornecedores(nome)
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setProdutos(data || []);
+
+      if (data) {
+        setProdutos(data);
+      }
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);
       toast.error("Erro ao carregar produtos");
@@ -63,51 +74,26 @@ export function ListaProdutos() {
     }
   };
 
-  useEffect(() => {
-    fetchProdutos();
-  }, []);
-
-  useEffect(() => {
-    const term = searchTerm.toLowerCase();
-    const filtered = produtos.filter(produto => {
-      const searchString = `${produto.nome} ${produto.marca} ${produto.tipo} ${produto.size_label} ${produto.fornecedores?.nome}`.toLowerCase();
-      return searchString.includes(term);
-    });
-    setProdutosFiltrados(filtered);
-  }, [searchTerm, produtos]);
-
-  const formatarMoeda = (valor: number) => {
-    return new Intl.NumberFormat('pt-PT', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(valor);
-  };
-
-  const formatarPeso = (peso: number) => {
-    return `${peso.toFixed(2)} kg`;
-  };
-
   const handleEdit = (produto: Produto) => {
-    setEditDialog({open: true, produto});
+    setEditingProduct(produto);
+    setIsEditDialogOpen(true);
   };
 
   const handleEditSuccess = () => {
-    setEditDialog({open: false, produto: null});
+    setIsEditDialogOpen(false);
+    setEditingProduct(null);
     fetchProdutos();
-    toast.success("Produto atualizado com sucesso!");
   };
 
-  const handleToggleStatus = async (produto: Produto) => {
-    if (!canEdit()) {
-      toast.error("Você não tem permissão para editar produtos");
+  const handleDelete = async (produto: Produto) => {
+    if (!confirm(`Tem certeza que deseja excluir o produto "${produto.nome}"?`)) {
       return;
     }
 
     try {
-      const novoStatus = !produto.ativo;
       const { error } = await supabase
         .from("produtos")
-        .update({ ativo: novoStatus })
+        .update({ ativo: false })
         .eq("id", produto.id);
 
       if (error) throw error;
@@ -115,47 +101,28 @@ export function ListaProdutos() {
       await logActivity({
         entity: 'produto',
         entity_id: produto.id,
-        action: novoStatus ? 'activate' : 'deactivate',
+        action: 'delete',
         details: { nome: produto.nome }
       });
-      
-      toast.success(`Produto ${novoStatus ? 'ativado' : 'desativado'} com sucesso!`);
+
+      toast.success("Produto desativado com sucesso!");
       fetchProdutos();
     } catch (error) {
-      console.error("Erro ao alterar status do produto:", error);
-      toast.error("Erro ao alterar status do produto");
+      console.error("Erro ao desativar produto:", error);
+      toast.error("Erro ao desativar produto");
     }
   };
 
-  const handleDelete = async (produto: Produto) => {
-    if (!canEdit()) {
-      toast.error("Você não tem permissão para deletar produtos");
-      return;
-    }
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-PT', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(value);
+  };
 
-    if (confirm(`Tem certeza que deseja deletar o produto "${produto.nome}"? Esta ação não pode ser desfeita.`)) {
-      try {
-        const { error } = await supabase
-          .from("produtos")
-          .delete()
-          .eq("id", produto.id);
-
-        if (error) throw error;
-
-        await logActivity({
-          entity: 'produto',
-          entity_id: produto.id,
-          action: 'delete',
-          details: { nome: produto.nome }
-        });
-        
-        toast.success("Produto deletado com sucesso!");
-        fetchProdutos();
-      } catch (error) {
-        console.error("Erro ao deletar produto:", error);
-        toast.error("Erro ao deletar produto");
-      }
-    }
+  const formatWeight = (weight: number | null) => {
+    if (!weight) return "N/A";
+    return `${weight.toFixed(2)} kg`;
   };
 
   if (loading) {
@@ -163,128 +130,111 @@ export function ListaProdutos() {
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground font-body">Carregando produtos...</p>
+          <p className="text-muted-foreground">Carregando produtos...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="mb-6 space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Pesquisar produtos por nome, marca, tipo, tamanho ou fornecedor..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 input-elegant"
-            />
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center space-x-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Buscar produtos..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
       </div>
 
-      {produtosFiltrados.length === 0 ? (
-        <Card className="shadow-card border-primary/10 bg-gradient-card">
-          <CardContent className="p-8 text-center">
-            <div className="text-muted-foreground font-body mb-4">
-              <Plus className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              {searchTerm ? "Nenhum produto encontrado com os critérios de busca." : "Nenhum produto cadastrado ainda."}
-            </div>
-            {!searchTerm && (
-              <p className="text-sm text-muted-foreground font-body font-light">
-                Clique em "Cadastrar Produto" para adicionar o primeiro produto.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="border border-primary/10 rounded-lg overflow-hidden shadow-card bg-gradient-card">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-primary/3 hover:bg-primary/6 border-b border-primary/10">
-                <TableHead className="w-[15%] min-w-[120px] font-display font-medium text-primary-dark">Nome</TableHead>
-                <TableHead className="w-[10%] min-w-[80px] font-display font-medium text-primary-dark">Marca</TableHead>
-                <TableHead className="w-[10%] min-w-[80px] font-display font-medium text-primary-dark">Tipo</TableHead>
-                <TableHead className="w-[8%] min-w-[60px] font-display font-medium text-primary-dark">Tamanho</TableHead>
-                <TableHead className="w-[8%] min-w-[60px] text-right font-display font-medium text-primary-dark">Peso</TableHead>
-                <TableHead className="w-[12%] min-w-[100px] font-display font-medium text-primary-dark">Fornecedor</TableHead>
-                <TableHead className="w-[10%] min-w-[80px] text-right font-display font-medium text-primary-dark">Preço Custo</TableHead>
-                <TableHead className="w-[10%] min-w-[80px] text-right font-display font-medium text-primary-dark">Preço Venda</TableHead>
-                <TableHead className="w-[17%] min-w-[120px] text-right font-display font-medium text-primary-dark">Ações</TableHead>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Marca</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Tamanho</TableHead>
+              <TableHead className="text-center">
+                <div className="flex items-center justify-center gap-1">
+                  <Scale className="h-4 w-4" />
+                  Peso (kg)
+                </div>
+              </TableHead>
+              <TableHead>Preço Custo</TableHead>
+              <TableHead>Preço Venda</TableHead>
+              <TableHead>Fornecedor</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredProdutos.map((produto) => (
+              <TableRow key={produto.id}>
+                <TableCell className="font-medium">{produto.nome}</TableCell>
+                <TableCell>{produto.marca}</TableCell>
+                <TableCell>{produto.tipo}</TableCell>
+                <TableCell>{produto.size_label}</TableCell>
+                <TableCell className="text-center font-mono">
+                  <div className="flex items-center justify-center gap-1">
+                    {formatWeight(produto.unit_weight_kg)}
+                  </div>
+                </TableCell>
+                <TableCell>{formatCurrency(produto.preco_custo)}</TableCell>
+                <TableCell>{formatCurrency(produto.preco_venda)}</TableCell>
+                <TableCell>{produto.fornecedores?.nome || "N/A"}</TableCell>
+                <TableCell>
+                  <Badge variant={produto.ativo ? "default" : "secondary"}>
+                    {produto.ativo ? "Ativo" : "Inativo"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(produto)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    {produto.ativo && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDelete(produto)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {produtosFiltrados.map((produto) => (
-                <TableRow key={produto.id} className="hover:bg-primary/3 border-b border-primary/5 transition-colors">
-                  <TableCell className="font-medium text-primary-dark font-display truncate max-w-[120px]" title={produto.nome}>
-                    {produto.nome}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground font-body">
-                    {produto.marca}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground font-body">
-                    {produto.tipo}
-                  </TableCell>
-                  <TableCell className="text-center text-muted-foreground font-body">{produto.size_label}</TableCell>
-                  <TableCell className="text-right text-muted-foreground font-mono text-sm">
-                    {produto.unit_weight_kg ? formatarPeso(produto.unit_weight_kg) : "N/A"}
-                  </TableCell>
-                  <TableCell className="truncate max-w-[100px] text-muted-foreground font-body" title={produto.fornecedores?.nome}>
-                    {produto.fornecedores?.nome || "Não informado"}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm text-muted-foreground">
-                    {formatarMoeda(produto.preco_custo)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-sm font-medium text-primary-dark">
-                    {formatarMoeda(produto.preco_venda)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      {canEdit() && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(produto)}
-                            className="hover:bg-primary/10 hover:text-primary transition-colors"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(produto)}
-                            className="hover:bg-destructive/10 hover:text-destructive transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {filteredProdutos.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">Nenhum produto encontrado.</p>
         </div>
       )}
 
-      <Dialog open={editDialog.open} onOpenChange={(open) => setEditDialog({open, produto: null})}>
-        <DialogContent className="max-w-2xl shadow-elegant">
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md shadow-elegant">
           <DialogHeader>
             <DialogTitle className="font-display text-primary-dark">Editar Produto</DialogTitle>
           </DialogHeader>
-          {editDialog.produto && (
-            <ProdutoForm 
-              onSuccess={handleEditSuccess} 
-              initialData={editDialog.produto}
-              isEditing={true}
-            />
-          )}
+          <ProdutoForm 
+            initialData={editingProduct} 
+            isEditing={true}
+            onSuccess={handleEditSuccess}
+          />
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
