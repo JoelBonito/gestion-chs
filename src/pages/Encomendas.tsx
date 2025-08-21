@@ -328,17 +328,14 @@ export default function Encomendas() {
                       <div>
                         <p className="text-sm text-muted-foreground">Valor Frete</p>
                         <p className="font-medium text-orange-600">
-                          {formatCurrency(valorFrete)}
+                          €{(pesoBruto * 5.85).toFixed(2)}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Status</p>
-                        <EncomendaStatusSelect
-                          encomendaId={encomenda.id}
-                          currentStatus={encomenda.status}
-                          numeroEncomenda={encomenda.numero_encomenda}
-                          onStatusChange={() => handleStatusChange(encomenda.id, encomenda.status)}
-                        />
+                        <div className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground px-2 py-1 rounded text-xs font-medium w-fit">
+                          {encomenda.status}
+                        </div>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Valor Total</p>

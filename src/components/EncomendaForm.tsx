@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -96,17 +97,19 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
   useEffect(() => {
     if (initialData && isEditing) {
-      // Preencher todos os campos do formulário, incluindo cliente_id e fornecedor_id
+      console.log("Carregando dados para edição:", initialData);
+      
+      // Preencher todos os campos do formulário
       form.reset({
         numero_encomenda: initialData.numero_encomenda || "",
-        cliente_id: initialData.cliente_id || "", // Garantir que o cliente_id seja mantido
-        fornecedor_id: initialData.fornecedor_id || "", // Garantir que o fornecedor_id seja mantido
+        cliente_id: initialData.cliente_id || "",
+        fornecedor_id: initialData.fornecedor_id || "",
         data_producao_estimada: initialData.data_producao_estimada || "",
         data_envio_estimada: initialData.data_envio_estimada || "",
         observacoes: initialData.observacoes || "",
       });
 
-      // Carregar itens da encomenda com peso unitário correto
+      // Carregar itens da encomenda
       const fetchItens = async () => {
         const { data: itensData, error } = await supabase
           .from("itens_encomenda")
@@ -130,7 +133,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
             preco_custo: item.produtos?.preco_custo || 0,
             preco_venda: item.preco_unitario,
             subtotal: item.subtotal,
-            peso_produto: item.produtos?.size_weight || 0, // Garantir que o peso seja carregado
+            peso_produto: item.produtos?.size_weight || 0,
           }));
           setItens(itensFormatados);
         }
@@ -151,6 +154,10 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
     setIsSubmitting(true);
     try {
       if (isEditing && initialData?.id) {
+        console.log("Atualizando encomenda:", initialData.id);
+        console.log("Dados do formulário:", data);
+        console.log("Itens para salvar:", itens);
+
         // Atualizar encomenda existente
         const { error } = await supabase
           .from("encomendas")
@@ -161,10 +168,38 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
             data_producao_estimada: data.data_producao_estimada || null,
             data_envio_estimada: data.data_envio_estimada || null,
             observacoes: data.observacoes || null,
+            valor_total: valorTotal,
           })
           .eq("id", initialData.id);
 
         if (error) throw error;
+
+        // Remover todos os itens existentes e inserir os novos
+        const { error: deleteError } = await supabase
+          .from("itens_encomenda")
+          .delete()
+          .eq("encomenda_id", initialData.id);
+
+        if (deleteError) throw deleteError;
+
+        // Inserir novos itens
+        for (const item of itens) {
+          const { error: itemError } = await supabase
+            .from("itens_encomenda")
+            .insert([
+              {
+                encomenda_id: initialData.id,
+                produto_id: item.produto_id,
+                quantidade: item.quantidade,
+                preco_unitario: item.preco_venda,
+              },
+            ]);
+
+          if (itemError) {
+            console.error("Erro ao inserir item:", itemError);
+            throw itemError;
+          }
+        }
 
         toast.success("Encomenda atualizada com sucesso!");
       } else {
