@@ -161,27 +161,26 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           render={({ field }) => (
             <FormItem>
               <FormLabel>Marca</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione ou digite uma marca" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {marcasExistentes.map((marca) => (
-                    <SelectItem key={marca} value={marca}>
-                      {marca}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <FormControl>
-                <Input 
-                  placeholder="Ou digite uma nova marca" 
-                  value={field.value}
-                  onChange={field.onChange}
-                  className="mt-2"
-                />
+                <div className="space-y-2">
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma marca existente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {marcasExistentes.map((marca) => (
+                        <SelectItem key={marca} value={marca}>
+                          {marca}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input 
+                    placeholder="Ou digite uma nova marca" 
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -194,27 +193,26 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tipo</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione ou digite um tipo" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {tiposExistentes.map((tipo) => (
-                    <SelectItem key={tipo} value={tipo}>
-                      {tipo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <FormControl>
-                <Input 
-                  placeholder="Ou digite um novo tipo" 
-                  value={field.value}
-                  onChange={field.onChange}
-                  className="mt-2"
-                />
+                <div className="space-y-2">
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um tipo existente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tiposExistentes.map((tipo) => (
+                        <SelectItem key={tipo} value={tipo}>
+                          {tipo}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input 
+                    placeholder="Ou digite um novo tipo" 
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -227,27 +225,26 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tamanho</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione ou digite um tamanho" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {tamanhosExistentes.map((tamanho) => (
-                    <SelectItem key={tamanho} value={tamanho}>
-                      {tamanho}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <FormControl>
-                <Input 
-                  placeholder="Ou digite um novo tamanho" 
-                  value={field.value}
-                  onChange={field.onChange}
-                  className="mt-2"
-                />
+                <div className="space-y-2">
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um tamanho existente" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tamanhosExistentes.map((tamanho) => (
+                        <SelectItem key={tamanho} value={tamanho}>
+                          {tamanho}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input 
+                    placeholder="Ou digite um novo tamanho" 
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
