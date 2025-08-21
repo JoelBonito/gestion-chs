@@ -1,7 +1,9 @@
-import { Package, DollarSign, TrendingUp, Users, AlertCircle } from "lucide-react";
+import { Package, DollarSign, TrendingUp, Users, AlertCircle, Calendar } from "lucide-react";
 import StatCard from "@/components/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 // Mock data
 const recentOrders = [
@@ -18,6 +20,82 @@ const pendingPayments = [
 ];
 
 export default function Dashboard() {
+  // Calculate monthly commissions
+  const { data: monthlyCommissions } = useQuery({
+    queryKey: ['monthly-commissions'],
+    queryFn: async () => {
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth() + 1;
+      const currentYear = currentDate.getFullYear();
+      
+      const { data, error } = await supabase
+        .from('encomendas')
+        .select(`
+          id,
+          data_criacao,
+          itens_encomenda (
+            quantidade,
+            preco_unitario,
+            produtos (
+              preco_custo
+            )
+          )
+        `)
+        .gte('data_criacao', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
+        .lt('data_criacao', `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`);
+
+      if (error) return 0;
+      
+      let totalCommission = 0;
+      data?.forEach(encomenda => {
+        encomenda.itens_encomenda?.forEach(item => {
+          if (item.produtos && item.preco_unitario && item.produtos.preco_custo) {
+            const profit = (item.preco_unitario - item.produtos.preco_custo) * item.quantidade;
+            totalCommission += profit;
+          }
+        });
+      });
+      
+      return totalCommission;
+    }
+  });
+
+  // Calculate annual commissions for 2025
+  const { data: annualCommissions } = useQuery({
+    queryKey: ['annual-commissions-2025'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('encomendas')
+        .select(`
+          id,
+          data_criacao,
+          itens_encomenda (
+            quantidade,
+            preco_unitario,
+            produtos (
+              preco_custo
+            )
+          )
+        `)
+        .gte('data_criacao', '2025-01-01')
+        .lt('data_criacao', '2026-01-01');
+
+      if (error) return 0;
+      
+      let totalCommission = 0;
+      data?.forEach(encomenda => {
+        encomenda.itens_encomenda?.forEach(item => {
+          if (item.produtos && item.preco_unitario && item.produtos.preco_custo) {
+            const profit = (item.preco_unitario - item.produtos.preco_custo) * item.quantidade;
+            totalCommission += profit;
+          }
+        });
+      });
+      
+      return totalCommission;
+    }
+  });
+
   const getStatusBadge = (status: string) => {
     const variants = {
       pending: { label: "Pendente", variant: "secondary" as const },
@@ -35,7 +113,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
         <StatCard
           title="Encomendas Ativas"
           value={12}
@@ -63,9 +141,17 @@ export default function Dashboard() {
         
         <StatCard
           title="Comissões Mensais"
-          value="€4.520"
-          subtitle="Janeiro 2024"
+          value={`€${(monthlyCommissions || 0).toFixed(2)}`}
+          subtitle={`${new Date().toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })}`}
           icon={<TrendingUp className="h-6 w-6" />}
+          variant="success"
+        />
+        
+        <StatCard
+          title="Comissões Anuais 2025"
+          value={`€${(annualCommissions || 0).toFixed(2)}`}
+          subtitle="Total do ano"
+          icon={<Calendar className="h-6 w-6" />}
           variant="success"
         />
       </div>
