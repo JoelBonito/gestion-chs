@@ -89,23 +89,25 @@ export default function Clientes() {
           <h1 className="text-3xl font-bold text-foreground">Clientes</h1>
           <p className="text-muted-foreground">Gerencie seus distribuidores e parceiros</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
-              <Plus className="mr-2 h-4 w-4" />
-              Novo Cliente
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Novo Cliente</DialogTitle>
-              <DialogDescription>
-                Cadastre um novo cliente no sistema
-              </DialogDescription>
-            </DialogHeader>
-            <ClienteForm onSuccess={handleSuccess} />
-          </DialogContent>
-        </Dialog>
+        {canEdit() && (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+                <Plus className="mr-2 h-4 w-4" />
+                Novo Cliente
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Novo Cliente</DialogTitle>
+                <DialogDescription>
+                  Cadastre um novo cliente no sistema
+                </DialogDescription>
+              </DialogHeader>
+              <ClienteForm onSuccess={handleSuccess} />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Search and filters */}

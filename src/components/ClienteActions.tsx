@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Trash2, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -86,18 +85,11 @@ export function ClienteActions({ cliente, onEdit, onRefresh }: ClienteActionsPro
   };
 
   if (!canEdit()) {
-    return (
-      <Button variant="outline" size="sm" className="flex-1">
-        Ver Detalhes
-      </Button>
-    );
+    return null;
   }
 
   return (
     <div className="flex gap-2 pt-2">
-      <Button variant="outline" size="sm" className="flex-1">
-        Ver Detalhes
-      </Button>
       <Button 
         variant="ghost" 
         size="sm" 
