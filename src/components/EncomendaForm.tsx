@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -191,16 +190,14 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
     }
   };
 
-  const handleClienteCreated = (cliente: Cliente) => {
-    setClientes(prev => [...prev, cliente]);
-    form.setValue("cliente_id", cliente.id);
-    toast.success("Cliente criado e selecionado!");
+  const handleClienteCreated = () => {
+    fetchClientes(); // Refresh the clients list
+    toast.success("Cliente criado com sucesso!");
   };
 
-  const handleFornecedorCreated = (fornecedor: Fornecedor) => {
-    setFornecedores(prev => [...prev, fornecedor]);
-    form.setValue("fornecedor_id", fornecedor.id);
-    toast.success("Fornecedor criado e selecionado!");
+  const handleFornecedorCreated = () => {
+    fetchFornecedores(); // Refresh the suppliers list
+    toast.success("Fornecedor criado com sucesso!");
   };
 
   const onSubmit = async (data: EncomendaFormData) => {

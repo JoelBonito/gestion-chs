@@ -12,9 +12,12 @@ interface ClienteFormDialogProps {
 export function ClienteFormDialog({ onClienteCreated }: ClienteFormDialogProps) {
   const [open, setOpen] = useState(false);
 
-  const handleSuccess = (cliente: { id: string; nome: string }) => {
+  const handleSuccess = () => {
     setOpen(false);
-    onClienteCreated(cliente);
+    // Fetch the latest client data to get the created client
+    // Since we can't get the data directly from the form, we'll trigger a refresh
+    // The parent component should handle refetching the clients list
+    window.location.reload(); // Temporary solution to refresh data
   };
 
   return (
