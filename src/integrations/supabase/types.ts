@@ -58,6 +58,7 @@ export type Database = {
           observacoes: string | null
           saldo_devedor: number | null
           status: string
+          status_producao: string | null
           updated_at: string | null
           valor_pago: number
           valor_total: number
@@ -75,6 +76,7 @@ export type Database = {
           observacoes?: string | null
           saldo_devedor?: number | null
           status?: string
+          status_producao?: string | null
           updated_at?: string | null
           valor_pago?: number
           valor_total?: number
@@ -92,6 +94,7 @@ export type Database = {
           observacoes?: string | null
           saldo_devedor?: number | null
           status?: string
+          status_producao?: string | null
           updated_at?: string | null
           valor_pago?: number
           valor_total?: number

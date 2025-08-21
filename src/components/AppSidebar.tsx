@@ -8,6 +8,7 @@ import {
   ShoppingBag,
   Home,
   Settings,
+  Factory,
 } from "lucide-react";
 
 import {
@@ -29,6 +30,7 @@ const navigationGroups = [
     items: [
       { title: "Dashboard", url: "/", icon: LayoutDashboard },
       { title: "Encomendas", url: "/encomendas", icon: Package },
+      { title: "Produção", url: "/producao", icon: Factory },
     ]
   },
   {
