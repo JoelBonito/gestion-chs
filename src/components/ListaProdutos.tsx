@@ -92,21 +92,29 @@ export function ListaProdutos() {
   };
 
   const handleDelete = async (produto: Produto) => {
+    console.log("handleDelete chamado para produto:", produto);
     if (confirm(`Tem certeza que deseja deletar o produto "${produto.nome}"?`)) {
       try {
+        console.log("Iniciando deleção do produto:", produto.id);
         const { error } = await supabase
           .from("produtos")
           .delete()
           .eq("id", produto.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Erro do Supabase:", error);
+          throw error;
+        }
         
+        console.log("Produto deletado com sucesso");
         toast.success("Produto deletado com sucesso!");
         carregarProdutos();
       } catch (error) {
         console.error("Erro ao deletar produto:", error);
         toast.error("Erro ao deletar produto");
       }
+    } else {
+      console.log("Deleção cancelada pelo usuário");
     }
   };
 
