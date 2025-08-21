@@ -92,12 +92,15 @@ export type Database = {
           observacoes: string | null
           peso_total: number | null
           saldo_devedor: number | null
+          saldo_devedor_fornecedor: number | null
           status: Database["public"]["Enums"]["status_encomenda"]
           status_producao: string | null
           updated_at: string | null
           valor_frete: number | null
           valor_pago: number
+          valor_pago_fornecedor: number | null
           valor_total: number
+          valor_total_custo: number | null
         }
         Insert: {
           cliente_id: string
@@ -113,12 +116,15 @@ export type Database = {
           observacoes?: string | null
           peso_total?: number | null
           saldo_devedor?: number | null
+          saldo_devedor_fornecedor?: number | null
           status?: Database["public"]["Enums"]["status_encomenda"]
           status_producao?: string | null
           updated_at?: string | null
           valor_frete?: number | null
           valor_pago?: number
+          valor_pago_fornecedor?: number | null
           valor_total?: number
+          valor_total_custo?: number | null
         }
         Update: {
           cliente_id?: string
@@ -134,12 +140,15 @@ export type Database = {
           observacoes?: string | null
           peso_total?: number | null
           saldo_devedor?: number | null
+          saldo_devedor_fornecedor?: number | null
           status?: Database["public"]["Enums"]["status_encomenda"]
           status_producao?: string | null
           updated_at?: string | null
           valor_frete?: number | null
           valor_pago?: number
+          valor_pago_fornecedor?: number | null
           valor_total?: number
+          valor_total_custo?: number | null
         }
         Relationships: [
           {
@@ -309,6 +318,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "pagamentos_encomenda_id_fkey"
+            columns: ["encomenda_id"]
+            isOneToOne: false
+            referencedRelation: "encomendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pagamentos_fornecedor: {
+        Row: {
+          created_at: string
+          data_pagamento: string
+          encomenda_id: string
+          forma_pagamento: string
+          id: string
+          observacoes: string | null
+          updated_at: string
+          valor_pagamento: number
+        }
+        Insert: {
+          created_at?: string
+          data_pagamento?: string
+          encomenda_id: string
+          forma_pagamento: string
+          id?: string
+          observacoes?: string | null
+          updated_at?: string
+          valor_pagamento: number
+        }
+        Update: {
+          created_at?: string
+          data_pagamento?: string
+          encomenda_id?: string
+          forma_pagamento?: string
+          id?: string
+          observacoes?: string | null
+          updated_at?: string
+          valor_pagamento?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pagamentos_fornecedor_encomenda_id_fkey"
             columns: ["encomenda_id"]
             isOneToOne: false
             referencedRelation: "encomendas"
