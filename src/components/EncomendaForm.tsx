@@ -58,16 +58,23 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
   });
 
   useEffect(() => {
+    console.log("EncomendaForm useEffect - initialData:", initialData);
     if (initialData) {
       // Se tem dados iniciais, sempre preenche (seja para editar ou duplicar)
-      form.reset({
+      const formData = {
         numero_encomenda: initialData.numero_encomenda || "",
         cliente_id: initialData.cliente_id || "",
         fornecedor_id: initialData.fornecedor_id || "",
         data_producao_estimada: initialData.data_producao_estimada || "",
         data_envio_estimada: initialData.data_envio_estimada || "",
         observacoes: initialData.observacoes || "",
-      });
+      };
+      console.log("EncomendaForm - Preenchendo formulário com:", formData);
+      
+      // Aguarda um pouco para garantir que as opções de clientes e fornecedores foram carregadas
+      setTimeout(() => {
+        form.reset(formData);
+      }, 200);
       
       setValorTotal(initialData.valor_total || 0);
 
@@ -97,7 +104,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
       setItens([]);
       setValorTotal(0);
     }
-  }, [form, initialData]);
+  }, [form, initialData, clientes, fornecedores]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -108,8 +115,14 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
           supabase.from("encomendas").select("numero_encomenda").order("created_at", { ascending: false }).limit(1)
         ]);
 
-        if (clientesRes.data) setClientes(clientesRes.data);
-        if (fornecedoresRes.data) setFornecedores(fornecedoresRes.data);
+        if (clientesRes.data) {
+          console.log("Clientes carregados:", clientesRes.data);
+          setClientes(clientesRes.data);
+        }
+        if (fornecedoresRes.data) {
+          console.log("Fornecedores carregados:", fornecedoresRes.data);
+          setFornecedores(fornecedoresRes.data);
+        }
         
         // Só gerar próximo número se não estiver editando
         if (!isEditing) {
