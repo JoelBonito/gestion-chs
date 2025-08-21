@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { MoreHorizontal, Eye, Edit, Trash2, Calculator } from "lucide-react";
+import { MoreHorizontal, Eye, Edit, Trash2, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -49,15 +49,15 @@ export function EncomendaActions({ encomenda, onView, onEdit, onDelete, onTransp
 
   return (
     <div className="flex items-center gap-2">
-      {/* Botão direto para Calcular Frete */}
+      {/* Botão direto para Transporte */}
       <Button
         variant="outline"
         size="sm"
         onClick={onTransport}
         className="flex items-center gap-2"
       >
-        <Calculator className="h-4 w-4" />
-        Calcular Frete
+        <Truck className="h-4 w-4" />
+        Transporte
       </Button>
 
       <DropdownMenu>

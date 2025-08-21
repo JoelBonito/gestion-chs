@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ItensEncomendaManager, type ItemEncomenda } from "./ItensEncomendaManager";
-import { FreteCalculator } from "./FreteCalculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const transportSchema = z.object({
@@ -32,8 +32,7 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [itens, setItens] = useState<ItemEncomenda[]>([]);
   const [valorTotal, setValorTotal] = useState(0);
-  const [valorFrete, setValorFrete] = useState(0);
-  const [pesoTotal, setPesoTotal] = useState(0);
+  const [pesoParaTransporte, setPesoParaTransporte] = useState(0);
 
   const form = useForm<TransportFormData>({
     resolver: zodResolver(transportSchema),
@@ -65,10 +64,7 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
           observacoes: encomenda.observacoes || "",
         });
 
-        setValorFrete(encomenda.valor_frete || 0);
-        setPesoTotal(encomenda.peso_total || 0);
-
-        // Buscar itens da encomenda (incluindo frete)
+        // Buscar itens da encomenda
         const { data: itensData, error: itensError } = await supabase
           .from("itens_encomenda")
           .select(`
@@ -101,10 +97,16 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
     fetchEncomendaData();
   }, [encomendaId, form]);
 
-  const handleFreteAdded = () => {
-    // Recarregar dados após adicionar frete
-    window.location.reload();
-  };
+  // Calcular peso para transporte sempre que os itens mudarem
+  useEffect(() => {
+    const pesoTotalGramas = itens.reduce((total, item) => {
+      return total + (item.quantidade * (item.peso_produto || 0));
+    }, 0);
+    
+    const pesoTotalKg = pesoTotalGramas / 1000;
+    const pesoComFator = pesoTotalKg * 1.30;
+    setPesoParaTransporte(pesoComFator);
+  }, [itens]);
 
   const onSubmit = async (data: TransportFormData) => {
     setIsSubmitting(true);
@@ -145,17 +147,6 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
       setIsSubmitting(false);
     }
   };
-
-  // Filtrar itens sem frete para o cálculo
-  const itensSemFrete = itens.filter(item => 
-    item.produto_id !== "00000000-0000-0000-0000-000000000001"
-  );
-
-  const itensComPeso = itensSemFrete.map(item => ({
-    produto_id: item.produto_id,
-    quantidade: item.quantidade,
-    peso_produto: item.peso_produto || 0,
-  }));
 
   return (
     <div className="space-y-6">
@@ -240,6 +231,21 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
                 />
               </div>
 
+              {/* Campo Peso para Transporte */}
+              <Card className="bg-blue-50 border-blue-200">
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <h4 className="font-semibold text-blue-700 mb-2">Peso para Transporte</h4>
+                    <p className="text-2xl font-bold text-blue-900">
+                      {pesoParaTransporte.toFixed(2)} kg
+                    </p>
+                    <p className="text-sm text-blue-600 mt-1">
+                      (Peso dos itens × 1,30)
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
               <ItensEncomendaManager
                 itens={itens}
                 onItensChange={setItens}
@@ -247,18 +253,9 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
                 isTransportMode={true}
               />
 
-              <FreteCalculator
-                encomendaId={encomendaId}
-                itens={itensComPeso}
-                onFreteAdded={handleFreteAdded}
-                freteJaCalculado={valorFrete > 0}
-                valorFreteAtual={valorFrete}
-                pesoTotalAtual={pesoTotal}
-              />
-
               <div className="flex justify-end pt-4 border-t">
                 <div className="text-right">
-                  <p className="text-sm text-muted-foreground">Valor Total (com frete):</p>
+                  <p className="text-sm text-muted-foreground">Valor Total:</p>
                   <p className="text-2xl font-bold text-primary">
                     €{valorTotal.toFixed(2)}
                   </p>

@@ -44,6 +44,7 @@ export default function Encomendas() {
   const [selectedEncomenda, setSelectedEncomenda] = useState<Encomenda | null>(null);
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pesoTransporte, setPesoTransporte] = useState<{ [key: string]: number }>({});
 
   const fetchEncomendas = async () => {
     try {
@@ -57,12 +58,47 @@ export default function Encomendas() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setEncomendas(data || []);
+      
+      if (data) {
+        setEncomendas(data || []);
+        
+        // Calcular peso para transporte de cada encomenda
+        const pesos: { [key: string]: number } = {};
+        for (const encomenda of data) {
+          const pesoCalculado = await calcularPesoTransporte(encomenda.id);
+          pesos[encomenda.id] = pesoCalculado;
+        }
+        setPesoTransporte(pesos);
+      }
     } catch (error) {
       console.error("Erro ao carregar encomendas:", error);
       toast.error("Erro ao carregar encomendas");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const calcularPesoTransporte = async (encomendaId: string): Promise<number> => {
+    try {
+      const { data: itens, error } = await supabase
+        .from("itens_encomenda")
+        .select(`
+          quantidade,
+          produtos(size_weight)
+        `)
+        .eq("encomenda_id", encomendaId);
+
+      if (error || !itens) return 0;
+
+      const pesoTotalGramas = itens.reduce((total, item: any) => {
+        return total + (item.quantidade * (item.produtos?.size_weight || 0));
+      }, 0);
+
+      const pesoTotalKg = pesoTotalGramas / 1000;
+      return pesoTotalKg * 1.30;
+    } catch (error) {
+      console.error("Erro ao calcular peso:", error);
+      return 0;
     }
   };
 
@@ -189,7 +225,7 @@ export default function Encomendas() {
           <DialogHeader>
             <DialogTitle>Ajustar Encomenda para Transporte</DialogTitle>
             <DialogDescription>
-              Ajuste as datas, quantidades finais e calcule o frete
+              Ajuste as datas, quantidades finais e veja o peso para transporte
             </DialogDescription>
           </DialogHeader>
           {selectedEncomenda && (
@@ -241,7 +277,7 @@ export default function Encomendas() {
             <Card key={encomenda.id} className="shadow-card hover:shadow-elevated transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-6 gap-4">
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-7 gap-4">
                     <div>
                       <p className="font-semibold">#{encomenda.numero_encomenda}</p>
                       <p className="text-sm text-muted-foreground">{encomenda.clientes?.nome}</p>
@@ -258,6 +294,12 @@ export default function Encomendas() {
                         numeroEncomenda={encomenda.numero_encomenda}
                         onStatusChange={() => handleStatusChange(encomenda.id, encomenda.status)}
                       />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Peso p/ Transporte</p>
+                      <p className="font-medium text-blue-600">
+                        {pesoTransporte[encomenda.id]?.toFixed(2) || '0.00'} kg
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Produção Estimada</p>
