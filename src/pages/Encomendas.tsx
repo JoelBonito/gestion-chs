@@ -101,16 +101,12 @@ export default function Encomendas() {
     fetchEncomendas();
   };
 
+  const handleTransport = (encomenda: Encomenda) => {
+    setSelectedEncomenda(encomenda);
+    setTransportDialogOpen(true);
+  };
+
   const handleStatusChange = async (encomendaId: string, novoStatus: StatusEncomenda) => {
-    // Se o status mudou para TRANSPORTE, abrir o formulário especial
-    if (novoStatus === 'TRANSPORTE') {
-      const encomenda = encomendas.find(e => e.id === encomendaId);
-      if (encomenda) {
-        setSelectedEncomenda(encomenda);
-        setTransportDialogOpen(true);
-      }
-    }
-    
     fetchEncomendas();
   };
 
@@ -282,6 +278,7 @@ export default function Encomendas() {
                     onView={() => handleView(encomenda)}
                     onEdit={() => handleEdit(encomenda)}
                     onDelete={handleDelete}
+                    onTransport={() => handleTransport(encomenda)}
                   />
                 </div>
               </CardContent>

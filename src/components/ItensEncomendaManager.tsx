@@ -69,7 +69,9 @@ export function ItensEncomendaManager({
   }, []);
 
   useEffect(() => {
-    const valorTotal = itens.reduce((total, item) => total + item.subtotal, 0);
+    // Calcular valor total apenas dos itens com subtotal > 0 para exibição
+    // Mas manter todos os itens na lista, incluindo os com preço 0
+    const valorTotal = itens.reduce((total, item) => total + (item.subtotal || 0), 0);
     onValorTotalChange(valorTotal);
   }, [itens, onValorTotalChange]);
 
@@ -112,7 +114,7 @@ export function ItensEncomendaManager({
       item.preco_venda = valor;
     }
     
-    // Recalcular subtotal
+    // Recalcular subtotal (permitir 0)
     item.subtotal = item.quantidade * item.preco_venda;
     
     novosItens[index] = item;
@@ -218,7 +220,7 @@ export function ItensEncomendaManager({
                       <div className="flex items-center gap-2">
                         <Input
                           type="text"
-                          value={`€${item.subtotal.toFixed(2)}`}
+                          value={`€${(item.subtotal || 0).toFixed(2)}`}
                           readOnly
                           className="bg-muted font-semibold"
                         />
@@ -247,7 +249,7 @@ export function ItensEncomendaManager({
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Valor Total:</p>
               <p className="text-2xl font-bold text-primary">
-                €{itens.reduce((total, item) => total + item.subtotal, 0).toFixed(2)}
+                €{itens.reduce((total, item) => total + (item.subtotal || 0), 0).toFixed(2)}
               </p>
             </div>
           </div>

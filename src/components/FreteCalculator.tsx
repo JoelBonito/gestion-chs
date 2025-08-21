@@ -35,8 +35,8 @@ export function FreteCalculator({
         return total + (item.quantidade * item.peso_produto);
       }, 0);
 
-      // Calcular valor do frete: peso_total × 5.85 euros
-      const valorFrete = pesoTotal * 5.85;
+      // Calcular valor do frete: peso_total × 0.00585 euros por grama
+      const valorFrete = pesoTotal * 0.00585;
 
       console.log(`Peso total: ${pesoTotal}g, Valor frete: €${valorFrete.toFixed(2)}`);
 
@@ -120,7 +120,7 @@ export function FreteCalculator({
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            O frete será calculado com base no peso total dos itens (€5,85 por grama)
+            O frete será calculado com base no peso total dos itens (€0,00585 por grama)
           </p>
         )}
       </CardContent>

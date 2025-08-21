@@ -1,69 +1,69 @@
 
-import { useState } from "react";
-import { MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { MoreHorizontal, Eye, Edit, Trash2, Calculator } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
+
+interface Encomenda {
+  id: string;
+  numero_encomenda: string;
+  status: StatusEncomenda;
+  valor_total: number;
+  valor_pago: number;
+  data_criacao: string;
+  cliente_id: string;
+  fornecedor_id: string;
+  clientes?: { nome: string };
+  fornecedores?: { nome: string };
+}
+
 interface EncomendaActionsProps {
-  encomenda: {
-    id: string;
-    numero_encomenda: string;
-  };
+  encomenda: Encomenda;
   onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onTransport?: () => void;
 }
 
-export function EncomendaActions({ encomenda, onView, onEdit, onDelete }: EncomendaActionsProps) {
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
+export function EncomendaActions({ encomenda, onView, onEdit, onDelete, onTransport }: EncomendaActionsProps) {
   const handleDelete = async () => {
-    setIsDeleting(true);
     try {
-      // Primeiro deletar os itens da encomenda
-      const { error: itensError } = await supabase
-        .from("itens_encomenda")
-        .delete()
-        .eq("encomenda_id", encomenda.id);
-
-      if (itensError) throw itensError;
-
-      // Depois deletar os pagamentos da encomenda
-      const { error: pagamentosError } = await supabase
-        .from("pagamentos")
-        .delete()
-        .eq("encomenda_id", encomenda.id);
-
-      if (pagamentosError) throw pagamentosError;
-
-      // Por fim deletar a encomenda
-      const { error: encomendaError } = await supabase
+      const { error } = await supabase
         .from("encomendas")
         .delete()
         .eq("id", encomenda.id);
 
-      if (encomendaError) throw encomendaError;
-
-      toast.success("Encomenda deletada com sucesso!");
+      if (error) throw error;
+      
+      toast.success("Encomenda excluída com sucesso!");
       onDelete();
     } catch (error) {
-      console.error("Erro ao deletar encomenda:", error);
-      toast.error("Erro ao deletar encomenda");
-    } finally {
-      setIsDeleting(false);
-      setShowDeleteDialog(false);
+      console.error("Erro ao excluir encomenda:", error);
+      toast.error("Erro ao excluir encomenda");
     }
   };
 
   return (
-    <>
+    <div className="flex items-center gap-2">
+      {/* Botão direto para Calcular Frete */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onTransport}
+        className="flex items-center gap-2"
+      >
+        <Calculator className="h-4 w-4" />
+        Calcular Frete
+      </Button>
+
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" className="h-8 w-8 p-0">
+            <span className="sr-only">Abrir menu</span>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -76,37 +76,28 @@ export function EncomendaActions({ encomenda, onView, onEdit, onDelete }: Encome
             <Edit className="mr-2 h-4 w-4" />
             Editar
           </DropdownMenuItem>
-          <DropdownMenuItem 
-            onClick={() => setShowDeleteDialog(true)}
-            className="text-destructive"
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Deletar
-          </DropdownMenuItem>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Excluir
+              </DropdownMenuItem>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação não pode ser desfeita. Isso excluirá permanentemente a encomenda {encomenda.numero_encomenda}.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja deletar a encomenda #{encomenda.numero_encomenda}? 
-              Esta ação não pode ser desfeita e também deletará todos os itens e pagamentos relacionados.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {isDeleting ? "Deletando..." : "Deletar"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    </div>
   );
 }
