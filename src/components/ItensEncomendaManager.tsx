@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,6 @@ interface Produto {
   nome: string;
   marca: string;
   tipo: string;
-  tamanho: string;
   preco_custo: number;
   preco_venda: number;
 }
@@ -44,7 +42,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       try {
         const { data, error } = await supabase
           .from("produtos")
-          .select("id, nome, marca, tipo, tamanho, preco_custo, preco_venda")
+          .select("id, nome, marca, tipo, preco_custo, preco_venda")
           .eq("ativo", true)
           .order("nome");
         
@@ -59,7 +57,6 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
             nome: item.nome,
             marca: item.marca,
             tipo: item.tipo,
-            tamanho: item.tamanho || '',
             preco_custo: item.preco_custo,
             preco_venda: item.preco_venda
           })));
@@ -123,7 +120,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       const produto = produtos.find(p => p.id === valor);
       if (produto) {
         item.produto_id = valor;
-        item.produto_nome = `${produto.nome} - ${produto.marca} - ${produto.tipo} - ${produto.tamanho}`;
+        item.produto_nome = `${produto.nome} - ${produto.marca} - ${produto.tipo}`;
         item.preco_custo = produto.preco_custo;
         item.preco_venda = produto.preco_venda;
         // Default weight for now since column doesn't exist yet
@@ -185,7 +182,7 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
                       {produtos.map((produto) => (
                         <SelectItem key={produto.id} value={produto.id}>
                           <div className="flex flex-col">
-                            <span>{produto.nome} - {produto.marca} - {produto.tipo} - {produto.tamanho}</span>
+                            <span>{produto.nome} - {produto.marca} - {produto.tipo}</span>
                             <span className="text-xs text-muted-foreground">
                               Peso: 0.50 kg (estimado)
                             </span>

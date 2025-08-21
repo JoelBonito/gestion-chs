@@ -19,7 +19,7 @@ interface ItemEncomenda {
   quantidade: number;
   preco_unitario: number;
   subtotal: number;
-  produtos?: { nome: string; marca: string; tipo: string; tamanho: string };
+  produtos?: { nome: string; marca: string; tipo: string };
 }
 
 interface Encomenda {
@@ -137,7 +137,7 @@ export default function Producao() {
         .from("itens_encomenda")
         .select(`
           *,
-          produtos(nome, marca, tipo, tamanho)
+          produtos(nome, marca, tipo)
         `)
         .eq("encomenda_id", encomendaId);
 
@@ -502,7 +502,6 @@ export default function Producao() {
                                                 <TableHead>Produto</TableHead>
                                                 <TableHead>Marca</TableHead>
                                                 <TableHead>Tipo</TableHead>
-                                                <TableHead>Tamanho</TableHead>
                                                 <TableHead className="text-right">Qtd</TableHead>
                                                 <TableHead className="text-right">Preço Unit.</TableHead>
                                                 <TableHead className="text-right">Subtotal</TableHead>
@@ -514,7 +513,6 @@ export default function Producao() {
                                                   <TableCell>{item.produtos?.nome || "N/A"}</TableCell>
                                                   <TableCell>{item.produtos?.marca || "N/A"}</TableCell>
                                                   <TableCell>{item.produtos?.tipo || "N/A"}</TableCell>
-                                                  <TableCell>{item.produtos?.tamanho || "N/A"}</TableCell>
                                                   <TableCell className="text-right">{item.quantidade}</TableCell>
                                                   <TableCell className="text-right">€{item.preco_unitario.toFixed(2)}</TableCell>
                                                   <TableCell className="text-right font-semibold">€{item.subtotal.toFixed(2)}</TableCell>

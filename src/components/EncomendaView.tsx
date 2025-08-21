@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +30,7 @@ interface ItemEncomenda {
   preco_unitario: number;
   subtotal: number;
   produto_id: string;
-  produtos?: { nome: string; marca: string; tipo: string; tamanho: string };
+  produtos?: { nome: string; marca: string; tipo: string };
 }
 
 interface EncomendaViewProps {
@@ -76,7 +75,7 @@ export function EncomendaView({ encomendaId }: EncomendaViewProps) {
         .from("itens_encomenda")
         .select(`
           *,
-          produtos(nome, marca, tipo, tamanho)
+          produtos(nome, marca, tipo)
         `)
         .eq("encomenda_id", encomendaId);
 
@@ -212,7 +211,7 @@ export function EncomendaView({ encomendaId }: EncomendaViewProps) {
                 <div>
                   <h4 className="font-medium">{item.produtos?.nome}</h4>
                   <p className="text-sm text-muted-foreground">
-                    {item.produtos?.marca} • {item.produtos?.tipo} • {item.produtos?.tamanho}
+                    {item.produtos?.marca} • {item.produtos?.tipo}
                   </p>
                 </div>
                 <div className="text-right">
