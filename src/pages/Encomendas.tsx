@@ -4,20 +4,22 @@ import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { EncomendaForm } from "@/components/EncomendaForm";
 import { EncomendaView } from "@/components/EncomendaView";
 import { EncomendaActions } from "@/components/EncomendaActions";
+import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 
 interface Encomenda {
   id: string;
   numero_encomenda: string;
-  status: string;
+  status: StatusEncomenda;
   status_producao?: string;
   valor_total: number;
   valor_pago: number;
@@ -92,12 +94,16 @@ export default function Encomendas() {
     fetchEncomendas();
   };
 
+  const handleStatusChange = () => {
+    fetchEncomendas();
+  };
+
   const filteredEncomendas = encomendas.filter(encomenda => {
     const matchesSearch = encomenda.numero_encomenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (encomenda.clientes?.nome && encomenda.clientes.nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (encomenda.fornecedores?.nome && encomenda.fornecedores.nome.toLowerCase().includes(searchTerm.toLowerCase()));
     
-    const matchesStatus = showCompleted ? encomenda.status === 'entregue' : encomenda.status !== 'entregue';
+    const matchesStatus = showCompleted ? encomenda.status === 'ENTREGUE' : encomenda.status !== 'ENTREGUE';
     
     return matchesSearch && matchesStatus;
   });
@@ -112,15 +118,6 @@ export default function Encomendas() {
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('pt-PT');
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'producao': return 'bg-blue-500';
-      case 'enviado': return 'bg-purple-500';
-      case 'entregue': return 'bg-green-500';
-      default: return 'bg-gray-500';
-    }
   };
 
   return (
@@ -214,7 +211,7 @@ export default function Encomendas() {
             <Card key={encomenda.id} className="shadow-card hover:shadow-elevated transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4">
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-6 gap-4">
                     <div>
                       <p className="font-semibold">#{encomenda.numero_encomenda}</p>
                       <p className="text-sm text-muted-foreground">{encomenda.clientes?.nome}</p>
@@ -222,6 +219,15 @@ export default function Encomendas() {
                     <div>
                       <p className="text-sm text-muted-foreground">Fornecedor</p>
                       <p className="font-medium">{encomenda.fornecedores?.nome}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Status</p>
+                      <EncomendaStatusSelect
+                        encomendaId={encomenda.id}
+                        currentStatus={encomenda.status}
+                        numeroEncomenda={encomenda.numero_encomenda}
+                        onStatusChange={handleStatusChange}
+                      />
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Produção Estimada</p>

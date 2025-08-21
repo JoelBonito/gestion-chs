@@ -1,14 +1,17 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
+
 interface Encomenda {
   id: string;
   numero_encomenda: string;
-  status: string;
+  status: StatusEncomenda;
   status_producao?: string;
   valor_total: number;
   valor_pago: number;
@@ -36,6 +39,17 @@ interface ItemEncomenda {
 interface EncomendaViewProps {
   encomendaId: string;
 }
+
+const getStatusColor = (status: StatusEncomenda) => {
+  switch (status) {
+    case "NOVO PEDIDO": return "bg-gray-500";
+    case "PRODUÇÃO": return "bg-blue-500";
+    case "EMBALAGEM": return "bg-yellow-500";
+    case "TRANSPORTE": return "bg-purple-500";
+    case "ENTREGUE": return "bg-green-500";
+    default: return "bg-gray-500";
+  }
+};
 
 export function EncomendaView({ encomendaId }: EncomendaViewProps) {
   const [encomenda, setEncomenda] = useState<Encomenda | null>(null);
@@ -122,6 +136,9 @@ export function EncomendaView({ encomendaId }: EncomendaViewProps) {
                 Criada em {formatDate(encomenda.data_criacao)}
               </p>
             </div>
+            <Badge className={`${getStatusColor(encomenda.status)} text-white`}>
+              {encomenda.status}
+            </Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
