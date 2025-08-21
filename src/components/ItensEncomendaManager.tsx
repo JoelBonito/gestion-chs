@@ -35,6 +35,7 @@ interface ItensEncomendaManagerProps {
 
 export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange }: ItensEncomendaManagerProps) {
   const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [ultimoItemIndex, setUltimoItemIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchProdutos = async () => {
@@ -66,20 +67,23 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       preco_venda: 0,
       subtotal: 0,
     };
-    onItensChange([...itens, novoItem]);
+    const novosItens = [...itens, novoItem];
+    onItensChange(novosItens);
+    setUltimoItemIndex(novosItens.length - 1);
   };
 
   const duplicarItem = (index: number) => {
     const itemOriginal = itens[index];
     const itemDuplicado: ItemEncomenda = {
-      produto_id: itemOriginal.produto_id,
-      produto_nome: itemOriginal.produto_nome,
-      quantidade: itemOriginal.quantidade,
-      preco_custo: itemOriginal.preco_custo,
-      preco_venda: itemOriginal.preco_venda,
-      subtotal: itemOriginal.subtotal,
+      produto_id: "",
+      quantidade: 1,
+      preco_custo: 0,
+      preco_venda: 0,
+      subtotal: 0,
     };
-    onItensChange([...itens, itemDuplicado]);
+    const novosItens = [...itens, itemDuplicado];
+    onItensChange(novosItens);
+    setUltimoItemIndex(novosItens.length - 1);
   };
 
   const removerItem = (index: number) => {
