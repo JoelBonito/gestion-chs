@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ItemEncomenda {
@@ -66,6 +67,19 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
       subtotal: 0,
     };
     onItensChange([...itens, novoItem]);
+  };
+
+  const duplicarItem = (index: number) => {
+    const itemOriginal = itens[index];
+    const itemDuplicado: ItemEncomenda = {
+      produto_id: itemOriginal.produto_id,
+      produto_nome: itemOriginal.produto_nome,
+      quantidade: itemOriginal.quantidade,
+      preco_custo: itemOriginal.preco_custo,
+      preco_venda: itemOriginal.preco_venda,
+      subtotal: itemOriginal.subtotal,
+    };
+    onItensChange([...itens, itemDuplicado]);
   };
 
   const removerItem = (index: number) => {
@@ -143,9 +157,9 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
                   <label className="text-sm font-medium mb-2 block">Quantidade *</label>
                   <Input
                     type="number"
-                    min="1"
-                    value={item.quantidade}
-                    onChange={(e) => atualizarItem(index, "quantidade", parseInt(e.target.value) || 1)}
+                    value={item.quantidade || ""}
+                    onChange={(e) => atualizarItem(index, "quantidade", parseInt(e.target.value) || 0)}
+                    placeholder="0"
                   />
                 </div>
                 
@@ -180,15 +194,26 @@ export function ItensEncomendaManager({ itens, onItensChange, onValorTotalChange
                       className="bg-muted"
                     />
                   </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => removerItem(index)}
-                    className="mt-6"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex flex-col gap-1 mt-6">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => duplicarItem(index)}
+                      title="Duplicar item"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => removerItem(index)}
+                      title="Remover item"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </Card>
