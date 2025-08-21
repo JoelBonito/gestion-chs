@@ -82,7 +82,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
           produto_id: item.produto_id,
           produto_nome: item.produtos ? `${item.produtos.nome} - ${item.produtos.marca} - ${item.produtos.tipo} - ${item.produtos.tamanho}` : "",
           quantidade: item.quantidade,
-          preco_custo: 0, // Não temos no banco, será atualizado quando selecionar produto
+          preco_custo: item.produtos?.preco_custo || 0, // Buscar do produto relacionado
           preco_venda: item.preco_unitario,
           subtotal: item.subtotal,
         }));

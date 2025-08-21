@@ -86,7 +86,7 @@ export default function Encomendas() {
             quantidade,
             preco_unitario,
             subtotal,
-            produtos(id, nome, marca, tipo, tamanho)
+            produtos(id, nome, marca, tipo, tamanho, preco_custo)
           )
         `)
         .eq("id", encomenda.id)
