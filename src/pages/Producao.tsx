@@ -239,14 +239,14 @@ export default function Producao() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Fornecedor</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Data Produção</TableHead>
-                  <TableHead>Data Envio</TableHead>
-                  <TableHead>Status Atual</TableHead>
-                  <TableHead>Alterar Status</TableHead>
+                  <TableHead className="w-[100px]">ID</TableHead>
+                  <TableHead className="min-w-[150px]">Cliente</TableHead>
+                  <TableHead className="min-w-[150px]">Fornecedor</TableHead>
+                  <TableHead className="w-[100px] text-right">Valor</TableHead>
+                  <TableHead className="w-[140px] text-center">Data Produção</TableHead>
+                  <TableHead className="w-[140px] text-center">Data Envio</TableHead>
+                  <TableHead className="w-[100px] text-center">Status</TableHead>
+                  <TableHead className="w-[140px] text-center">Alterar Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -269,30 +269,32 @@ export default function Producao() {
                     
                     return (
                       <TableRow key={encomenda.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">{encomenda.numero_encomenda}</TableCell>
-                        <TableCell>{encomenda.clientes?.nome || "N/A"}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="font-medium w-[100px]">{encomenda.numero_encomenda}</TableCell>
+                        <TableCell className="min-w-[150px]">{encomenda.clientes?.nome || "N/A"}</TableCell>
+                        <TableCell className="min-w-[150px] text-sm text-muted-foreground">
                           {encomenda.fornecedores?.nome || "N/A"}
                         </TableCell>
-                        <TableCell className="font-semibold">
-                          € {encomenda.valor_total.toFixed(2)}
+                        <TableCell className="font-semibold text-right w-[100px] whitespace-nowrap">
+                          €{encomenda.valor_total.toFixed(2)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="w-[140px]">
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button
                                 variant="outline"
                                 className={cn(
-                                  "w-32 justify-start text-left font-normal",
+                                  "w-full justify-start text-left font-normal text-xs",
                                   !encomenda.data_producao_estimada && "text-muted-foreground"
                                 )}
                                 size="sm"
                               >
-                                <CalendarIcon className="mr-2 h-3 w-3" />
-                                {encomenda.data_producao_estimada 
-                                  ? format(new Date(encomenda.data_producao_estimada), "dd/MM/yy")
-                                  : "Definir"
-                                }
+                                <CalendarIcon className="mr-1 h-3 w-3 flex-shrink-0" />
+                                <span className="truncate">
+                                  {encomenda.data_producao_estimada 
+                                    ? format(new Date(encomenda.data_producao_estimada), "dd/MM/yy")
+                                    : "Definir"
+                                  }
+                                </span>
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
@@ -306,22 +308,24 @@ export default function Producao() {
                             </PopoverContent>
                           </Popover>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="w-[140px]">
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button
                                 variant="outline"
                                 className={cn(
-                                  "w-32 justify-start text-left font-normal",
+                                  "w-full justify-start text-left font-normal text-xs",
                                   !encomenda.data_envio_estimada && "text-muted-foreground"
                                 )}
                                 size="sm"
                               >
-                                <CalendarIcon className="mr-2 h-3 w-3" />
-                                {encomenda.data_envio_estimada 
-                                  ? format(new Date(encomenda.data_envio_estimada), "dd/MM/yy")
-                                  : "Definir"
-                                }
+                                <CalendarIcon className="mr-1 h-3 w-3 flex-shrink-0" />
+                                <span className="truncate">
+                                  {encomenda.data_envio_estimada 
+                                    ? format(new Date(encomenda.data_envio_estimada), "dd/MM/yy")
+                                    : "Definir"
+                                  }
+                                </span>
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
@@ -335,18 +339,20 @@ export default function Producao() {
                             </PopoverContent>
                           </Popover>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={status.variant} className="flex items-center gap-1 w-fit">
-                            <StatusIcon className="h-3 w-3" />
-                            {status.label}
-                          </Badge>
+                        <TableCell className="w-[100px]">
+                          <div className="flex justify-center">
+                            <Badge variant={status.variant} className="flex items-center gap-1 w-fit text-xs whitespace-nowrap">
+                              <StatusIcon className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">{status.label}</span>
+                            </Badge>
+                          </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="w-[140px]">
                           <Select
                             value={encomenda.status_producao}
                             onValueChange={(novoStatus) => atualizarStatusProducao(encomenda.id, novoStatus)}
                           >
-                            <SelectTrigger className="w-32">
+                            <SelectTrigger className="w-full text-xs">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
