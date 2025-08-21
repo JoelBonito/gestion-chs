@@ -145,6 +145,31 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
           .eq("id", initialData.id);
 
         if (encomendaError) throw encomendaError;
+
+        // Deletar todos os itens existentes da encomenda
+        const { error: deleteError } = await supabase
+          .from("itens_encomenda")
+          .delete()
+          .eq("encomenda_id", initialData.id);
+
+        if (deleteError) throw deleteError;
+
+        // Inserir os novos itens
+        if (itens.length > 0) {
+          const itensParaInserir = itens.map(item => ({
+            encomenda_id: initialData.id,
+            produto_id: item.produto_id,
+            quantidade: item.quantidade,
+            preco_unitario: item.preco_venda,
+          }));
+
+          const { error: itensError } = await supabase
+            .from("itens_encomenda")
+            .insert(itensParaInserir);
+
+          if (itensError) throw itensError;
+        }
+
         toast.success("Encomenda atualizada com sucesso!");
       } else {
         // Criar nova encomenda
