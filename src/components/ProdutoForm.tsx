@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -38,6 +39,9 @@ interface ProdutoFormProps {
 
 export function ProdutoForm({ onSuccess, initialData, isEditing = false }: ProdutoFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [marcasExistentes, setMarcasExistentes] = useState<string[]>([]);
+  const [tiposExistentes, setTiposExistentes] = useState<string[]>([]);
+  const [tamanhosExistentes, setTamanhosExistentes] = useState<string[]>([]);
 
   const form = useForm<ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
@@ -52,6 +56,10 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
   });
 
   useEffect(() => {
+    carregarOpcoesExistentes();
+  }, []);
+
+  useEffect(() => {
     if (initialData) {
       form.reset({
         nome: initialData.nome,
@@ -63,6 +71,28 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
       });
     }
   }, [form, initialData]);
+
+  const carregarOpcoesExistentes = async () => {
+    try {
+      const { data: produtos, error } = await supabase
+        .from("produtos")
+        .select("marca, tipo, tamanho");
+
+      if (error) throw error;
+
+      if (produtos) {
+        const marcasUnicas = [...new Set(produtos.map(p => p.marca))].filter(Boolean).sort();
+        const tiposUnicos = [...new Set(produtos.map(p => p.tipo))].filter(Boolean).sort();
+        const tamanhosUnicos = [...new Set(produtos.map(p => p.tamanho))].filter(Boolean).sort();
+
+        setMarcasExistentes(marcasUnicas);
+        setTiposExistentes(tiposUnicos);
+        setTamanhosExistentes(tamanhosUnicos);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar opções existentes:", error);
+    }
+  };
 
   const onSubmit = async (data: ProdutoFormData) => {
     setIsSubmitting(true);
@@ -131,8 +161,27 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           render={({ field }) => (
             <FormItem>
               <FormLabel>Marca</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione ou digite uma marca" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {marcasExistentes.map((marca) => (
+                    <SelectItem key={marca} value={marca}>
+                      {marca}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormControl>
-                <Input placeholder="Ex: Nike" {...field} />
+                <Input 
+                  placeholder="Ou digite uma nova marca" 
+                  value={field.value}
+                  onChange={field.onChange}
+                  className="mt-2"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -145,8 +194,27 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tipo</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione ou digite um tipo" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {tiposExistentes.map((tipo) => (
+                    <SelectItem key={tipo} value={tipo}>
+                      {tipo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormControl>
-                <Input placeholder="Ex: Vestuário" {...field} />
+                <Input 
+                  placeholder="Ou digite um novo tipo" 
+                  value={field.value}
+                  onChange={field.onChange}
+                  className="mt-2"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -159,8 +227,27 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tamanho</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione ou digite um tamanho" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {tamanhosExistentes.map((tamanho) => (
+                    <SelectItem key={tamanho} value={tamanho}>
+                      {tamanho}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormControl>
-                <Input placeholder="Ex: M, G, GG" {...field} />
+                <Input 
+                  placeholder="Ou digite um novo tamanho" 
+                  value={field.value}
+                  onChange={field.onChange}
+                  className="mt-2"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
