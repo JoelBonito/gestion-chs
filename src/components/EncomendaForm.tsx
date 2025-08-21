@@ -61,14 +61,17 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
     if (isEditing && initialData) {
       console.log("Dados recebidos para edição:", initialData);
       
-      form.reset({
-        numero_encomenda: initialData.numero_encomenda || "",
-        cliente_id: initialData.cliente_id || "",
-        fornecedor_id: initialData.fornecedor_id || "",
-        data_producao_estimada: initialData.data_producao_estimada || "",
-        data_envio_estimada: initialData.data_envio_estimada || "",
-        observacoes: initialData.observacoes || "",
-      });
+      // Aguardar os dados de clientes e fornecedores serem carregados
+      setTimeout(() => {
+        form.reset({
+          numero_encomenda: initialData.numero_encomenda || "",
+          cliente_id: initialData.cliente_id || "",
+          fornecedor_id: initialData.fornecedor_id || "",
+          data_producao_estimada: initialData.data_producao_estimada || "",
+          data_envio_estimada: initialData.data_envio_estimada || "",
+          observacoes: initialData.observacoes || "",
+        });
+      }, 100);
       
       setValorTotal(initialData.valor_total || 0);
 
@@ -86,7 +89,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         setItens(itensFormatados);
       }
     }
-  }, [form, isEditing, initialData]);
+  }, [form, isEditing, initialData, clientes, fornecedores]);
 
   useEffect(() => {
     const fetchData = async () => {
