@@ -118,7 +118,6 @@ export function EncomendaForm({ onSuccess }: EncomendaFormProps) {
         produto_id: item.produto_id,
         quantidade: item.quantidade,
         preco_unitario: item.preco_venda,
-        subtotal: item.subtotal,
       }));
 
       const { error: itensError } = await supabase
