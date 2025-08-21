@@ -1,21 +1,7 @@
 
-import { useUserRole } from "@/hooks/useUserRole";
-import RoleBasedEncomendas from "@/components/RoleBasedEncomendas";
-import { Card, CardContent } from "@/components/ui/card";
+import Encomendas from "@/components/Encomendas";
 
-export default function Encomendas() {
-  const { loading } = useUserRole();
-
-  if (loading) {
-    return (
-      <Card className="shadow-card">
-        <CardContent className="p-8 text-center">
-          <p className="text-muted-foreground">Carregando...</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
+export default function EncomendasPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -25,7 +11,7 @@ export default function Encomendas() {
         </div>
       </div>
 
-      <RoleBasedEncomendas />
+      <Encomendas />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,10 +9,7 @@ import { Search, Eye, Edit } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useUserRole } from "@/hooks/useUserRole";
 import { EncomendaView } from "@/components/EncomendaView";
-import { EncomendaViewCusto } from "@/components/EncomendaViewCusto";
-import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 
@@ -20,25 +18,18 @@ interface Encomenda {
   numero_encomenda: string;
   status: StatusEncomenda;
   valor_total: number;
-  valor_total_custo: number;
   data_criacao: string;
   data_entrega?: string;
   cliente_nome: string;
   fornecedor_nome: string;
 }
 
-export default function RoleBasedEncomendas() {
+export default function Encomendas() {
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [viewEncomendaId, setViewEncomendaId] = useState<string | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const { roles, hasRole } = useUserRole();
-
-  const isFactory = hasRole('factory');
-  const isClient = hasRole('client');
-  const isAdmin = hasRole('admin');
-  const isOps = hasRole('ops');
 
   const fetchEncomendas = async () => {
     try {
@@ -58,7 +49,6 @@ export default function RoleBasedEncomendas() {
         numero_encomenda: encomenda.numero_encomenda,
         status: encomenda.status as StatusEncomenda,
         valor_total: parseFloat(encomenda.valor_total || 0),
-        valor_total_custo: parseFloat(encomenda.valor_total_custo || 0),
         data_criacao: encomenda.data_criacao,
         data_entrega: encomenda.data_entrega,
         cliente_nome: encomenda.clientes?.nome || 'N/A',
@@ -76,22 +66,6 @@ export default function RoleBasedEncomendas() {
   useEffect(() => {
     fetchEncomendas();
   }, []);
-
-  const handleStatusUpdate = async (encomendaId: string, newStatus: StatusEncomenda) => {
-    try {
-      const { error } = await supabase
-        .from("encomendas")
-        .update({ status: newStatus })
-        .eq("id", encomendaId);
-
-      if (error) throw error;
-      
-      toast.success("Status atualizado com sucesso!");
-      fetchEncomendas();
-    } catch (error: any) {
-      toast.error("Erro ao atualizar status: " + error.message);
-    }
-  };
 
   const handleViewClick = (encomendaId: string) => {
     setViewEncomendaId(encomendaId);
@@ -130,15 +104,9 @@ export default function RoleBasedEncomendas() {
     <div className="space-y-6">
       <Card className="shadow-card">
         <CardHeader>
-          <CardTitle>
-            {isFactory ? "Encomendas - Produção" : 
-             isClient ? "Minhas Encomendas" : 
-             "Gestão de Encomendas"}
-          </CardTitle>
+          <CardTitle>Gestão de Encomendas</CardTitle>
           <CardDescription>
-            {isFactory ? "Gerir status de produção das encomendas" :
-             isClient ? "Visualizar o status das suas encomendas" :
-             "Controle completo das encomendas"}
+            Controle completo das encomendas
           </CardDescription>
           
           <div className="flex items-center space-x-2">
@@ -176,22 +144,12 @@ export default function RoleBasedEncomendas() {
                     <TableCell>{encomenda.cliente_nome}</TableCell>
                     <TableCell>{encomenda.fornecedor_nome}</TableCell>
                     <TableCell>
-                      {(isFactory && !isAdmin && !isOps) ? (
-                        <EncomendaStatusSelect
-                          currentStatus={encomenda.status}
-                          onStatusChange={(newStatus) => handleStatusUpdate(encomenda.id, newStatus)}
-                        />
-                      ) : (
-                        <Badge className={`${getStatusColor(encomenda.status)} text-white`}>
-                          {encomenda.status}
-                        </Badge>
-                      )}
+                      <Badge className={`${getStatusColor(encomenda.status)} text-white`}>
+                        {encomenda.status}
+                      </Badge>
                     </TableCell>
                     <TableCell className="font-semibold">
-                      {isFactory ? 
-                        `€${encomenda.valor_total_custo.toFixed(2)}` : 
-                        `€${encomenda.valor_total.toFixed(2)}`
-                      }
+                      €{encomenda.valor_total.toFixed(2)}
                     </TableCell>
                     <TableCell>
                       {new Date(encomenda.data_criacao).toLocaleDateString('pt-PT')}
@@ -216,15 +174,10 @@ export default function RoleBasedEncomendas() {
         </CardContent>
       </Card>
 
-      {/* Dialog de Visualização */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           {viewEncomendaId && (
-            isFactory ? (
-              <EncomendaViewCusto encomendaId={viewEncomendaId} />
-            ) : (
-              <EncomendaView encomendaId={viewEncomendaId} />
-            )
+            <EncomendaView encomendaId={viewEncomendaId} />
           )}
         </DialogContent>
       </Dialog>

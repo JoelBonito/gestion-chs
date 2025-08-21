@@ -60,7 +60,7 @@ function App() {
             } />
             
             <Route path="/produtos" element={
-              <AuthGuard requiredRoles={['admin', 'ops']}>
+              <AuthGuard>
                 <AppLayout>
                   <Produtos />
                 </AppLayout>
@@ -68,7 +68,7 @@ function App() {
             } />
             
             <Route path="/clientes" element={
-              <AuthGuard requiredRoles={['admin', 'ops']}>
+              <AuthGuard>
                 <AppLayout>
                   <Clientes />
                 </AppLayout>
@@ -76,7 +76,7 @@ function App() {
             } />
             
             <Route path="/fornecedores" element={
-              <AuthGuard requiredRoles={['admin', 'ops']}>
+              <AuthGuard>
                 <AppLayout>
                   <Fornecedores />
                 </AppLayout>
@@ -84,7 +84,7 @@ function App() {
             } />
             
             <Route path="/encomendas" element={
-              <AuthGuard requiredRoles={['admin', 'ops', 'factory', 'client']}>
+              <AuthGuard>
                 <AppLayout>
                   <Encomendas />
                 </AppLayout>
@@ -92,7 +92,7 @@ function App() {
             } />
             
             <Route path="/producao" element={
-              <AuthGuard requiredRoles={['admin', 'ops', 'factory']}>
+              <AuthGuard>
                 <AppLayout>
                   <Producao />
                 </AppLayout>
@@ -100,7 +100,7 @@ function App() {
             } />
             
             <Route path="/frete" element={
-              <AuthGuard requiredRoles={['admin', 'ops']}>
+              <AuthGuard>
                 <AppLayout>
                   <Frete />
                 </AppLayout>
@@ -108,7 +108,7 @@ function App() {
             } />
             
             <Route path="/financeiro" element={
-              <AuthGuard requiredRoles={['admin', 'ops', 'factory', 'client']}>
+              <AuthGuard>
                 <AppLayout>
                   <Financeiro />
                 </AppLayout>
