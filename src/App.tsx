@@ -29,7 +29,7 @@ const App = () => (
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center">
                   <img 
-                    src="/lovable-uploads/3dbf60d5-1815-4a4a-8b20-f09cff4a551b.png" 
+                    src="/lovable-uploads/59b9a327-4475-41d3-8ce8-b0d7bfb5355c.png" 
                     alt="Gestão CHS Logo" 
                     className="w-10 h-10 object-contain"
                   />
