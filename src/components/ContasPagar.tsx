@@ -1,25 +1,37 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Search, DollarSign, Clock, CheckCircle } from "lucide-react";
+import { Search, DollarSign, Clock, CheckCircle, CreditCard } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import PagamentoFornecedorForm from "@/components/PagamentoFornecedorForm";
 
 interface ContaPagar {
   encomenda_id: string;
   numero_encomenda: string;
   fornecedor_nome: string;
   valor_total_custo: number;
-  valor_pago: number;
-  saldo_devedor: number;
+  valor_pago_fornecedor: number;
+  saldo_devedor_fornecedor: number;
+  pagamentos_fornecedor: Array<{
+    id: string;
+    valor_pagamento: number;
+    forma_pagamento: string;
+    data_pagamento: string;
+    observacoes?: string;
+  }>;
 }
 
 export default function ContasPagar() {
   const [contas, setContas] = useState<ContaPagar[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
+  const [pagamentoDialogOpen, setPagamentoDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchContasPagar = async () => {
@@ -30,12 +42,12 @@ export default function ContasPagar() {
         .select(`
           id,
           numero_encomenda,
-          valor_pago,
           fornecedores!inner(nome),
           itens_encomenda(
             quantidade,
             produtos!inner(preco_custo)
-          )
+          ),
+          pagamentos_fornecedor:pagamentos!pagamentos_fornecedor_encomenda_id_fkey(*)
         `)
         .order("created_at", { ascending: false });
 
@@ -47,13 +59,19 @@ export default function ContasPagar() {
           return sum + (item.quantidade * parseFloat(item.produtos.preco_custo));
         }, 0);
 
+        // Calcular valor pago ao fornecedor
+        const valorPagoFornecedor = encomenda.pagamentos_fornecedor?.reduce((sum: number, pagamento: any) => {
+          return sum + parseFloat(pagamento.valor_pagamento);
+        }, 0) || 0;
+
         return {
           encomenda_id: encomenda.id,
           numero_encomenda: encomenda.numero_encomenda,
           fornecedor_nome: encomenda.fornecedores.nome,
           valor_total_custo: valorTotalCusto,
-          valor_pago: 0, // Por enquanto, assumindo que não há pagamentos para fornecedores
-          saldo_devedor: valorTotalCusto,
+          valor_pago_fornecedor: valorPagoFornecedor,
+          saldo_devedor_fornecedor: valorTotalCusto - valorPagoFornecedor,
+          pagamentos_fornecedor: encomenda.pagamentos_fornecedor || [],
         };
       });
 
@@ -73,6 +91,17 @@ export default function ContasPagar() {
     fetchContasPagar();
   }, []);
 
+  const handlePagamentoClick = (conta: ContaPagar) => {
+    setSelectedConta(conta);
+    setPagamentoDialogOpen(true);
+  };
+
+  const handlePagamentoSuccess = () => {
+    setPagamentoDialogOpen(false);
+    setSelectedConta(null);
+    fetchContasPagar();
+  };
+
   const filteredContas = contas.filter(
     (conta) =>
       conta.fornecedor_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -80,8 +109,8 @@ export default function ContasPagar() {
   );
 
   const totalGeral = contas.reduce((sum, c) => sum + c.valor_total_custo, 0);
-  const totalPago = contas.reduce((sum, c) => sum + c.valor_pago, 0);
-  const totalAPagar = contas.reduce((sum, c) => sum + c.saldo_devedor, 0);
+  const totalPago = contas.reduce((sum, c) => sum + c.valor_pago_fornecedor, 0);
+  const totalAPagar = contas.reduce((sum, c) => sum + c.saldo_devedor_fornecedor, 0);
 
   if (loading) {
     return (
@@ -139,7 +168,7 @@ export default function ContasPagar() {
         <CardHeader>
           <CardTitle>Contas a Pagar</CardTitle>
           <CardDescription>
-            Valores devidos aos fornecedores por encomenda
+            Valores devidos aos fornecedores por encomenda e controle de pagamentos
           </CardDescription>
           
           <div className="flex items-center space-x-2">
@@ -164,6 +193,8 @@ export default function ContasPagar() {
                   <TableHead>Valor Total (Custo)</TableHead>
                   <TableHead>Valor Pago</TableHead>
                   <TableHead>Saldo Devedor</TableHead>
+                  <TableHead>Pagamentos</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -177,12 +208,37 @@ export default function ContasPagar() {
                       €{conta.valor_total_custo.toFixed(2)}
                     </TableCell>
                     <TableCell className="text-success font-semibold">
-                      €{conta.valor_pago.toFixed(2)}
+                      €{conta.valor_pago_fornecedor.toFixed(2)}
                     </TableCell>
                     <TableCell className="font-semibold">
-                      <span className={conta.saldo_devedor > 0 ? "text-warning" : "text-success"}>
-                        €{conta.saldo_devedor.toFixed(2)}
+                      <span className={conta.saldo_devedor_fornecedor > 0 ? "text-warning" : "text-success"}>
+                        €{conta.saldo_devedor_fornecedor.toFixed(2)}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {conta.pagamentos_fornecedor.length > 0 ? (
+                          conta.pagamentos_fornecedor.map((pagamento) => (
+                            <div key={pagamento.id} className="text-xs text-muted-foreground">
+                              €{pagamento.valor_pagamento.toFixed(2)} ({pagamento.forma_pagamento}) - {pagamento.data_pagamento}
+                            </div>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Nenhum pagamento</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {conta.saldo_devedor_fornecedor > 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handlePagamentoClick(conta)}
+                        >
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          Pagamento
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -191,6 +247,18 @@ export default function ContasPagar() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog de Pagamento */}
+      <Dialog open={pagamentoDialogOpen} onOpenChange={setPagamentoDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          {selectedConta && (
+            <PagamentoFornecedorForm
+              onSuccess={handlePagamentoSuccess}
+              conta={selectedConta}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
