@@ -94,7 +94,7 @@ export default function Encomendas() {
               Nova Encomenda
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto">`
             <DialogHeader>
               <DialogTitle>Nova Encomenda</DialogTitle>
               <DialogDescription>
