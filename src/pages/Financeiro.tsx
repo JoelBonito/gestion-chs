@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { Calendar, Download, TrendingUp, TrendingDown, DollarSign, AlertCircle, Plus } from "lucide-react";
+import { Download, TrendingUp, TrendingDown, DollarSign, AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,61 +9,11 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import StatCard from "@/components/StatCard";
 import PagamentoForm from "@/components/PagamentoForm";
 import EncomendasFinanceiro from "@/components/EncomendasFinanceiro";
+import ContasPagar from "@/components/ContasPagar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock data
-const contasReceber = [
-  {
-    id: "REC-001",
-    cliente: "Distribuidora Alpha",
-    valor: 2500.00,
-    dataVencimento: "2024-01-20",
-    status: "pendente",
-    diasVencimento: 5,
-    descricao: "Encomenda ENV-001"
-  },
-  {
-    id: "REC-002",
-    cliente: "Beauty Gamma",
-    valor: 3200.00,
-    dataVencimento: "2024-01-10",
-    status: "vencido",
-    diasVencimento: -11,
-    descricao: "Encomenda ENV-003"
-  },
-  {
-    id: "REC-003",
-    cliente: "Hair Delta",
-    valor: 950.00,
-    dataVencimento: "2024-01-25",
-    status: "pendente",
-    diasVencimento: 10,
-    descricao: "Encomenda ENV-004"
-  }
-];
-
-const contasPagar = [
-  {
-    id: "PAG-001",
-    fornecedor: "Fábrica Premium Hair",
-    valor: 1800.00,
-    dataVencimento: "2024-01-18",
-    status: "pendente",
-    diasVencimento: 3,
-    descricao: "Produtos Encomenda ENV-001"
-  },
-  {
-    id: "PAG-002",
-    fornecedor: "Indústria Capilar Pro",
-    valor: 1200.00,
-    dataVencimento: "2024-01-22",
-    status: "pendente",
-    diasVencimento: 7,
-    descricao: "Produtos Encomenda ENV-002"
-  }
-];
-
+// Mock data para movimentações
 const movimentacoes = [
   {
     id: "MOV-001",
@@ -137,19 +88,10 @@ export default function Financeiro() {
     fetchEncomendas();
   };
 
-  const getStatusBadge = (status: string, diasVencimento: number) => {
-    if (status === "vencido") {
-      return { label: "Vencido", variant: "destructive" as const };
-    }
-    if (diasVencimento <= 3) {
-      return { label: "Vence em breve", variant: "outline" as const };
-    }
-    return { label: "Pendente", variant: "secondary" as const };
-  };
-
-  const totalReceber = contasReceber.reduce((sum, conta) => sum + conta.valor, 0);
-  const totalPagar = contasPagar.reduce((sum, conta) => sum + conta.valor, 0);
-  const saldoLiquido = totalReceber - totalPagar;
+  // Cálculos para o resumo
+  const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor, 0);
+  const totalPago = encomendas.reduce((sum, e) => sum + e.valor_pago, 0);
+  const totalGeral = encomendas.reduce((sum, e) => sum + e.valor_total, 0);
 
   return (
     <div className="space-y-6">
@@ -183,36 +125,35 @@ export default function Financeiro() {
       {/* Financial Stats */}
       <div className="grid gap-6 md:grid-cols-3">
         <StatCard
-          title="A Receber"
-          value={`€${totalReceber.toFixed(2)}`}
-          subtitle="3 contas pendentes"
+          title="Total Geral"
+          value={`€${totalGeral.toFixed(2)}`}
+          subtitle="Valor total das encomendas"
+          icon={<DollarSign className="h-6 w-6" />}
+          variant="default"
+        />
+        
+        <StatCard
+          title="Total Pago"
+          value={`€${totalPago.toFixed(2)}`}
+          subtitle="Pagamentos recebidos"
           icon={<TrendingUp className="h-6 w-6" />}
           variant="success"
         />
         
         <StatCard
-          title="A Pagar"
-          value={`€${totalPagar.toFixed(2)}`}
-          subtitle="2 contas pendentes"
+          title="A Receber"
+          value={`€${totalReceber.toFixed(2)}`}
+          subtitle="Pendente de recebimento"
           icon={<TrendingDown className="h-6 w-6" />}
           variant="warning"
-        />
-        
-        <StatCard
-          title="Saldo Projetado"
-          value={`€${saldoLiquido.toFixed(2)}`}
-          subtitle={saldoLiquido > 0 ? "Positivo" : "Negativo"}
-          icon={<DollarSign className="h-6 w-6" />}
-          variant={saldoLiquido > 0 ? "success" : "destructive"}
         />
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
-          <TabsTrigger value="encomendas">Encomendas</TabsTrigger>
-          <TabsTrigger value="receber">A Receber</TabsTrigger>
+          <TabsTrigger value="encomendas">A Receber</TabsTrigger>
           <TabsTrigger value="pagar">A Pagar</TabsTrigger>
         </TabsList>
 
@@ -249,19 +190,11 @@ export default function Financeiro() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-start p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                    <AlertCircle className="h-5 w-5 text-destructive mr-3 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-sm">Conta vencida</p>
-                      <p className="text-xs text-muted-foreground">Beauty Gamma - €3.200,00 (11 dias)</p>
-                    </div>
-                  </div>
-                  
                   <div className="flex items-start p-3 bg-warning/10 border border-warning/20 rounded-lg">
                     <AlertCircle className="h-5 w-5 text-warning mr-3 mt-0.5" />
                     <div>
-                      <p className="font-medium text-sm">Vencimento próximo</p>
-                      <p className="text-xs text-muted-foreground">Fábrica Premium Hair - €1.800,00 (3 dias)</p>
+                      <p className="font-medium text-sm">Pagamentos pendentes</p>
+                      <p className="text-xs text-muted-foreground">{encomendas.length} encomendas com saldo devedor</p>
                     </div>
                   </div>
                 </div>
@@ -274,66 +207,8 @@ export default function Financeiro() {
           <EncomendasFinanceiro />
         </TabsContent>
 
-        <TabsContent value="receber" className="space-y-6">
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Contas a Receber</CardTitle>
-              <CardDescription>Valores pendentes dos clientes</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {contasReceber.map((conta) => {
-                  const status = getStatusBadge(conta.status, conta.diasVencimento);
-                  return (
-                    <div key={conta.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="space-y-1">
-                        <p className="font-medium">{conta.cliente}</p>
-                        <p className="text-sm text-muted-foreground">{conta.descricao}</p>
-                        <p className="text-xs text-muted-foreground">Vencimento: {conta.dataVencimento}</p>
-                      </div>
-                      <div className="text-right space-y-2">
-                        <p className="text-lg font-bold">€{conta.valor.toFixed(2)}</p>
-                        <Badge variant={status.variant} className="text-xs">
-                          {status.label}
-                        </Badge>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="pagar" className="space-y-6">
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Contas a Pagar</CardTitle>
-              <CardDescription>Valores pendentes para fornecedores</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {contasPagar.map((conta) => {
-                  const status = getStatusBadge(conta.status, conta.diasVencimento);
-                  return (
-                    <div key={conta.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="space-y-1">
-                        <p className="font-medium">{conta.fornecedor}</p>
-                        <p className="text-sm text-muted-foreground">{conta.descricao}</p>
-                        <p className="text-xs text-muted-foreground">Vencimento: {conta.dataVencimento}</p>
-                      </div>
-                      <div className="text-right space-y-2">
-                        <p className="text-lg font-bold text-destructive">€{conta.valor.toFixed(2)}</p>
-                        <Badge variant={status.variant} className="text-xs">
-                          {status.label}
-                        </Badge>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="pagar">
+          <ContasPagar />
         </TabsContent>
       </Tabs>
     </div>

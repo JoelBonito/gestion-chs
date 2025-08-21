@@ -1,12 +1,14 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Search, DollarSign, Clock, CheckCircle } from "lucide-react";
+import { Search, DollarSign, Clock, CheckCircle, CreditCard } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import PagamentoForm from "@/components/PagamentoForm";
 
 interface Encomenda {
   id: string;
@@ -35,6 +37,8 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedEncomenda, setSelectedEncomenda] = useState<Encomenda | null>(null);
+  const [pagamentoDialogOpen, setPagamentoDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchEncomendas = async () => {
@@ -78,6 +82,17 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
   useEffect(() => {
     fetchEncomendas();
   }, []);
+
+  const handlePagamentoClick = (encomenda: Encomenda) => {
+    setSelectedEncomenda(encomenda);
+    setPagamentoDialogOpen(true);
+  };
+
+  const handlePagamentoSuccess = () => {
+    setPagamentoDialogOpen(false);
+    setSelectedEncomenda(null);
+    fetchEncomendas();
+  };
 
   const getStatusBadge = (saldoDevedor: number) => {
     if (saldoDevedor <= 0) {
@@ -152,7 +167,7 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
         <CardHeader>
           <CardTitle>Encomendas e Pagamentos</CardTitle>
           <CardDescription>
-            Visualize o status financeiro de cada encomenda
+            Visualize o status financeiro de cada encomenda e registre pagamentos
           </CardDescription>
           
           <div className="flex items-center space-x-2">
@@ -177,15 +192,12 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
                   <TableHead>Valor Total</TableHead>
                   <TableHead>Valor Pago</TableHead>
                   <TableHead>Saldo Devedor</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead>Pagamentos</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEncomendas.map((encomenda) => {
-                  const status = getStatusBadge(encomenda.saldo_devedor);
-                  const StatusIcon = status.icon;
-                  
                   return (
                     <TableRow key={encomenda.id} className="hover:bg-muted/50">
                       <TableCell className="font-medium">
@@ -204,12 +216,6 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={status.variant} className="flex items-center gap-1 w-fit">
-                          <StatusIcon className="h-3 w-3" />
-                          {status.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
                         <div className="space-y-1">
                           {encomenda.pagamentos.length > 0 ? (
                             encomenda.pagamentos.map((pagamento) => (
@@ -222,6 +228,18 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
                           )}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        {encomenda.saldo_devedor > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handlePagamentoClick(encomenda)}
+                          >
+                            <CreditCard className="h-4 w-4 mr-1" />
+                            Pagamento
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -230,6 +248,18 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog de Pagamento */}
+      <Dialog open={pagamentoDialogOpen} onOpenChange={setPagamentoDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          {selectedEncomenda && (
+            <PagamentoForm
+              onSuccess={handlePagamentoSuccess}
+              encomendas={[selectedEncomenda]}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
