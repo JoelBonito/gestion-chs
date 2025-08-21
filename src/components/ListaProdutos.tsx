@@ -93,8 +93,28 @@ export function ListaProdutos() {
 
   const handleDelete = async (produto: Produto) => {
     console.log("handleDelete chamado para produto:", produto);
-    if (confirm(`Tem certeza que deseja deletar o produto "${produto.nome}"?`)) {
-      try {
+    
+    try {
+      // Primeiro verificar se o produto está sendo usado em alguma encomenda
+      const { data: itensEncomenda, error: checkError } = await supabase
+        .from("itens_encomenda")
+        .select("id, encomenda_id, encomendas(numero_encomenda)")
+        .eq("produto_id", produto.id);
+
+      if (checkError) {
+        console.error("Erro ao verificar uso do produto:", checkError);
+        throw checkError;
+      }
+
+      if (itensEncomenda && itensEncomenda.length > 0) {
+        const encomendas = itensEncomenda.map((item: any) => item.encomendas?.numero_encomenda).filter(Boolean);
+        const listaEncomendas = encomendas.join(", ");
+        toast.error(`Não é possível deletar este produto pois está sendo usado nas encomendas: ${listaEncomendas}`);
+        return;
+      }
+
+      // Se não está sendo usado, confirmar deleção
+      if (confirm(`Tem certeza que deseja deletar o produto "${produto.nome}"?`)) {
         console.log("Iniciando deleção do produto:", produto.id);
         const { error } = await supabase
           .from("produtos")
@@ -109,12 +129,12 @@ export function ListaProdutos() {
         console.log("Produto deletado com sucesso");
         toast.success("Produto deletado com sucesso!");
         carregarProdutos();
-      } catch (error) {
-        console.error("Erro ao deletar produto:", error);
-        toast.error("Erro ao deletar produto");
+      } else {
+        console.log("Deleção cancelada pelo usuário");
       }
-    } else {
-      console.log("Deleção cancelada pelo usuário");
+    } catch (error) {
+      console.error("Erro ao deletar produto:", error);
+      toast.error("Erro ao deletar produto");
     }
   };
 
