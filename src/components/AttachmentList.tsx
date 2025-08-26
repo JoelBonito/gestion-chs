@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Eye, Download, Trash2, FileText, Image } from 'lucide-react';
 import { useAttachments } from '@/hooks/useAttachments';
 import { useUserRole } from '@/hooks/useUserRole';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface AttachmentListProps {
   entityType: string;
@@ -15,9 +15,9 @@ interface AttachmentListProps {
 
 export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, entityId }) => {
   const { attachments, isLoading, deleteAttachment } = useAttachments(entityType, entityId);
-  const { userRole } = useUserRole();
+  const { hasRole } = useUserRole();
   
-  const canDelete = userRole && ['admin', 'ops', 'finance'].includes(userRole);
+  const canDelete = hasRole('admin') || hasRole('ops') || hasRole('finance');
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';

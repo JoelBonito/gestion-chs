@@ -26,8 +26,9 @@ export const useAttachments = (entityType: string, entityId: string) => {
     
     setIsLoading(true);
     try {
+      // Use direct query since types might not be updated yet
       const { data, error } = await supabase
-        .from('attachments')
+        .from('attachments' as any)
         .select('*')
         .eq('entity_type', entityType)
         .eq('entity_id', entityId)
@@ -55,12 +56,12 @@ export const useAttachments = (entityType: string, entityId: string) => {
   }) => {
     try {
       const { data, error } = await supabase
-        .from('attachments')
-        .insert({
+        .from('attachments' as any)
+        .insert([{
           entity_type: entityType,
           entity_id: entityId,
           ...attachmentData
-        })
+        }])
         .select()
         .single();
 
@@ -86,7 +87,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
   const deleteAttachment = async (attachmentId: string) => {
     try {
       const { error } = await supabase
-        .from('attachments')
+        .from('attachments' as any)
         .delete()
         .eq('id', attachmentId);
 

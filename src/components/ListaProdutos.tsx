@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+
+import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,11 +15,15 @@ import { supabase } from "@/integrations/supabase/client";
 interface Produto {
   id: string;
   nome: string;
-  descricao: string;
-  preco: number;
-  categoria: string;
-  estoque: number;
-  imagem_url: string;
+  marca: string;
+  tipo: string;
+  preco_custo: number;
+  preco_venda: number;
+  size_weight: number;
+  ativo: boolean;
+  fornecedor_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface ListaProdutosProps {
@@ -141,24 +146,30 @@ export const ListaProdutos = React.forwardRef<
               <CardTitle>{produto.nome}</CardTitle>
             </CardHeader>
             <CardContent>
-              <CardDescription>{produto.descricao}</CardDescription>
+              <CardDescription>{produto.marca} - {produto.tipo}</CardDescription>
               <div className="mt-4 flex justify-between items-center">
                 <div>
-                  <p className="text-sm text-muted-foreground">Preço: €{produto.preco.toFixed(2)}</p>
-                  <p className="text-sm text-muted-foreground">Estoque: {produto.estoque}</p>
+                  <p className="text-sm text-muted-foreground">Custo: €{produto.preco_custo.toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground">Venda: €{produto.preco_venda.toFixed(2)}</p>
                 </div>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     size="icon"
-                    onClick={() => handleEdit(produto)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(produto);
+                    }}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="destructive"
                     size="icon"
-                    onClick={() => handleDelete(produto.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(produto.id);
+                    }}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -195,7 +206,7 @@ export const ListaProdutos = React.forwardRef<
           </DialogHeader>
           {selectedProduto && (
             <ProdutoForm
-              produto={selectedProduto}
+              initialData={selectedProduto}
               onSuccess={handleEditSuccess}
             />
           )}

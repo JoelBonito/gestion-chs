@@ -19,10 +19,10 @@ interface AttachmentUploadProps {
 export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSuccess }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading, uploadProgress } = useGoogleDrive();
-  const { userRole } = useUserRole();
+  const { hasRole } = useUserRole();
   
   // Check if user can upload files
-  const canUpload = userRole && ['admin', 'ops', 'finance'].includes(userRole);
+  const canUpload = hasRole('admin') || hasRole('ops') || hasRole('finance');
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
