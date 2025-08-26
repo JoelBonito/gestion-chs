@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,10 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
     console.log("ProdutoCard - handleAttachmentRefresh chamado para produto:", produtoData.id);
     
     try {
+      // Adicionar timeout para garantir que o anexo foi completamente gravado
+      console.log("ProdutoCard - Aguardando 200ms para garantir gravação completa do anexo");
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       // Recarregar dados do produto do banco de dados
       console.log("ProdutoCard - Buscando dados atualizados do produto no banco");
       const { data: updatedProduct, error } = await supabase

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AttachmentUpload } from './AttachmentUpload';
 import { AttachmentList } from './AttachmentList';
 import { useAttachments } from '@/hooks/useAttachments';
@@ -19,7 +19,8 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
 }) => {
   const { createAttachment, refetch } = useAttachments(entityType, entityId);
 
-  const handleUploadSuccess = async (fileData: {
+  // Memoizar o callback para evitar re-renders desnecessários
+  const handleUploadSuccess = useMemo(() => async (fileData: {
     file_name: string;
     file_type: string;
     storage_path: string;
@@ -39,7 +40,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       await refetch();
       console.log("AttachmentManager - Refetch interno concluído");
       
-      // CORRIGIR: Chamar onRefreshParent para atualizar produto pai
+      // Chamar onRefreshParent para atualizar produto pai
       if (onRefreshParent) {
         console.log("AttachmentManager - Chamando onRefreshParent para refresh do produto pai");
         await onRefreshParent();
@@ -53,7 +54,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       console.error("AttachmentManager - Erro ao criar anexo no banco:", error);
       throw error;
     }
-  };
+  }, [entityType, entityId, createAttachment, refetch, onRefreshParent]);
 
   if (!entityId) {
     console.log("AttachmentManager - EntityId não fornecido, não renderizando");
