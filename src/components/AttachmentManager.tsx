@@ -49,11 +49,12 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
         console.log("AttachmentManager - AVISO: onRefreshParent não fornecido");
       }
       
-      // Aguardar 2 segundos e fazer refresh da página
-      console.log("AttachmentManager - Aguardando 2 segundos antes do refresh da página");
-      setTimeout(() => {
-        console.log("AttachmentManager - Fazendo refresh da página após upload concluído");
-        window.location.reload();
+      // Aguardar 2 segundos e fazer refresh apenas da lista de anexos
+      console.log("AttachmentManager - Aguardando 2 segundos antes do refresh dos anexos");
+      setTimeout(async () => {
+        console.log("AttachmentManager - Fazendo refresh da lista de anexos após upload concluído");
+        await refetch();
+        console.log("AttachmentManager - Refresh da lista de anexos concluído - anexo deve estar visível");
       }, 2000);
       
       console.log("=== ATTACHMENT PROCESS COMPLETED - Produto e anexos atualizados ===");
