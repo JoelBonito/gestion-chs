@@ -8,12 +8,12 @@ import { useUserRole } from '@/hooks/useUserRole';
 
 interface AttachmentUploadProps {
   onUploadSuccess: (fileData: {
-    id: string;
-    name: string;
-    size: number;
-    mimeType: string;
-    webViewLink: string;
-    webContentLink: string;
+    file_name: string;
+    file_type: string;
+    gdrive_file_id: string;
+    gdrive_view_link: string;
+    gdrive_download_link: string;
+    file_size: number;
   }) => void;
 }
 
@@ -36,7 +36,15 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSucc
     try {
       const result = await uploadFile(file);
       if (result) {
-        onUploadSuccess(result);
+        // Transform the GoogleDriveUploadResult to match the expected interface
+        onUploadSuccess({
+          file_name: result.name,
+          file_type: result.mimeType,
+          gdrive_file_id: result.fileId,
+          gdrive_view_link: result.webViewLink,
+          gdrive_download_link: result.downloadLink,
+          file_size: result.size
+        });
       }
     } catch (error) {
       console.error('Error uploading file:', error);

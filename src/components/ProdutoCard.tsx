@@ -31,29 +31,29 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-display text-primary-dark">
-            {produto.name}
+            {produto.nome}
           </CardTitle>
           <Badge 
-            variant={produto.active ? "default" : "secondary"} 
-            className={produto.active ? "bg-accent text-accent-foreground" : ""}
+            variant={produto.ativo ? "default" : "secondary"} 
+            className={produto.ativo ? "bg-accent text-accent-foreground" : ""}
           >
-            {produto.active ? "Ativo" : "Inativo"}
+            {produto.ativo ? "Ativo" : "Inativo"}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-muted-foreground">Categoria</p>
-            <p className="font-medium font-body">{produto.category}</p>
+            <p className="text-muted-foreground">Tipo</p>
+            <p className="font-medium font-body">{produto.tipo}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Preço</p>
-            <p className="text-sm font-medium font-body">R$ {produto.price?.toFixed(2)}</p>
+            <p className="text-muted-foreground">Preço Venda</p>
+            <p className="text-sm font-medium font-body">R$ {produto.preco_venda?.toFixed(2)}</p>
           </div>
           <div>
-            <p className="text-muted-foreground">Custo</p> 
-            <p className="text-sm font-medium font-body">R$ {produto.cost?.toFixed(2)}</p>
+            <p className="text-muted-foreground">Preço Custo</p> 
+            <p className="text-sm font-medium font-body">R$ {produto.preco_custo?.toFixed(2)}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Peso</p>
@@ -84,7 +84,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onToggleActive(produto.id, !produto.active)}
+              onClick={() => onToggleActive(produto.id, !produto.ativo)}
               className="flex-shrink-0"
             >
               <Power className="w-4 h-4" />
@@ -100,7 +100,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
                 <AlertDialogHeader>
                   <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Tem certeza que deseja excluir o produto "{produto.name}"? Esta ação não pode ser desfeita.
+                    Tem certeza que deseja excluir o produto "{produto.nome}"? Esta ação não pode ser desfeita.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

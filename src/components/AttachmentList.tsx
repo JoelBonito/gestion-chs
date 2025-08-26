@@ -66,7 +66,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
           <CardContent className="p-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3 flex-1 min-w-0">
-                {getFileIcon(attachment.mime_type)}
+                {getFileIcon(attachment.file_type)}
                 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">
@@ -74,7 +74,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   </p>
                   <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                     <Badge variant="secondary" className="text-xs">
-                      {getFileTypeLabel(attachment.mime_type)}
+                      {getFileTypeLabel(attachment.file_type)}
                     </Badge>
                     <span>{formatFileSize(attachment.file_size)}</span>
                   </div>
@@ -82,14 +82,14 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
               </div>
 
               <div className="flex items-center space-x-1">
-                {attachment.google_drive_link && (
+                {attachment.gdrive_view_link && (
                   <Button
                     variant="ghost"
                     size="sm"
                     asChild
                   >
                     <a 
-                      href={attachment.google_drive_link} 
+                      href={attachment.gdrive_view_link} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="flex items-center"
@@ -99,14 +99,14 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   </Button>
                 )}
 
-                {attachment.google_drive_download_link && (
+                {attachment.gdrive_download_link && (
                   <Button
                     variant="ghost"
                     size="sm"
                     asChild
                   >
                     <a 
-                      href={attachment.google_drive_download_link} 
+                      href={attachment.gdrive_download_link} 
                       download
                       className="flex items-center"
                     >
