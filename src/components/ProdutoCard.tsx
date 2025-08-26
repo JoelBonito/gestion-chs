@@ -84,7 +84,8 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
                   <DialogTitle className="font-display text-primary-dark">Editar Produto</DialogTitle>
                 </DialogHeader>
                 <ProdutoForm 
-                  produto={produto} 
+                  initialData={produto} 
+                  isEditing={true}
                   onSuccess={handleEditSuccess} 
                 />
               </DialogContent>
