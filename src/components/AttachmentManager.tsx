@@ -26,27 +26,23 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
     storage_url: string;
     file_size: number;
   }) => {
-    console.log("=== ATTACHMENT UPLOAD SUCCESS ===");
-    console.log("AttachmentManager - Upload bem-sucedido para Supabase Storage, dados do arquivo:", fileData);
-    console.log(`AttachmentManager - Tentando criar anexo no banco para entityType: ${entityType}, entityId: ${entityId}`);
+    console.log("=== ATTACHMENT UPLOAD SUCCESS - Refresh interno ===");
+    console.log("AttachmentManager - Upload bem-sucedido, dados do arquivo:", fileData);
+    console.log(`AttachmentManager - Criando anexo no banco para entityType: ${entityType}, entityId: ${entityId}`);
     
     try {
       const result = await createAttachment(fileData);
       console.log("AttachmentManager - Anexo criado com sucesso no banco de dados:", result);
       
-      // Refresh local dos anexos
-      console.log("AttachmentManager - Fazendo refetch local dos anexos");
+      // Refresh interno da lista de anexos
+      console.log("AttachmentManager - Fazendo refetch interno dos anexos");
       await refetch();
       
-      // Disparar refresh do componente pai imediatamente
-      if (onRefreshParent) {
-        console.log("AttachmentManager - Executando refresh do componente pai IMEDIATAMENTE");
-        onRefreshParent();
-      } else {
-        console.warn("AttachmentManager - onRefreshParent não foi fornecido!");
-      }
+      // O onRefreshParent não é mais necessário para refresh da lista geral
+      // Mantemos apenas para compatibilidade, mas não será usado para refresh da página de produtos
+      console.log("AttachmentManager - Refresh interno concluído com sucesso");
       
-      console.log("=== ATTACHMENT PROCESS COMPLETED ===");
+      console.log("=== ATTACHMENT PROCESS COMPLETED - Anexo disponível na lista ===");
     } catch (error) {
       console.error("AttachmentManager - Erro ao criar anexo no banco:", error);
       throw error;

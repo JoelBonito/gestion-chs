@@ -19,45 +19,41 @@ interface ProdutoCardProps {
 
 export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActive }: ProdutoCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [produtoData, setProdutoData] = useState(produto);
   const { canEdit } = useUserRole();
 
   const handleEditSuccess = () => {
-    console.log("Produto editado com sucesso, fechando dialog e atualizando");
+    console.log("=== PRODUTO EDITADO COM SUCESSO ===");
+    console.log("ProdutoCard - Produto editado com sucesso, fechando dialog");
     setIsEditDialogOpen(false);
-    onUpdate();
+    
+    // Não fazemos refresh da lista geral, apenas fechamos o dialog
+    // O produto já foi atualizado internamente no formulário
+    console.log("ProdutoCard - Dialog fechado, produto foi editado internamente");
   };
 
   const handleAttachmentRefresh = () => {
-    console.log("=== REFRESH TRIGGERED - Executando refresh completo da ficha do produto ===");
-    console.log("ProdutoCard - handleAttachmentRefresh chamado para produto:", produto.id);
+    console.log("=== ATTACHMENT REFRESH - Refresh interno da ficha do produto ===");
+    console.log("ProdutoCard - handleAttachmentRefresh chamado para produto:", produtoData.id);
     
-    // Força um re-render completo incrementando a key
-    setRefreshKey(prev => {
-      const newKey = prev + 1;
-      console.log("ProdutoCard - Atualizando refreshKey de", prev, "para", newKey);
-      return newKey;
-    });
-    
-    // Também chama o callback de update do componente pai
-    console.log("ProdutoCard - Chamando onUpdate do componente pai");
-    onUpdate();
-    
-    console.log("=== REFRESH COMPLETED ===");
+    // Este callback é especificamente para refresh interno do AttachmentManager
+    // Não precisa fazer refresh da lista geral de produtos
+    console.log("ProdutoCard - Refresh será tratado internamente pelo AttachmentManager");
+    console.log("=== ATTACHMENT REFRESH COMPLETED ===");
   };
 
   return (
-    <Card className="shadow-card border-border/40 hover:shadow-card-hover transition-shadow" key={refreshKey}>
+    <Card className="shadow-card border-border/40 hover:shadow-card-hover transition-shadow">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-display text-primary-dark">
-            {produto.nome}
+            {produtoData.nome}
           </CardTitle>
           <Badge 
-            variant={produto.ativo ? "default" : "secondary"} 
-            className={produto.ativo ? "bg-accent text-accent-foreground" : ""}
+            variant={produtoData.ativo ? "default" : "secondary"} 
+            className={produtoData.ativo ? "bg-accent text-accent-foreground" : ""}
           >
-            {produto.ativo ? "Ativo" : "Inativo"}
+            {produtoData.ativo ? "Ativo" : "Inativo"}
           </Badge>
         </div>
       </CardHeader>
@@ -65,19 +61,19 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-muted-foreground">Tipo</p>
-            <p className="font-medium font-body">{produto.tipo}</p>
+            <p className="font-medium font-body">{produtoData.tipo}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Preço Venda</p>
-            <p className="text-sm font-medium font-body">R$ {produto.preco_venda?.toFixed(2)}</p>
+            <p className="text-sm font-medium font-body">R$ {produtoData.preco_venda?.toFixed(2)}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Preço Custo</p> 
-            <p className="text-sm font-medium font-body">R$ {produto.preco_custo?.toFixed(2)}</p>
+            <p className="text-sm font-medium font-body">R$ {produtoData.preco_custo?.toFixed(2)}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Peso</p>
-            <p className="text-sm font-medium font-body">{produto.size_weight} kg</p>
+            <p className="text-sm font-medium font-body">{produtoData.size_weight} kg</p>
           </div>
         </div>
 
@@ -95,9 +91,10 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
                   <DialogTitle className="font-display text-primary-dark">Editar Produto</DialogTitle>
                 </DialogHeader>
                 <ProdutoForm 
-                  produto={produto} 
+                  produto={produtoData} 
                   onSuccess={handleEditSuccess}
                   onAttachmentRefresh={handleAttachmentRefresh}
+                  onProdutoUpdate={setProdutoData}
                 />
               </DialogContent>
             </Dialog>
@@ -105,7 +102,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onToggleActive(produto.id, !produto.ativo)}
+              onClick={() => onToggleActive(produtoData.id, !produtoData.ativo)}
               className="flex-shrink-0"
             >
               <Power className="w-4 h-4" />
@@ -121,13 +118,13 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
                 <AlertDialogHeader>
                   <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Tem certeza que deseja excluir o produto "{produto.nome}"? Esta ação não pode ser desfeita.
+                    Tem certeza que deseja excluir o produto "{produtoData.nome}"? Esta ação não pode ser desfeita.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={() => onDelete(produto.id)}
+                    onClick={() => onDelete(produtoData.id)}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
                     Excluir
