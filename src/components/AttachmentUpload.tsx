@@ -78,6 +78,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
       />
       
       <Button 
+        type="button"
         onClick={handleFileSelect}
         disabled={isUploading}
         variant="outline"

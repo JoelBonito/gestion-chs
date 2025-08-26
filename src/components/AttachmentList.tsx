@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Download, Trash2, FileText, Image, X, File, ExternalLink } from 'lucide-react';
+import { Eye, Download, Trash2, FileText, Image, File, ExternalLink } from 'lucide-react';
 import { useAttachments } from '@/hooks/useAttachments';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -230,23 +230,14 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
         ))}
       </div>
 
-      {/* Image Preview Modal */}
+      {/* Image Preview Modal - Sem botão X duplicado */}
       {imagePreview && (
         <Dialog open={!!imagePreview} onOpenChange={() => setImagePreview(null)}>
           <DialogContent className="max-w-4xl max-h-[90vh] p-0" aria-describedby={undefined}>
             <DialogHeader className="p-6 pb-0">
-              <div className="flex items-center justify-between">
-                <DialogTitle className="text-lg font-medium truncate">
-                  {imagePreview.fileName}
-                </DialogTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setImagePreview(null)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
+              <DialogTitle className="text-lg font-medium truncate">
+                {imagePreview.fileName}
+              </DialogTitle>
             </DialogHeader>
             <div className="p-6 pt-2">
               <div className="flex items-center justify-center bg-muted rounded-lg p-4">
@@ -256,7 +247,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   className="max-w-full max-h-[60vh] object-contain rounded"
                   onError={(e) => {
                     console.error('AttachmentList - Erro ao carregar imagem:', imagePreview.url);
-                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDEyQzIxIDEzLjEwNDYgMjAuMTA0NiAxNCAZIDEzSDdDNS44OTU0MyAxNCA1IDEzLjEwNDYgNSAxMlY3QzUgNS44OTU0MyA1Ljg5NTQzIDUgNyA1SDEyQzEzLjEwNDYgNSAxNCA1Ljg5NTQzIDE0IDdWMTJaIiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
+                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDEyQzIxIDEzLjEwNDYgMjAuMTA0NiAxNCA5IDEzSDdDNS44OTU0MyAxNCA1IDEzLjEwNDYgNSAxMlY3QzUgNS44OTU0MyA1Ljg5NTQzIDUgNyA1SDEyQzEzLjEwNDYgNSAxNCA1Ljg5NTQzIDE0IDdWMTJaIiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
                   }}
                 />
               </div>
@@ -265,7 +256,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
         </Dialog>
       )}
 
-      {/* PDF Preview Modal */}
+      {/* PDF Preview Modal - Sem botão X duplicado */}
       {pdfPreview && (
         <Dialog open={!!pdfPreview} onOpenChange={() => setPdfPreview(null)}>
           <DialogContent className="max-w-6xl max-h-[95vh] p-0" aria-describedby={undefined}>
@@ -274,29 +265,20 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                 <DialogTitle className="text-lg font-medium truncate">
                   {pdfPreview.fileName}
                 </DialogTitle>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const publicUrl = getPublicUrl(pdfPreview.url.includes('attachments/') 
-                        ? pdfPreview.url.split('/attachments/')[1] 
-                        : pdfPreview.url);
-                      window.open(publicUrl, '_blank');
-                    }}
-                    title="Abrir em nova aba"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-1" />
-                    Nova aba
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setPdfPreview(null)}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const publicUrl = getPublicUrl(pdfPreview.url.includes('attachments/') 
+                      ? pdfPreview.url.split('/attachments/')[1] 
+                      : pdfPreview.url);
+                    window.open(publicUrl, '_blank');
+                  }}
+                  title="Abrir em nova aba"
+                >
+                  <ExternalLink className="w-4 h-4 mr-1" />
+                  Nova aba
+                </Button>
               </div>
             </DialogHeader>
             <div className="p-4">

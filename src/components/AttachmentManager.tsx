@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { AttachmentUpload } from './AttachmentUpload';
 import { AttachmentList } from './AttachmentList';
 import { useAttachments } from '@/hooks/useAttachments';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AttachmentManagerProps {
   entityType: string;
@@ -17,7 +18,8 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
   title = "Anexos",
   onRefreshParent
 }) => {
-  const { createAttachment, refetch } = useAttachments(entityType, entityId);
+  const { createAttachment } = useAttachments(entityType, entityId);
+  const queryClient = useQueryClient();
 
   // Memoizar o callback para evitar re-renders desnecessários
   const handleUploadSuccess = useMemo(() => async (fileData: {
@@ -35,12 +37,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       const result = await createAttachment(fileData);
       console.log("AttachmentManager - Anexo criado com sucesso no banco de dados:", result);
       
-      // Refresh interno da lista de anexos
-      console.log("AttachmentManager - Fazendo refetch interno dos anexos");
-      await refetch();
-      console.log("AttachmentManager - Refetch interno concluído");
-      
-      // Chamar onRefreshParent para atualizar produto pai
+      // Chamar onRefreshParent para atualizar produto pai se necessário
       if (onRefreshParent) {
         console.log("AttachmentManager - Chamando onRefreshParent para refresh do produto pai");
         await onRefreshParent();
@@ -49,20 +46,12 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
         console.log("AttachmentManager - AVISO: onRefreshParent não fornecido");
       }
       
-      // Aguardar 2 segundos e fazer refresh apenas da lista de anexos
-      console.log("AttachmentManager - Aguardando 2 segundos antes do refresh dos anexos");
-      setTimeout(async () => {
-        console.log("AttachmentManager - Fazendo refresh da lista de anexos após upload concluído");
-        await refetch();
-        console.log("AttachmentManager - Refresh da lista de anexos concluído - anexo deve estar visível");
-      }, 2000);
-      
-      console.log("=== ATTACHMENT PROCESS COMPLETED - Produto e anexos atualizados ===");
+      console.log("=== ATTACHMENT PROCESS COMPLETED - Anexo adicionado e lista atualizada ===");
     } catch (error) {
       console.error("AttachmentManager - Erro ao criar anexo no banco:", error);
       throw error;
     }
-  }, [entityType, entityId, createAttachment, refetch, onRefreshParent]);
+  }, [entityType, entityId, createAttachment, onRefreshParent]);
 
   if (!entityId) {
     console.log("AttachmentManager - EntityId não fornecido, não renderizando");

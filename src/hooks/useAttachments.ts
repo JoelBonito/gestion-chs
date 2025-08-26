@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSupabaseStorage } from './useSupabaseStorage';
@@ -18,21 +18,27 @@ interface Attachment {
 }
 
 export const useAttachments = (entityType: string, entityId: string) => {
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { deleteFile } = useSupabaseStorage();
+  const queryClient = useQueryClient();
+  
+  // Define a stable query key
+  const queryKey = ['attachments', entityType, entityId];
 
-  const fetchAttachments = async () => {
-    if (!entityId) {
-      console.log("useAttachments - Sem entityId, não buscando anexos");
-      setAttachments([]);
-      return;
-    }
-    
-    console.log(`useAttachments - Buscando anexos para entityType: ${entityType}, entityId: ${entityId}`);
-    setIsLoading(true);
-    try {
+  const {
+    data: attachments = [],
+    isLoading,
+    refetch
+  } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      if (!entityId) {
+        console.log("useAttachments - Sem entityId, não buscando anexos");
+        return [];
+      }
+      
+      console.log(`useAttachments - Buscando anexos para entityType: ${entityType}, entityId: ${entityId}`);
+      
       const { data, error } = await supabase
         .from('attachments')
         .select('*')
@@ -46,18 +52,10 @@ export const useAttachments = (entityType: string, entityId: string) => {
       }
       
       console.log(`useAttachments - Anexos encontrados (${data?.length || 0}):`, data);
-      setAttachments(data || []);
-    } catch (error: any) {
-      console.error("useAttachments - Erro ao carregar anexos:", error);
-      toast({
-        title: "Erro ao carregar anexos",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      return data || [];
+    },
+    enabled: !!entityId
+  });
 
   const createAttachment = async (attachmentData: {
     file_name: string;
@@ -116,13 +114,9 @@ export const useAttachments = (entityType: string, entityId: string) => {
       
       console.log("useAttachments - Anexo inserido com sucesso no banco:", data);
       
-      // Atualiza a lista local imediatamente - adiciona no início do array
-      setAttachments(prev => {
-        console.log("useAttachments - Atualizando lista local. Lista anterior:", prev.length, "itens");
-        const newList = [data, ...prev];
-        console.log("useAttachments - Nova lista terá:", newList.length, "itens");
-        return newList;
-      });
+      // Invalidate queries to trigger immediate refresh
+      console.log("useAttachments - Invalidando queries para refresh imediato");
+      queryClient.invalidateQueries({ queryKey });
       
       toast({
         title: "Anexo adicionado",
@@ -156,8 +150,8 @@ export const useAttachments = (entityType: string, entityId: string) => {
 
       if (error) throw error;
 
-      // Remove from local state immediately
-      setAttachments(prev => prev.filter(a => a.id !== attachment.id));
+      // Invalidate queries to refresh the list
+      queryClient.invalidateQueries({ queryKey });
 
       toast({
         title: "Anexo removido",
@@ -173,16 +167,11 @@ export const useAttachments = (entityType: string, entityId: string) => {
     }
   };
 
-  useEffect(() => {
-    console.log(`useAttachments - useEffect executado para entityType: ${entityType}, entityId: ${entityId}`);
-    fetchAttachments();
-  }, [entityType, entityId]);
-
   return {
     attachments,
     isLoading,
     createAttachment,
     deleteAttachment,
-    refetch: fetchAttachments
+    refetch
   };
 };
