@@ -17,6 +17,20 @@ export const useGoogleDrive = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
 
+  const getGoogleDriveApiKey = async (): Promise<string | null> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-secret', {
+        body: { name: 'GOOGLE_DRIVE_API_KEY' }
+      });
+      
+      if (error) throw error;
+      return data?.value || null;
+    } catch (error) {
+      console.error('Error getting Google Drive API key:', error);
+      return null;
+    }
+  };
+
   const uploadFile = async (file: File): Promise<GoogleDriveUploadResult | null> => {
     if (!file) return null;
 
@@ -46,23 +60,59 @@ export const useGoogleDrive = () => {
     setUploadProgress(0);
 
     try {
-      // Simulate upload progress
+      const apiKey = await getGoogleDriveApiKey();
+      if (!apiKey) {
+        throw new Error('Google Drive API key not found');
+      }
+
+      // Simulate progress updates
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      // Mock Google Drive API integration for MVP
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Create form data for upload
+      const formData = new FormData();
+      const metadata = {
+        name: file.name,
+        parents: ['1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms'] // Use a specific folder or remove for root
+      };
+
+      formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      formData.append('file', file);
+
+      // Upload to Google Drive
+      const uploadResponse = await fetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&key=${apiKey}`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        throw new Error(`Google Drive upload failed: ${errorData.error?.message || uploadResponse.statusText}`);
+      }
+
+      const uploadResult = await uploadResponse.json();
       
+      // Make the file publicly accessible
+      await fetch(`https://www.googleapis.com/drive/v3/files/${uploadResult.id}/permissions?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          role: 'reader',
+          type: 'anyone'
+        })
+      });
+
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      const mockFileId = `gdrive_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const mockResult: GoogleDriveUploadResult = {
-        fileId: mockFileId,
-        webViewLink: `https://drive.google.com/file/d/${mockFileId}/view`,
-        downloadLink: `https://drive.google.com/uc?export=download&id=${mockFileId}`,
-        name: file.name,
+      const result: GoogleDriveUploadResult = {
+        fileId: uploadResult.id,
+        webViewLink: `https://drive.google.com/file/d/${uploadResult.id}/view`,
+        downloadLink: `https://drive.google.com/uc?export=download&id=${uploadResult.id}`,
+        name: uploadResult.name,
         mimeType: file.type,
         size: file.size
       };
@@ -72,12 +122,12 @@ export const useGoogleDrive = () => {
         description: `Arquivo ${file.name} enviado para o Google Drive.`,
       });
 
-      return mockResult;
-    } catch (error) {
+      return result;
+    } catch (error: any) {
       console.error('Upload error:', error);
       toast({
         title: "Erro no upload",
-        description: "Falha ao fazer upload do arquivo.",
+        description: error.message || "Falha ao fazer upload do arquivo.",
         variant: "destructive"
       });
       return null;
