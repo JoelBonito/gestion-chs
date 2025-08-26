@@ -17,6 +17,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
   const { attachments, isLoading, deleteAttachment } = useAttachments(entityType, entityId);
   const { hasRole } = useUserRole();
   const [imagePreview, setImagePreview] = useState<{ url: string; fileName: string } | null>(null);
+  const [pdfPreview, setPdfPreview] = useState<{ url: string; fileName: string } | null>(null);
   
   const canDelete = hasRole('admin') || hasRole('ops');
 
@@ -58,9 +59,11 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
         fileName: attachment.file_name
       });
     } else if (attachment.file_type === 'application/pdf') {
-      // Para PDFs, abrir diretamente a URL em nova aba
-      console.log("Abrindo PDF:", attachment.storage_url);
-      window.open(attachment.storage_url, '_blank');
+      console.log("Abrindo PDF em modal:", attachment.storage_url);
+      setPdfPreview({
+        url: attachment.storage_url,
+        fileName: attachment.file_name
+      });
     } else {
       // Para outros arquivos, abrir em nova aba
       window.open(attachment.storage_url, '_blank');
@@ -211,6 +214,41 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   onError={(e) => {
                     console.error('Erro ao carregar imagem:', imagePreview.url);
                     e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDEyQzIxIDEzLjEwNDYgMjAuMTA0NiAxNCAE5IDEzSDdDNS44OTU0MyAxNCA1IDEzLjEwNDYgNSAxMlY3QzUgNS44OTU0MyA1Ljg5NTQzIDUgNyA1SDEyQzEzLjEwNDYgNSAxNCA1Ljg5NTQzIDE0IDdWMTJaIiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
+                  }}
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* PDF Preview Modal */}
+      {pdfPreview && (
+        <Dialog open={!!pdfPreview} onOpenChange={() => setPdfPreview(null)}>
+          <DialogContent className="max-w-5xl max-h-[90vh] p-0">
+            <DialogHeader className="p-6 pb-0">
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-lg font-medium truncate">
+                  {pdfPreview.fileName}
+                </DialogTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPdfPreview(null)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </DialogHeader>
+            <div className="p-6 pt-2">
+              <div className="bg-muted rounded-lg overflow-hidden">
+                <iframe
+                  src={pdfPreview.url}
+                  className="w-full h-[70vh]"
+                  style={{ border: 'none' }}
+                  title={pdfPreview.fileName}
+                  onError={() => {
+                    console.error('Erro ao carregar PDF:', pdfPreview.url);
                   }}
                 />
               </div>
