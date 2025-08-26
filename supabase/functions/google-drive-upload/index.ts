@@ -36,7 +36,18 @@ serve(async (req) => {
       throw new Error('Google Service Account Key not found in secrets');
     }
 
-    const credentials = JSON.parse(serviceAccountKey);
+    console.log('Service account key length:', serviceAccountKey.length);
+    console.log('Service account key first 50 chars:', serviceAccountKey.substring(0, 50));
+
+    let credentials;
+    try {
+      credentials = JSON.parse(serviceAccountKey);
+    } catch (parseError) {
+      console.error('Error parsing service account key:', parseError);
+      console.error('Raw key value:', serviceAccountKey);
+      throw new Error(`Failed to parse service account key: ${parseError.message}`);
+    }
+
     console.log('Using service account:', credentials.client_email);
 
     // Create JWT for Google API authentication
