@@ -29,9 +29,10 @@ type ProdutoFormData = z.infer<typeof produtoSchema>;
 interface ProdutoFormProps {
   produto?: Produto;
   onSuccess?: () => void;
+  onAttachmentRefresh?: () => void;
 }
 
-export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
+export function ProdutoForm({ produto, onSuccess, onAttachmentRefresh }: ProdutoFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [marcasExistentes, setMarcasExistentes] = useState<string[]>([]);
@@ -556,6 +557,7 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
             entityType="produto"
             entityId={produtoId}
             title="Anexar Documentos"
+            onRefreshParent={onAttachmentRefresh}
           />
         </div>
       )}
