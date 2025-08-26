@@ -37,7 +37,7 @@ export function ProdutoCard({ produto, onUpdate }: ProdutoCardProps) {
   const { hasRole } = useUserRole();
   
   const canEdit = hasRole('admin') || hasRole('ops');
-  const canViewAttachments = hasRole('admin') || hasRole('ops') || hasRole('viewer');
+  const canViewAttachments = hasRole('admin') || hasRole('ops') || hasRole('client');
 
   const handleEditSuccess = () => {
     setIsEditDialogOpen(false);
