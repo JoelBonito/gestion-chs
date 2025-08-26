@@ -190,7 +190,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
       {/* Image Preview Modal */}
       {imagePreview && (
         <Dialog open={!!imagePreview} onOpenChange={() => setImagePreview(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] p-0" aria-describedby="image-preview-desc">
+          <DialogContent className="max-w-4xl max-h-[90vh] p-0">
             <DialogHeader className="p-6 pb-0">
               <div className="flex items-center justify-between">
                 <DialogTitle className="text-lg font-medium truncate">
@@ -204,7 +204,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-              <DialogDescription id="image-preview-desc">
+              <DialogDescription>
                 Visualização da imagem anexada
               </DialogDescription>
             </DialogHeader>
@@ -228,7 +228,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
       {/* PDF Preview Modal */}
       {pdfPreview && (
         <Dialog open={!!pdfPreview} onOpenChange={() => setPdfPreview(null)}>
-          <DialogContent className="max-w-5xl max-h-[90vh] p-0" aria-describedby="pdf-preview-desc">
+          <DialogContent className="max-w-5xl max-h-[90vh] p-0">
             <DialogHeader className="p-6 pb-0">
               <div className="flex items-center justify-between">
                 <DialogTitle className="text-lg font-medium truncate">
@@ -242,7 +242,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-              <DialogDescription id="pdf-preview-desc">
+              <DialogDescription>
                 Visualização do documento PDF anexado
               </DialogDescription>
             </DialogHeader>
