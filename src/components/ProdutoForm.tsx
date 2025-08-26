@@ -30,9 +30,10 @@ interface ProdutoFormProps {
   produto?: Produto;
   onSuccess?: () => void;
   onAttachmentRefresh?: () => void;
+  onProdutoUpdate?: (produto: Produto) => void;
 }
 
-export function ProdutoForm({ produto, onSuccess, onAttachmentRefresh }: ProdutoFormProps) {
+export function ProdutoForm({ produto, onSuccess, onAttachmentRefresh, onProdutoUpdate }: ProdutoFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [marcasExistentes, setMarcasExistentes] = useState<string[]>([]);
@@ -57,7 +58,6 @@ export function ProdutoForm({ produto, onSuccess, onAttachmentRefresh }: Produto
     },
   });
 
-  // Carregar fornecedores e opções existentes ao montar componente
   useEffect(() => {
     console.log("ProdutoForm montado, carregando dados iniciais");
     const loadInitialData = async () => {
@@ -70,7 +70,6 @@ export function ProdutoForm({ produto, onSuccess, onAttachmentRefresh }: Produto
     loadInitialData();
   }, []);
 
-  // Carregar dados do produto APENAS quando produto mudar E os dados estiverem carregados
   useEffect(() => {
     if (!isFormInitialized) return;
     
@@ -87,7 +86,6 @@ export function ProdutoForm({ produto, onSuccess, onAttachmentRefresh }: Produto
         size_weight: produto.size_weight
       });
       
-      // Resetar o form com os valores do produto
       form.reset({
         nome: produto.nome || "",
         marca: produto.marca || "",
@@ -211,7 +209,7 @@ export function ProdutoForm({ produto, onSuccess, onAttachmentRefresh }: Produto
     setIsSubmitting(true);
     try {
       if (isEditing && produto && produto.id) {
-        const { error } = await supabase
+        const { data: updatedProduct, error } = await supabase
           .from("produtos")
           .update({
             nome: data.nome,
@@ -222,9 +220,16 @@ export function ProdutoForm({ produto, onSuccess, onAttachmentRefresh }: Produto
             size_weight: parseFloat(data.size_weight),
             fornecedor_id: data.fornecedor_id,
           })
-          .eq("id", produto.id);
+          .eq("id", produto.id)
+          .select()
+          .single();
 
         if (error) throw error;
+        
+        // Update the local product data if callback is provided
+        if (onProdutoUpdate && updatedProduct) {
+          onProdutoUpdate(updatedProduct);
+        }
         
         await logActivity({
           entity: 'produto',
@@ -276,7 +281,6 @@ export function ProdutoForm({ produto, onSuccess, onAttachmentRefresh }: Produto
     }
   };
 
-  // Debug dos valores do formulário
   const formValues = form.watch();
   console.log("Valores atuais do form:", formValues);
 
@@ -549,7 +553,6 @@ export function ProdutoForm({ produto, onSuccess, onAttachmentRefresh }: Produto
         </Dialog>
       </Form>
 
-      {/* Seção de anexos - mostrar sempre que tiver produtoId */}
       {produtoId && (
         <div className="border-t pt-6">
           <h3 className="font-display text-primary-dark text-lg font-medium mb-4">Anexos do Produto</h3>
