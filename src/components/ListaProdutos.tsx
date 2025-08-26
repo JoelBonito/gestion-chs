@@ -2,68 +2,107 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ProdutoCard } from "@/components/ProdutoCard";
+import ProdutoCard from "@/components/ProdutoCard";
+import { logActivity } from "@/utils/activityLogger";
 
 interface Produto {
   id: string;
   nome: string;
   marca: string;
   tipo: string;
-  preco_custo: number;
   preco_venda: number;
-  size_weight: number;
-  fornecedor_id: string;
+  preco_custo: number;
   ativo: boolean;
-  created_at: string;
-  updated_at: string;
-  fornecedor?: {
-    nome: string;
-  };
+  size_weight: number;
 }
 
-interface ListaProdutosRef {
+export interface ListaProdutosRef {
   fetchProdutos: () => void;
 }
 
-export const ListaProdutos = forwardRef<ListaProdutosRef>((props, ref) => {
+export const ListaProdutos = forwardRef<ListaProdutosRef>((_, ref) => {
   const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   const fetchProdutos = async () => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       const { data, error } = await supabase
-        .from("produtos")
-        .select(`
-          *,
-          fornecedor:fornecedores(nome)
-        `)
-        .eq("ativo", true)
-        .order("nome");
+        .from('produtos')
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-
       setProdutos(data || []);
     } catch (error) {
-      console.error("Erro ao carregar produtos:", error);
+      console.error('Erro ao carregar produtos:', error);
       toast.error("Erro ao carregar produtos");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   useImperativeHandle(ref, () => ({
-    fetchProdutos,
+    fetchProdutos
   }));
 
   useEffect(() => {
     fetchProdutos();
   }, []);
 
-  if (isLoading) {
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('produtos')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await logActivity({
+        entity: 'produto',
+        entity_id: id,
+        action: 'delete'
+      });
+
+      setProdutos(produtos.filter(p => p.id !== id));
+      toast.success("Produto excluído com sucesso!");
+    } catch (error) {
+      console.error('Erro ao excluir produto:', error);
+      toast.error("Erro ao excluir produto");
+    }
+  };
+
+  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('produtos')
+        .update({ ativo: !currentStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await logActivity({
+        entity: 'produto',
+        entity_id: id,
+        action: currentStatus ? 'deactivate' : 'activate'
+      });
+
+      setProdutos(produtos.map(p => 
+        p.id === id ? { ...p, ativo: !currentStatus } : p
+      ));
+      
+      toast.success(`Produto ${!currentStatus ? 'ativado' : 'inativado'} com sucesso!`);
+    } catch (error) {
+      console.error('Erro ao alterar status:', error);
+      toast.error("Erro ao alterar status do produto");
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">Carregando produtos...</p>
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -71,7 +110,7 @@ export const ListaProdutos = forwardRef<ListaProdutosRef>((props, ref) => {
   if (produtos.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-muted-foreground">Nenhum produto encontrado</p>
+        <p className="text-muted-foreground font-body">Nenhum produto cadastrado ainda.</p>
       </div>
     );
   }
@@ -79,14 +118,16 @@ export const ListaProdutos = forwardRef<ListaProdutosRef>((props, ref) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {produtos.map((produto) => (
-        <ProdutoCard 
-          key={produto.id} 
-          produto={produto} 
+        <ProdutoCard
+          key={produto.id}
+          produto={produto}
           onUpdate={fetchProdutos}
+          onDelete={handleDelete}
+          onToggleActive={handleToggleActive}
         />
       ))}
     </div>
   );
 });
 
-ListaProdutos.displayName = "ListaProdutos";
+ListaProdutos.displayName = 'ListaProdutos';
