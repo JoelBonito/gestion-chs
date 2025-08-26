@@ -47,6 +47,7 @@ export const useGoogleDrive = () => {
 
     try {
       console.log("Iniciando upload real para Google Drive:", file.name);
+      console.log("EntityType:", entityType, "EntityId:", entityId);
       
       // Convert file to base64
       const fileContent = await new Promise<string>((resolve, reject) => {
@@ -61,10 +62,14 @@ export const useGoogleDrive = () => {
         reader.readAsDataURL(file);
       });
 
+      console.log("Arquivo convertido para base64, tamanho:", fileContent.length);
+
       // Simulate progress for better UX
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 100);
+
+      console.log("Chamando Edge Function google-drive-upload...");
 
       // Call the Edge Function
       const { data, error } = await supabase.functions.invoke('google-drive-upload', {
@@ -80,16 +85,19 @@ export const useGoogleDrive = () => {
       clearInterval(progressInterval);
       setUploadProgress(100);
 
+      console.log("Resposta da Edge Function:", { data, error });
+
       if (error) {
         console.error('Edge function error:', error);
         throw new Error(error.message || 'Erro na função de upload');
       }
 
       if (!data) {
+        console.error('Nenhum dado retornado do upload');
         throw new Error('Nenhum dado retornado do upload');
       }
 
-      console.log('Upload realizado com sucesso:', data);
+      console.log('Upload realizado com sucesso no Google Drive:', data);
 
       toast({
         title: "Upload realizado com sucesso",
@@ -98,7 +106,7 @@ export const useGoogleDrive = () => {
 
       return data;
     } catch (error: any) {
-      console.error('Upload error:', error);
+      console.error('Upload error detalhado:', error);
       toast({
         title: "Erro no upload",
         description: error.message || "Falha ao fazer upload do arquivo.",

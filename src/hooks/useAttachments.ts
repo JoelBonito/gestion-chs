@@ -38,7 +38,11 @@ export const useAttachments = (entityType: string, entityId: string) => {
         .eq('entity_id', entityId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar anexos:", error);
+        throw error;
+      }
+      
       console.log("Anexos encontrados:", data);
       setAttachments(data || []);
     } catch (error: any) {
@@ -61,20 +65,50 @@ export const useAttachments = (entityType: string, entityId: string) => {
     gdrive_download_link: string;
     file_size: number;
   }) => {
-    console.log("Criando anexo:", { entityType, entityId, attachmentData });
+    console.log("Criando anexo no banco de dados:", { entityType, entityId, attachmentData });
+    
     try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error("Erro ao obter usuário:", userError);
+        throw new Error("Erro ao obter usuário atual");
+      }
+
+      if (!user) {
+        console.error("Usuário não autenticado");
+        throw new Error("Usuário não autenticado");
+      }
+
+      console.log("Usuário autenticado:", user.id);
+
+      const insertData = {
+        entity_type: entityType,
+        entity_id: entityId,
+        file_name: attachmentData.file_name,
+        file_type: attachmentData.file_type,
+        gdrive_file_id: attachmentData.gdrive_file_id,
+        gdrive_view_link: attachmentData.gdrive_view_link,
+        gdrive_download_link: attachmentData.gdrive_download_link,
+        file_size: attachmentData.file_size,
+        uploaded_by: user.id
+      };
+
+      console.log("Dados para inserção:", insertData);
+
       const { data, error } = await supabase
         .from('attachments')
-        .insert([{
-          entity_type: entityType,
-          entity_id: entityId,
-          ...attachmentData
-        }])
+        .insert([insertData])
         .select()
         .single();
 
-      if (error) throw error;
-      console.log("Anexo criado:", data);
+      if (error) {
+        console.error("Erro do Supabase ao inserir anexo:", error);
+        throw error;
+      }
+      
+      console.log("Anexo inserido com sucesso:", data);
 
       await fetchAttachments();
       toast({

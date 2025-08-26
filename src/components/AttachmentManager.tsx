@@ -26,13 +26,19 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
     file_size: number;
   }) => {
     console.log("Upload bem-sucedido para Google Drive, dados do arquivo:", fileData);
+    console.log("Tentando criar anexo no banco de dados para:", { entityType, entityId });
+    
     try {
-      await createAttachment(fileData);
-      console.log("Anexo criado com sucesso no banco de dados, fazendo refresh da lista");
+      const result = await createAttachment(fileData);
+      console.log("Anexo criado com sucesso no banco de dados:", result);
+      console.log("Fazendo refresh da lista de anexos...");
       // Força atualização da lista de anexos
       await refetch();
+      console.log("Lista de anexos atualizada");
     } catch (error) {
       console.error("Erro ao criar anexo no banco:", error);
+      // Re-throw para que o erro seja mostrado no toast
+      throw error;
     }
   };
 
