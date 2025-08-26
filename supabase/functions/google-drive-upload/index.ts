@@ -14,6 +14,13 @@ interface GoogleDriveUploadRequest {
   entityId?: string;
 }
 
+// Mapeamento das pastas específicas criadas no Google Drive
+const FOLDER_MAPPING = {
+  'produto': '1DFOXDGhkKfHm1FceL4p8C4bHRKhxMPUh', // Pasta ARTIGOS
+  'financeiro': '1DFOXDGhkKfHm1FceL4p8C4bHRKhxMPUh', // Pasta FINANCEIRO
+  'default': '1DFOXDGhkKfHm1FceL4p8C4bHRKhxMPUh' // Pasta principal como fallback
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -108,45 +115,46 @@ serve(async (req) => {
     const accessToken = tokenData.access_token;
     console.log('Access token obtained successfully');
 
-    // Create folder structure if needed
-    let folderId = null;
+    // Determinar a pasta correta baseada no entityType
+    let folderId = FOLDER_MAPPING.default; // Pasta principal como fallback
+    
     if (entityType) {
-      const folderName = `GestionCHS-${entityType.charAt(0).toUpperCase() + entityType.slice(1)}s`;
-      
-      // Check if folder exists
-      const searchResponse = await fetch(
-        `https://www.googleapis.com/drive/v3/files?q=name='${folderName}' and mimeType='application/vnd.google-apps.folder'`,
-        {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-          },
+      if (entityType === 'produto') {
+        // Buscar a subpasta ARTIGOS dentro da pasta principal
+        const searchResponse = await fetch(
+          `https://www.googleapis.com/drive/v3/files?q=name='ARTIGOS' and mimeType='application/vnd.google-apps.folder' and '${FOLDER_MAPPING.produto}' in parents`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        const searchData = await searchResponse.json();
+        if (searchData.files && searchData.files.length > 0) {
+          folderId = searchData.files[0].id;
+          console.log('Using ARTIGOS folder for produto');
         }
-      );
+      } else if (entityType === 'financeiro') {
+        // Buscar a subpasta FINANCEIRO dentro da pasta principal
+        const searchResponse = await fetch(
+          `https://www.googleapis.com/drive/v3/files?q=name='FINANCEIRO' and mimeType='application/vnd.google-apps.folder' and '${FOLDER_MAPPING.financeiro}' in parents`,
+          {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+            },
+          }
+        );
 
-      const searchData = await searchResponse.json();
-      
-      if (searchData.files && searchData.files.length > 0) {
-        folderId = searchData.files[0].id;
-        console.log('Using existing folder:', folderName);
-      } else {
-        // Create folder
-        const folderResponse = await fetch('https://www.googleapis.com/drive/v3/files', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: folderName,
-            mimeType: 'application/vnd.google-apps.folder',
-          }),
-        });
-
-        const folderData = await folderResponse.json();
-        folderId = folderData.id;
-        console.log('Created new folder:', folderName);
+        const searchData = await searchResponse.json();
+        if (searchData.files && searchData.files.length > 0) {
+          folderId = searchData.files[0].id;
+          console.log('Using FINANCEIRO folder for financeiro');
+        }
       }
     }
+
+    console.log('Using folder ID:', folderId);
 
     // Upload file to Google Drive
     console.log('Uploading file to Google Drive...');
@@ -156,7 +164,7 @@ serve(async (req) => {
 
     const metadata = {
       name: fileName,
-      ...(folderId && { parents: [folderId] })
+      parents: [folderId]
     };
 
     // Convert base64 to binary
