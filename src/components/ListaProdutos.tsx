@@ -208,6 +208,7 @@ export const ListaProdutos = React.forwardRef<
             <ProdutoForm
               initialData={selectedProduto}
               onSuccess={handleEditSuccess}
+              isEditing={true}
             />
           )}
         </DialogContent>
