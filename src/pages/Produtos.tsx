@@ -1,13 +1,25 @@
-import { useState } from "react";
+
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
 import { ProdutoForm } from "@/components/ProdutoForm";
 import { ListaProdutos } from "@/components/ListaProdutos";
+import { toast } from "sonner";
 
 export default function Produtos() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const listaProdutosRef = useRef<{ fetchProdutos: () => void }>(null);
+
+  const handleCreateSuccess = () => {
+    setIsDialogOpen(false);
+    // Trigger refresh da lista através de ref
+    if (listaProdutosRef.current) {
+      listaProdutosRef.current.fetchProdutos();
+    }
+    toast.success("Produto criado e lista atualizada!");
+  };
 
   return (
     <div className="space-y-8 p-6">
@@ -27,7 +39,7 @@ export default function Produtos() {
             <DialogHeader>
               <DialogTitle className="font-display text-primary-dark">Cadastrar Novo Produto</DialogTitle>
             </DialogHeader>
-            <ProdutoForm onSuccess={() => setIsDialogOpen(false)} />
+            <ProdutoForm onSuccess={handleCreateSuccess} />
           </DialogContent>
         </Dialog>
       </div>

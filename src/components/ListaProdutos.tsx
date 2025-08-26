@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,11 +85,13 @@ export function ListaProdutos() {
   };
 
   const handleEdit = (produto: Produto) => {
+    // Garantir que os valores são carregados exatamente como estão no banco
     setEditingProduct(produto);
     setIsEditDialogOpen(true);
   };
 
   const handleDuplicate = (produto: Produto) => {
+    // Para duplicação, copiar valores originais sem mesclar
     setDuplicatingProduct(produto);
     setIsDuplicateDialogOpen(true);
   };
@@ -96,13 +99,17 @@ export function ListaProdutos() {
   const handleEditSuccess = () => {
     setIsEditDialogOpen(false);
     setEditingProduct(null);
+    // Refresh imediato da lista
     fetchProdutos();
+    toast.success("Produto atualizado e lista atualizada!");
   };
 
   const handleDuplicateSuccess = () => {
     setIsDuplicateDialogOpen(false);
     setDuplicatingProduct(null);
+    // Refresh imediato da lista
     fetchProdutos();
+    toast.success("Produto duplicado e lista atualizada!");
   };
 
   const handleDelete = async (produto: Produto) => {
@@ -126,6 +133,7 @@ export function ListaProdutos() {
       });
 
       toast.success("Produto inativado com sucesso!");
+      // Refresh imediato da lista
       fetchProdutos();
     } catch (error) {
       console.error("Erro ao inativar produto:", error);
@@ -154,6 +162,7 @@ export function ListaProdutos() {
       });
 
       toast.success("Produto reativado com sucesso!");
+      // Refresh imediato da lista
       fetchProdutos();
     } catch (error) {
       console.error("Erro ao reativar produto:", error);

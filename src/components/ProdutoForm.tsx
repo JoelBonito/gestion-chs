@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,6 +57,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
   const [novaOpçaoDialog, setNovaOpçaoDialog] = useState<{tipo: string, aberto: boolean}>({tipo: '', aberto: false});
   const [novoValor, setNovoValor] = useState('');
 
+  // Sempre inicializar com valores vazios para evitar soma de valores
   const form = useForm<ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
     defaultValues: {
@@ -74,8 +76,10 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     carregarOpcoesExistentes();
   }, []);
 
+  // Carregar dados iniciais APENAS quando initialData mudar (evita soma)
   useEffect(() => {
     if (initialData) {
+      // REPLACE valores, não somar - usar reset para garantir valores exatos
       const formData = {
         nome: initialData.nome || "",
         marca: initialData.marca || "",
@@ -86,10 +90,10 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         fornecedor_id: initialData.fornecedor_id || "",
       };
       
-      setTimeout(() => {
-        form.reset(formData);
-      }, 200);
+      // Usar reset para SUBSTITUIR todos os valores
+      form.reset(formData);
     } else {
+      // Para novos produtos, resetar com valores vazios
       form.reset({
         nome: "",
         marca: "",
@@ -100,7 +104,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         fornecedor_id: "",
       });
     }
-  }, [form, initialData]);
+  }, [initialData, form]);
 
   const carregarFornecedores = async () => {
     try {
@@ -120,10 +124,10 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
 
   const carregarOpcoesExistentes = async () => {
     try {
+      // Buscar todas as opções existentes, não apenas de produtos ativos
       const { data: produtos, error } = await supabase
         .from("produtos")
-        .select("marca, tipo")
-        .eq("ativo", true);
+        .select("marca, tipo");
 
       if (error) {
         console.error("Erro ao carregar opções existentes:", error);
@@ -131,6 +135,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
       }
 
       if (produtos) {
+        // Manter histórico de todas as marcas e tipos já utilizados
         const marcasUnicas = [...new Set(produtos.map(p => p.marca))].filter(Boolean).sort();
         const tiposUnicos = [...new Set(produtos.map(p => p.tipo))].filter(Boolean).sort();
 
@@ -154,10 +159,16 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     const valor = novoValor.trim();
     
     if (campo === 'marca') {
-      setMarcasExistentes(prev => [...prev, valor].sort());
+      // Adicionar marca sem duplicar
+      if (!marcasExistentes.includes(valor)) {
+        setMarcasExistentes(prev => [...prev, valor].sort());
+      }
       form.setValue('marca', valor);
     } else if (campo === 'tipo') {
-      setTiposExistentes(prev => [...prev, valor].sort());
+      // Adicionar tipo sem duplicar
+      if (!tiposExistentes.includes(valor)) {
+        setTiposExistentes(prev => [...prev, valor].sort());
+      }
       form.setValue('tipo', valor);
     } else if (campo === 'fornecedor') {
       try {
@@ -240,7 +251,12 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         toast.success("Produto cadastrado com sucesso!");
       }
 
-      if (!isEditing) form.reset();
+      // Não resetar o form em edição para manter os dados
+      if (!isEditing) {
+        form.reset();
+      }
+      
+      // Chamar onSuccess para triggerar refresh da lista
       onSuccess?.();
     } catch (error) {
       console.error("Erro ao salvar produto:", error);
@@ -315,13 +331,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="font-display text-primary-dark">Marca</FormLabel>
-                 <Select onValueChange={(value) => {
-                   if (value === '__nova_marca__') {
-                     handleNovaOpcao('marca');
-                   } else {
-                     field.onChange(value);
-                   }
-                 }} value={field.value || ""}>
+                <Select onValueChange={(value) => {
+                  if (value === '__nova_marca__') {
+                    handleNovaOpcao('marca');
+                  } else {
+                    field.onChange(value);
+                  }
+                }} value={field.value || ""}>
                   <FormControl>
                     <SelectTrigger className="input-elegant">
                       <SelectValue placeholder="Selecione uma marca" />
@@ -352,13 +368,13 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="font-display text-primary-dark">Tipo</FormLabel>
-                 <Select onValueChange={(value) => {
-                   if (value === '__novo_tipo__') {
-                     handleNovaOpcao('tipo');
-                   } else {
-                     field.onChange(value);
-                   }
-                 }} value={field.value || ""}>
+                <Select onValueChange={(value) => {
+                  if (value === '__novo_tipo__') {
+                    handleNovaOpcao('tipo');
+                  } else {
+                    field.onChange(value);
+                  }
+                }} value={field.value || ""}>
                   <FormControl>
                     <SelectTrigger className="input-elegant">
                       <SelectValue placeholder="Selecione um tipo" />
