@@ -93,7 +93,7 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
     try {
       const { data, error } = await supabase
         .from("fornecedores")
-        .select("id, nome")
+        .select("id, nome, active")
         .eq("active", true)
         .order("nome");
 
