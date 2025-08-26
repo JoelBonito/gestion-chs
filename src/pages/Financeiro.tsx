@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Download, TrendingUp, TrendingDown, DollarSign, AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,28 +45,30 @@ const movimentacoes = [
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState("resumo");
   const [encomendas, setEncomendas] = useState<EncomendaFinanceiro[]>([]);
+  const [contasPagar, setContasPagar] = useState<any[]>([]);
   const [showPagamentoDialog, setShowPagamentoDialog] = useState(false);
   const { toast } = useToast();
 
   const fetchEncomendas = async () => {
     try {
-      const { data, error } = await supabase
+      // Buscar encomendas a receber (saldo devedor > 0)
+      const { data: encomendasData, error: encomendasError } = await supabase
         .from("encomendas")
         .select(`
           *,
           clientes!inner(nome),
-          freight_rates(rate)
+          frete_encomenda(valor_frete)
         `)
         .gt("saldo_devedor", 0)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (encomendasError) throw encomendasError;
 
-      const encomendasFormatadas: EncomendaFinanceiro[] = data.map((e: any) => {
+      const encomendasFormatadas: EncomendaFinanceiro[] = encomendasData.map((e: any) => {
         const produtos = parseFloat(e.valor_total ?? 0);
-        const frete = parseFloat(e.freight_rates?.rate ?? 0);
+        const frete = parseFloat(e.frete_encomenda?.[0]?.valor_frete ?? 0);
         const pago = parseFloat(e.valor_pago ?? 0);
-        const totalCaixa = produtos + frete;
+        const totalCaixa = produtos + frete; // Total a receber do cliente
         
         return {
           id: e.id,
@@ -82,10 +83,43 @@ export default function Financeiro() {
         };
       });
 
+      // Buscar contas a pagar (saldo devedor fornecedor > 0)
+      const { data: contasData, error: contasError } = await supabase
+        .from("encomendas")
+        .select(`
+          *,
+          fornecedores!inner(nome),
+          frete_encomenda(valor_frete)
+        `)
+        .gt("saldo_devedor_fornecedor", 0)
+        .order("created_at", { ascending: false });
+
+      if (contasError) throw contasError;
+
+      const contasFormatadas = contasData.map((e: any) => {
+        const custoTotal = parseFloat(e.valor_total_custo ?? 0);
+        const frete = parseFloat(e.frete_encomenda?.[0]?.valor_frete ?? 0);
+        const pagoFornecedor = parseFloat(e.valor_pago_fornecedor ?? 0);
+        const totalFornecedor = custoTotal + frete; // Total a pagar ao fornecedor
+        
+        return {
+          id: e.id,
+          numero_encomenda: e.numero_encomenda,
+          fornecedor_nome: e.fornecedores?.nome ?? '',
+          valor_total_custo: custoTotal,
+          valor_pago_fornecedor: pagoFornecedor,
+          saldo_devedor_fornecedor: Math.max(custoTotal - pagoFornecedor, 0),
+          valor_frete: frete,
+          total_fornecedor: totalFornecedor,
+          saldo_devedor_fornecedor_total: Math.max(totalFornecedor - pagoFornecedor, 0),
+        };
+      });
+
       setEncomendas(encomendasFormatadas);
+      setContasPagar(contasFormatadas);
     } catch (error: any) {
       toast({
-        title: "Erro ao carregar encomendas",
+        title: "Erro ao carregar dados financeiros",
         description: error.message,
         variant: "destructive",
       });
@@ -101,9 +135,9 @@ export default function Financeiro() {
     fetchEncomendas();
   };
 
-  // Cálculos para o resumo - baseados no caixa (produtos + frete)
+  // Cálculos para o resumo
   const totalReceber = encomendas.reduce((sum, e) => sum + (e.saldo_devedor_caixa ?? 0), 0);
-  const totalPago = encomendas.reduce((sum, e) => sum + e.valor_pago, 0);
+  const totalPagar = contasPagar.reduce((sum, c) => sum + (c.saldo_devedor_fornecedor_total ?? 0), 0);
   const totalCaixa = encomendas.reduce((sum, e) => sum + (e.total_caixa ?? 0), 0);
 
   return (
@@ -135,30 +169,30 @@ export default function Financeiro() {
         </div>
       </div>
 
-      {/* Financial Stats - Baseados no Caixa (produtos + frete) */}
+      {/* Financial Stats */}
       <div className="grid gap-6 md:grid-cols-3">
         <StatCard
-          title="Total Caixa"
-          value={`€${totalCaixa.toFixed(2)}`}
-          subtitle="Valor total (produtos + frete)"
-          icon={<DollarSign className="h-6 w-6" />}
-          variant="default"
-        />
-        
-        <StatCard
-          title="Total Pago"
-          value={`€${totalPago.toFixed(2)}`}
-          subtitle="Pagamentos recebidos"
+          title="A Receber"
+          value={`€${totalReceber.toFixed(2)}`}
+          subtitle="Pendente de clientes"
           icon={<TrendingUp className="h-6 w-6" />}
           variant="success"
         />
         
         <StatCard
-          title="A Receber"
-          value={`€${totalReceber.toFixed(2)}`}
-          subtitle="Pendente de recebimento"
+          title="A Pagar"
+          value={`€${totalPagar.toFixed(2)}`}
+          subtitle="Pendente a fornecedores"
           icon={<TrendingDown className="h-6 w-6" />}
           variant="warning"
+        />
+        
+        <StatCard
+          title="Total Cliente"
+          value={`€${totalCaixa.toFixed(2)}`}
+          subtitle="Valor total (produtos + frete)"
+          icon={<DollarSign className="h-6 w-6" />}
+          variant="default"
         />
       </div>
 

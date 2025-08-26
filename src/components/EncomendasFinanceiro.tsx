@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +37,7 @@ export default function EncomendasFinanceiro() {
         const produtos = parseFloat(e.valor_total ?? 0);
         const frete = parseFloat(e.frete_encomenda?.[0]?.valor_frete ?? 0);
         const pago = parseFloat(e.valor_pago ?? 0);
-        const totalCaixa = produtos + frete;
+        const totalCaixa = produtos + frete; // Total para receber do cliente
         
         return {
           id: e.id,
@@ -113,7 +114,7 @@ export default function EncomendasFinanceiro() {
         <CardHeader>
           <CardTitle>Contas a Receber</CardTitle>
           <CardDescription>
-            Encomendas com saldo devedor (Caixa = Produtos + Frete)
+            Encomendas com saldo devedor (Total Cliente = Produtos + Frete)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -129,7 +130,7 @@ export default function EncomendasFinanceiro() {
                 <div>Cliente</div>
                 <div className="text-right">Produtos</div>
                 <div className="text-right">Frete</div>
-                <div className="text-right">Total (Caixa)</div>
+                <div className="text-right">Total Cliente</div>
                 <div className="text-right">Pago</div>
                 <div className="text-right">Saldo</div>
                 <div className="text-center">Ações</div>
