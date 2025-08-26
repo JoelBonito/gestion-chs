@@ -4,24 +4,26 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Paperclip, Upload } from 'lucide-react';
 import { useGoogleDrive } from '@/hooks/useGoogleDrive';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface AttachmentUploadProps {
   onUploadSuccess: (fileData: {
-    file_name: string;
-    file_type: string;
-    gdrive_file_id: string;
-    gdrive_view_link: string;
-    gdrive_download_link: string;
-    file_size: number;
+    id: string;
+    name: string;
+    size: number;
+    mimeType: string;
+    webViewLink: string;
+    webContentLink: string;
   }) => void;
 }
 
 export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSuccess }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading, uploadProgress } = useGoogleDrive();
+  const { hasRole } = useUserRole();
   
-  // Temporarily remove role check to test functionality
-  const canUpload = true;
+  // Check if user can upload files
+  const canUpload = hasRole('admin') || hasRole('ops');
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
@@ -34,21 +36,10 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSucc
     try {
       const result = await uploadFile(file);
       if (result) {
-        // Extract file type from mime type
-        const fileType = result.mimeType === 'application/pdf' ? 'pdf' : 
-                         result.mimeType === 'image/jpeg' ? 'jpg' : 'jpeg';
-        
-        onUploadSuccess({
-          file_name: result.name,
-          file_type: fileType,
-          gdrive_file_id: result.fileId,
-          gdrive_view_link: result.webViewLink,
-          gdrive_download_link: result.downloadLink,
-          file_size: result.size
-        });
+        onUploadSuccess(result);
       }
     } catch (error) {
-      console.error('Upload failed:', error);
+      console.error('Error uploading file:', error);
     }
 
     // Reset input
@@ -58,51 +49,47 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSucc
   };
 
   if (!canUpload) {
-    return (
-      <div className="p-4 bg-muted rounded-lg">
-        <p className="text-sm text-muted-foreground">
-          Upload de arquivos temporariamente disponível para teste. Configure as permissões do Google Drive.
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,.jpg,.jpeg"
         onChange={handleFileChange}
         className="hidden"
+        multiple={false}
       />
       
-      <Button
+      <Button 
         onClick={handleFileSelect}
         disabled={isUploading}
         variant="outline"
+        size="sm"
         className="w-full"
       >
         {isUploading ? (
-          <Upload className="mr-2 h-4 w-4 animate-spin" />
+          <>
+            <Upload className="w-4 h-4 mr-2 animate-spin" />
+            Enviando...
+          </>
         ) : (
-          <Paperclip className="mr-2 h-4 w-4" />
+          <>
+            <Paperclip className="w-4 h-4 mr-2" />
+            Anexar Arquivo
+          </>
         )}
-        {isUploading ? 'Enviando...' : 'Anexar Arquivo'}
       </Button>
 
       {isUploading && (
-        <div className="space-y-2">
-          <Progress value={uploadProgress} className="w-full" />
-          <p className="text-sm text-muted-foreground text-center">
+        <div className="space-y-1">
+          <Progress value={uploadProgress} className="h-2" />
+          <p className="text-xs text-muted-foreground text-center">
             {uploadProgress}% enviado
           </p>
         </div>
       )}
-      
-      <p className="text-xs text-muted-foreground">
-        Apenas arquivos PDF e JPG. Máximo 10MB.
-      </p>
     </div>
   );
 };
