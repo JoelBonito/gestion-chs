@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,6 @@ import {
   Users, 
   Factory, 
   ShoppingCart, 
-  Wrench, 
   CreditCard,
   LogOut,
   User
@@ -44,7 +44,6 @@ export function HorizontalNav() {
     { name: "Clientes", href: "/clientes", icon: Users },
     { name: "Fornecedores", href: "/fornecedores", icon: Factory },
     { name: "Encomendas", href: "/encomendas", icon: ShoppingCart },
-    { name: "Produção", href: "/producao", icon: Wrench },
     { name: "Financeiro", href: "/financeiro", icon: CreditCard },
   ];
 
@@ -53,8 +52,15 @@ export function HorizontalNav() {
       <div className="container mx-auto">
         <div className="flex h-16 items-center justify-between px-6">
           <div className="flex items-center space-x-8">
-            <Link to="/dashboard" className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              Sistema
+            <Link to="/dashboard" className="flex items-center space-x-3">
+              <img 
+                src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png" 
+                alt="Gestion CHS Logo" 
+                className="h-8 w-auto"
+              />
+              <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                Gestion CHS
+              </span>
             </Link>
             
             <div className="hidden md:flex space-x-1">
@@ -85,15 +91,6 @@ export function HorizontalNav() {
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4" />
                 <span className="text-sm font-medium">{user.email}</span>
-                {roles.length > 0 && (
-                  <div className="flex gap-1">
-                    {roles.map((role) => (
-                      <Badge key={role} variant="secondary" className="text-xs">
-                        {role}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
               </div>
               <Button
                 variant="ghost"
