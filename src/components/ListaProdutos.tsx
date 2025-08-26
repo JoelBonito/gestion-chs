@@ -20,8 +20,8 @@ interface Produto {
   preco_custo: number;
   preco_venda: number;
   size_weight: number;
-  ativo: boolean;
   fornecedor_id: string;
+  ativo: boolean;
   created_at: string;
   updated_at: string;
 }
