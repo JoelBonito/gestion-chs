@@ -30,7 +30,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
       return;
     }
     
-    console.log("Buscando anexos para:", { entityType, entityId });
+    console.log(`Buscando anexos para entityType: ${entityType}, entityId: ${entityId}`);
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -45,7 +45,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
         throw error;
       }
       
-      console.log("Anexos encontrados:", data);
+      console.log(`Anexos encontrados (${data?.length || 0}):`, data);
       setAttachments(data || []);
     } catch (error: any) {
       console.error("Erro ao carregar anexos:", error);
@@ -66,7 +66,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
     storage_url: string;
     file_size: number;
   }) => {
-    console.log("Criando anexo no banco de dados:", { entityType, entityId, attachmentData });
+    console.log(`Criando anexo no banco de dados para entityType: ${entityType}, entityId: ${entityId}`, attachmentData);
     
     try {
       // Get current user
@@ -115,6 +115,9 @@ export const useAttachments = (entityType: string, entityId: string) => {
       }
       
       console.log("Anexo inserido com sucesso no banco:", data);
+      
+      // Atualiza a lista local imediatamente
+      setAttachments(prev => [data, ...prev]);
       
       toast({
         title: "Anexo adicionado",
@@ -166,7 +169,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
   };
 
   useEffect(() => {
-    console.log("useAttachments useEffect executado:", { entityType, entityId });
+    console.log(`useAttachments useEffect executado para entityType: ${entityType}, entityId: ${entityId}`);
     fetchAttachments();
   }, [entityType, entityId]);
 

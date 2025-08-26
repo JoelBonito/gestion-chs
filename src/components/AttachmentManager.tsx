@@ -25,18 +25,15 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
     file_size: number;
   }) => {
     console.log("Upload bem-sucedido para Supabase Storage, dados do arquivo:", fileData);
-    console.log("Tentando criar anexo no banco de dados para:", { entityType, entityId });
+    console.log(`Tentando criar anexo no banco de dados para entityType: ${entityType}, entityId: ${entityId}`);
     
     try {
       const result = await createAttachment(fileData);
       console.log("Anexo criado com sucesso no banco de dados:", result);
       
-      // Força atualização imediata da lista de anexos com um pequeno delay
-      console.log("Fazendo refresh da lista de anexos...");
-      setTimeout(async () => {
-        await refetch();
-        console.log("Lista de anexos atualizada com sucesso");
-      }, 100);
+      // Força atualização da lista de anexos após criar no banco
+      console.log("Forçando refresh da lista de anexos...");
+      refetch();
     } catch (error) {
       console.error("Erro ao criar anexo no banco:", error);
       throw error;
@@ -48,7 +45,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
     return null;
   }
 
-  console.log("Renderizando AttachmentManager para:", { entityType, entityId });
+  console.log(`Renderizando AttachmentManager para entityType: ${entityType}, entityId: ${entityId}`);
 
   return (
     <div className="space-y-6">
