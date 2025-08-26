@@ -44,6 +44,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
   };
 
   const handlePreview = (attachment: any) => {
+    console.log("Visualizando anexo:", attachment);
     if (attachment.file_type.startsWith('image/')) {
       setImagePreview({
         url: attachment.storage_url,
