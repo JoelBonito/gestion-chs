@@ -25,14 +25,14 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
     gdrive_download_link: string;
     file_size: number;
   }) => {
-    console.log("Upload bem-sucedido, dados do arquivo:", fileData);
+    console.log("Upload bem-sucedido para Google Drive, dados do arquivo:", fileData);
     try {
       await createAttachment(fileData);
-      console.log("Anexo criado com sucesso, fazendo refresh da lista");
+      console.log("Anexo criado com sucesso no banco de dados, fazendo refresh da lista");
       // Força atualização da lista de anexos
       await refetch();
     } catch (error) {
-      console.error("Erro ao criar anexo:", error);
+      console.error("Erro ao criar anexo no banco:", error);
     }
   };
 
@@ -45,7 +45,11 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
 
   return (
     <div className="space-y-6">
-      <AttachmentUpload onUploadSuccess={handleUploadSuccess} />
+      <AttachmentUpload 
+        entityType={entityType}
+        entityId={entityId}
+        onUploadSuccess={handleUploadSuccess} 
+      />
       <AttachmentList entityType={entityType} entityId={entityId} />
     </div>
   );

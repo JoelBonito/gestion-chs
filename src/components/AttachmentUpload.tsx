@@ -7,6 +7,8 @@ import { useGoogleDrive } from '@/hooks/useGoogleDrive';
 import { useUserRole } from '@/hooks/useUserRole';
 
 interface AttachmentUploadProps {
+  entityType?: string;
+  entityId?: string;
   onUploadSuccess: (fileData: {
     file_name: string;
     file_type: string;
@@ -17,7 +19,11 @@ interface AttachmentUploadProps {
   }) => void;
 }
 
-export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSuccess }) => {
+export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ 
+  entityType, 
+  entityId, 
+  onUploadSuccess 
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading, uploadProgress } = useGoogleDrive();
   const { hasRole } = useUserRole();
@@ -33,8 +39,10 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSucc
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log('Iniciando upload do arquivo:', file.name, 'para entidade:', entityType, entityId);
+
     try {
-      const result = await uploadFile(file);
+      const result = await uploadFile(file, entityType, entityId);
       if (result) {
         // Transform the GoogleDriveUploadResult to match the expected interface
         onUploadSuccess({
@@ -67,6 +75,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSucc
         type="file"
         onChange={handleFileChange}
         className="hidden"
+        accept=".pdf,.jpg,.jpeg,.png"
         multiple={false}
       />
       
@@ -80,7 +89,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSucc
         {isUploading ? (
           <>
             <Upload className="w-4 h-4 mr-2 animate-spin" />
-            Enviando...
+            Enviando para Google Drive...
           </>
         ) : (
           <>
@@ -94,7 +103,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSucc
         <div className="space-y-1">
           <Progress value={uploadProgress} className="h-2" />
           <p className="text-xs text-muted-foreground text-center">
-            {uploadProgress}% enviado
+            {uploadProgress}% enviado para Google Drive
           </p>
         </div>
       )}

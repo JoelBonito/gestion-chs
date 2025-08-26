@@ -17,15 +17,15 @@ export const useGoogleDrive = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
 
-  const uploadFile = async (file: File): Promise<GoogleDriveUploadResult | null> => {
+  const uploadFile = async (file: File, entityType?: string, entityId?: string): Promise<GoogleDriveUploadResult | null> => {
     if (!file) return null;
 
     // Validate file type
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg'];
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type)) {
       toast({
         title: "Tipo de arquivo não permitido",
-        description: "Apenas arquivos PDF e JPG são aceitos.",
+        description: "Apenas arquivos PDF, JPG e PNG são aceitos.",
         variant: "destructive"
       });
       return null;
@@ -46,43 +46,57 @@ export const useGoogleDrive = () => {
     setUploadProgress(0);
 
     try {
-      // Simulate upload for now since Google Drive API requires OAuth2
-      // In a real implementation, you would need proper OAuth2 flow
-      console.log("Simulando upload do arquivo:", file.name);
+      console.log("Iniciando upload real para Google Drive:", file.name);
       
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          const next = prev + 20;
-          if (next >= 100) {
-            clearInterval(progressInterval);
-            return 100;
-          }
-          return next;
-        });
-      }, 200);
-
-      // Wait for "upload" to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Generate mock Google Drive links (in production, these would come from actual Google Drive)
-      const mockFileId = `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      const result: GoogleDriveUploadResult = {
-        fileId: mockFileId,
-        webViewLink: `https://drive.google.com/file/d/${mockFileId}/view`,
-        downloadLink: `https://drive.google.com/uc?export=download&id=${mockFileId}`,
-        name: file.name,
-        mimeType: file.type,
-        size: file.size
-      };
-
-      toast({
-        title: "Upload simulado com sucesso",
-        description: `Arquivo ${file.name} processado. Nota: Em produção, seria necessário configurar OAuth2 do Google Drive.`,
+      // Convert file to base64
+      const fileContent = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+          const base64Content = result.split(',')[1];
+          resolve(base64Content);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
 
-      return result;
+      // Simulate progress for better UX
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 100);
+
+      // Call the Edge Function
+      const { data, error } = await supabase.functions.invoke('google-drive-upload', {
+        body: {
+          fileName: file.name,
+          fileContent,
+          mimeType: file.type,
+          entityType,
+          entityId
+        }
+      });
+
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Erro na função de upload');
+      }
+
+      if (!data) {
+        throw new Error('Nenhum dado retornado do upload');
+      }
+
+      console.log('Upload realizado com sucesso:', data);
+
+      toast({
+        title: "Upload realizado com sucesso",
+        description: `Arquivo ${file.name} foi enviado para o Google Drive.`,
+      });
+
+      return data;
     } catch (error: any) {
       console.error('Upload error:', error);
       toast({
