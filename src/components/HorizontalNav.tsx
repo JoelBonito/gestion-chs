@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,8 +13,7 @@ import {
   Factory, 
   ShoppingCart, 
   Wrench, 
-  CreditCard, 
-  Truck,
+  CreditCard,
   LogOut,
   User
 } from "lucide-react";
@@ -48,7 +46,6 @@ export function HorizontalNav() {
     { name: "Encomendas", href: "/encomendas", icon: ShoppingCart },
     { name: "Produção", href: "/producao", icon: Wrench },
     { name: "Financeiro", href: "/financeiro", icon: CreditCard },
-    { name: "Frete", href: "/frete", icon: Truck },
   ];
 
   return (
