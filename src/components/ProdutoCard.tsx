@@ -19,6 +19,7 @@ interface ProdutoCardProps {
 
 export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActive }: ProdutoCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { canEdit } = useUserRole();
 
   const handleEditSuccess = () => {
@@ -26,8 +27,16 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
     onUpdate();
   };
 
+  const handleAttachmentRefresh = () => {
+    console.log("Executando refresh completo da ficha do produto");
+    // Força um re-render completo incrementando a key
+    setRefreshKey(prev => prev + 1);
+    // Também chama o callback de update do componente pai
+    onUpdate();
+  };
+
   return (
-    <Card className="shadow-card border-border/40 hover:shadow-card-hover transition-shadow">
+    <Card className="shadow-card border-border/40 hover:shadow-card-hover transition-shadow" key={refreshKey}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-display text-primary-dark">
@@ -77,6 +86,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
                 <ProdutoForm 
                   produto={produto} 
                   onSuccess={handleEditSuccess}
+                  onAttachmentRefresh={handleAttachmentRefresh}
                 />
               </DialogContent>
             </Dialog>
