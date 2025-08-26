@@ -26,7 +26,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
     storage_url: string;
     file_size: number;
   }) => {
-    console.log("=== ATTACHMENT UPLOAD SUCCESS - Refresh interno ===");
+    console.log("=== ATTACHMENT UPLOAD SUCCESS - Iniciando processo completo ===");
     console.log("AttachmentManager - Upload bem-sucedido, dados do arquivo:", fileData);
     console.log(`AttachmentManager - Criando anexo no banco para entityType: ${entityType}, entityId: ${entityId}`);
     
@@ -37,12 +37,18 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       // Refresh interno da lista de anexos
       console.log("AttachmentManager - Fazendo refetch interno dos anexos");
       await refetch();
+      console.log("AttachmentManager - Refetch interno concluído");
       
-      // O onRefreshParent não é mais necessário para refresh da lista geral
-      // Mantemos apenas para compatibilidade, mas não será usado para refresh da página de produtos
-      console.log("AttachmentManager - Refresh interno concluído com sucesso");
+      // CORRIGIR: Chamar onRefreshParent para atualizar produto pai
+      if (onRefreshParent) {
+        console.log("AttachmentManager - Chamando onRefreshParent para refresh do produto pai");
+        await onRefreshParent();
+        console.log("AttachmentManager - onRefreshParent executado com sucesso");
+      } else {
+        console.log("AttachmentManager - AVISO: onRefreshParent não fornecido");
+      }
       
-      console.log("=== ATTACHMENT PROCESS COMPLETED - Anexo disponível na lista ===");
+      console.log("=== ATTACHMENT PROCESS COMPLETED - Produto e anexos atualizados ===");
     } catch (error) {
       console.error("AttachmentManager - Erro ao criar anexo no banco:", error);
       throw error;
@@ -55,6 +61,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
   }
 
   console.log(`AttachmentManager - Renderizando para entityType: ${entityType}, entityId: ${entityId}`);
+  console.log("AttachmentManager - onRefreshParent callback:", onRefreshParent ? "PRESENTE" : "AUSENTE");
 
   return (
     <div className="space-y-6">

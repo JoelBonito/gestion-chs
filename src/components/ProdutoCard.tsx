@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useUserRole } from "@/hooks/useUserRole";
 import { useState } from "react";
 import { Produto } from "@/types/database";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ProdutoCardProps {
   produto: Produto;
@@ -32,14 +32,34 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
     console.log("ProdutoCard - Dialog fechado, produto foi editado internamente");
   };
 
-  const handleAttachmentRefresh = () => {
-    console.log("=== ATTACHMENT REFRESH - Refresh interno da ficha do produto ===");
+  const handleAttachmentRefresh = async () => {
+    console.log("=== ATTACHMENT REFRESH - Iniciando reload do produto ===");
     console.log("ProdutoCard - handleAttachmentRefresh chamado para produto:", produtoData.id);
     
-    // Este callback é especificamente para refresh interno do AttachmentManager
-    // Não precisa fazer refresh da lista geral de produtos
-    console.log("ProdutoCard - Refresh será tratado internamente pelo AttachmentManager");
-    console.log("=== ATTACHMENT REFRESH COMPLETED ===");
+    try {
+      // Recarregar dados do produto do banco de dados
+      console.log("ProdutoCard - Buscando dados atualizados do produto no banco");
+      const { data: updatedProduct, error } = await supabase
+        .from('produtos')
+        .select('*')
+        .eq('id', produtoData.id)
+        .single();
+
+      if (error) {
+        console.error("ProdutoCard - Erro ao recarregar produto:", error);
+        throw error;
+      }
+
+      if (updatedProduct) {
+        console.log("ProdutoCard - Produto recarregado com sucesso:", updatedProduct);
+        setProdutoData(updatedProduct);
+        console.log("ProdutoCard - Estado local do produto atualizado");
+      }
+      
+      console.log("=== ATTACHMENT REFRESH COMPLETED - Produto recarregado ===");
+    } catch (error) {
+      console.error("ProdutoCard - Erro no refresh do produto:", error);
+    }
   };
 
   return (
