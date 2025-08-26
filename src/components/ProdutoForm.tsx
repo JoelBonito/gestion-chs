@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,7 +43,6 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
 
   const isEditing = !!produto;
 
-  // Sempre inicializar com valores vazios para evitar soma de valores
   const form = useForm<ProdutoFormData>({
     resolver: zodResolver(produtoSchema),
     defaultValues: {
@@ -56,30 +56,39 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
     },
   });
 
+  // Carregar fornecedores e opções existentes ao montar componente
   useEffect(() => {
+    console.log("ProdutoForm montado, carregando dados iniciais");
     carregarFornecedores();
     carregarOpcoesExistentes();
   }, []);
 
-  // Carregar dados iniciais APENAS quando produto mudar (evita soma)
+  // Carregar dados do produto APENAS quando produto mudar
   useEffect(() => {
+    console.log("Produto mudou:", produto);
     if (produto) {
-      // REPLACE valores, não somar - usar reset para garantir valores exatos
-      const formData = {
-        nome: produto.nome || "",
-        marca: produto.marca || "",
-        tipo: produto.tipo || "",
-        preco_custo: produto.preco_custo ? produto.preco_custo.toString() : "",
-        preco_venda: produto.preco_venda ? produto.preco_venda.toString() : "",
-        size_weight: produto.size_weight ? produto.size_weight.toString() : "0",
-        fornecedor_id: produto.fornecedor_id || "",
-      };
+      console.log("Preenchendo formulário com dados do produto:", {
+        nome: produto.nome,
+        marca: produto.marca,
+        tipo: produto.tipo,
+        fornecedor_id: produto.fornecedor_id,
+        preco_custo: produto.preco_custo,
+        preco_venda: produto.preco_venda,
+        size_weight: produto.size_weight
+      });
       
-      // Usar reset para SUBSTITUIR todos os valores
-      form.reset(formData);
+      // Usar setValue para cada campo individualmente para garantir que sejam preenchidos
+      form.setValue('nome', produto.nome || "");
+      form.setValue('marca', produto.marca || "");
+      form.setValue('tipo', produto.tipo || "");
+      form.setValue('preco_custo', produto.preco_custo ? produto.preco_custo.toString() : "");
+      form.setValue('preco_venda', produto.preco_venda ? produto.preco_venda.toString() : "");
+      form.setValue('size_weight', produto.size_weight ? produto.size_weight.toString() : "0");
+      form.setValue('fornecedor_id', produto.fornecedor_id || "");
+      
       setProdutoId(produto.id);
     } else {
-      // Para novos produtos, resetar com valores vazios
+      console.log("Novo produto, resetando formulário");
       form.reset({
         nome: "",
         marca: "",
@@ -95,6 +104,7 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
 
   const carregarFornecedores = async () => {
     try {
+      console.log("Carregando fornecedores...");
       const { data, error } = await supabase
         .from("fornecedores")
         .select("id, nome, active")
@@ -102,6 +112,7 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
         .order("nome");
 
       if (error) throw error;
+      console.log("Fornecedores carregados:", data);
       setFornecedores(data || []);
     } catch (error) {
       console.error("Erro ao carregar fornecedores:", error);
@@ -111,7 +122,7 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
 
   const carregarOpcoesExistentes = async () => {
     try {
-      // Buscar todas as opções existentes, não apenas de produtos ativos
+      console.log("Carregando opções existentes...");
       const { data: produtos, error } = await supabase
         .from("produtos")
         .select("marca, tipo");
@@ -122,10 +133,12 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
       }
 
       if (produtos) {
-        // Manter histórico de todas as marcas e tipos já utilizados
         const marcasUnicas = [...new Set(produtos.map(p => p.marca))].filter(Boolean).sort();
         const tiposUnicos = [...new Set(produtos.map(p => p.tipo))].filter(Boolean).sort();
 
+        console.log("Marcas carregadas:", marcasUnicas);
+        console.log("Tipos carregados:", tiposUnicos);
+        
         setMarcasExistentes(marcasUnicas);
         setTiposExistentes(tiposUnicos);
       }
@@ -146,13 +159,11 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
     const valor = novoValor.trim();
     
     if (campo === 'marca') {
-      // Adicionar marca sem duplicar
       if (!marcasExistentes.includes(valor)) {
         setMarcasExistentes(prev => [...prev, valor].sort());
       }
       form.setValue('marca', valor);
     } else if (campo === 'tipo') {
-      // Adicionar tipo sem duplicar
       if (!tiposExistentes.includes(valor)) {
         setTiposExistentes(prev => [...prev, valor].sort());
       }
@@ -228,7 +239,6 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
 
         if (error) throw error;
         
-        // Set the product ID so attachments can be linked to it
         setProdutoId(novoProduto.id);
         
         await logActivity({
@@ -241,12 +251,10 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
         toast.success("Produto cadastrado com sucesso!");
       }
 
-      // Não resetar o form em edição para manter os dados
       if (!isEditing) {
         form.reset();
       }
       
-      // Chamar onSuccess para triggerar refresh da lista
       onSuccess?.();
     } catch (error) {
       console.error("Erro ao salvar produto:", error);
@@ -255,6 +263,10 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
       setIsSubmitting(false);
     }
   };
+
+  // Debug dos valores do formulário
+  const formValues = form.watch();
+  console.log("Valores atuais do form:", formValues);
 
   return (
     <div className="space-y-6">
@@ -284,13 +296,17 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="font-display text-primary-dark">Fornecedor *</FormLabel>
-                <Select onValueChange={(value) => {
-                  if (value === '__novo_fornecedor__') {
-                    handleNovaOpcao('fornecedor');
-                  } else {
-                    field.onChange(value);
-                  }
-                }} value={field.value}>
+                <Select 
+                  onValueChange={(value) => {
+                    console.log("Fornecedor selecionado:", value);
+                    if (value === '__novo_fornecedor__') {
+                      handleNovaOpcao('fornecedor');
+                    } else {
+                      field.onChange(value);
+                    }
+                  }} 
+                  value={field.value}
+                >
                   <FormControl>
                     <SelectTrigger className="input-elegant">
                       <SelectValue placeholder="Selecione um fornecedor" />
@@ -322,13 +338,17 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="font-display text-primary-dark">Marca</FormLabel>
-                  <Select onValueChange={(value) => {
-                    if (value === '__nova_marca__') {
-                      handleNovaOpcao('marca');
-                    } else {
-                      field.onChange(value);
-                    }
-                  }} value={field.value || ""}>
+                  <Select 
+                    onValueChange={(value) => {
+                      console.log("Marca selecionada:", value);
+                      if (value === '__nova_marca__') {
+                        handleNovaOpcao('marca');
+                      } else {
+                        field.onChange(value);
+                      }
+                    }} 
+                    value={field.value || ""}
+                  >
                     <FormControl>
                       <SelectTrigger className="input-elegant">
                         <SelectValue placeholder="Selecione uma marca" />
@@ -359,13 +379,17 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="font-display text-primary-dark">Tipo</FormLabel>
-                  <Select onValueChange={(value) => {
-                    if (value === '__novo_tipo__') {
-                      handleNovaOpcao('tipo');
-                    } else {
-                      field.onChange(value);
-                    }
-                  }} value={field.value || ""}>
+                  <Select 
+                    onValueChange={(value) => {
+                      console.log("Tipo selecionado:", value);
+                      if (value === '__novo_tipo__') {
+                        handleNovaOpcao('tipo');
+                      } else {
+                        field.onChange(value);
+                      }
+                    }} 
+                    value={field.value || ""}
+                  >
                     <FormControl>
                       <SelectTrigger className="input-elegant">
                         <SelectValue placeholder="Selecione um tipo" />
@@ -513,7 +537,7 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
         </Dialog>
       </Form>
 
-      {/* Attachment section - only show if product has been created or is being edited */}
+      {/* Seção de anexos - mostrar sempre que tiver produtoId */}
       {produtoId && (
         <div className="border-t pt-6">
           <h3 className="font-display text-primary-dark text-lg font-medium mb-4">Anexos do Produto</h3>

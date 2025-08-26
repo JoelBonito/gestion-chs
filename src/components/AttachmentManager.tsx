@@ -15,7 +15,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
   entityId,
   title = "Anexos"
 }) => {
-  const { createAttachment } = useAttachments(entityType, entityId);
+  const { createAttachment, refetch } = useAttachments(entityType, entityId);
 
   const handleUploadSuccess = async (fileData: {
     file_name: string;
@@ -25,12 +25,23 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
     gdrive_download_link: string;
     file_size: number;
   }) => {
-    await createAttachment(fileData);
+    console.log("Upload bem-sucedido, dados do arquivo:", fileData);
+    try {
+      await createAttachment(fileData);
+      console.log("Anexo criado com sucesso, fazendo refresh da lista");
+      // Força atualização da lista de anexos
+      await refetch();
+    } catch (error) {
+      console.error("Erro ao criar anexo:", error);
+    }
   };
 
   if (!entityId) {
+    console.log("EntityId não fornecido, não renderizando AttachmentManager");
     return null;
   }
+
+  console.log("Renderizando AttachmentManager para:", { entityType, entityId });
 
   return (
     <div className="space-y-6">

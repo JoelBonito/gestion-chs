@@ -23,8 +23,12 @@ export const useAttachments = (entityType: string, entityId: string) => {
   const { toast } = useToast();
 
   const fetchAttachments = async () => {
-    if (!entityId) return;
+    if (!entityId) {
+      console.log("Sem entityId, não buscando anexos");
+      return;
+    }
     
+    console.log("Buscando anexos para:", { entityType, entityId });
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -35,8 +39,10 @@ export const useAttachments = (entityType: string, entityId: string) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log("Anexos encontrados:", data);
       setAttachments(data || []);
     } catch (error: any) {
+      console.error("Erro ao carregar anexos:", error);
       toast({
         title: "Erro ao carregar anexos",
         description: error.message,
@@ -55,6 +61,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
     gdrive_download_link: string;
     file_size: number;
   }) => {
+    console.log("Criando anexo:", { entityType, entityId, attachmentData });
     try {
       const { data, error } = await supabase
         .from('attachments')
@@ -67,6 +74,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
         .single();
 
       if (error) throw error;
+      console.log("Anexo criado:", data);
 
       await fetchAttachments();
       toast({
@@ -76,6 +84,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
 
       return data;
     } catch (error: any) {
+      console.error("Erro ao salvar anexo:", error);
       toast({
         title: "Erro ao salvar anexo",
         description: error.message,
@@ -109,6 +118,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
   };
 
   useEffect(() => {
+    console.log("useAttachments useEffect executado:", { entityType, entityId });
     fetchAttachments();
   }, [entityType, entityId]);
 
