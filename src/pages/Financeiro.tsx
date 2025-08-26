@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Download, TrendingUp, TrendingDown, DollarSign, AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,17 @@ import ContasPagar from "@/components/ContasPagar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { AttachmentManager } from "@/components/AttachmentManager";
+
+interface EncomendaFinanceiro {
+  id: string;
+  numero_encomenda: string;
+  cliente_nome: string;
+  valor_produtos: number;
+  valor_frete: number;
+  valor_total_caixa: number;
+  valor_pago: number;
+  saldo_devedor: number;
+}
 
 // Mock data para movimentações
 const movimentacoes = [
@@ -43,7 +55,7 @@ const movimentacoes = [
 
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState("resumo");
-  const [encomendas, setEncomendas] = useState<any[]>([]);
+  const [encomendas, setEncomendas] = useState<EncomendaFinanceiro[]>([]);
   const [showPagamentoDialog, setShowPagamentoDialog] = useState(false);
   const { toast } = useToast();
 
@@ -53,21 +65,30 @@ export default function Financeiro() {
         .from("encomendas")
         .select(`
           *,
-          clientes!inner(nome)
+          clientes!inner(nome),
+          freight_rates(rate)
         `)
         .gt("saldo_devedor", 0)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const encomendasFormatadas = data.map((encomenda: any) => ({
-        id: encomenda.id,
-        numero_encomenda: encomenda.numero_encomenda,
-        cliente_nome: encomenda.clientes.nome,
-        valor_total: parseFloat(encomenda.valor_total),
-        valor_pago: parseFloat(encomenda.valor_pago),
-        saldo_devedor: parseFloat(encomenda.saldo_devedor),
-      }));
+      const encomendasFormatadas = data.map((encomenda: any) => {
+        const valorProdutos = parseFloat(encomenda.valor_total) || 0;
+        const valorFrete = encomenda.freight_rates?.rate ? parseFloat(encomenda.freight_rates.rate) : 0;
+        const valorTotalCaixa = valorProdutos + valorFrete;
+        
+        return {
+          id: encomenda.id,
+          numero_encomenda: encomenda.numero_encomenda,
+          cliente_nome: encomenda.clientes.nome,
+          valor_produtos: valorProdutos,
+          valor_frete: valorFrete,
+          valor_total_caixa: valorTotalCaixa,
+          valor_pago: parseFloat(encomenda.valor_pago) || 0,
+          saldo_devedor: valorTotalCaixa - (parseFloat(encomenda.valor_pago) || 0),
+        };
+      });
 
       setEncomendas(encomendasFormatadas);
     } catch (error: any) {
@@ -88,10 +109,10 @@ export default function Financeiro() {
     fetchEncomendas();
   };
 
-  // Cálculos para o resumo
+  // Cálculos para o resumo - baseados no caixa (produtos + frete)
   const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor, 0);
   const totalPago = encomendas.reduce((sum, e) => sum + e.valor_pago, 0);
-  const totalGeral = encomendas.reduce((sum, e) => sum + e.valor_total, 0);
+  const totalCaixa = encomendas.reduce((sum, e) => sum + e.valor_total_caixa, 0);
 
   return (
     <div className="space-y-6">
@@ -122,12 +143,12 @@ export default function Financeiro() {
         </div>
       </div>
 
-      {/* Financial Stats */}
+      {/* Financial Stats - Baseados no Caixa (produtos + frete) */}
       <div className="grid gap-6 md:grid-cols-3">
         <StatCard
-          title="Total Geral"
-          value={`€${totalGeral.toFixed(2)}`}
-          subtitle="Valor total das encomendas"
+          title="Total Caixa"
+          value={`€${totalCaixa.toFixed(2)}`}
+          subtitle="Valor total (produtos + frete)"
           icon={<DollarSign className="h-6 w-6" />}
           variant="default"
         />
