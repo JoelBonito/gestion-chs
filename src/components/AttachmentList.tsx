@@ -4,19 +4,31 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Trash2, Eye, Download, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAttachments } from "@/hooks/useAttachments";
 import type { Attachment } from "@/types/domain";
 
-interface AttachmentListProps {
-  attachments: Attachment[];
-  onDelete: (attachment: Attachment) => void;
-  isLoading?: boolean;
+export interface AttachmentListProps {
+  entityType: 'produto' | 'encomenda' | 'financeiro';
+  entityId: string;
+  onRefresh?: () => void;
 }
 
 export const AttachmentList: React.FC<AttachmentListProps> = ({
-  attachments,
-  onDelete,
-  isLoading = false
+  entityType,
+  entityId,
+  onRefresh
 }) => {
+  const { attachments, isLoading, deleteAttachment } = useAttachments(entityType, entityId);
+
+  const handleDelete = async (attachment: Attachment) => {
+    try {
+      await deleteAttachment(attachment);
+      onRefresh?.();
+    } catch (error) {
+      console.error("Erro ao deletar anexo:", error);
+    }
+  };
+
   const formatFileSize = (bytes?: number | null) => {
     if (!bytes) return "0 B";
     const sizes = ["B", "KB", "MB", "GB"];
@@ -136,7 +148,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={() => onDelete(attachment)}
+              onClick={() => handleDelete(attachment)}
             >
               <Trash2 className="h-4 w-4" />
             </Button>

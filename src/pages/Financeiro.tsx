@@ -13,17 +13,7 @@ import ContasPagar from "@/components/ContasPagar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { AttachmentManager } from "@/components/AttachmentManager";
-
-interface EncomendaFinanceiro {
-  id: string;
-  numero_encomenda: string;
-  cliente_nome: string;
-  valor_produtos: number;
-  valor_frete: number;
-  valor_total_caixa: number;
-  valor_pago: number;
-  saldo_devedor: number;
-}
+import type { EncomendaFinanceiro } from "@/types/financeiro";
 
 // Mock data para movimentações
 const movimentacoes = [
@@ -73,20 +63,22 @@ export default function Financeiro() {
 
       if (error) throw error;
 
-      const encomendasFormatadas = data.map((encomenda: any) => {
-        const valorProdutos = parseFloat(encomenda.valor_total) || 0;
-        const valorFrete = encomenda.freight_rates?.rate ? parseFloat(encomenda.freight_rates.rate) : 0;
-        const valorTotalCaixa = valorProdutos + valorFrete;
+      const encomendasFormatadas: EncomendaFinanceiro[] = data.map((e: any) => {
+        const produtos = parseFloat(e.valor_total ?? 0);
+        const frete = parseFloat(e.freight_rates?.rate ?? 0);
+        const pago = parseFloat(e.valor_pago ?? 0);
+        const totalCaixa = produtos + frete;
         
         return {
-          id: encomenda.id,
-          numero_encomenda: encomenda.numero_encomenda,
-          cliente_nome: encomenda.clientes.nome,
-          valor_produtos: valorProdutos,
-          valor_frete: valorFrete,
-          valor_total_caixa: valorTotalCaixa,
-          valor_pago: parseFloat(encomenda.valor_pago) || 0,
-          saldo_devedor: valorTotalCaixa - (parseFloat(encomenda.valor_pago) || 0),
+          id: e.id,
+          numero_encomenda: e.numero_encomenda,
+          cliente_nome: e.clientes?.nome ?? '',
+          valor_total: produtos,
+          valor_pago: pago,
+          saldo_devedor: Math.max(produtos - pago, 0),
+          valor_frete: frete,
+          total_caixa: totalCaixa,
+          saldo_devedor_caixa: Math.max(totalCaixa - pago, 0),
         };
       });
 
@@ -110,9 +102,9 @@ export default function Financeiro() {
   };
 
   // Cálculos para o resumo - baseados no caixa (produtos + frete)
-  const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor, 0);
+  const totalReceber = encomendas.reduce((sum, e) => sum + (e.saldo_devedor_caixa ?? 0), 0);
   const totalPago = encomendas.reduce((sum, e) => sum + e.valor_pago, 0);
-  const totalCaixa = encomendas.reduce((sum, e) => sum + e.valor_total_caixa, 0);
+  const totalCaixa = encomendas.reduce((sum, e) => sum + (e.total_caixa ?? 0), 0);
 
   return (
     <div className="space-y-6">
