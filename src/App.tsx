@@ -14,7 +14,6 @@ import Fornecedores from "./pages/Fornecedores";
 import Encomendas from "./pages/Encomendas";
 import Producao from "./pages/Producao";
 import Financeiro from "./pages/Financeiro";
-import Frete from "./pages/Frete";
 import NotFound from "./pages/NotFound";
 
 // Create QueryClient instance outside component to avoid recreating on re-renders
@@ -51,7 +50,6 @@ const App = () => {
                           <Route path="/encomendas" element={<Encomendas />} />
                           <Route path="/producao" element={<Producao />} />
                           <Route path="/financeiro" element={<Financeiro />} />
-                          <Route path="/frete" element={<Frete />} />
                           <Route path="/welcome" element={<Index />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
