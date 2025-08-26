@@ -1,8 +1,9 @@
 
 import { useState, useEffect } from "react";
-import { Download, TrendingUp, TrendingDown, DollarSign, Plus } from "lucide-react";
+import { Download, TrendingUp, TrendingDown, DollarSign, AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import StatCard from "@/components/StatCard";
@@ -12,19 +13,37 @@ import ContasPagar from "@/components/ContasPagar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface MovimentacaoRecente {
-  id: string;
-  tipo: "recebimento" | "pagamento";
-  descricao: string;
-  valor: number;
-  data: string;
-  categoria: string;
-}
+// Mock data para movimentações
+const movimentacoes = [
+  {
+    id: "MOV-001",
+    tipo: "recebimento",
+    descricao: "Pagamento Beauty Gamma",
+    valor: 3200.00,
+    data: "2024-01-13",
+    categoria: "Vendas"
+  },
+  {
+    id: "MOV-002",
+    tipo: "pagamento",
+    descricao: "Pagamento Fábrica Premium Hair",
+    valor: -1500.00,
+    data: "2024-01-12",
+    categoria: "Fornecedores"
+  },
+  {
+    id: "MOV-003",
+    tipo: "recebimento",
+    descricao: "Pagamento Cosméticos Beta",
+    valor: 1800.00,
+    data: "2024-01-11",
+    categoria: "Vendas"
+  }
+];
 
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState("resumo");
   const [encomendas, setEncomendas] = useState<any[]>([]);
-  const [movimentacoes, setMovimentacoes] = useState<MovimentacaoRecente[]>([]);
   const [showPagamentoDialog, setShowPagamentoDialog] = useState(false);
   const { toast } = useToast();
 
@@ -60,81 +79,13 @@ export default function Financeiro() {
     }
   };
 
-  const fetchMovimentacoes = async () => {
-    try {
-      // Buscar pagamentos recebidos
-      const { data: pagamentos, error: pagamentosError } = await supabase
-        .from("pagamentos")
-        .select(`
-          *,
-          encomendas!inner(numero_encomenda, clientes!inner(nome))
-        `)
-        .order("data_pagamento", { ascending: false })
-        .limit(5);
-
-      if (pagamentosError) throw pagamentosError;
-
-      // Buscar pagamentos a fornecedores
-      const { data: pagamentosFornecedor, error: pagamentosFornecedorError } = await supabase
-        .from("pagamentos_fornecedor")
-        .select(`
-          *,
-          encomendas!inner(numero_encomenda, fornecedores!inner(nome))
-        `)
-        .order("data_pagamento", { ascending: false })
-        .limit(5);
-
-      if (pagamentosFornecedorError) throw pagamentosFornecedorError;
-
-      // Formatar movimentações
-      const movimentacoesFormatadas: MovimentacaoRecente[] = [];
-
-      // Adicionar pagamentos recebidos
-      pagamentos?.forEach((pagamento: any) => {
-        movimentacoesFormatadas.push({
-          id: `PAG-${pagamento.id}`,
-          tipo: "recebimento",
-          descricao: `Pagamento ${pagamento.encomendas.clientes.nome} - ${pagamento.encomendas.numero_encomenda}`,
-          valor: parseFloat(pagamento.valor_pagamento),
-          data: pagamento.data_pagamento,
-          categoria: "Vendas"
-        });
-      });
-
-      // Adicionar pagamentos a fornecedores
-      pagamentosFornecedor?.forEach((pagamento: any) => {
-        movimentacoesFormatadas.push({
-          id: `PAGF-${pagamento.id}`,
-          tipo: "pagamento",
-          descricao: `Pagamento ${pagamento.encomendas.fornecedores.nome} - ${pagamento.encomendas.numero_encomenda}`,
-          valor: -parseFloat(pagamento.valor_pagamento),
-          data: pagamento.data_pagamento,
-          categoria: "Fornecedores"
-        });
-      });
-
-      // Ordenar por data (mais recente primeiro)
-      movimentacoesFormatadas.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-
-      setMovimentacoes(movimentacoesFormatadas.slice(0, 5));
-    } catch (error: any) {
-      toast({
-        title: "Erro ao carregar movimentações",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   useEffect(() => {
     fetchEncomendas();
-    fetchMovimentacoes();
   }, []);
 
   const handlePagamentoSuccess = () => {
     setShowPagamentoDialog(false);
     fetchEncomendas();
-    fetchMovimentacoes();
   };
 
   // Cálculos para o resumo
@@ -207,7 +158,7 @@ export default function Financeiro() {
         </TabsList>
 
         <TabsContent value="resumo" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-1">
+          <div className="grid gap-6 lg:grid-cols-2">
             {/* Recent Movements */}
             <Card className="shadow-card">
               <CardHeader>
@@ -216,23 +167,36 @@ export default function Financeiro() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {movimentacoes.length > 0 ? (
-                    movimentacoes.map((mov) => (
-                      <div key={mov.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                        <div className="space-y-1">
-                          <p className="font-medium text-sm">{mov.descricao}</p>
-                          <p className="text-xs text-muted-foreground">{mov.data} • {mov.categoria}</p>
-                        </div>
-                        <div className={`font-bold text-sm ${mov.valor > 0 ? 'text-success' : 'text-destructive'}`}>
-                          {mov.valor > 0 ? '+' : ''}€{Math.abs(mov.valor).toFixed(2)}
-                        </div>
+                  {movimentacoes.map((mov) => (
+                    <div key={mov.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                      <div className="space-y-1">
+                        <p className="font-medium text-sm">{mov.descricao}</p>
+                        <p className="text-xs text-muted-foreground">{mov.data} • {mov.categoria}</p>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>Nenhuma movimentação recente encontrada</p>
+                      <div className={`font-bold text-sm ${mov.valor > 0 ? 'text-success' : 'text-destructive'}`}>
+                        {mov.valor > 0 ? '+' : ''}€{Math.abs(mov.valor).toFixed(2)}
+                      </div>
                     </div>
-                  )}
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Alerts */}
+            <Card className="shadow-card">
+              <CardHeader>
+                <CardTitle>Alertas Financeiros</CardTitle>
+                <CardDescription>Itens que precisam de atenção</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-start p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                    <AlertCircle className="h-5 w-5 text-warning mr-3 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-sm">Pagamentos pendentes</p>
+                      <p className="text-xs text-muted-foreground">{encomendas.length} encomendas com saldo devedor</p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
