@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,6 +19,12 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
   const [pdfPreview, setPdfPreview] = useState<{ url: string; fileName: string } | null>(null);
   
   const canDelete = hasRole('admin') || hasRole('ops');
+
+  // Função para construir URL correta do Supabase Storage
+  const getStorageUrl = (storagePath: string) => {
+    const baseUrl = 'https://uxlxxcwsgfwocvfqdykf.supabase.co/storage/v1/object/public/attachments';
+    return `${baseUrl}/${storagePath}`;
+  };
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -52,38 +57,46 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
   const handlePreview = (attachment: any) => {
     console.log("=== PREVIEW CLICKED ===");
     console.log("AttachmentList - Visualizando anexo:", attachment);
-    console.log("AttachmentList - URL do arquivo:", attachment.storage_url);
+    
+    // Usar storage_path para construir URL correta
+    const correctUrl = getStorageUrl(attachment.storage_path);
+    console.log("AttachmentList - URL original:", attachment.storage_url);
+    console.log("AttachmentList - URL corrigida:", correctUrl);
+    console.log("AttachmentList - Storage path:", attachment.storage_path);
     console.log("AttachmentList - Tipo do arquivo:", attachment.file_type);
     
     if (attachment.file_type.startsWith('image/')) {
       console.log("AttachmentList - Abrindo imagem em modal");
       setImagePreview({
-        url: attachment.storage_url,
+        url: correctUrl,
         fileName: attachment.file_name
       });
     } else if (attachment.file_type === 'application/pdf') {
-      console.log("AttachmentList - Abrindo PDF em modal:", attachment.storage_url);
+      console.log("AttachmentList - Abrindo PDF em modal com URL corrigida:", correctUrl);
       setPdfPreview({
-        url: attachment.storage_url,
+        url: correctUrl,
         fileName: attachment.file_name
       });
     } else {
       console.log("AttachmentList - Abrindo arquivo em nova aba");
-      window.open(attachment.storage_url, '_blank');
+      window.open(correctUrl, '_blank');
     }
   };
 
-  const handleOpenInNewTab = (url: string) => {
-    console.log("AttachmentList - Abrindo em nova aba:", url);
-    window.open(url, '_blank');
+  const handleOpenInNewTab = (storagePath: string) => {
+    const correctUrl = getStorageUrl(storagePath);
+    console.log("AttachmentList - Abrindo em nova aba com URL corrigida:", correctUrl);
+    window.open(correctUrl, '_blank');
   };
 
   const handleDownload = async (attachment: any) => {
     console.log("AttachmentList - Fazendo download do anexo:", attachment);
-    console.log("AttachmentList - URL de download:", attachment.storage_url);
+    
+    const correctUrl = getStorageUrl(attachment.storage_path);
+    console.log("AttachmentList - URL de download corrigida:", correctUrl);
     
     try {
-      const response = await fetch(attachment.storage_url);
+      const response = await fetch(correctUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -98,7 +111,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
     } catch (error) {
       console.error("AttachmentList - Erro ao fazer download:", error);
       // Fallback: tentar abrir em nova aba
-      window.open(attachment.storage_url, '_blank');
+      window.open(correctUrl, '_blank');
     }
   };
 
@@ -156,7 +169,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleOpenInNewTab(attachment.storage_url)}
+                      onClick={() => handleOpenInNewTab(attachment.storage_path)}
                       title="Abrir em nova aba"
                     >
                       <ExternalLink className="w-4 h-4" />
@@ -235,7 +248,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   className="max-w-full max-h-[60vh] object-contain rounded"
                   onError={(e) => {
                     console.error('AttachmentList - Erro ao carregar imagem:', imagePreview.url);
-                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDEyQzIxIDEzLjEwNDYgMjAuMTA0NiAxNCAE5IDEzSDdDNS44OTU0MyAxNCA1IDEzLjEwNDYgNSAxMlY3QzUgNS44OTU0MyA1Ljg5NTQzIDUgNyA1SDEyQzEzLjEwNDYgNSAxNCA1Ljg5NTQzIDE0IDdWMTJaIiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
+                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDEyQzIxIDEzLjEwNDYgMjAuMTA0NiAxNCAZIDEzSDdDNS44OTU0MyAxNCA1IDEzLjEwNDYgNSAxMlY3QzUgNS44OTU0MyA1Ljg5NTQzIDUgNyA1SDEyQzEzLjEwNDYgNSAxNCA1Ljg5NTQzIDE0IDdWMTJaIiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
                   }}
                 />
               </div>
@@ -257,7 +270,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleOpenInNewTab(pdfPreview.url)}
+                    onClick={() => handleOpenInNewTab(pdfPreview.url.split('/attachments/')[1])}
                     title="Abrir em nova aba"
                   >
                     <ExternalLink className="w-4 h-4 mr-1" />
@@ -284,7 +297,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   style={{ border: 'none', minHeight: '600px' }}
                   title={pdfPreview.fileName}
                   onLoad={() => {
-                    console.log('AttachmentList - PDF carregado com sucesso no iframe');
+                    console.log('AttachmentList - PDF carregado com sucesso no iframe com URL:', pdfPreview.url);
                   }}
                   onError={(e) => {
                     console.error('AttachmentList - Erro ao carregar PDF no iframe:', pdfPreview.url, e);
@@ -297,7 +310,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   <Button
                     variant="link"
                     size="sm"
-                    onClick={() => handleOpenInNewTab(pdfPreview.url)}
+                    onClick={() => handleOpenInNewTab(pdfPreview.url.split('/attachments/')[1])}
                     className="p-0 h-auto text-sm"
                   >
                     Clique aqui para abrir em nova aba
