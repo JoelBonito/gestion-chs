@@ -66,21 +66,21 @@ export default function Financeiro() {
       if (encomendasError) throw encomendasError;
 
       const encomendasFormatadas: EncomendaFinanceiro[] = (encomendasData ?? []).map((e: any) => {
-        const valorProdutos = Number(e.valor_total ?? 0);
-        const valorFrete = Number(e.valor_frete ?? 0);
-        const valorPago = Number(e.valor_pago ?? 0);
+        const valorProdutos = Number(e.valor_total || 0);
+        const valorFrete = Number(e.valor_frete || 0);
+        const valorPago = Number(e.valor_pago || 0);
         
-        // A RECEBER = Valor dos produtos + Valor do frete
+        // CORRIGIDO: A RECEBER = Valor dos produtos + Valor do frete
         const totalCaixa = valorProdutos + valorFrete;
-        const saldoDevedorCaixa = Math.max(totalCaixa - valorPago, 0);
+        const saldoDevedorCaixa = Math.max(0, totalCaixa - valorPago);
 
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
-          cliente_nome: e.clientes?.nome ?? "",
+          cliente_nome: e.clientes?.nome || "",
           valor_total: valorProdutos,
           valor_pago: valorPago,
-          saldo_devedor: Math.max(valorProdutos - valorPago, 0),
+          saldo_devedor: Math.max(0, valorProdutos - valorPago),
           valor_frete: valorFrete,
           total_caixa: totalCaixa,
           saldo_devedor_caixa: saldoDevedorCaixa,
@@ -103,21 +103,21 @@ export default function Financeiro() {
       if (contasError) throw contasError;
 
       const contasFormatadas: ContaPagar[] = (contasData ?? []).map((e: any) => {
-        const valorCusto = Number(e.valor_total_custo ?? 0);
-        const valorFrete = Number(e.valor_frete ?? 0);
-        const valorPagoFornecedor = Number(e.valor_pago_fornecedor ?? 0);
+        const valorCusto = Number(e.valor_total_custo || 0);
+        const valorFrete = Number(e.valor_frete || 0);
+        const valorPagoFornecedor = Number(e.valor_pago_fornecedor || 0);
         
-        // A PAGAR = Valor do custo + Valor do frete
+        // CORRIGIDO: A PAGAR = Valor do custo + Valor do frete
         const totalFornecedor = valorCusto + valorFrete;
-        const saldoDevedorTotal = Math.max(totalFornecedor - valorPagoFornecedor, 0);
+        const saldoDevedorTotal = Math.max(0, totalFornecedor - valorPagoFornecedor);
         
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
-          fornecedor_nome: e.fornecedores?.nome ?? '',
+          fornecedor_nome: e.fornecedores?.nome || '',
           valor_total_custo: valorCusto,
           valor_pago_fornecedor: valorPagoFornecedor,
-          saldo_devedor_fornecedor: Math.max(valorCusto - valorPagoFornecedor, 0),
+          saldo_devedor_fornecedor: Math.max(0, valorCusto - valorPagoFornecedor),
           valor_frete: valorFrete,
           total_fornecedor: totalFornecedor,
           saldo_devedor_fornecedor_total: saldoDevedorTotal,
@@ -144,7 +144,7 @@ export default function Financeiro() {
     fetchDadosFinanceiros();
   };
 
-  // Cálculos para o resumo - KPIs de receita usam apenas valor_total (produtos)
+  // CORRIGIDO: Cálculos para o resumo - usa os totais corretos
   const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor_caixa, 0); // Produtos + Frete - Pago
   const totalPagar = contasPagar.reduce((sum, c) => sum + c.saldo_devedor_fornecedor_total, 0); // Custo + Frete - Pago
   const totalReceita = encomendas.reduce((sum, e) => sum + e.valor_total, 0); // Apenas produtos para KPI

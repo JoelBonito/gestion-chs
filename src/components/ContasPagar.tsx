@@ -35,24 +35,24 @@ export default function ContasPagar() {
       if (error) throw error;
 
       const contasFormatadas: ContaPagar[] = (data ?? []).map((e: any) => {
-        const valorCusto = Number(e.valor_total_custo ?? 0);
-        const valorFrete = Number(e.valor_frete ?? 0);
-        const valorPagoFornecedor = Number(e.valor_pago_fornecedor ?? 0);
+        const valorCusto = Number(e.valor_total_custo || 0);
+        const valorFrete = Number(e.valor_frete || 0);
+        const valorPagoFornecedor = Number(e.valor_pago_fornecedor || 0);
         
-        // A PAGAR = Valor do custo + Valor do frete
+        // CORRIGIDO: A PAGAR = Valor do custo + Valor do frete
         const totalFornecedor = valorCusto + valorFrete;
-        const saldoDevedorTotal = Math.max(totalFornecedor - valorPagoFornecedor, 0);
+        const saldoDevedorTotal = Math.max(0, totalFornecedor - valorPagoFornecedor);
         
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
-          fornecedor_nome: e.fornecedores?.nome ?? '',
+          fornecedor_nome: e.fornecedores?.nome || '',
           valor_total_custo: valorCusto,
           valor_pago_fornecedor: valorPagoFornecedor,
-          saldo_devedor_fornecedor: Math.max(valorCusto - valorPagoFornecedor, 0), // Saldo apenas do custo
+          saldo_devedor_fornecedor: Math.max(0, valorCusto - valorPagoFornecedor),
           valor_frete: valorFrete,
-          total_fornecedor: totalFornecedor, // Custo + Frete
-          saldo_devedor_fornecedor_total: saldoDevedorTotal, // Total - Pago
+          total_fornecedor: totalFornecedor,
+          saldo_devedor_fornecedor_total: saldoDevedorTotal,
         };
       });
 

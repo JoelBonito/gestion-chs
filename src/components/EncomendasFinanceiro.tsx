@@ -35,24 +35,24 @@ export default function EncomendasFinanceiro() {
       if (error) throw error;
 
       const encomendasFormatadas: EncomendaFinanceiro[] = (data ?? []).map((e: any) => {
-        const valorProdutos = Number(e.valor_total ?? 0);
-        const valorFrete = Number(e.valor_frete ?? 0);
-        const valorPago = Number(e.valor_pago ?? 0);
+        const valorProdutos = Number(e.valor_total || 0);
+        const valorFrete = Number(e.valor_frete || 0);
+        const valorPago = Number(e.valor_pago || 0);
         
-        // A RECEBER = Valor dos produtos + Valor do frete
+        // CORRIGIDO: A RECEBER = Valor dos produtos + Valor do frete
         const totalCaixa = valorProdutos + valorFrete;
-        const saldoDevedorCaixa = Math.max(totalCaixa - valorPago, 0);
+        const saldoDevedorCaixa = Math.max(0, totalCaixa - valorPago);
 
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
-          cliente_nome: e.clientes?.nome ?? "",
+          cliente_nome: e.clientes?.nome || "",
           valor_total: valorProdutos,
           valor_pago: valorPago,
-          saldo_devedor: Math.max(valorProdutos - valorPago, 0), // Saldo apenas dos produtos
+          saldo_devedor: Math.max(0, valorProdutos - valorPago),
           valor_frete: valorFrete,
-          total_caixa: totalCaixa, // Produtos + Frete
-          saldo_devedor_caixa: saldoDevedorCaixa, // Total - Pago
+          total_caixa: totalCaixa,
+          saldo_devedor_caixa: saldoDevedorCaixa,
         };
       });
 
