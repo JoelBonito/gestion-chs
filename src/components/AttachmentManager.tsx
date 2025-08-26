@@ -31,10 +31,12 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       const result = await createAttachment(fileData);
       console.log("Anexo criado com sucesso no banco de dados:", result);
       
-      // Força atualização imediata da lista de anexos
+      // Força atualização imediata da lista de anexos com um pequeno delay
       console.log("Fazendo refresh da lista de anexos...");
-      await refetch();
-      console.log("Lista de anexos atualizada com sucesso");
+      setTimeout(async () => {
+        await refetch();
+        console.log("Lista de anexos atualizada com sucesso");
+      }, 100);
     } catch (error) {
       console.error("Erro ao criar anexo no banco:", error);
       throw error;
@@ -57,8 +59,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       />
       <AttachmentList 
         entityType={entityType} 
-        entityId={entityId} 
-        key={`${entityType}-${entityId}`}
+        entityId={entityId}
       />
     </div>
   );
