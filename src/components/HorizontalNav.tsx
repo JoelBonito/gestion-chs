@@ -1,67 +1,115 @@
 
-import { NavLink, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useToast } from "@/hooks/use-toast";
 import { 
   LayoutDashboard, 
   Package, 
   Users, 
-  Building2, 
-  DollarSign,
-  ShoppingBag,
-  Factory,
-  Box,
+  Factory, 
+  ShoppingCart, 
+  Wrench, 
+  CreditCard, 
+  Truck,
+  LogOut,
+  User
 } from "lucide-react";
-
-const navigationItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Produtos", url: "/produtos", icon: ShoppingBag },
-  { title: "Clientes", url: "/clientes", icon: Users },
-  { title: "Fornecedores", url: "/fornecedores", icon: Building2 },
-  { title: "Encomendas", url: "/encomendas", icon: Package },
-  { title: "Financeiro", url: "/financeiro", icon: DollarSign },
-];
 
 export function HorizontalNav() {
   const location = useLocation();
-  const currentPath = location.pathname;
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { roles } = useUserRole();
+  const { toast } = useToast();
 
-  const isActive = (path: string) => currentPath === path;
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Até a próxima!",
+      });
+      navigate("/login");
+    } catch (error) {
+      console.error("Erro no logout:", error);
+    }
+  };
+
+  const navigation = [
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: "Produtos", href: "/produtos", icon: Package },
+    { name: "Clientes", href: "/clientes", icon: Users },
+    { name: "Fornecedores", href: "/fornecedores", icon: Factory },
+    { name: "Encomendas", href: "/encomendas", icon: ShoppingCart },
+    { name: "Produção", href: "/producao", icon: Wrench },
+    { name: "Financeiro", href: "/financeiro", icon: CreditCard },
+    { name: "Frete", href: "/frete", icon: Truck },
+  ];
 
   return (
-    <nav className="flex items-center justify-between bg-background border-b border-border px-6 py-4">
-      {/* Logo/Brand Section */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-10 h-10">
-          <img 
-            src="/lovable-uploads/5a7fe4c3-0b51-4642-93c2-a36f8321067f.png" 
-            alt="CHS Logo" 
-            className="w-8 h-8 object-contain"
-          />
-        </div>
-        <div className="flex flex-col">
-          <h1 className="text-xl font-bold text-primary font-display">GESTION CHS</h1>
-          <span className="text-xs text-muted-foreground font-body">Cosméticos Capilares</span>
-        </div>
-      </div>
+    <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/50 sticky top-0 z-50">
+      <div className="container mx-auto">
+        <div className="flex h-16 items-center justify-between px-6">
+          <div className="flex items-center space-x-8">
+            <Link to="/dashboard" className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+              Sistema
+            </Link>
+            
+            <div className="hidden md:flex space-x-1">
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.href;
+                
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    }`}
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
 
-      {/* Navigation Items */}
-      <div className="flex items-center gap-1">
-        {navigationItems.map((item) => (
-          <NavLink
-            key={item.title}
-            to={item.url}
-            end
-            className={({ isActive }) =>
-              `flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-button"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
-              }`
-            }
-          >
-            <item.icon className="h-4 w-4" />
-            <span>{item.title}</span>
-          </NavLink>
-        ))}
+          {user && (
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <User className="h-4 w-4" />
+                <span className="text-sm font-medium">{user.email}</span>
+                {roles.length > 0 && (
+                  <div className="flex gap-1">
+                    {roles.map((role) => (
+                      <Badge key={role} variant="secondary" className="text-xs">
+                        {role}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );
