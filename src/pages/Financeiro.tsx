@@ -11,7 +11,6 @@ import EncomendasFinanceiro from "@/components/EncomendasFinanceiro";
 import ContasPagar from "@/components/ContasPagar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AttachmentManager } from "@/components/AttachmentManager";
 import type { EncomendaFinanceiro } from "@/types/financeiro";
 
 // Mock data para movimentações
@@ -198,11 +197,10 @@ export default function Financeiro() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
           <TabsTrigger value="encomendas">A Receber</TabsTrigger>
           <TabsTrigger value="pagar">A Pagar</TabsTrigger>
-          <TabsTrigger value="anexos">Anexos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumo" className="space-y-6">
@@ -257,23 +255,6 @@ export default function Financeiro() {
 
         <TabsContent value="pagar">
           <ContasPagar />
-        </TabsContent>
-
-        <TabsContent value="anexos">
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Documentos Financeiros</CardTitle>
-              <CardDescription>
-                Gerencie documentos e comprovantes relacionados ao financeiro
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AttachmentManager 
-                entityType="financeiro" 
-                entityId="financial-docs"
-              />
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
