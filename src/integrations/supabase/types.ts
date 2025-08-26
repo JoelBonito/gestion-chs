@@ -44,6 +44,48 @@ export type Database = {
         }
         Relationships: []
       }
+      attachments: {
+        Row: {
+          created_at: string | null
+          entity_id: string
+          entity_type: string
+          file_name: string
+          file_size: number | null
+          file_type: string
+          gdrive_download_link: string
+          gdrive_file_id: string
+          gdrive_view_link: string
+          id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_id: string
+          entity_type: string
+          file_name: string
+          file_size?: number | null
+          file_type: string
+          gdrive_download_link: string
+          gdrive_file_id: string
+          gdrive_view_link: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string
+          gdrive_download_link?: string
+          gdrive_file_id?: string
+          gdrive_view_link?: string
+          id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       clientes: {
         Row: {
           active: boolean

@@ -7,10 +7,11 @@ interface Attachment {
   id: string;
   entity_type: string;
   entity_id: string;
+  file_name: string;
+  file_type: string;
   gdrive_file_id: string;
-  name: string;
-  mime_type: string;
-  web_view_link: string;
+  gdrive_view_link: string;
+  gdrive_download_link: string;
   file_size: number;
   uploaded_by: string;
   created_at: string;
@@ -26,16 +27,15 @@ export const useAttachments = (entityType: string, entityId: string) => {
     
     setIsLoading(true);
     try {
-      // Use direct query since types might not be updated yet
       const { data, error } = await supabase
-        .from('attachments' as any)
+        .from('attachments')
         .select('*')
         .eq('entity_type', entityType)
         .eq('entity_id', entityId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAttachments((data as unknown as Attachment[]) || []);
+      setAttachments(data || []);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar anexos",
@@ -48,15 +48,16 @@ export const useAttachments = (entityType: string, entityId: string) => {
   };
 
   const createAttachment = async (attachmentData: {
+    file_name: string;
+    file_type: string;
     gdrive_file_id: string;
-    name: string;
-    mime_type: string;
-    web_view_link: string;
+    gdrive_view_link: string;
+    gdrive_download_link: string;
     file_size: number;
   }) => {
     try {
       const { data, error } = await supabase
-        .from('attachments' as any)
+        .from('attachments')
         .insert([{
           entity_type: entityType,
           entity_id: entityId,
@@ -87,7 +88,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
   const deleteAttachment = async (attachmentId: string) => {
     try {
       const { error } = await supabase
-        .from('attachments' as any)
+        .from('attachments')
         .delete()
         .eq('id', attachmentId);
 

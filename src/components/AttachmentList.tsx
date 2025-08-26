@@ -27,11 +27,11 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (mimeType: string) => {
-    if (mimeType === 'application/pdf') {
+  const getFileIcon = (fileType: string) => {
+    if (fileType === 'pdf') {
       return <FileText className="h-4 w-4" />;
     }
-    if (mimeType.startsWith('image/')) {
+    if (fileType === 'jpg' || fileType === 'jpeg') {
       return <Image className="h-4 w-4" />;
     }
     return <FileText className="h-4 w-4" />;
@@ -41,9 +41,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
     window.open(webViewLink, '_blank');
   };
 
-  const handleDownload = (webViewLink: string, fileName: string) => {
-    // Convert view link to download link
-    const downloadLink = webViewLink.replace('/view', '/export?format=pdf');
+  const handleDownload = (downloadLink: string, fileName: string) => {
     const link = document.createElement('a');
     link.href = downloadLink;
     link.download = fileName;
@@ -79,12 +77,12 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
           {attachments.map((attachment) => (
             <div key={attachment.id} className="flex items-center justify-between p-3 border rounded-lg">
               <div className="flex items-center gap-3">
-                {getFileIcon(attachment.mime_type)}
+                {getFileIcon(attachment.file_type)}
                 <div>
-                  <p className="font-medium text-sm">{attachment.name}</p>
+                  <p className="font-medium text-sm">{attachment.file_name}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Badge variant="secondary" className="text-xs">
-                      {attachment.mime_type === 'application/pdf' ? 'PDF' : 'JPG'}
+                      {attachment.file_type.toUpperCase()}
                     </Badge>
                     <span>{formatFileSize(attachment.file_size)}</span>
                     <span>•</span>
@@ -97,7 +95,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleView(attachment.web_view_link)}
+                  onClick={() => handleView(attachment.gdrive_view_link)}
                 >
                   <Eye className="h-4 w-4" />
                 </Button>
@@ -105,7 +103,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => handleDownload(attachment.web_view_link, attachment.name)}
+                  onClick={() => handleDownload(attachment.gdrive_download_link, attachment.file_name)}
                 >
                   <Download className="h-4 w-4" />
                 </Button>

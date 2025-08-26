@@ -8,10 +8,11 @@ import { useUserRole } from '@/hooks/useUserRole';
 
 interface AttachmentUploadProps {
   onUploadSuccess: (fileData: {
+    file_name: string;
+    file_type: string;
     gdrive_file_id: string;
-    name: string;
-    mime_type: string;
-    web_view_link: string;
+    gdrive_view_link: string;
+    gdrive_download_link: string;
     file_size: number;
   }) => void;
 }
@@ -35,11 +36,16 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSucc
     try {
       const result = await uploadFile(file);
       if (result) {
+        // Extract file type from mime type
+        const fileType = result.mimeType === 'application/pdf' ? 'pdf' : 
+                         result.mimeType === 'image/jpeg' ? 'jpg' : 'jpeg';
+        
         onUploadSuccess({
+          file_name: result.name,
+          file_type: fileType,
           gdrive_file_id: result.fileId,
-          name: result.name,
-          mime_type: result.mimeType,
-          web_view_link: result.webViewLink,
+          gdrive_view_link: result.webViewLink,
+          gdrive_download_link: result.downloadLink,
           file_size: result.size
         });
       }

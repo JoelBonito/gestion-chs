@@ -18,10 +18,11 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
   const { createAttachment } = useAttachments(entityType, entityId);
 
   const handleUploadSuccess = async (fileData: {
+    file_name: string;
+    file_type: string;
     gdrive_file_id: string;
-    name: string;
-    mime_type: string;
-    web_view_link: string;
+    gdrive_view_link: string;
+    gdrive_download_link: string;
     file_size: number;
   }) => {
     await createAttachment(fileData);

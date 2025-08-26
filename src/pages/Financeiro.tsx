@@ -223,7 +223,7 @@ export default function Financeiro() {
             <CardContent>
               <AttachmentManager 
                 entityType="financeiro" 
-                entityId="financial-docs" // Using a fixed ID for financial documents
+                entityId="financial-docs"
               />
             </CardContent>
           </Card>

@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 interface GoogleDriveUploadResult {
   fileId: string;
   webViewLink: string;
+  downloadLink: string;
   name: string;
   mimeType: string;
   size: number;
@@ -45,25 +46,31 @@ export const useGoogleDrive = () => {
     setUploadProgress(0);
 
     try {
-      // Simulate upload progress for now
+      // Simulate upload progress
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      // TODO: Implement actual Google Drive API integration
-      // For now, we'll simulate the response
+      // Mock Google Drive API integration for MVP
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       clearInterval(progressInterval);
       setUploadProgress(100);
 
+      const mockFileId = `gdrive_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const mockResult: GoogleDriveUploadResult = {
-        fileId: `gdrive_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        webViewLink: `https://drive.google.com/file/d/mock_${Date.now()}/view`,
+        fileId: mockFileId,
+        webViewLink: `https://drive.google.com/file/d/${mockFileId}/view`,
+        downloadLink: `https://drive.google.com/uc?export=download&id=${mockFileId}`,
         name: file.name,
         mimeType: file.type,
         size: file.size
       };
+
+      toast({
+        title: "Upload realizado com sucesso",
+        description: `Arquivo ${file.name} enviado para o Google Drive.`,
+      });
 
       return mockResult;
     } catch (error) {
