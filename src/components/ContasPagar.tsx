@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +27,6 @@ export default function ContasPagar() {
           numero_encomenda,
           valor_total_custo,
           valor_pago_fornecedor,
-          saldo_devedor_fornecedor,
           valor_frete,
           fornecedores(id, nome)
         `)
@@ -37,25 +35,27 @@ export default function ContasPagar() {
       if (error) throw error;
 
       const contasFormatadas: ContaPagar[] = (data ?? []).map((e: any) => {
-        const custoTotal = Number(e.valor_total_custo ?? 0);
-        const frete = Number(e.valor_frete ?? 0);
-        const pagoFornecedor = Number(e.valor_pago_fornecedor ?? 0);
-        const totalFornecedor = custoTotal + frete;
+        const valorCusto = Number(e.valor_total_custo ?? 0);
+        const valorFrete = Number(e.valor_frete ?? 0);
+        const valorPagoFornecedor = Number(e.valor_pago_fornecedor ?? 0);
+        
+        // A PAGAR = Valor do custo + Valor do frete
+        const totalFornecedor = valorCusto + valorFrete;
+        const saldoDevedorTotal = Math.max(totalFornecedor - valorPagoFornecedor, 0);
         
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
           fornecedor_nome: e.fornecedores?.nome ?? '',
-          valor_total_custo: custoTotal,
-          valor_pago_fornecedor: pagoFornecedor,
-          saldo_devedor_fornecedor: Math.max(custoTotal - pagoFornecedor, 0),
-          valor_frete: frete,
-          total_fornecedor: totalFornecedor,
-          saldo_devedor_fornecedor_total: Math.max(totalFornecedor - pagoFornecedor, 0),
+          valor_total_custo: valorCusto,
+          valor_pago_fornecedor: valorPagoFornecedor,
+          saldo_devedor_fornecedor: Math.max(valorCusto - valorPagoFornecedor, 0), // Saldo apenas do custo
+          valor_frete: valorFrete,
+          total_fornecedor: totalFornecedor, // Custo + Frete
+          saldo_devedor_fornecedor_total: saldoDevedorTotal, // Total - Pago
         };
       });
 
-      // Show all orders for now, but highlight those with pending balance
       setContas(contasFormatadas);
     } catch (error: any) {
       toast({
@@ -101,7 +101,7 @@ export default function ContasPagar() {
         <CardHeader>
           <CardTitle>Contas a Pagar</CardTitle>
           <CardDescription>
-            Todas as encomendas (Total Fornecedor = Custo + Frete)
+            A pagar = Valor do custo + Valor do frete
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -117,7 +117,7 @@ export default function ContasPagar() {
                 <div>Fornecedor</div>
                 <div className="text-right">Custo</div>
                 <div className="text-right">Frete</div>
-                <div className="text-right">Total Fornecedor</div>
+                <div className="text-right">Total a Pagar</div>
                 <div className="text-right">Pago</div>
                 <div className="text-right">Saldo</div>
                 <div className="text-center">Ações</div>

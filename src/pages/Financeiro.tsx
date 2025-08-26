@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Download, TrendingUp, TrendingDown, DollarSign, AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -59,7 +58,6 @@ export default function Financeiro() {
           numero_encomenda,
           valor_total,
           valor_pago,
-          saldo_devedor,
           valor_frete,
           clientes(id, nome)
         `)
@@ -68,20 +66,24 @@ export default function Financeiro() {
       if (encomendasError) throw encomendasError;
 
       const encomendasFormatadas: EncomendaFinanceiro[] = (encomendasData ?? []).map((e: any) => {
-        const produtos = Number(e.valor_total ?? 0);
-        const frete = Number(e.valor_frete ?? 0);
-        const pago = Number(e.valor_pago ?? 0);
+        const valorProdutos = Number(e.valor_total ?? 0);
+        const valorFrete = Number(e.valor_frete ?? 0);
+        const valorPago = Number(e.valor_pago ?? 0);
+        
+        // A RECEBER = Valor dos produtos + Valor do frete
+        const totalCaixa = valorProdutos + valorFrete;
+        const saldoDevedorCaixa = Math.max(totalCaixa - valorPago, 0);
 
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
           cliente_nome: e.clientes?.nome ?? "",
-          valor_total: produtos,
-          valor_pago: pago,
-          saldo_devedor: Math.max(produtos - pago, 0),
-          valor_frete: frete,
-          total_caixa: produtos + frete,
-          saldo_devedor_caixa: Math.max(produtos + frete - pago, 0),
+          valor_total: valorProdutos,
+          valor_pago: valorPago,
+          saldo_devedor: Math.max(valorProdutos - valorPago, 0),
+          valor_frete: valorFrete,
+          total_caixa: totalCaixa,
+          saldo_devedor_caixa: saldoDevedorCaixa,
         };
       });
 
@@ -93,7 +95,6 @@ export default function Financeiro() {
           numero_encomenda,
           valor_total_custo,
           valor_pago_fornecedor,
-          saldo_devedor_fornecedor,
           valor_frete,
           fornecedores(id, nome)
         `)
@@ -102,21 +103,24 @@ export default function Financeiro() {
       if (contasError) throw contasError;
 
       const contasFormatadas: ContaPagar[] = (contasData ?? []).map((e: any) => {
-        const custoTotal = Number(e.valor_total_custo ?? 0);
-        const frete = Number(e.valor_frete ?? 0);
-        const pagoFornecedor = Number(e.valor_pago_fornecedor ?? 0);
-        const totalFornecedor = custoTotal + frete;
+        const valorCusto = Number(e.valor_total_custo ?? 0);
+        const valorFrete = Number(e.valor_frete ?? 0);
+        const valorPagoFornecedor = Number(e.valor_pago_fornecedor ?? 0);
+        
+        // A PAGAR = Valor do custo + Valor do frete
+        const totalFornecedor = valorCusto + valorFrete;
+        const saldoDevedorTotal = Math.max(totalFornecedor - valorPagoFornecedor, 0);
         
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
           fornecedor_nome: e.fornecedores?.nome ?? '',
-          valor_total_custo: custoTotal,
-          valor_pago_fornecedor: pagoFornecedor,
-          saldo_devedor_fornecedor: Math.max(custoTotal - pagoFornecedor, 0),
-          valor_frete: frete,
+          valor_total_custo: valorCusto,
+          valor_pago_fornecedor: valorPagoFornecedor,
+          saldo_devedor_fornecedor: Math.max(valorCusto - valorPagoFornecedor, 0),
+          valor_frete: valorFrete,
           total_fornecedor: totalFornecedor,
-          saldo_devedor_fornecedor_total: Math.max(totalFornecedor - pagoFornecedor, 0),
+          saldo_devedor_fornecedor_total: saldoDevedorTotal,
         };
       });
 
@@ -141,8 +145,8 @@ export default function Financeiro() {
   };
 
   // Cálculos para o resumo - KPIs de receita usam apenas valor_total (produtos)
-  const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor_caixa, 0);
-  const totalPagar = contasPagar.reduce((sum, c) => sum + c.saldo_devedor_fornecedor_total, 0);
+  const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor_caixa, 0); // Produtos + Frete - Pago
+  const totalPagar = contasPagar.reduce((sum, c) => sum + c.saldo_devedor_fornecedor_total, 0); // Custo + Frete - Pago
   const totalReceita = encomendas.reduce((sum, e) => sum + e.valor_total, 0); // Apenas produtos para KPI
   
   // Count orders with pending balances

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +27,6 @@ export default function EncomendasFinanceiro() {
           numero_encomenda,
           valor_total,
           valor_pago,
-          saldo_devedor,
           valor_frete,
           clientes(id, nome)
         `)
@@ -37,24 +35,27 @@ export default function EncomendasFinanceiro() {
       if (error) throw error;
 
       const encomendasFormatadas: EncomendaFinanceiro[] = (data ?? []).map((e: any) => {
-        const produtos = Number(e.valor_total ?? 0);
-        const frete = Number(e.valor_frete ?? 0);
-        const pago = Number(e.valor_pago ?? 0);
+        const valorProdutos = Number(e.valor_total ?? 0);
+        const valorFrete = Number(e.valor_frete ?? 0);
+        const valorPago = Number(e.valor_pago ?? 0);
+        
+        // A RECEBER = Valor dos produtos + Valor do frete
+        const totalCaixa = valorProdutos + valorFrete;
+        const saldoDevedorCaixa = Math.max(totalCaixa - valorPago, 0);
 
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
           cliente_nome: e.clientes?.nome ?? "",
-          valor_total: produtos,
-          valor_pago: pago,
-          saldo_devedor: Math.max(produtos - pago, 0),
-          valor_frete: frete,
-          total_caixa: produtos + frete,
-          saldo_devedor_caixa: Math.max(produtos + frete - pago, 0),
+          valor_total: valorProdutos,
+          valor_pago: valorPago,
+          saldo_devedor: Math.max(valorProdutos - valorPago, 0), // Saldo apenas dos produtos
+          valor_frete: valorFrete,
+          total_caixa: totalCaixa, // Produtos + Frete
+          saldo_devedor_caixa: saldoDevedorCaixa, // Total - Pago
         };
       });
 
-      // Show all orders for now, but highlight those with pending balance
       setEncomendas(encomendasFormatadas);
     } catch (error: any) {
       toast({
@@ -100,7 +101,7 @@ export default function EncomendasFinanceiro() {
         <CardHeader>
           <CardTitle>Contas a Receber</CardTitle>
           <CardDescription>
-            Todas as encomendas (Total Caixa = Produtos + Frete)
+            A receber = Valor dos produtos + Valor do frete
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -116,7 +117,7 @@ export default function EncomendasFinanceiro() {
                 <div>Cliente</div>
                 <div className="text-right">Produtos</div>
                 <div className="text-right">Frete</div>
-                <div className="text-right">Total Caixa</div>
+                <div className="text-right">Total a Receber</div>
                 <div className="text-right">Pago</div>
                 <div className="text-right">Saldo</div>
                 <div className="text-center">Ações</div>
