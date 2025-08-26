@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,6 +11,7 @@ import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logActivity } from "@/utils/activityLogger";
+import { Produto, Fornecedor } from "@/types/database";
 
 const produtoSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
@@ -25,38 +25,20 @@ const produtoSchema = z.object({
 
 type ProdutoFormData = z.infer<typeof produtoSchema>;
 
-interface Produto {
-  id: string;
-  nome: string;
-  marca: string;
-  tipo: string;
-  preco_custo: number;
-  preco_venda: number;
-  size_weight: number;
-  fornecedor_id: string;
-  ativo: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Fornecedor {
-  id: string;
-  nome: string;
-}
-
 interface ProdutoFormProps {
+  produto?: Produto;
   onSuccess?: () => void;
-  initialData?: Produto | null;
-  isEditing?: boolean;
 }
 
-export function ProdutoForm({ onSuccess, initialData, isEditing = false }: ProdutoFormProps) {
+export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [marcasExistentes, setMarcasExistentes] = useState<string[]>([]);
   const [tiposExistentes, setTiposExistentes] = useState<string[]>([]);
   const [novaOpçaoDialog, setNovaOpçaoDialog] = useState<{tipo: string, aberto: boolean}>({tipo: '', aberto: false});
   const [novoValor, setNovoValor] = useState('');
+
+  const isEditing = !!produto;
 
   // Sempre inicializar com valores vazios para evitar soma de valores
   const form = useForm<ProdutoFormData>({
@@ -77,18 +59,18 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
     carregarOpcoesExistentes();
   }, []);
 
-  // Carregar dados iniciais APENAS quando initialData mudar (evita soma)
+  // Carregar dados iniciais APENAS quando produto mudar (evita soma)
   useEffect(() => {
-    if (initialData) {
+    if (produto) {
       // REPLACE valores, não somar - usar reset para garantir valores exatos
       const formData = {
-        nome: initialData.nome || "",
-        marca: initialData.marca || "",
-        tipo: initialData.tipo || "",
-        preco_custo: initialData.preco_custo ? initialData.preco_custo.toString() : "",
-        preco_venda: initialData.preco_venda ? initialData.preco_venda.toString() : "",
-        size_weight: initialData.size_weight ? initialData.size_weight.toString() : "0",
-        fornecedor_id: initialData.fornecedor_id || "",
+        nome: produto.nome || "",
+        marca: produto.marca || "",
+        tipo: produto.tipo || "",
+        preco_custo: produto.preco_custo ? produto.preco_custo.toString() : "",
+        preco_venda: produto.preco_venda ? produto.preco_venda.toString() : "",
+        size_weight: produto.size_weight ? produto.size_weight.toString() : "0",
+        fornecedor_id: produto.fornecedor_id || "",
       };
       
       // Usar reset para SUBSTITUIR todos os valores
@@ -105,7 +87,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         fornecedor_id: "",
       });
     }
-  }, [initialData, form]);
+  }, [produto, form]);
 
   const carregarFornecedores = async () => {
     try {
@@ -201,7 +183,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
   const onSubmit = async (data: ProdutoFormData) => {
     setIsSubmitting(true);
     try {
-      if (isEditing && initialData && initialData.id) {
+      if (isEditing && produto && produto.id) {
         const { error } = await supabase
           .from("produtos")
           .update({
@@ -213,20 +195,20 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
             size_weight: parseFloat(data.size_weight),
             fornecedor_id: data.fornecedor_id,
           })
-          .eq("id", initialData.id);
+          .eq("id", produto.id);
 
         if (error) throw error;
         
         await logActivity({
           entity: 'produto',
-          entity_id: initialData.id,
+          entity_id: produto.id,
           action: 'update',
           details: { nome: data.nome }
         });
         
         toast.success("Produto atualizado com sucesso!");
       } else {
-        const { data: produto, error } = await supabase
+        const { data: novoProduto, error } = await supabase
           .from("produtos")
           .insert({
             nome: data.nome,
@@ -244,7 +226,7 @@ export function ProdutoForm({ onSuccess, initialData, isEditing = false }: Produ
         
         await logActivity({
           entity: 'produto',
-          entity_id: produto.id,
+          entity_id: novoProduto.id,
           action: 'create',
           details: { nome: data.nome }
         });

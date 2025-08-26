@@ -1,20 +1,9 @@
-
 import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ProdutoCard from "@/components/ProdutoCard";
 import { logActivity } from "@/utils/activityLogger";
-
-interface Produto {
-  id: string;
-  nome: string;
-  marca: string;
-  tipo: string;
-  preco_venda: number;
-  preco_custo: number;
-  ativo: boolean;
-  size_weight: number;
-}
+import { Produto } from "@/types/database";
 
 export interface ListaProdutosRef {
   fetchProdutos: () => void;

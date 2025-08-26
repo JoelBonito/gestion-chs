@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,20 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useState } from "react";
-
-interface Produto {
-  id: string;
-  nome: string;
-  marca: string;
-  tipo: string;
-  preco_venda: number;
-  preco_custo: number;
-  ativo: boolean;
-  size_weight: number;
-  fornecedor_id?: string;
-  created_at?: string;
-  updated_at?: string;
-}
+import { Produto } from "@/types/database";
 
 interface ProdutoCardProps {
   produto: Produto;
@@ -87,8 +73,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
                   <DialogTitle className="font-display text-primary-dark">Editar Produto</DialogTitle>
                 </DialogHeader>
                 <ProdutoForm 
-                  initialData={produto} 
-                  isEditing={true}
+                  produto={produto}
                   onSuccess={handleEditSuccess} 
                 />
               </DialogContent>
