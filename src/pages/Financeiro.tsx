@@ -60,7 +60,7 @@ export default function Financeiro() {
           valor_total,
           valor_pago,
           saldo_devedor,
-          frete_encomenda(valor_frete),
+          valor_frete,
           clientes(id, nome)
         `)
         .order("created_at", { ascending: false });
@@ -69,7 +69,7 @@ export default function Financeiro() {
 
       const encomendasFormatadas: EncomendaFinanceiro[] = (encomendasData ?? []).map((e: any) => {
         const produtos = Number(e.valor_total ?? 0);
-        const frete = Number(e.frete_encomenda?.[0]?.valor_frete ?? 0);
+        const frete = Number(e.valor_frete ?? 0);
         const pago = Number(e.valor_pago ?? 0);
 
         return {
@@ -83,7 +83,7 @@ export default function Financeiro() {
           total_caixa: produtos + frete,
           saldo_devedor_caixa: Math.max(produtos + frete - pago, 0),
         };
-      }).filter(e => e.saldo_devedor_caixa > 0);
+      });
 
       // Buscar contas a pagar
       const { data: contasData, error: contasError } = await supabase
@@ -94,7 +94,7 @@ export default function Financeiro() {
           valor_total_custo,
           valor_pago_fornecedor,
           saldo_devedor_fornecedor,
-          frete_encomenda(valor_frete),
+          valor_frete,
           fornecedores(id, nome)
         `)
         .order("created_at", { ascending: false });
@@ -103,7 +103,7 @@ export default function Financeiro() {
 
       const contasFormatadas: ContaPagar[] = (contasData ?? []).map((e: any) => {
         const custoTotal = Number(e.valor_total_custo ?? 0);
-        const frete = Number(e.frete_encomenda?.[0]?.valor_frete ?? 0);
+        const frete = Number(e.valor_frete ?? 0);
         const pagoFornecedor = Number(e.valor_pago_fornecedor ?? 0);
         const totalFornecedor = custoTotal + frete;
         
@@ -118,7 +118,7 @@ export default function Financeiro() {
           total_fornecedor: totalFornecedor,
           saldo_devedor_fornecedor_total: Math.max(totalFornecedor - pagoFornecedor, 0),
         };
-      }).filter(c => c.saldo_devedor_fornecedor_total > 0);
+      });
 
       setEncomendas(encomendasFormatadas);
       setContasPagar(contasFormatadas);
@@ -144,6 +144,10 @@ export default function Financeiro() {
   const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor_caixa, 0);
   const totalPagar = contasPagar.reduce((sum, c) => sum + c.saldo_devedor_fornecedor_total, 0);
   const totalReceita = encomendas.reduce((sum, e) => sum + e.valor_total, 0); // Apenas produtos para KPI
+  
+  // Count orders with pending balances
+  const encomendasPendentes = encomendas.filter(e => e.saldo_devedor_caixa > 0).length;
+  const contasPendentes = contasPagar.filter(c => c.saldo_devedor_fornecedor_total > 0).length;
 
   return (
     <div className="space-y-6">
@@ -163,7 +167,7 @@ export default function Financeiro() {
             <DialogContent className="max-w-2xl">
               <PagamentoForm 
                 onSuccess={handlePagamentoSuccess}
-                encomendas={encomendas}
+                encomendas={encomendas.filter(e => e.saldo_devedor_caixa > 0)}
               />
             </DialogContent>
           </Dialog>
@@ -179,7 +183,7 @@ export default function Financeiro() {
         <StatCard
           title="A Receber"
           value={`€${totalReceber.toFixed(2)}`}
-          subtitle="Pendente de clientes (produtos + frete)"
+          subtitle={`${encomendasPendentes} encomendas pendentes (produtos + frete)`}
           icon={<TrendingUp className="h-6 w-6" />}
           variant="success"
         />
@@ -187,7 +191,7 @@ export default function Financeiro() {
         <StatCard
           title="A Pagar"
           value={`€${totalPagar.toFixed(2)}`}
-          subtitle="Pendente a fornecedores (custo + frete)"
+          subtitle={`${contasPendentes} contas pendentes (custo + frete)`}
           icon={<TrendingDown className="h-6 w-6" />}
           variant="warning"
         />
@@ -195,7 +199,7 @@ export default function Financeiro() {
         <StatCard
           title="Receita Produtos"
           value={`€${totalReceita.toFixed(2)}`}
-          subtitle="Valor total dos produtos"
+          subtitle={`${encomendas.length} encomendas (valor total dos produtos)`}
           icon={<DollarSign className="h-6 w-6" />}
           variant="default"
         />
@@ -205,8 +209,18 @@ export default function Financeiro() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
-          <TabsTrigger value="encomendas">A Receber</TabsTrigger>
-          <TabsTrigger value="pagar">A Pagar</TabsTrigger>
+          <TabsTrigger value="encomendas">
+            A Receber 
+            {encomendasPendentes > 0 && (
+              <Badge variant="secondary" className="ml-2">{encomendasPendentes}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="pagar">
+            A Pagar
+            {contasPendentes > 0 && (
+              <Badge variant="secondary" className="ml-2">{contasPendentes}</Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumo" className="space-y-6">
@@ -242,13 +256,33 @@ export default function Financeiro() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-start p-3 bg-warning/10 border border-warning/20 rounded-lg">
-                    <AlertCircle className="h-5 w-5 text-warning mr-3 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-sm">Pagamentos pendentes</p>
-                      <p className="text-xs text-muted-foreground">{encomendas.length} encomendas com saldo devedor</p>
+                  {encomendasPendentes > 0 && (
+                    <div className="flex items-start p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                      <AlertCircle className="h-5 w-5 text-warning mr-3 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-sm">Pagamentos pendentes de clientes</p>
+                        <p className="text-xs text-muted-foreground">{encomendasPendentes} encomendas com saldo devedor</p>
+                      </div>
                     </div>
-                  </div>
+                  )}
+                  {contasPendentes > 0 && (
+                    <div className="flex items-start p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                      <AlertCircle className="h-5 w-5 text-destructive mr-3 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-sm">Pagamentos pendentes a fornecedores</p>
+                        <p className="text-xs text-muted-foreground">{contasPendentes} contas a pagar</p>
+                      </div>
+                    </div>
+                  )}
+                  {encomendasPendentes === 0 && contasPendentes === 0 && (
+                    <div className="flex items-start p-3 bg-success/10 border border-success/20 rounded-lg">
+                      <AlertCircle className="h-5 w-5 text-success mr-3 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-sm">Situação financeira em dia</p>
+                        <p className="text-xs text-muted-foreground">Não há pagamentos pendentes</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

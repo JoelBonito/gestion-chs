@@ -29,7 +29,7 @@ export default function ContasPagar() {
           valor_total_custo,
           valor_pago_fornecedor,
           saldo_devedor_fornecedor,
-          frete_encomenda(valor_frete),
+          valor_frete,
           fornecedores(id, nome)
         `)
         .order("created_at", { ascending: false });
@@ -38,9 +38,9 @@ export default function ContasPagar() {
 
       const contasFormatadas: ContaPagar[] = (data ?? []).map((e: any) => {
         const custoTotal = Number(e.valor_total_custo ?? 0);
-        const frete = Number(e.frete_encomenda?.[0]?.valor_frete ?? 0);
+        const frete = Number(e.valor_frete ?? 0);
         const pagoFornecedor = Number(e.valor_pago_fornecedor ?? 0);
-        const totalFornecedor = custoTotal + frete; // Total a pagar ao fornecedor
+        const totalFornecedor = custoTotal + frete;
         
         return {
           id: e.id,
@@ -53,8 +53,9 @@ export default function ContasPagar() {
           total_fornecedor: totalFornecedor,
           saldo_devedor_fornecedor_total: Math.max(totalFornecedor - pagoFornecedor, 0),
         };
-      }).filter(c => c.saldo_devedor_fornecedor_total > 0); // Filtrar em memória após o mapeamento
+      });
 
+      // Show all orders for now, but highlight those with pending balance
       setContas(contasFormatadas);
     } catch (error: any) {
       toast({
@@ -100,13 +101,13 @@ export default function ContasPagar() {
         <CardHeader>
           <CardTitle>Contas a Pagar</CardTitle>
           <CardDescription>
-            Encomendas com saldo devedor ao fornecedor (Total Fornecedor = Custo + Frete)
+            Todas as encomendas (Total Fornecedor = Custo + Frete)
           </CardDescription>
         </CardHeader>
         <CardContent>
           {contas.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <p>Nenhuma conta a pagar encontrada</p>
+              <p>Nenhuma conta encontrada</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -123,49 +124,70 @@ export default function ContasPagar() {
               </div>
 
               {/* Rows */}
-              {contas.map((conta) => (
-                <div key={conta.id} className="grid grid-cols-8 gap-4 items-center py-3 border-b hover:bg-gray-50">
-                  <div className="space-y-1">
-                    <p className="font-medium text-sm">{conta.numero_encomenda}</p>
+              {contas.map((conta) => {
+                const hasPendingBalance = conta.saldo_devedor_fornecedor_total > 0;
+                return (
+                  <div 
+                    key={conta.id} 
+                    className={`grid grid-cols-8 gap-4 items-center py-3 border-b hover:bg-gray-50 ${
+                      hasPendingBalance ? 'bg-red-50' : 'bg-green-50'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <p className="font-medium text-sm">{conta.numero_encomenda}</p>
+                      {hasPendingBalance && (
+                        <Badge variant="outline" className="text-xs text-red-600">
+                          Pendente
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="text-sm">{conta.fornecedor_nome}</div>
+                    
+                    <div className="text-right text-sm">
+                      €{conta.valor_total_custo.toFixed(2)}
+                    </div>
+                    
+                    <div className="text-right text-sm">
+                      €{conta.valor_frete.toFixed(2)}
+                    </div>
+                    
+                    <div className="text-right text-sm font-medium">
+                      €{conta.total_fornecedor.toFixed(2)}
+                    </div>
+                    
+                    <div className="text-right text-sm text-green-600">
+                      €{conta.valor_pago_fornecedor.toFixed(2)}
+                    </div>
+                    
+                    <div className={`text-right text-sm font-bold ${
+                      hasPendingBalance ? 'text-red-600' : 'text-green-600'
+                    }`}>
+                      €{conta.saldo_devedor_fornecedor_total.toFixed(2)}
+                    </div>
+                    
+                    <div className="text-center">
+                      {hasPendingBalance ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedConta(conta);
+                            setShowPagamentoDialog(true);
+                          }}
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Pagar
+                        </Button>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">
+                          Pago
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  
-                  <div className="text-sm">{conta.fornecedor_nome}</div>
-                  
-                  <div className="text-right text-sm">
-                    €{conta.valor_total_custo.toFixed(2)}
-                  </div>
-                  
-                  <div className="text-right text-sm">
-                    €{conta.valor_frete.toFixed(2)}
-                  </div>
-                  
-                  <div className="text-right text-sm font-medium">
-                    €{conta.total_fornecedor.toFixed(2)}
-                  </div>
-                  
-                  <div className="text-right text-sm text-green-600">
-                    €{conta.valor_pago_fornecedor.toFixed(2)}
-                  </div>
-                  
-                  <div className="text-right text-sm font-bold text-red-600">
-                    €{conta.saldo_devedor_fornecedor_total.toFixed(2)}
-                  </div>
-                  
-                  <div className="text-center">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedConta(conta);
-                        setShowPagamentoDialog(true);
-                      }}
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Pagar
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>

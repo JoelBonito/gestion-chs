@@ -29,7 +29,7 @@ export default function EncomendasFinanceiro() {
           valor_total,
           valor_pago,
           saldo_devedor,
-          frete_encomenda(valor_frete),
+          valor_frete,
           clientes(id, nome)
         `)
         .order("created_at", { ascending: false });
@@ -38,7 +38,7 @@ export default function EncomendasFinanceiro() {
 
       const encomendasFormatadas: EncomendaFinanceiro[] = (data ?? []).map((e: any) => {
         const produtos = Number(e.valor_total ?? 0);
-        const frete = Number(e.frete_encomenda?.[0]?.valor_frete ?? 0);
+        const frete = Number(e.valor_frete ?? 0);
         const pago = Number(e.valor_pago ?? 0);
 
         return {
@@ -52,8 +52,9 @@ export default function EncomendasFinanceiro() {
           total_caixa: produtos + frete,
           saldo_devedor_caixa: Math.max(produtos + frete - pago, 0),
         };
-      }).filter(e => e.saldo_devedor_caixa > 0); // Filtrar em memória após o mapeamento
+      });
 
+      // Show all orders for now, but highlight those with pending balance
       setEncomendas(encomendasFormatadas);
     } catch (error: any) {
       toast({
@@ -99,13 +100,13 @@ export default function EncomendasFinanceiro() {
         <CardHeader>
           <CardTitle>Contas a Receber</CardTitle>
           <CardDescription>
-            Encomendas com saldo devedor (Total Caixa = Produtos + Frete)
+            Todas as encomendas (Total Caixa = Produtos + Frete)
           </CardDescription>
         </CardHeader>
         <CardContent>
           {encomendas.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <p>Nenhuma encomenda com saldo devedor encontrada</p>
+              <p>Nenhuma encomenda encontrada</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -122,49 +123,70 @@ export default function EncomendasFinanceiro() {
               </div>
 
               {/* Rows */}
-              {encomendas.map((encomenda) => (
-                <div key={encomenda.id} className="grid grid-cols-8 gap-4 items-center py-3 border-b hover:bg-gray-50">
-                  <div className="space-y-1">
-                    <p className="font-medium text-sm">{encomenda.numero_encomenda}</p>
+              {encomendas.map((encomenda) => {
+                const hasPendingBalance = encomenda.saldo_devedor_caixa > 0;
+                return (
+                  <div 
+                    key={encomenda.id} 
+                    className={`grid grid-cols-8 gap-4 items-center py-3 border-b hover:bg-gray-50 ${
+                      hasPendingBalance ? 'bg-orange-50' : 'bg-green-50'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <p className="font-medium text-sm">{encomenda.numero_encomenda}</p>
+                      {hasPendingBalance && (
+                        <Badge variant="outline" className="text-xs text-orange-600">
+                          Pendente
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    <div className="text-sm">{encomenda.cliente_nome}</div>
+                    
+                    <div className="text-right text-sm">
+                      €{encomenda.valor_total.toFixed(2)}
+                    </div>
+                    
+                    <div className="text-right text-sm">
+                      €{encomenda.valor_frete.toFixed(2)}
+                    </div>
+                    
+                    <div className="text-right text-sm font-medium">
+                      €{encomenda.total_caixa.toFixed(2)}
+                    </div>
+                    
+                    <div className="text-right text-sm text-green-600">
+                      €{encomenda.valor_pago.toFixed(2)}
+                    </div>
+                    
+                    <div className={`text-right text-sm font-bold ${
+                      hasPendingBalance ? 'text-orange-600' : 'text-green-600'
+                    }`}>
+                      €{encomenda.saldo_devedor_caixa.toFixed(2)}
+                    </div>
+                    
+                    <div className="text-center">
+                      {hasPendingBalance ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedEncomenda(encomenda);
+                            setShowPagamentoDialog(true);
+                          }}
+                        >
+                          <Plus className="w-4 h-4 mr-1" />
+                          Pagar
+                        </Button>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">
+                          Pago
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  
-                  <div className="text-sm">{encomenda.cliente_nome}</div>
-                  
-                  <div className="text-right text-sm">
-                    €{encomenda.valor_total.toFixed(2)}
-                  </div>
-                  
-                  <div className="text-right text-sm">
-                    €{encomenda.valor_frete.toFixed(2)}
-                  </div>
-                  
-                  <div className="text-right text-sm font-medium">
-                    €{encomenda.total_caixa.toFixed(2)}
-                  </div>
-                  
-                  <div className="text-right text-sm text-green-600">
-                    €{encomenda.valor_pago.toFixed(2)}
-                  </div>
-                  
-                  <div className="text-right text-sm font-bold text-orange-600">
-                    €{encomenda.saldo_devedor_caixa.toFixed(2)}
-                  </div>
-                  
-                  <div className="text-center">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedEncomenda(encomenda);
-                        setShowPagamentoDialog(true);
-                      }}
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Pagar
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
