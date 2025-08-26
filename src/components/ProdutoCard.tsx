@@ -18,6 +18,9 @@ interface Produto {
   preco_custo: number;
   ativo: boolean;
   size_weight: number;
+  fornecedor_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface ProdutoCardProps {
