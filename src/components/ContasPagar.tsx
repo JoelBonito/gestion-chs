@@ -8,18 +8,7 @@ import { Plus, Euro } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import PagamentoFornecedorForm from "./PagamentoFornecedorForm";
-
-type ContaPagar = {
-  id: string;
-  numero_encomenda: string;
-  fornecedor_nome: string;
-  valor_total_custo: number;      // Custo dos produtos
-  valor_pago_fornecedor: number;
-  saldo_devedor_fornecedor: number;
-  valor_frete?: number;           // Frete
-  total_fornecedor?: number;      // Custo + Frete
-  saldo_devedor_fornecedor_total?: number; // Total Fornecedor - Valor Pago
-};
+import type { ContaPagar } from "@/types/financeiro";
 
 export default function ContasPagar() {
   const [contas, setContas] = useState<ContaPagar[]>([]);
@@ -35,19 +24,22 @@ export default function ContasPagar() {
       const { data, error } = await supabase
         .from("encomendas")
         .select(`
-          *,
-          fornecedores!inner(nome),
-          frete_encomenda(valor_frete)
+          id,
+          numero_encomenda,
+          valor_total_custo,
+          valor_pago_fornecedor,
+          saldo_devedor_fornecedor,
+          frete_encomenda(valor_frete),
+          fornecedores(id, nome)
         `)
-        .gt("saldo_devedor_fornecedor", 0)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const contasFormatadas: ContaPagar[] = data.map((e: any) => {
-        const custoTotal = parseFloat(e.valor_total_custo ?? 0);
-        const frete = parseFloat(e.frete_encomenda?.[0]?.valor_frete ?? 0);
-        const pagoFornecedor = parseFloat(e.valor_pago_fornecedor ?? 0);
+      const contasFormatadas: ContaPagar[] = (data ?? []).map((e: any) => {
+        const custoTotal = Number(e.valor_total_custo ?? 0);
+        const frete = Number(e.frete_encomenda?.[0]?.valor_frete ?? 0);
+        const pagoFornecedor = Number(e.valor_pago_fornecedor ?? 0);
         const totalFornecedor = custoTotal + frete; // Total a pagar ao fornecedor
         
         return {
@@ -61,7 +53,7 @@ export default function ContasPagar() {
           total_fornecedor: totalFornecedor,
           saldo_devedor_fornecedor_total: Math.max(totalFornecedor - pagoFornecedor, 0),
         };
-      });
+      }).filter(c => c.saldo_devedor_fornecedor_total > 0); // Filtrar em memória após o mapeamento
 
       setContas(contasFormatadas);
     } catch (error: any) {
@@ -144,11 +136,11 @@ export default function ContasPagar() {
                   </div>
                   
                   <div className="text-right text-sm">
-                    €{(conta.valor_frete ?? 0).toFixed(2)}
+                    €{conta.valor_frete.toFixed(2)}
                   </div>
                   
                   <div className="text-right text-sm font-medium">
-                    €{(conta.total_fornecedor ?? 0).toFixed(2)}
+                    €{conta.total_fornecedor.toFixed(2)}
                   </div>
                   
                   <div className="text-right text-sm text-green-600">
@@ -156,7 +148,7 @@ export default function ContasPagar() {
                   </div>
                   
                   <div className="text-right text-sm font-bold text-red-600">
-                    €{(conta.saldo_devedor_fornecedor_total ?? 0).toFixed(2)}
+                    €{conta.saldo_devedor_fornecedor_total.toFixed(2)}
                   </div>
                   
                   <div className="text-center">
@@ -190,7 +182,7 @@ export default function ContasPagar() {
                 fornecedor_nome: selectedConta.fornecedor_nome,
                 valor_total_custo: selectedConta.valor_total_custo,
                 valor_pago_fornecedor: selectedConta.valor_pago_fornecedor,
-                saldo_devedor_fornecedor: selectedConta.saldo_devedor_fornecedor_total ?? 0,
+                saldo_devedor_fornecedor: selectedConta.saldo_devedor_fornecedor_total,
               }}
             />
           )}

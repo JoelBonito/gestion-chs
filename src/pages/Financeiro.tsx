@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Download, TrendingUp, TrendingDown, DollarSign, AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import EncomendasFinanceiro from "@/components/EncomendasFinanceiro";
 import ContasPagar from "@/components/ContasPagar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { EncomendaFinanceiro } from "@/types/financeiro";
+import type { EncomendaFinanceiro, ContaPagar } from "@/types/financeiro";
 
 // Mock data para movimentações
 const movimentacoes = [
@@ -44,62 +45,67 @@ const movimentacoes = [
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState("resumo");
   const [encomendas, setEncomendas] = useState<EncomendaFinanceiro[]>([]);
-  const [contasPagar, setContasPagar] = useState<any[]>([]);
+  const [contasPagar, setContasPagar] = useState<ContaPagar[]>([]);
   const [showPagamentoDialog, setShowPagamentoDialog] = useState(false);
   const { toast } = useToast();
 
-  const fetchEncomendas = async () => {
+  const fetchDadosFinanceiros = async () => {
     try {
-      // Buscar encomendas a receber (saldo devedor > 0)
+      // Buscar encomendas a receber
       const { data: encomendasData, error: encomendasError } = await supabase
         .from("encomendas")
         .select(`
-          *,
-          clientes!inner(nome),
-          frete_encomenda(valor_frete)
+          id,
+          numero_encomenda,
+          valor_total,
+          valor_pago,
+          saldo_devedor,
+          frete_encomenda(valor_frete),
+          clientes(id, nome)
         `)
-        .gt("saldo_devedor", 0)
         .order("created_at", { ascending: false });
 
       if (encomendasError) throw encomendasError;
 
-      const encomendasFormatadas: EncomendaFinanceiro[] = encomendasData.map((e: any) => {
-        const produtos = parseFloat(e.valor_total ?? 0);
-        const frete = parseFloat(e.frete_encomenda?.[0]?.valor_frete ?? 0);
-        const pago = parseFloat(e.valor_pago ?? 0);
-        const totalCaixa = produtos + frete; // Total a receber do cliente
-        
+      const encomendasFormatadas: EncomendaFinanceiro[] = (encomendasData ?? []).map((e: any) => {
+        const produtos = Number(e.valor_total ?? 0);
+        const frete = Number(e.frete_encomenda?.[0]?.valor_frete ?? 0);
+        const pago = Number(e.valor_pago ?? 0);
+
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
-          cliente_nome: e.clientes?.nome ?? '',
+          cliente_nome: e.clientes?.nome ?? "",
           valor_total: produtos,
           valor_pago: pago,
           saldo_devedor: Math.max(produtos - pago, 0),
           valor_frete: frete,
-          total_caixa: totalCaixa,
-          saldo_devedor_caixa: Math.max(totalCaixa - pago, 0),
+          total_caixa: produtos + frete,
+          saldo_devedor_caixa: Math.max(produtos + frete - pago, 0),
         };
-      });
+      }).filter(e => e.saldo_devedor_caixa > 0);
 
-      // Buscar contas a pagar (saldo devedor fornecedor > 0)
+      // Buscar contas a pagar
       const { data: contasData, error: contasError } = await supabase
         .from("encomendas")
         .select(`
-          *,
-          fornecedores!inner(nome),
-          frete_encomenda(valor_frete)
+          id,
+          numero_encomenda,
+          valor_total_custo,
+          valor_pago_fornecedor,
+          saldo_devedor_fornecedor,
+          frete_encomenda(valor_frete),
+          fornecedores(id, nome)
         `)
-        .gt("saldo_devedor_fornecedor", 0)
         .order("created_at", { ascending: false });
 
       if (contasError) throw contasError;
 
-      const contasFormatadas = contasData.map((e: any) => {
-        const custoTotal = parseFloat(e.valor_total_custo ?? 0);
-        const frete = parseFloat(e.frete_encomenda?.[0]?.valor_frete ?? 0);
-        const pagoFornecedor = parseFloat(e.valor_pago_fornecedor ?? 0);
-        const totalFornecedor = custoTotal + frete; // Total a pagar ao fornecedor
+      const contasFormatadas: ContaPagar[] = (contasData ?? []).map((e: any) => {
+        const custoTotal = Number(e.valor_total_custo ?? 0);
+        const frete = Number(e.frete_encomenda?.[0]?.valor_frete ?? 0);
+        const pagoFornecedor = Number(e.valor_pago_fornecedor ?? 0);
+        const totalFornecedor = custoTotal + frete;
         
         return {
           id: e.id,
@@ -112,7 +118,7 @@ export default function Financeiro() {
           total_fornecedor: totalFornecedor,
           saldo_devedor_fornecedor_total: Math.max(totalFornecedor - pagoFornecedor, 0),
         };
-      });
+      }).filter(c => c.saldo_devedor_fornecedor_total > 0);
 
       setEncomendas(encomendasFormatadas);
       setContasPagar(contasFormatadas);
@@ -126,18 +132,18 @@ export default function Financeiro() {
   };
 
   useEffect(() => {
-    fetchEncomendas();
+    fetchDadosFinanceiros();
   }, []);
 
   const handlePagamentoSuccess = () => {
     setShowPagamentoDialog(false);
-    fetchEncomendas();
+    fetchDadosFinanceiros();
   };
 
-  // Cálculos para o resumo
-  const totalReceber = encomendas.reduce((sum, e) => sum + (e.saldo_devedor_caixa ?? 0), 0);
-  const totalPagar = contasPagar.reduce((sum, c) => sum + (c.saldo_devedor_fornecedor_total ?? 0), 0);
-  const totalCaixa = encomendas.reduce((sum, e) => sum + (e.total_caixa ?? 0), 0);
+  // Cálculos para o resumo - KPIs de receita usam apenas valor_total (produtos)
+  const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor_caixa, 0);
+  const totalPagar = contasPagar.reduce((sum, c) => sum + c.saldo_devedor_fornecedor_total, 0);
+  const totalReceita = encomendas.reduce((sum, e) => sum + e.valor_total, 0); // Apenas produtos para KPI
 
   return (
     <div className="space-y-6">
@@ -173,7 +179,7 @@ export default function Financeiro() {
         <StatCard
           title="A Receber"
           value={`€${totalReceber.toFixed(2)}`}
-          subtitle="Pendente de clientes"
+          subtitle="Pendente de clientes (produtos + frete)"
           icon={<TrendingUp className="h-6 w-6" />}
           variant="success"
         />
@@ -181,15 +187,15 @@ export default function Financeiro() {
         <StatCard
           title="A Pagar"
           value={`€${totalPagar.toFixed(2)}`}
-          subtitle="Pendente a fornecedores"
+          subtitle="Pendente a fornecedores (custo + frete)"
           icon={<TrendingDown className="h-6 w-6" />}
           variant="warning"
         />
         
         <StatCard
-          title="Total Cliente"
-          value={`€${totalCaixa.toFixed(2)}`}
-          subtitle="Valor total (produtos + frete)"
+          title="Receita Produtos"
+          value={`€${totalReceita.toFixed(2)}`}
+          subtitle="Valor total dos produtos"
           icon={<DollarSign className="h-6 w-6" />}
           variant="default"
         />

@@ -24,33 +24,35 @@ export default function EncomendasFinanceiro() {
       const { data, error } = await supabase
         .from("encomendas")
         .select(`
-          *,
-          clientes!inner(nome),
-          frete_encomenda(valor_frete)
+          id,
+          numero_encomenda,
+          valor_total,
+          valor_pago,
+          saldo_devedor,
+          frete_encomenda(valor_frete),
+          clientes(id, nome)
         `)
-        .gt("saldo_devedor", 0)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const encomendasFormatadas: EncomendaFinanceiro[] = data.map((e: any) => {
-        const produtos = parseFloat(e.valor_total ?? 0);
-        const frete = parseFloat(e.frete_encomenda?.[0]?.valor_frete ?? 0);
-        const pago = parseFloat(e.valor_pago ?? 0);
-        const totalCaixa = produtos + frete; // Total para receber do cliente
-        
+      const encomendasFormatadas: EncomendaFinanceiro[] = (data ?? []).map((e: any) => {
+        const produtos = Number(e.valor_total ?? 0);
+        const frete = Number(e.frete_encomenda?.[0]?.valor_frete ?? 0);
+        const pago = Number(e.valor_pago ?? 0);
+
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
-          cliente_nome: e.clientes?.nome ?? '',
+          cliente_nome: e.clientes?.nome ?? "",
           valor_total: produtos,
           valor_pago: pago,
           saldo_devedor: Math.max(produtos - pago, 0),
           valor_frete: frete,
-          total_caixa: totalCaixa,
-          saldo_devedor_caixa: Math.max(totalCaixa - pago, 0),
+          total_caixa: produtos + frete,
+          saldo_devedor_caixa: Math.max(produtos + frete - pago, 0),
         };
-      });
+      }).filter(e => e.saldo_devedor_caixa > 0); // Filtrar em memória após o mapeamento
 
       setEncomendas(encomendasFormatadas);
     } catch (error: any) {
@@ -72,23 +74,6 @@ export default function EncomendasFinanceiro() {
     setShowPagamentoDialog(false);
     setSelectedEncomenda(null);
     fetchEncomendas();
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pendente':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'producao':
-        return 'bg-blue-100 text-blue-800';
-      case 'enviado':
-        return 'bg-purple-100 text-purple-800';
-      case 'entregue':
-        return 'bg-green-100 text-green-800';
-      case 'cancelado':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
   };
 
   if (loading) {
@@ -114,7 +99,7 @@ export default function EncomendasFinanceiro() {
         <CardHeader>
           <CardTitle>Contas a Receber</CardTitle>
           <CardDescription>
-            Encomendas com saldo devedor (Total Cliente = Produtos + Frete)
+            Encomendas com saldo devedor (Total Caixa = Produtos + Frete)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -130,7 +115,7 @@ export default function EncomendasFinanceiro() {
                 <div>Cliente</div>
                 <div className="text-right">Produtos</div>
                 <div className="text-right">Frete</div>
-                <div className="text-right">Total Cliente</div>
+                <div className="text-right">Total Caixa</div>
                 <div className="text-right">Pago</div>
                 <div className="text-right">Saldo</div>
                 <div className="text-center">Ações</div>
@@ -150,11 +135,11 @@ export default function EncomendasFinanceiro() {
                   </div>
                   
                   <div className="text-right text-sm">
-                    €{(encomenda.valor_frete ?? 0).toFixed(2)}
+                    €{encomenda.valor_frete.toFixed(2)}
                   </div>
                   
                   <div className="text-right text-sm font-medium">
-                    €{(encomenda.total_caixa ?? 0).toFixed(2)}
+                    €{encomenda.total_caixa.toFixed(2)}
                   </div>
                   
                   <div className="text-right text-sm text-green-600">
@@ -162,7 +147,7 @@ export default function EncomendasFinanceiro() {
                   </div>
                   
                   <div className="text-right text-sm font-bold text-orange-600">
-                    €{(encomenda.saldo_devedor_caixa ?? 0).toFixed(2)}
+                    €{encomenda.saldo_devedor_caixa.toFixed(2)}
                   </div>
                   
                   <div className="text-center">
