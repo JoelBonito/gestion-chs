@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,39 +21,47 @@ export default function ContasPagar() {
     try {
       setLoading(true);
       
+      // Buscar encomendas com itens e produtos para calcular custo real
       const { data, error } = await supabase
         .from("encomendas")
         .select(`
           id,
           numero_encomenda,
-          valor_total_custo,
           valor_pago_fornecedor,
-          valor_frete,
-          fornecedores(id, nome)
+          freight_rates,
+          fornecedores(id, nome),
+          itens_encomenda(
+            quantidade,
+            produtos(preco_custo)
+          )
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       const contasFormatadas: ContaPagar[] = (data ?? []).map((e: any) => {
-        const valorCusto = Number(e.valor_total_custo || 0);
-        const valorFrete = Number(e.valor_frete || 0);
-        const valorPagoFornecedor = Number(e.valor_pago_fornecedor || 0);
+        // Calcular custo real dos produtos
+        const custoProducts = (e.itens_encomenda || []).reduce((total: number, item: any) => {
+          const quantidade = Number(item.quantidade || 0);
+          const precoCusto = Number(item.produtos?.preco_custo || 0);
+          return total + (quantidade * precoCusto);
+        }, 0);
         
-        // CORRIGIDO: A PAGAR = Valor do custo + Valor do frete
-        const totalFornecedor = valorCusto + valorFrete;
-        const saldoDevedorTotal = Math.max(0, totalFornecedor - valorPagoFornecedor);
+        const frete = Number(e.freight_rates || 0);
+        const pagoFornecedor = Number(e.valor_pago_fornecedor || 0);
+        
+        const totalCaixaPagar = custoProducts + frete;
+        const saldoPagarCaixa = Math.max(totalCaixaPagar - pagoFornecedor, 0);
         
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
           fornecedor_nome: e.fornecedores?.nome || '',
-          valor_total_custo: valorCusto,
-          valor_pago_fornecedor: valorPagoFornecedor,
-          saldo_devedor_fornecedor: Math.max(0, valorCusto - valorPagoFornecedor),
-          valor_frete: valorFrete,
-          total_fornecedor: totalFornecedor,
-          saldo_devedor_fornecedor_total: saldoDevedorTotal,
+          custo_produtos: custoProducts,
+          valor_pago_fornecedor: pagoFornecedor,
+          freight_rates: frete,
+          total_caixa_pagar: totalCaixaPagar,
+          saldo_pagar_caixa: saldoPagarCaixa,
         };
       });
 
@@ -101,7 +110,7 @@ export default function ContasPagar() {
         <CardHeader>
           <CardTitle>Contas a Pagar</CardTitle>
           <CardDescription>
-            A pagar = Valor do custo + Valor do frete
+            Total (Caixa) = Custo dos produtos + Valor do frete
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -112,24 +121,23 @@ export default function ContasPagar() {
           ) : (
             <div className="space-y-4">
               {/* Header */}
-              <div className="grid grid-cols-8 gap-4 text-sm font-medium text-gray-500 pb-2 border-b">
+              <div className="grid grid-cols-7 gap-4 text-sm font-medium text-gray-500 pb-2 border-b">
                 <div>Encomenda</div>
                 <div>Fornecedor</div>
-                <div className="text-right">Custo</div>
+                <div className="text-right">Custo Produtos</div>
                 <div className="text-right">Frete</div>
-                <div className="text-right">Total a Pagar</div>
-                <div className="text-right">Pago</div>
-                <div className="text-right">Saldo</div>
-                <div className="text-center">Ações</div>
+                <div className="text-right">Total (Caixa)</div>
+                <div className="text-right">Pago Fornecedor</div>
+                <div className="text-right">Saldo (Caixa)</div>
               </div>
 
               {/* Rows */}
               {contas.map((conta) => {
-                const hasPendingBalance = conta.saldo_devedor_fornecedor_total > 0;
+                const hasPendingBalance = conta.saldo_pagar_caixa > 0;
                 return (
                   <div 
                     key={conta.id} 
-                    className={`grid grid-cols-8 gap-4 items-center py-3 border-b hover:bg-gray-50 ${
+                    className={`grid grid-cols-7 gap-4 items-center py-3 border-b hover:bg-gray-50 ${
                       hasPendingBalance ? 'bg-red-50' : 'bg-green-50'
                     }`}
                   >
@@ -145,15 +153,15 @@ export default function ContasPagar() {
                     <div className="text-sm">{conta.fornecedor_nome}</div>
                     
                     <div className="text-right text-sm">
-                      €{conta.valor_total_custo.toFixed(2)}
+                      €{conta.custo_produtos.toFixed(2)}
                     </div>
                     
                     <div className="text-right text-sm">
-                      €{conta.valor_frete.toFixed(2)}
+                      €{conta.freight_rates.toFixed(2)}
                     </div>
                     
                     <div className="text-right text-sm font-medium">
-                      €{conta.total_fornecedor.toFixed(2)}
+                      €{conta.total_caixa_pagar.toFixed(2)}
                     </div>
                     
                     <div className="text-right text-sm text-green-600">
@@ -163,27 +171,7 @@ export default function ContasPagar() {
                     <div className={`text-right text-sm font-bold ${
                       hasPendingBalance ? 'text-red-600' : 'text-green-600'
                     }`}>
-                      €{conta.saldo_devedor_fornecedor_total.toFixed(2)}
-                    </div>
-                    
-                    <div className="text-center">
-                      {hasPendingBalance ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedConta(conta);
-                            setShowPagamentoDialog(true);
-                          }}
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Pagar
-                        </Button>
-                      ) : (
-                        <Badge variant="secondary" className="text-xs">
-                          Pago
-                        </Badge>
-                      )}
+                      €{conta.saldo_pagar_caixa.toFixed(2)}
                     </div>
                   </div>
                 );
@@ -202,9 +190,9 @@ export default function ContasPagar() {
                 encomenda_id: selectedConta.id,
                 numero_encomenda: selectedConta.numero_encomenda,
                 fornecedor_nome: selectedConta.fornecedor_nome,
-                valor_total_custo: selectedConta.valor_total_custo,
+                valor_total_custo: selectedConta.custo_produtos,
                 valor_pago_fornecedor: selectedConta.valor_pago_fornecedor,
-                saldo_devedor_fornecedor: selectedConta.saldo_devedor_fornecedor_total,
+                saldo_devedor_fornecedor: selectedConta.saldo_pagar_caixa,
               }}
             />
           )}

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,7 @@ export default function EncomendasFinanceiro() {
           numero_encomenda,
           valor_total,
           valor_pago,
-          valor_frete,
+          freight_rates,
           clientes(id, nome)
         `)
         .order("created_at", { ascending: false });
@@ -35,22 +36,21 @@ export default function EncomendasFinanceiro() {
       if (error) throw error;
 
       const encomendasFormatadas: EncomendaFinanceiro[] = (data ?? []).map((e: any) => {
-        const valorProdutos = Number(e.valor_total || 0);
-        const valorFrete = Number(e.valor_frete || 0);
-        const valorPago = Number(e.valor_pago || 0);
+        const produtos = Number(e.valor_total || 0);
+        const frete = Number(e.freight_rates || 0);
+        const pago = Number(e.valor_pago || 0);
         
-        // CORRIGIDO: A RECEBER = Valor dos produtos + Valor do frete
-        const totalCaixa = valorProdutos + valorFrete;
-        const saldoDevedorCaixa = Math.max(0, totalCaixa - valorPago);
+        const totalCaixa = produtos + frete;
+        const saldoDevedorCaixa = Math.max(totalCaixa - pago, 0);
 
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
           cliente_nome: e.clientes?.nome || "",
-          valor_total: valorProdutos,
-          valor_pago: valorPago,
-          saldo_devedor: Math.max(0, valorProdutos - valorPago),
-          valor_frete: valorFrete,
+          valor_total: produtos,
+          valor_pago: pago,
+          saldo_devedor: Math.max(0, produtos - pago), // manter compatibilidade
+          freight_rates: frete,
           total_caixa: totalCaixa,
           saldo_devedor_caixa: saldoDevedorCaixa,
         };
@@ -101,7 +101,7 @@ export default function EncomendasFinanceiro() {
         <CardHeader>
           <CardTitle>Contas a Receber</CardTitle>
           <CardDescription>
-            A receber = Valor dos produtos + Valor do frete
+            Total (Caixa) = Valor dos produtos + Valor do frete
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -112,15 +112,14 @@ export default function EncomendasFinanceiro() {
           ) : (
             <div className="space-y-4">
               {/* Header */}
-              <div className="grid grid-cols-8 gap-4 text-sm font-medium text-gray-500 pb-2 border-b">
+              <div className="grid grid-cols-7 gap-4 text-sm font-medium text-gray-500 pb-2 border-b">
                 <div>Encomenda</div>
                 <div>Cliente</div>
                 <div className="text-right">Produtos</div>
                 <div className="text-right">Frete</div>
-                <div className="text-right">Total a Receber</div>
+                <div className="text-right">Total (Caixa)</div>
                 <div className="text-right">Pago</div>
-                <div className="text-right">Saldo</div>
-                <div className="text-center">Ações</div>
+                <div className="text-right">Saldo (Caixa)</div>
               </div>
 
               {/* Rows */}
@@ -129,7 +128,7 @@ export default function EncomendasFinanceiro() {
                 return (
                   <div 
                     key={encomenda.id} 
-                    className={`grid grid-cols-8 gap-4 items-center py-3 border-b hover:bg-gray-50 ${
+                    className={`grid grid-cols-7 gap-4 items-center py-3 border-b hover:bg-gray-50 ${
                       hasPendingBalance ? 'bg-orange-50' : 'bg-green-50'
                     }`}
                   >
@@ -149,7 +148,7 @@ export default function EncomendasFinanceiro() {
                     </div>
                     
                     <div className="text-right text-sm">
-                      €{encomenda.valor_frete.toFixed(2)}
+                      €{encomenda.freight_rates.toFixed(2)}
                     </div>
                     
                     <div className="text-right text-sm font-medium">
@@ -164,26 +163,6 @@ export default function EncomendasFinanceiro() {
                       hasPendingBalance ? 'text-orange-600' : 'text-green-600'
                     }`}>
                       €{encomenda.saldo_devedor_caixa.toFixed(2)}
-                    </div>
-                    
-                    <div className="text-center">
-                      {hasPendingBalance ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedEncomenda(encomenda);
-                            setShowPagamentoDialog(true);
-                          }}
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Pagar
-                        </Button>
-                      ) : (
-                        <Badge variant="secondary" className="text-xs">
-                          Pago
-                        </Badge>
-                      )}
                     </div>
                   </div>
                 );

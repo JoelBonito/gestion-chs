@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Download, TrendingUp, TrendingDown, DollarSign, AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -58,7 +59,7 @@ export default function Financeiro() {
           numero_encomenda,
           valor_total,
           valor_pago,
-          valor_frete,
+          freight_rates,
           clientes(id, nome)
         `)
         .order("created_at", { ascending: false });
@@ -66,61 +67,67 @@ export default function Financeiro() {
       if (encomendasError) throw encomendasError;
 
       const encomendasFormatadas: EncomendaFinanceiro[] = (encomendasData ?? []).map((e: any) => {
-        const valorProdutos = Number(e.valor_total || 0);
-        const valorFrete = Number(e.valor_frete || 0);
-        const valorPago = Number(e.valor_pago || 0);
+        const produtos = Number(e.valor_total || 0);
+        const frete = Number(e.freight_rates || 0);
+        const pago = Number(e.valor_pago || 0);
         
-        // CORRIGIDO: A RECEBER = Valor dos produtos + Valor do frete
-        const totalCaixa = valorProdutos + valorFrete;
-        const saldoDevedorCaixa = Math.max(0, totalCaixa - valorPago);
+        const totalCaixa = produtos + frete;
+        const saldoDevedorCaixa = Math.max(totalCaixa - pago, 0);
 
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
           cliente_nome: e.clientes?.nome || "",
-          valor_total: valorProdutos,
-          valor_pago: valorPago,
-          saldo_devedor: Math.max(0, valorProdutos - valorPago),
-          valor_frete: valorFrete,
+          valor_total: produtos,
+          valor_pago: pago,
+          saldo_devedor: Math.max(0, produtos - pago), // manter compatibilidade
+          freight_rates: frete,
           total_caixa: totalCaixa,
           saldo_devedor_caixa: saldoDevedorCaixa,
         };
       });
 
-      // Buscar contas a pagar
+      // Buscar contas a pagar com cálculo de custo real
       const { data: contasData, error: contasError } = await supabase
         .from("encomendas")
         .select(`
           id,
           numero_encomenda,
-          valor_total_custo,
           valor_pago_fornecedor,
-          valor_frete,
-          fornecedores(id, nome)
+          freight_rates,
+          fornecedores(id, nome),
+          itens_encomenda(
+            quantidade,
+            produtos(preco_custo)
+          )
         `)
         .order("created_at", { ascending: false });
 
       if (contasError) throw contasError;
 
       const contasFormatadas: ContaPagar[] = (contasData ?? []).map((e: any) => {
-        const valorCusto = Number(e.valor_total_custo || 0);
-        const valorFrete = Number(e.valor_frete || 0);
-        const valorPagoFornecedor = Number(e.valor_pago_fornecedor || 0);
+        // Calcular custo real dos produtos
+        const custoProducts = (e.itens_encomenda || []).reduce((total: number, item: any) => {
+          const quantidade = Number(item.quantidade || 0);
+          const precoCusto = Number(item.produtos?.preco_custo || 0);
+          return total + (quantidade * precoCusto);
+        }, 0);
         
-        // CORRIGIDO: A PAGAR = Valor do custo + Valor do frete
-        const totalFornecedor = valorCusto + valorFrete;
-        const saldoDevedorTotal = Math.max(0, totalFornecedor - valorPagoFornecedor);
+        const frete = Number(e.freight_rates || 0);
+        const pagoFornecedor = Number(e.valor_pago_fornecedor || 0);
+        
+        const totalCaixaPagar = custoProducts + frete;
+        const saldoPagarCaixa = Math.max(totalCaixaPagar - pagoFornecedor, 0);
         
         return {
           id: e.id,
           numero_encomenda: e.numero_encomenda,
           fornecedor_nome: e.fornecedores?.nome || '',
-          valor_total_custo: valorCusto,
-          valor_pago_fornecedor: valorPagoFornecedor,
-          saldo_devedor_fornecedor: Math.max(0, valorCusto - valorPagoFornecedor),
-          valor_frete: valorFrete,
-          total_fornecedor: totalFornecedor,
-          saldo_devedor_fornecedor_total: saldoDevedorTotal,
+          custo_produtos: custoProducts,
+          valor_pago_fornecedor: pagoFornecedor,
+          freight_rates: frete,
+          total_caixa_pagar: totalCaixaPagar,
+          saldo_pagar_caixa: saldoPagarCaixa,
         };
       });
 
@@ -144,14 +151,14 @@ export default function Financeiro() {
     fetchDadosFinanceiros();
   };
 
-  // CORRIGIDO: Cálculos para o resumo - usa os totais corretos
-  const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor_caixa, 0); // Produtos + Frete - Pago
-  const totalPagar = contasPagar.reduce((sum, c) => sum + c.saldo_devedor_fornecedor_total, 0); // Custo + Frete - Pago
-  const totalReceita = encomendas.reduce((sum, e) => sum + e.valor_total, 0); // Apenas produtos para KPI
+  // Cálculos para KPIs - usando valores corretos
+  const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor_caixa, 0); // Total Caixa - Pago
+  const totalPagar = contasPagar.reduce((sum, c) => sum + c.saldo_pagar_caixa, 0); // Custo + Frete - Pago
+  const totalReceita = encomendas.reduce((sum, e) => sum + e.valor_total, 0); // Apenas produtos para KPI (sem frete)
   
-  // Count orders with pending balances
+  // Count orders with pending balances (usando novos campos)
   const encomendasPendentes = encomendas.filter(e => e.saldo_devedor_caixa > 0).length;
-  const contasPendentes = contasPagar.filter(c => c.saldo_devedor_fornecedor_total > 0).length;
+  const contasPendentes = contasPagar.filter(c => c.saldo_pagar_caixa > 0).length;
 
   return (
     <div className="space-y-6">
@@ -203,7 +210,7 @@ export default function Financeiro() {
         <StatCard
           title="Receita Produtos"
           value={`€${totalReceita.toFixed(2)}`}
-          subtitle={`${encomendas.length} encomendas (valor total dos produtos)`}
+          subtitle={`${encomendas.length} encomendas (valor total dos produtos apenas)`}
           icon={<DollarSign className="h-6 w-6" />}
           variant="default"
         />
