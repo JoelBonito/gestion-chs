@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Download, TrendingUp, TrendingDown, DollarSign, AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import EncomendasFinanceiro from "@/components/EncomendasFinanceiro";
 import ContasPagar from "@/components/ContasPagar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { AttachmentManager } from "@/components/AttachmentManager";
 
 // Mock data para movimentações
 const movimentacoes = [
@@ -151,10 +151,11 @@ export default function Financeiro() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
           <TabsTrigger value="encomendas">A Receber</TabsTrigger>
           <TabsTrigger value="pagar">A Pagar</TabsTrigger>
+          <TabsTrigger value="anexos">Anexos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumo" className="space-y-6">
@@ -209,6 +210,23 @@ export default function Financeiro() {
 
         <TabsContent value="pagar">
           <ContasPagar />
+        </TabsContent>
+
+        <TabsContent value="anexos">
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle>Documentos Financeiros</CardTitle>
+              <CardDescription>
+                Gerencie documentos e comprovantes relacionados ao financeiro
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AttachmentManager 
+                entityType="financeiro" 
+                entityId="financial-docs" // Using a fixed ID for financial documents
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
