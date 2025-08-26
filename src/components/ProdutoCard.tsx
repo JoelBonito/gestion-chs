@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2, Power } from "lucide-react";
+import { Edit2, Trash2 } from "lucide-react";
 import { ProdutoForm } from "@/components/ProdutoForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -18,7 +18,7 @@ interface ProdutoCardProps {
   onToggleActive: (id: string, active: boolean) => void;
 }
 
-export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActive }: ProdutoCardProps) {
+export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [produtoData, setProdutoData] = useState(produto);
   const { canEdit } = useUserRole();
@@ -123,15 +123,6 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
                 />
               </DialogContent>
             </Dialog>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onToggleActive(produtoData.id, !produtoData.ativo)}
-              className="flex-shrink-0"
-            >
-              <Power className="w-4 h-4" />
-            </Button>
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
