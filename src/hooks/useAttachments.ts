@@ -26,6 +26,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
   const fetchAttachments = async () => {
     if (!entityId) {
       console.log("Sem entityId, não buscando anexos");
+      setAttachments([]);
       return;
     }
     
@@ -115,7 +116,9 @@ export const useAttachments = (entityType: string, entityId: string) => {
       
       console.log("Anexo inserido com sucesso no banco:", data);
 
-      await fetchAttachments();
+      // Atualiza a lista local imediatamente
+      setAttachments(prev => [data, ...prev]);
+      
       toast({
         title: "Anexo adicionado",
         description: "Arquivo anexado com sucesso.",
@@ -148,7 +151,9 @@ export const useAttachments = (entityType: string, entityId: string) => {
 
       if (error) throw error;
 
-      await fetchAttachments();
+      // Remove from local state immediately
+      setAttachments(prev => prev.filter(a => a.id !== attachment.id));
+
       toast({
         title: "Anexo removido",
         description: "Arquivo removido com sucesso.",

@@ -55,8 +55,28 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
         url: attachment.storage_url,
         fileName: attachment.file_name
       });
+    } else if (attachment.file_type === 'application/pdf') {
+      // Para PDFs, usar embed ou iframe em nova janela
+      const pdfWindow = window.open('', '_blank');
+      if (pdfWindow) {
+        pdfWindow.document.write(`
+          <html>
+            <head>
+              <title>${attachment.file_name}</title>
+              <style>
+                body { margin: 0; padding: 0; }
+                iframe { width: 100vw; height: 100vh; border: none; }
+              </style>
+            </head>
+            <body>
+              <iframe src="${attachment.storage_url}" type="application/pdf"></iframe>
+            </body>
+          </html>
+        `);
+        pdfWindow.document.close();
+      }
     } else {
-      // For PDF and TXT files, open in new tab
+      // Para arquivos TXT, abrir em nova aba
       window.open(attachment.storage_url, '_blank');
     }
   };
