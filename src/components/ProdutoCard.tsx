@@ -6,6 +6,7 @@ import { Edit2, Trash2, Power } from "lucide-react";
 import { ProdutoForm } from "@/components/ProdutoForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AttachmentManager } from "@/components/AttachmentManager";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useState } from "react";
 import { Produto } from "@/types/database";
@@ -19,6 +20,7 @@ interface ProdutoCardProps {
 
 export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActive }: ProdutoCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { canEdit } = useUserRole();
 
   const handleEditSuccess = () => {
@@ -26,8 +28,16 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
     onUpdate();
   };
 
+  const handleAttachmentRefresh = () => {
+    console.log("Executando refresh completo da ficha do produto");
+    // Força um re-render completo incrementando a key
+    setRefreshKey(prev => prev + 1);
+    // Também chama o callback de update do componente pai
+    onUpdate();
+  };
+
   return (
-    <Card className="shadow-card border-border/40 hover:shadow-card-hover transition-shadow">
+    <Card className="shadow-card border-border/40 hover:shadow-card-hover transition-shadow" key={refreshKey}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-display text-primary-dark">
@@ -59,6 +69,16 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
             <p className="text-muted-foreground">Peso</p>
             <p className="text-sm font-medium font-body">{produto.size_weight} kg</p>
           </div>
+        </div>
+
+        {/* Seção de Anexos */}
+        <div className="mt-4 pt-4 border-t">
+          <h4 className="text-sm font-medium text-muted-foreground mb-3">Anexos</h4>
+          <AttachmentManager 
+            entityType="produto" 
+            entityId={produto.id}
+            onRefreshParent={handleAttachmentRefresh}
+          />
         </div>
 
         {canEdit() && (

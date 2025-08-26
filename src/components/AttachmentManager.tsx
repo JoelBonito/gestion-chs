@@ -8,14 +8,16 @@ interface AttachmentManagerProps {
   entityType: string;
   entityId: string;
   title?: string;
+  onRefreshParent?: () => void;
 }
 
 export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
   entityType,
   entityId,
-  title = "Anexos"
+  title = "Anexos",
+  onRefreshParent
 }) => {
-  const { createAttachment, refetch } = useAttachments(entityType, entityId);
+  const { createAttachment } = useAttachments(entityType, entityId);
 
   const handleUploadSuccess = async (fileData: {
     file_name: string;
@@ -31,8 +33,14 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       const result = await createAttachment(fileData);
       console.log("Anexo criado com sucesso no banco de dados:", result);
       
-      // Não precisa do refetch aqui pois o createAttachment já atualiza a lista local
-      console.log("Lista de anexos atualizada automaticamente");
+      // Aguardar 2 segundos e então disparar refresh do componente pai
+      if (onRefreshParent) {
+        console.log("Agendando refresh do componente pai em 2 segundos...");
+        setTimeout(() => {
+          console.log("Executando refresh do componente pai");
+          onRefreshParent();
+        }, 2000);
+      }
     } catch (error) {
       console.error("Erro ao criar anexo no banco:", error);
       throw error;
