@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Download, Trash2, FileText, Image, X } from 'lucide-react';
+import { Eye, Download, Trash2, FileText, Image, X, File } from 'lucide-react';
 import { useAttachments } from '@/hooks/useAttachments';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -32,14 +32,19 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
     if (mimeType.startsWith('image/')) {
       return <Image className="w-4 h-4" />;
     }
+    if (mimeType === 'application/pdf') {
+      return <File className="w-4 h-4 text-red-500" />;
+    }
+    if (mimeType === 'text/plain') {
+      return <FileText className="w-4 h-4 text-blue-500" />;
+    }
     return <FileText className="w-4 h-4" />;
   };
 
   const getFileTypeLabel = (mimeType: string) => {
     if (mimeType.startsWith('image/')) return 'Imagem';
-    if (mimeType.includes('pdf')) return 'PDF';
-    if (mimeType.includes('document') || mimeType.includes('word')) return 'Document';
-    if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return 'Planilha';
+    if (mimeType === 'application/pdf') return 'PDF';
+    if (mimeType === 'text/plain') return 'Texto';
     return 'Arquivo';
   };
 
@@ -51,7 +56,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
         fileName: attachment.file_name
       });
     } else {
-      // For non-images, open in new tab
+      // For PDF and TXT files, open in new tab
       window.open(attachment.storage_url, '_blank');
     }
   };
