@@ -35,7 +35,7 @@ export default function Produtos() {
               Cadastrar Produto
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md shadow-elegant">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto shadow-elegant">
             <DialogHeader>
               <DialogTitle className="font-display text-primary-dark">Cadastrar Novo Produto</DialogTitle>
             </DialogHeader>

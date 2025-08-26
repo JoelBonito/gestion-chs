@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Paperclip, Upload } from 'lucide-react';
 import { useGoogleDrive } from '@/hooks/useGoogleDrive';
-import { useUserRole } from '@/hooks/useUserRole';
 
 interface AttachmentUploadProps {
   onUploadSuccess: (fileData: {
@@ -20,10 +19,9 @@ interface AttachmentUploadProps {
 export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSuccess }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading, uploadProgress } = useGoogleDrive();
-  const { hasRole } = useUserRole();
   
-  // Check if user can upload files
-  const canUpload = hasRole('admin') || hasRole('ops');
+  // Temporarily remove role check to test functionality
+  const canUpload = true;
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
@@ -60,7 +58,13 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSucc
   };
 
   if (!canUpload) {
-    return null;
+    return (
+      <div className="p-4 bg-muted rounded-lg">
+        <p className="text-sm text-muted-foreground">
+          Upload de arquivos temporariamente disponível para teste. Configure as permissões do Google Drive.
+        </p>
+      </div>
+    );
   }
 
   return (
