@@ -50,33 +50,43 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
 
   const handlePreview = (attachment: any) => {
     console.log("Visualizando anexo:", attachment);
+    console.log("URL do arquivo:", attachment.storage_url);
+    
     if (attachment.file_type.startsWith('image/')) {
       setImagePreview({
         url: attachment.storage_url,
         fileName: attachment.file_name
       });
     } else if (attachment.file_type === 'application/pdf') {
-      // Para PDFs, usar embed ou iframe em nova janela
-      const pdfWindow = window.open('', '_blank');
-      if (pdfWindow) {
-        pdfWindow.document.write(`
-          <html>
-            <head>
-              <title>${attachment.file_name}</title>
-              <style>
-                body { margin: 0; padding: 0; }
-                iframe { width: 100vw; height: 100vh; border: none; }
-              </style>
-            </head>
-            <body>
-              <iframe src="${attachment.storage_url}" type="application/pdf"></iframe>
-            </body>
-          </html>
-        `);
-        pdfWindow.document.close();
-      }
+      // Para PDFs, abrir diretamente a URL em nova aba
+      console.log("Abrindo PDF:", attachment.storage_url);
+      window.open(attachment.storage_url, '_blank');
     } else {
-      // Para arquivos TXT, abrir em nova aba
+      // Para outros arquivos, abrir em nova aba
+      window.open(attachment.storage_url, '_blank');
+    }
+  };
+
+  const handleDownload = async (attachment: any) => {
+    console.log("Fazendo download do anexo:", attachment);
+    console.log("URL de download:", attachment.storage_url);
+    
+    try {
+      const response = await fetch(attachment.storage_url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = attachment.file_name;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      console.log("Download iniciado com sucesso");
+    } catch (error) {
+      console.error("Erro ao fazer download:", error);
+      // Fallback: tentar abrir em nova aba
       window.open(attachment.storage_url, '_blank');
     }
   };
@@ -134,16 +144,10 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   <Button
                     variant="ghost"
                     size="sm"
-                    asChild
+                    onClick={() => handleDownload(attachment)}
+                    title="Download"
                   >
-                    <a 
-                      href={attachment.storage_url} 
-                      download={attachment.file_name}
-                      className="flex items-center"
-                      title="Download"
-                    >
-                      <Download className="w-4 h-4" />
-                    </a>
+                    <Download className="w-4 h-4" />
                   </Button>
 
                   {canDelete && (

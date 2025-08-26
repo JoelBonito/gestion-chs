@@ -31,9 +31,8 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       const result = await createAttachment(fileData);
       console.log("Anexo criado com sucesso no banco de dados:", result);
       
-      // Força atualização da lista de anexos após criar no banco
-      console.log("Forçando refresh da lista de anexos...");
-      refetch();
+      // Não precisa do refetch aqui pois o createAttachment já atualiza a lista local
+      console.log("Lista de anexos atualizada automaticamente");
     } catch (error) {
       console.error("Erro ao criar anexo no banco:", error);
       throw error;

@@ -116,8 +116,13 @@ export const useAttachments = (entityType: string, entityId: string) => {
       
       console.log("Anexo inserido com sucesso no banco:", data);
       
-      // Atualiza a lista local imediatamente
-      setAttachments(prev => [data, ...prev]);
+      // Atualiza a lista local imediatamente - adiciona no início do array
+      setAttachments(prev => {
+        console.log("Atualizando lista local de anexos. Lista anterior:", prev.length, "itens");
+        const newList = [data, ...prev];
+        console.log("Nova lista terá:", newList.length, "itens");
+        return newList;
+      });
       
       toast({
         title: "Anexo adicionado",
