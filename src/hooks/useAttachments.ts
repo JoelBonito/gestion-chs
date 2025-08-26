@@ -94,7 +94,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
         uploaded_by: user.id
       };
 
-      console.log("Dados para inserção:", insertData);
+      console.log("Dados para inserção no banco:", insertData);
 
       const { data, error } = await supabase
         .from('attachments')
@@ -104,10 +104,16 @@ export const useAttachments = (entityType: string, entityId: string) => {
 
       if (error) {
         console.error("Erro do Supabase ao inserir anexo:", error);
+        console.error("Detalhes do erro:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
       
-      console.log("Anexo inserido com sucesso:", data);
+      console.log("Anexo inserido com sucesso no banco:", data);
 
       await fetchAttachments();
       toast({
