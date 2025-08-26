@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +10,24 @@ interface SupabaseUploadResult {
   mimeType: string;
   size: number;
 }
+
+// Function to sanitize filename for Supabase Storage
+const sanitizeFileName = (fileName: string): string => {
+  // Get file extension
+  const lastDotIndex = fileName.lastIndexOf('.');
+  const name = lastDotIndex !== -1 ? fileName.slice(0, lastDotIndex) : fileName;
+  const extension = lastDotIndex !== -1 ? fileName.slice(lastDotIndex) : '';
+  
+  // Normalize characters with accents and remove special characters
+  const sanitizedName = name
+    .normalize('NFD') // Decompose accented characters
+    .replace(/[\u0300-\u036f]/g, '') // Remove diacritical marks
+    .replace(/[^a-zA-Z0-9\-_]/g, '_') // Replace non-alphanumeric chars with underscore
+    .replace(/_+/g, '_') // Replace multiple underscores with single
+    .replace(/^_|_$/g, ''); // Remove leading/trailing underscores
+  
+  return sanitizedName + extension;
+};
 
 export const useSupabaseStorage = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -27,7 +44,7 @@ export const useSupabaseStorage = () => {
 
     try {
       console.log('Iniciando upload para Supabase Storage:', { 
-        fileName: file.name, 
+        originalFileName: file.name, 
         size: file.size, 
         type: file.type,
         entityType,
@@ -41,12 +58,21 @@ export const useSupabaseStorage = () => {
         throw new Error('Usuário não autenticado');
       }
 
+      // Sanitize filename to avoid invalid key errors
+      const originalFileName = file.name;
+      const sanitizedFileName = sanitizeFileName(originalFileName);
+      
+      console.log('Nome do arquivo sanitizado:', {
+        original: originalFileName,
+        sanitized: sanitizedFileName
+      });
+
       // Create file path with user ID and timestamp to avoid conflicts
       const timestamp = Date.now();
-      const fileName = `${timestamp}-${file.name}`;
+      const fileName = `${timestamp}-${sanitizedFileName}`;
       const filePath = `${user.id}/${entityType || 'general'}/${fileName}`;
 
-      console.log('Caminho do arquivo:', filePath);
+      console.log('Caminho final do arquivo:', filePath);
 
       // Simulate upload progress
       const progressInterval = setInterval(() => {
@@ -61,11 +87,11 @@ export const useSupabaseStorage = () => {
       clearInterval(progressInterval);
 
       if (error) {
-        console.error('Erro no upload:', error);
+        console.error('Erro no upload do Storage:', error);
         throw error;
       }
 
-      console.log('Upload bem-sucedido:', data);
+      console.log('Upload bem-sucedido no Storage:', data);
 
       // Get public URL
       const { data: publicUrlData } = supabase.storage
@@ -78,16 +104,16 @@ export const useSupabaseStorage = () => {
         path: data.path,
         fullPath: data.fullPath,
         publicUrl: publicUrlData.publicUrl,
-        fileName: file.name,
+        fileName: originalFileName, // Keep original name for display
         mimeType: file.type,
         size: file.size
       };
 
-      console.log('Resultado do upload:', result);
+      console.log('Resultado final do upload:', result);
       
       toast({
         title: "Upload concluído",
-        description: "Arquivo enviado com sucesso para o Supabase Storage.",
+        description: `Arquivo "${originalFileName}" enviado com sucesso.`,
       });
 
       return result;
