@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,6 +7,7 @@ import { Eye, Download, Trash2, FileText, Image, X, File, ExternalLink } from 'l
 import { useAttachments } from '@/hooks/useAttachments';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AttachmentListProps {
   entityType: string;
@@ -16,14 +18,15 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
   const { attachments, isLoading, deleteAttachment } = useAttachments(entityType, entityId);
   const { hasRole } = useUserRole();
   const [imagePreview, setImagePreview] = useState<{ url: string; fileName: string } | null>(null);
-  const [pdfPreview, setPdfPreview] = useState<{ url: string; fileName: string } | null>(null);
+  const [pdfPreview, setPdfPreview] = useState<{ url: string; fileName: string; useGoogleViewer: boolean } | null>(null);
   
   const canDelete = hasRole('admin') || hasRole('ops');
 
-  // Função para construir URL correta do Supabase Storage
-  const getStorageUrl = (storagePath: string) => {
-    const baseUrl = 'https://uxlxxcwsgfwocvfqdykf.supabase.co/storage/v1/object/public/attachments';
-    return `${baseUrl}/${storagePath}`;
+  // Função para obter URL pública usando Supabase SDK
+  const getPublicUrl = (storagePath: string) => {
+    const { data } = supabase.storage.from('attachments').getPublicUrl(storagePath);
+    console.log('AttachmentList - URL pública gerada pelo SDK:', data.publicUrl);
+    return data.publicUrl;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -58,45 +61,43 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
     console.log("=== PREVIEW CLICKED ===");
     console.log("AttachmentList - Visualizando anexo:", attachment);
     
-    // Usar storage_path para construir URL correta
-    const correctUrl = getStorageUrl(attachment.storage_path);
-    console.log("AttachmentList - URL original:", attachment.storage_url);
-    console.log("AttachmentList - URL corrigida:", correctUrl);
-    console.log("AttachmentList - Storage path:", attachment.storage_path);
-    console.log("AttachmentList - Tipo do arquivo:", attachment.file_type);
+    // Usar SDK do Supabase para gerar URL correta
+    const publicUrl = getPublicUrl(attachment.storage_path);
+    console.log("AttachmentList - URL pública:", publicUrl);
     
     if (attachment.file_type.startsWith('image/')) {
       console.log("AttachmentList - Abrindo imagem em modal");
       setImagePreview({
-        url: correctUrl,
+        url: publicUrl,
         fileName: attachment.file_name
       });
     } else if (attachment.file_type === 'application/pdf') {
-      console.log("AttachmentList - Abrindo PDF em modal com URL corrigida:", correctUrl);
+      console.log("AttachmentList - Abrindo PDF em modal");
       setPdfPreview({
-        url: correctUrl,
-        fileName: attachment.file_name
+        url: publicUrl,
+        fileName: attachment.file_name,
+        useGoogleViewer: false
       });
     } else {
       console.log("AttachmentList - Abrindo arquivo em nova aba");
-      window.open(correctUrl, '_blank');
+      window.open(publicUrl, '_blank');
     }
   };
 
   const handleOpenInNewTab = (storagePath: string) => {
-    const correctUrl = getStorageUrl(storagePath);
-    console.log("AttachmentList - Abrindo em nova aba com URL corrigida:", correctUrl);
-    window.open(correctUrl, '_blank');
+    const publicUrl = getPublicUrl(storagePath);
+    console.log("AttachmentList - Abrindo em nova aba com URL:", publicUrl);
+    window.open(publicUrl, '_blank');
   };
 
   const handleDownload = async (attachment: any) => {
     console.log("AttachmentList - Fazendo download do anexo:", attachment);
     
-    const correctUrl = getStorageUrl(attachment.storage_path);
-    console.log("AttachmentList - URL de download corrigida:", correctUrl);
+    const publicUrl = getPublicUrl(attachment.storage_path);
+    console.log("AttachmentList - URL de download:", publicUrl);
     
     try {
-      const response = await fetch(correctUrl);
+      const response = await fetch(publicUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -111,7 +112,17 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
     } catch (error) {
       console.error("AttachmentList - Erro ao fazer download:", error);
       // Fallback: tentar abrir em nova aba
-      window.open(correctUrl, '_blank');
+      window.open(publicUrl, '_blank');
+    }
+  };
+
+  const handleIframeError = () => {
+    console.log("AttachmentList - Iframe bloqueado, mudando para Google Viewer");
+    if (pdfPreview && !pdfPreview.useGoogleViewer) {
+      setPdfPreview({
+        ...pdfPreview,
+        useGoogleViewer: true
+      });
     }
   };
 
@@ -192,7 +203,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </DialogTrigger>
-                      <DialogContent>
+                      <DialogContent aria-describedby={undefined}>
                         <DialogHeader>
                           <DialogTitle>Excluir anexo</DialogTitle>
                           <DialogDescription>
@@ -222,7 +233,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
       {/* Image Preview Modal */}
       {imagePreview && (
         <Dialog open={!!imagePreview} onOpenChange={() => setImagePreview(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogContent className="max-w-4xl max-h-[90vh] p-0" aria-describedby={undefined}>
             <DialogHeader className="p-6 pb-0">
               <div className="flex items-center justify-between">
                 <DialogTitle className="text-lg font-medium truncate">
@@ -236,9 +247,6 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   <X className="w-4 h-4" />
                 </Button>
               </div>
-              <DialogDescription>
-                Visualização da imagem anexada
-              </DialogDescription>
             </DialogHeader>
             <div className="p-6 pt-2">
               <div className="flex items-center justify-center bg-muted rounded-lg p-4">
@@ -260,7 +268,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
       {/* PDF Preview Modal */}
       {pdfPreview && (
         <Dialog open={!!pdfPreview} onOpenChange={() => setPdfPreview(null)}>
-          <DialogContent className="max-w-6xl max-h-[95vh] p-0">
+          <DialogContent className="max-w-6xl max-h-[95vh] p-0" aria-describedby={undefined}>
             <DialogHeader className="p-4 pb-0 border-b">
               <div className="flex items-center justify-between">
                 <DialogTitle className="text-lg font-medium truncate">
@@ -270,7 +278,12 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleOpenInNewTab(pdfPreview.url.split('/attachments/')[1])}
+                    onClick={() => {
+                      const publicUrl = getPublicUrl(pdfPreview.url.includes('attachments/') 
+                        ? pdfPreview.url.split('/attachments/')[1] 
+                        : pdfPreview.url);
+                      window.open(publicUrl, '_blank');
+                    }}
                     title="Abrir em nova aba"
                   >
                     <ExternalLink className="w-4 h-4 mr-1" />
@@ -285,32 +298,40 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   </Button>
                 </div>
               </div>
-              <DialogDescription>
-                Visualização do documento PDF anexado
-              </DialogDescription>
             </DialogHeader>
             <div className="p-4">
               <div className="bg-muted rounded-lg overflow-hidden border">
-                <iframe
-                  src={`${pdfPreview.url}#toolbar=1&navpanes=1&scrollbar=1`}
-                  className="w-full h-[75vh]"
-                  style={{ border: 'none', minHeight: '600px' }}
-                  title={pdfPreview.fileName}
-                  onLoad={() => {
-                    console.log('AttachmentList - PDF carregado com sucesso no iframe com URL:', pdfPreview.url);
-                  }}
-                  onError={(e) => {
-                    console.error('AttachmentList - Erro ao carregar PDF no iframe:', pdfPreview.url, e);
-                  }}
-                />
+                {pdfPreview.useGoogleViewer ? (
+                  <iframe
+                    src={`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(pdfPreview.url)}`}
+                    className="w-full h-[75vh]"
+                    title={pdfPreview.fileName}
+                    frameBorder="0"
+                    onLoad={() => {
+                      console.log('AttachmentList - PDF carregado com Google Viewer');
+                    }}
+                  />
+                ) : (
+                  <iframe
+                    src={pdfPreview.url}
+                    className="w-full h-[75vh]"
+                    title={pdfPreview.fileName}
+                    frameBorder="0"
+                    onLoad={() => {
+                      console.log('AttachmentList - PDF carregado diretamente');
+                    }}
+                    onError={handleIframeError}
+                  />
+                )}
               </div>
               <div className="mt-3 text-center">
                 <p className="text-sm text-muted-foreground">
+                  {pdfPreview.useGoogleViewer && "Visualização via Google Viewer. "}
                   Problemas para visualizar? {' '}
                   <Button
                     variant="link"
                     size="sm"
-                    onClick={() => handleOpenInNewTab(pdfPreview.url.split('/attachments/')[1])}
+                    onClick={() => window.open(pdfPreview.url, '_blank')}
                     className="p-0 h-auto text-sm"
                   >
                     Clique aqui para abrir em nova aba

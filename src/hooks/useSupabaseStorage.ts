@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -79,10 +80,13 @@ export const useSupabaseStorage = () => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 100);
 
-      // Upload file to Supabase Storage
+      // Upload file to Supabase Storage with explicit contentType
       const { data, error } = await supabase.storage
         .from('attachments')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          contentType: file.type, // Garantir content-type correto
+          upsert: false
+        });
 
       clearInterval(progressInterval);
 
@@ -93,7 +97,7 @@ export const useSupabaseStorage = () => {
 
       console.log('Upload bem-sucedido no Storage:', data);
 
-      // Get public URL
+      // Get public URL usando SDK oficial
       const { data: publicUrlData } = supabase.storage
         .from('attachments')
         .getPublicUrl(filePath);
