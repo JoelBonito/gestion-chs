@@ -184,8 +184,8 @@ export default function ContasPagar() {
           {selectedConta && (
             <PagamentoFornecedorForm 
               onSuccess={handlePagamentoSuccess}
-              encomenda={{
-                id: selectedConta.id,
+              conta={{
+                encomenda_id: selectedConta.id,
                 numero_encomenda: selectedConta.numero_encomenda,
                 fornecedor_nome: selectedConta.fornecedor_nome,
                 valor_total_custo: selectedConta.valor_total_custo,
