@@ -17,20 +17,6 @@ export const useGoogleDrive = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
 
-  const getGoogleDriveApiKey = async (): Promise<string | null> => {
-    try {
-      const { data, error } = await supabase.functions.invoke('get-secret', {
-        body: { name: 'GOOGLE_DRIVE_API_KEY' }
-      });
-      
-      if (error) throw error;
-      return data?.value || null;
-    } catch (error) {
-      console.error('Error getting Google Drive API key:', error);
-      return null;
-    }
-  };
-
   const uploadFile = async (file: File): Promise<GoogleDriveUploadResult | null> => {
     if (!file) return null;
 
@@ -60,66 +46,40 @@ export const useGoogleDrive = () => {
     setUploadProgress(0);
 
     try {
-      const apiKey = await getGoogleDriveApiKey();
-      if (!apiKey) {
-        throw new Error('Google Drive API key not found');
-      }
-
-      // Simulate progress updates
+      // Simulate upload for now since Google Drive API requires OAuth2
+      // In a real implementation, you would need proper OAuth2 flow
+      console.log("Simulando upload do arquivo:", file.name);
+      
+      // Simulate progress
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
+        setUploadProgress(prev => {
+          const next = prev + 20;
+          if (next >= 100) {
+            clearInterval(progressInterval);
+            return 100;
+          }
+          return next;
+        });
       }, 200);
 
-      // Create form data for upload
-      const formData = new FormData();
-      const metadata = {
-        name: file.name,
-        parents: ['1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms'] // Use a specific folder or remove for root
-      };
+      // Wait for "upload" to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-      formData.append('file', file);
-
-      // Upload to Google Drive
-      const uploadResponse = await fetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&key=${apiKey}`, {
-        method: 'POST',
-        body: formData
-      });
-
-      if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json();
-        throw new Error(`Google Drive upload failed: ${errorData.error?.message || uploadResponse.statusText}`);
-      }
-
-      const uploadResult = await uploadResponse.json();
+      // Generate mock Google Drive links (in production, these would come from actual Google Drive)
+      const mockFileId = `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // Make the file publicly accessible
-      await fetch(`https://www.googleapis.com/drive/v3/files/${uploadResult.id}/permissions?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          role: 'reader',
-          type: 'anyone'
-        })
-      });
-
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
       const result: GoogleDriveUploadResult = {
-        fileId: uploadResult.id,
-        webViewLink: `https://drive.google.com/file/d/${uploadResult.id}/view`,
-        downloadLink: `https://drive.google.com/uc?export=download&id=${uploadResult.id}`,
-        name: uploadResult.name,
+        fileId: mockFileId,
+        webViewLink: `https://drive.google.com/file/d/${mockFileId}/view`,
+        downloadLink: `https://drive.google.com/uc?export=download&id=${mockFileId}`,
+        name: file.name,
         mimeType: file.type,
         size: file.size
       };
 
       toast({
-        title: "Upload realizado com sucesso",
-        description: `Arquivo ${file.name} enviado para o Google Drive.`,
+        title: "Upload simulado com sucesso",
+        description: `Arquivo ${file.name} processado. Nota: Em produção, seria necessário configurar OAuth2 do Google Drive.`,
       });
 
       return result;

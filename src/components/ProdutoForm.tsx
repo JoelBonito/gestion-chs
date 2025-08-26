@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,6 +39,7 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
   const [novaOpçaoDialog, setNovaOpçaoDialog] = useState<{tipo: string, aberto: boolean}>({tipo: '', aberto: false});
   const [novoValor, setNovoValor] = useState('');
   const [produtoId, setProdutoId] = useState<string | null>(produto?.id || null);
+  const [isFormInitialized, setIsFormInitialized] = useState(false);
 
   const isEditing = !!produto;
 
@@ -59,14 +59,23 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
   // Carregar fornecedores e opções existentes ao montar componente
   useEffect(() => {
     console.log("ProdutoForm montado, carregando dados iniciais");
-    carregarFornecedores();
-    carregarOpcoesExistentes();
+    const loadInitialData = async () => {
+      await Promise.all([
+        carregarFornecedores(),
+        carregarOpcoesExistentes(),
+      ]);
+      setIsFormInitialized(true);
+    };
+    loadInitialData();
   }, []);
 
-  // Carregar dados do produto APENAS quando produto mudar
+  // Carregar dados do produto APENAS quando produto mudar E os dados estiverem carregados
   useEffect(() => {
-    console.log("Produto mudou:", produto);
-    if (produto) {
+    if (!isFormInitialized) return;
+    
+    console.log("Preenchendo formulário - isFormInitialized:", isFormInitialized, "produto:", produto);
+    
+    if (produto && isFormInitialized) {
       console.log("Preenchendo formulário com dados do produto:", {
         nome: produto.nome,
         marca: produto.marca,
@@ -77,17 +86,19 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
         size_weight: produto.size_weight
       });
       
-      // Usar setValue para cada campo individualmente para garantir que sejam preenchidos
-      form.setValue('nome', produto.nome || "");
-      form.setValue('marca', produto.marca || "");
-      form.setValue('tipo', produto.tipo || "");
-      form.setValue('preco_custo', produto.preco_custo ? produto.preco_custo.toString() : "");
-      form.setValue('preco_venda', produto.preco_venda ? produto.preco_venda.toString() : "");
-      form.setValue('size_weight', produto.size_weight ? produto.size_weight.toString() : "0");
-      form.setValue('fornecedor_id', produto.fornecedor_id || "");
+      // Resetar o form com os valores do produto
+      form.reset({
+        nome: produto.nome || "",
+        marca: produto.marca || "",
+        tipo: produto.tipo || "",
+        preco_custo: produto.preco_custo ? produto.preco_custo.toString() : "",
+        preco_venda: produto.preco_venda ? produto.preco_venda.toString() : "",
+        size_weight: produto.size_weight ? produto.size_weight.toString() : "0",
+        fornecedor_id: produto.fornecedor_id || "",
+      });
       
       setProdutoId(produto.id);
-    } else {
+    } else if (!produto && isFormInitialized) {
       console.log("Novo produto, resetando formulário");
       form.reset({
         nome: "",
@@ -100,7 +111,7 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
       });
       setProdutoId(null);
     }
-  }, [produto, form]);
+  }, [produto, isFormInitialized, form]);
 
   const carregarFornecedores = async () => {
     try {
@@ -347,7 +358,7 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
                         field.onChange(value);
                       }
                     }} 
-                    value={field.value || ""}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger className="input-elegant">
@@ -388,7 +399,7 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
                         field.onChange(value);
                       }
                     }} 
-                    value={field.value || ""}
+                    value={field.value}
                   >
                     <FormControl>
                       <SelectTrigger className="input-elegant">
