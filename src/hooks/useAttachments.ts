@@ -25,12 +25,12 @@ export const useAttachments = (entityType: string, entityId: string) => {
 
   const fetchAttachments = async () => {
     if (!entityId) {
-      console.log("Sem entityId, não buscando anexos");
+      console.log("useAttachments - Sem entityId, não buscando anexos");
       setAttachments([]);
       return;
     }
     
-    console.log(`Buscando anexos para entityType: ${entityType}, entityId: ${entityId}`);
+    console.log(`useAttachments - Buscando anexos para entityType: ${entityType}, entityId: ${entityId}`);
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -41,14 +41,14 @@ export const useAttachments = (entityType: string, entityId: string) => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error("Erro ao buscar anexos:", error);
+        console.error("useAttachments - Erro ao buscar anexos:", error);
         throw error;
       }
       
-      console.log(`Anexos encontrados (${data?.length || 0}):`, data);
+      console.log(`useAttachments - Anexos encontrados (${data?.length || 0}):`, data);
       setAttachments(data || []);
     } catch (error: any) {
-      console.error("Erro ao carregar anexos:", error);
+      console.error("useAttachments - Erro ao carregar anexos:", error);
       toast({
         title: "Erro ao carregar anexos",
         description: error.message,
@@ -66,23 +66,23 @@ export const useAttachments = (entityType: string, entityId: string) => {
     storage_url: string;
     file_size: number;
   }) => {
-    console.log(`Criando anexo no banco de dados para entityType: ${entityType}, entityId: ${entityId}`, attachmentData);
+    console.log(`useAttachments - Criando anexo no banco para entityType: ${entityType}, entityId: ${entityId}`, attachmentData);
     
     try {
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError) {
-        console.error("Erro ao obter usuário:", userError);
+        console.error("useAttachments - Erro ao obter usuário:", userError);
         throw new Error("Erro ao obter usuário atual");
       }
 
       if (!user) {
-        console.error("Usuário não autenticado");
+        console.error("useAttachments - Usuário não autenticado");
         throw new Error("Usuário não autenticado");
       }
 
-      console.log("Usuário autenticado:", user.id);
+      console.log("useAttachments - Usuário autenticado:", user.id);
 
       const insertData = {
         entity_type: entityType,
@@ -95,7 +95,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
         uploaded_by: user.id
       };
 
-      console.log("Dados para inserção no banco:", insertData);
+      console.log("useAttachments - Dados para inserção no banco:", insertData);
 
       const { data, error } = await supabase
         .from('attachments')
@@ -104,8 +104,8 @@ export const useAttachments = (entityType: string, entityId: string) => {
         .single();
 
       if (error) {
-        console.error("Erro do Supabase ao inserir anexo:", error);
-        console.error("Detalhes do erro:", {
+        console.error("useAttachments - Erro do Supabase ao inserir anexo:", error);
+        console.error("useAttachments - Detalhes do erro:", {
           message: error.message,
           details: error.details,
           hint: error.hint,
@@ -114,13 +114,13 @@ export const useAttachments = (entityType: string, entityId: string) => {
         throw error;
       }
       
-      console.log("Anexo inserido com sucesso no banco:", data);
+      console.log("useAttachments - Anexo inserido com sucesso no banco:", data);
       
       // Atualiza a lista local imediatamente - adiciona no início do array
       setAttachments(prev => {
-        console.log("Atualizando lista local de anexos. Lista anterior:", prev.length, "itens");
+        console.log("useAttachments - Atualizando lista local. Lista anterior:", prev.length, "itens");
         const newList = [data, ...prev];
-        console.log("Nova lista terá:", newList.length, "itens");
+        console.log("useAttachments - Nova lista terá:", newList.length, "itens");
         return newList;
       });
       
@@ -131,7 +131,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
 
       return data;
     } catch (error: any) {
-      console.error("Erro ao salvar anexo:", error);
+      console.error("useAttachments - Erro ao salvar anexo:", error);
       toast({
         title: "Erro ao salvar anexo",
         description: error.message,
@@ -143,7 +143,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
 
   const deleteAttachment = async (attachment: Attachment) => {
     try {
-      console.log("Deletando anexo:", attachment);
+      console.log("useAttachments - Deletando anexo:", attachment);
 
       // First delete the file from storage
       await deleteFile(attachment.storage_path);
@@ -164,7 +164,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
         description: "Arquivo removido com sucesso.",
       });
     } catch (error: any) {
-      console.error("Erro ao remover anexo:", error);
+      console.error("useAttachments - Erro ao remover anexo:", error);
       toast({
         title: "Erro ao remover anexo",
         description: error.message,
@@ -174,7 +174,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
   };
 
   useEffect(() => {
-    console.log(`useAttachments useEffect executado para entityType: ${entityType}, entityId: ${entityId}`);
+    console.log(`useAttachments - useEffect executado para entityType: ${entityType}, entityId: ${entityId}`);
     fetchAttachments();
   }, [entityType, entityId]);
 

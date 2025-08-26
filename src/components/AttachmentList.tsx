@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Download, Trash2, FileText, Image, X, File } from 'lucide-react';
+import { Eye, Download, Trash2, FileText, Image, X, File, ExternalLink } from 'lucide-react';
 import { useAttachments } from '@/hooks/useAttachments';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -50,29 +50,37 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
   };
 
   const handlePreview = (attachment: any) => {
-    console.log("Visualizando anexo:", attachment);
-    console.log("URL do arquivo:", attachment.storage_url);
+    console.log("=== PREVIEW CLICKED ===");
+    console.log("AttachmentList - Visualizando anexo:", attachment);
+    console.log("AttachmentList - URL do arquivo:", attachment.storage_url);
+    console.log("AttachmentList - Tipo do arquivo:", attachment.file_type);
     
     if (attachment.file_type.startsWith('image/')) {
+      console.log("AttachmentList - Abrindo imagem em modal");
       setImagePreview({
         url: attachment.storage_url,
         fileName: attachment.file_name
       });
     } else if (attachment.file_type === 'application/pdf') {
-      console.log("Abrindo PDF em modal:", attachment.storage_url);
+      console.log("AttachmentList - Abrindo PDF em modal:", attachment.storage_url);
       setPdfPreview({
         url: attachment.storage_url,
         fileName: attachment.file_name
       });
     } else {
-      // Para outros arquivos, abrir em nova aba
+      console.log("AttachmentList - Abrindo arquivo em nova aba");
       window.open(attachment.storage_url, '_blank');
     }
   };
 
+  const handleOpenInNewTab = (url: string) => {
+    console.log("AttachmentList - Abrindo em nova aba:", url);
+    window.open(url, '_blank');
+  };
+
   const handleDownload = async (attachment: any) => {
-    console.log("Fazendo download do anexo:", attachment);
-    console.log("URL de download:", attachment.storage_url);
+    console.log("AttachmentList - Fazendo download do anexo:", attachment);
+    console.log("AttachmentList - URL de download:", attachment.storage_url);
     
     try {
       const response = await fetch(attachment.storage_url);
@@ -86,9 +94,9 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      console.log("Download iniciado com sucesso");
+      console.log("AttachmentList - Download iniciado com sucesso");
     } catch (error) {
-      console.error("Erro ao fazer download:", error);
+      console.error("AttachmentList - Erro ao fazer download:", error);
       // Fallback: tentar abrir em nova aba
       window.open(attachment.storage_url, '_blank');
     }
@@ -143,6 +151,17 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
+
+                  {attachment.file_type === 'application/pdf' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleOpenInNewTab(attachment.storage_url)}
+                      title="Abrir em nova aba"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </Button>
+                  )}
 
                   <Button
                     variant="ghost"
@@ -215,7 +234,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   alt={imagePreview.fileName}
                   className="max-w-full max-h-[60vh] object-contain rounded"
                   onError={(e) => {
-                    console.error('Erro ao carregar imagem:', imagePreview.url);
+                    console.error('AttachmentList - Erro ao carregar imagem:', imagePreview.url);
                     e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDEyQzIxIDEzLjEwNDYgMjAuMTA0NiAxNCAE5IDEzSDdDNS44OTU0MyAxNCA1IDEzLjEwNDYgNSAxMlY3QzUgNS44OTU0MyA1Ljg5NTQzIDUgNyA1SDEyQzEzLjEwNDYgNSAxNCA1Ljg5NTQzIDE0IDdWMTJaIiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
                   }}
                 />
@@ -228,35 +247,62 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
       {/* PDF Preview Modal */}
       {pdfPreview && (
         <Dialog open={!!pdfPreview} onOpenChange={() => setPdfPreview(null)}>
-          <DialogContent className="max-w-5xl max-h-[90vh] p-0">
-            <DialogHeader className="p-6 pb-0">
+          <DialogContent className="max-w-6xl max-h-[95vh] p-0">
+            <DialogHeader className="p-4 pb-0 border-b">
               <div className="flex items-center justify-between">
                 <DialogTitle className="text-lg font-medium truncate">
                   {pdfPreview.fileName}
                 </DialogTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPdfPreview(null)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenInNewTab(pdfPreview.url)}
+                    title="Abrir em nova aba"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-1" />
+                    Nova aba
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPdfPreview(null)}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
               <DialogDescription>
                 Visualização do documento PDF anexado
               </DialogDescription>
             </DialogHeader>
-            <div className="p-6 pt-2">
-              <div className="bg-muted rounded-lg overflow-hidden">
+            <div className="p-4">
+              <div className="bg-muted rounded-lg overflow-hidden border">
                 <iframe
-                  src={pdfPreview.url}
-                  className="w-full h-[70vh]"
-                  style={{ border: 'none' }}
+                  src={`${pdfPreview.url}#toolbar=1&navpanes=1&scrollbar=1`}
+                  className="w-full h-[75vh]"
+                  style={{ border: 'none', minHeight: '600px' }}
                   title={pdfPreview.fileName}
-                  onError={() => {
-                    console.error('Erro ao carregar PDF:', pdfPreview.url);
+                  onLoad={() => {
+                    console.log('AttachmentList - PDF carregado com sucesso no iframe');
+                  }}
+                  onError={(e) => {
+                    console.error('AttachmentList - Erro ao carregar PDF no iframe:', pdfPreview.url, e);
                   }}
                 />
+              </div>
+              <div className="mt-3 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Problemas para visualizar? {' '}
+                  <Button
+                    variant="link"
+                    size="sm"
+                    onClick={() => handleOpenInNewTab(pdfPreview.url)}
+                    className="p-0 h-auto text-sm"
+                  >
+                    Clique aqui para abrir em nova aba
+                  </Button>
+                </p>
               </div>
             </div>
           </DialogContent>

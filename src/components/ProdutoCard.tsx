@@ -23,16 +23,27 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
   const { canEdit } = useUserRole();
 
   const handleEditSuccess = () => {
+    console.log("Produto editado com sucesso, fechando dialog e atualizando");
     setIsEditDialogOpen(false);
     onUpdate();
   };
 
   const handleAttachmentRefresh = () => {
-    console.log("Executando refresh completo da ficha do produto");
+    console.log("=== REFRESH TRIGGERED - Executando refresh completo da ficha do produto ===");
+    console.log("ProdutoCard - handleAttachmentRefresh chamado para produto:", produto.id);
+    
     // Força um re-render completo incrementando a key
-    setRefreshKey(prev => prev + 1);
+    setRefreshKey(prev => {
+      const newKey = prev + 1;
+      console.log("ProdutoCard - Atualizando refreshKey de", prev, "para", newKey);
+      return newKey;
+    });
+    
     // Também chama o callback de update do componente pai
+    console.log("ProdutoCard - Chamando onUpdate do componente pai");
     onUpdate();
+    
+    console.log("=== REFRESH COMPLETED ===");
   };
 
   return (

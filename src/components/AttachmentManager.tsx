@@ -17,7 +17,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
   title = "Anexos",
   onRefreshParent
 }) => {
-  const { createAttachment } = useAttachments(entityType, entityId);
+  const { createAttachment, refetch } = useAttachments(entityType, entityId);
 
   const handleUploadSuccess = async (fileData: {
     file_name: string;
@@ -26,33 +26,39 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
     storage_url: string;
     file_size: number;
   }) => {
-    console.log("Upload bem-sucedido para Supabase Storage, dados do arquivo:", fileData);
-    console.log(`Tentando criar anexo no banco de dados para entityType: ${entityType}, entityId: ${entityId}`);
+    console.log("=== ATTACHMENT UPLOAD SUCCESS ===");
+    console.log("AttachmentManager - Upload bem-sucedido para Supabase Storage, dados do arquivo:", fileData);
+    console.log(`AttachmentManager - Tentando criar anexo no banco para entityType: ${entityType}, entityId: ${entityId}`);
     
     try {
       const result = await createAttachment(fileData);
-      console.log("Anexo criado com sucesso no banco de dados:", result);
+      console.log("AttachmentManager - Anexo criado com sucesso no banco de dados:", result);
       
-      // Aguardar 2 segundos e então disparar refresh do componente pai
+      // Refresh local dos anexos
+      console.log("AttachmentManager - Fazendo refetch local dos anexos");
+      await refetch();
+      
+      // Disparar refresh do componente pai imediatamente
       if (onRefreshParent) {
-        console.log("Agendando refresh do componente pai em 2 segundos...");
-        setTimeout(() => {
-          console.log("Executando refresh do componente pai");
-          onRefreshParent();
-        }, 2000);
+        console.log("AttachmentManager - Executando refresh do componente pai IMEDIATAMENTE");
+        onRefreshParent();
+      } else {
+        console.warn("AttachmentManager - onRefreshParent não foi fornecido!");
       }
+      
+      console.log("=== ATTACHMENT PROCESS COMPLETED ===");
     } catch (error) {
-      console.error("Erro ao criar anexo no banco:", error);
+      console.error("AttachmentManager - Erro ao criar anexo no banco:", error);
       throw error;
     }
   };
 
   if (!entityId) {
-    console.log("EntityId não fornecido, não renderizando AttachmentManager");
+    console.log("AttachmentManager - EntityId não fornecido, não renderizando");
     return null;
   }
 
-  console.log(`Renderizando AttachmentManager para entityType: ${entityType}, entityId: ${entityId}`);
+  console.log(`AttachmentManager - Renderizando para entityType: ${entityType}, entityId: ${entityId}`);
 
   return (
     <div className="space-y-6">
