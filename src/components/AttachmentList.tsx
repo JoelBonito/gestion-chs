@@ -82,38 +82,34 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
               </div>
 
               <div className="flex items-center space-x-1">
-                {attachment.gdrive_view_link && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    asChild
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                >
+                  <a 
+                    href={attachment.storage_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center"
                   >
-                    <a 
-                      href={attachment.gdrive_view_link} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </a>
-                  </Button>
-                )}
+                    <Eye className="w-4 h-4" />
+                  </a>
+                </Button>
 
-                {attachment.gdrive_download_link && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    asChild
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  asChild
+                >
+                  <a 
+                    href={attachment.storage_url} 
+                    download={attachment.file_name}
+                    className="flex items-center"
                   >
-                    <a 
-                      href={attachment.gdrive_download_link} 
-                      download
-                      className="flex items-center"
-                    >
-                      <Download className="w-4 h-4" />
-                    </a>
-                  </Button>
-                )}
+                    <Download className="w-4 h-4" />
+                  </a>
+                </Button>
 
                 {canDelete && (
                   <Dialog>
@@ -134,7 +130,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                         <Button variant="outline">Cancelar</Button>
                         <Button 
                           variant="destructive"
-                          onClick={() => deleteAttachment(attachment.id)}
+                          onClick={() => deleteAttachment(attachment)}
                         >
                           Excluir
                         </Button>

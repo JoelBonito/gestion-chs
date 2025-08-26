@@ -3,7 +3,7 @@ import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Paperclip, Upload } from 'lucide-react';
-import { useGoogleDrive } from '@/hooks/useGoogleDrive';
+import { useSupabaseStorage } from '@/hooks/useSupabaseStorage';
 import { useUserRole } from '@/hooks/useUserRole';
 
 interface AttachmentUploadProps {
@@ -12,9 +12,8 @@ interface AttachmentUploadProps {
   onUploadSuccess: (fileData: {
     file_name: string;
     file_type: string;
-    gdrive_file_id: string;
-    gdrive_view_link: string;
-    gdrive_download_link: string;
+    storage_path: string;
+    storage_url: string;
     file_size: number;
   }) => void;
 }
@@ -25,7 +24,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
   onUploadSuccess 
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { uploadFile, isUploading, uploadProgress } = useGoogleDrive();
+  const { uploadFile, isUploading, uploadProgress } = useSupabaseStorage();
   const { hasRole } = useUserRole();
   
   // Check if user can upload files
@@ -44,13 +43,12 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
     try {
       const result = await uploadFile(file, entityType, entityId);
       if (result) {
-        // Transform the GoogleDriveUploadResult to match the expected interface
+        // Transform the SupabaseUploadResult to match the expected interface
         onUploadSuccess({
-          file_name: result.name,
+          file_name: result.fileName,
           file_type: result.mimeType,
-          gdrive_file_id: result.fileId,
-          gdrive_view_link: result.webViewLink,
-          gdrive_download_link: result.downloadLink,
+          storage_path: result.path,
+          storage_url: result.publicUrl,
           file_size: result.size
         });
       }
@@ -75,7 +73,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
         type="file"
         onChange={handleFileChange}
         className="hidden"
-        accept=".pdf,.jpg,.jpeg,.png"
+        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
         multiple={false}
       />
       
@@ -89,7 +87,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
         {isUploading ? (
           <>
             <Upload className="w-4 h-4 mr-2 animate-spin" />
-            Enviando para Google Drive...
+            Enviando para Supabase...
           </>
         ) : (
           <>
@@ -103,7 +101,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
         <div className="space-y-1">
           <Progress value={uploadProgress} className="h-2" />
           <p className="text-xs text-muted-foreground text-center">
-            {uploadProgress}% enviado para Google Drive
+            {uploadProgress}% enviado
           </p>
         </div>
       )}

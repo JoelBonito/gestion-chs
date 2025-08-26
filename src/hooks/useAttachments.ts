@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSupabaseStorage } from './useSupabaseStorage';
 
 interface Attachment {
   id: string;
@@ -9,9 +10,8 @@ interface Attachment {
   entity_id: string;
   file_name: string;
   file_type: string;
-  gdrive_file_id: string;
-  gdrive_view_link: string;
-  gdrive_download_link: string;
+  storage_path: string;
+  storage_url: string;
   file_size: number;
   uploaded_by: string;
   created_at: string;
@@ -21,6 +21,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { deleteFile } = useSupabaseStorage();
 
   const fetchAttachments = async () => {
     if (!entityId) {
@@ -60,9 +61,8 @@ export const useAttachments = (entityType: string, entityId: string) => {
   const createAttachment = async (attachmentData: {
     file_name: string;
     file_type: string;
-    gdrive_file_id: string;
-    gdrive_view_link: string;
-    gdrive_download_link: string;
+    storage_path: string;
+    storage_url: string;
     file_size: number;
   }) => {
     console.log("Criando anexo no banco de dados:", { entityType, entityId, attachmentData });
@@ -88,9 +88,8 @@ export const useAttachments = (entityType: string, entityId: string) => {
         entity_id: entityId,
         file_name: attachmentData.file_name,
         file_type: attachmentData.file_type,
-        gdrive_file_id: attachmentData.gdrive_file_id,
-        gdrive_view_link: attachmentData.gdrive_view_link,
-        gdrive_download_link: attachmentData.gdrive_download_link,
+        storage_path: attachmentData.storage_path,
+        storage_url: attachmentData.storage_url,
         file_size: attachmentData.file_size,
         uploaded_by: user.id
       };
@@ -128,12 +127,18 @@ export const useAttachments = (entityType: string, entityId: string) => {
     }
   };
 
-  const deleteAttachment = async (attachmentId: string) => {
+  const deleteAttachment = async (attachment: Attachment) => {
     try {
+      console.log("Deletando anexo:", attachment);
+
+      // First delete the file from storage
+      await deleteFile(attachment.storage_path);
+
+      // Then delete the record from database
       const { error } = await supabase
         .from('attachments')
         .delete()
-        .eq('id', attachmentId);
+        .eq('id', attachment.id);
 
       if (error) throw error;
 
@@ -143,6 +148,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
         description: "Arquivo removido com sucesso.",
       });
     } catch (error: any) {
+      console.error("Erro ao remover anexo:", error);
       toast({
         title: "Erro ao remover anexo",
         description: error.message,

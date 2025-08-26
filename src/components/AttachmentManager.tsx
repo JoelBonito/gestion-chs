@@ -20,12 +20,11 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
   const handleUploadSuccess = async (fileData: {
     file_name: string;
     file_type: string;
-    gdrive_file_id: string;
-    gdrive_view_link: string;
-    gdrive_download_link: string;
+    storage_path: string;
+    storage_url: string;
     file_size: number;
   }) => {
-    console.log("Upload bem-sucedido para Google Drive, dados do arquivo:", fileData);
+    console.log("Upload bem-sucedido para Supabase Storage, dados do arquivo:", fileData);
     console.log("Tentando criar anexo no banco de dados para:", { entityType, entityId });
     
     try {
