@@ -22,7 +22,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ onUploadSucc
   const { hasRole } = useUserRole();
   
   // Check if user can upload files
-  const canUpload = hasRole('admin') || hasRole('ops') || hasRole('finance');
+  const canUpload = hasRole('admin') || hasRole('ops');
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();

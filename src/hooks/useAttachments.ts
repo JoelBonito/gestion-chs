@@ -35,7 +35,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAttachments(data || []);
+      setAttachments((data as Attachment[]) || []);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar anexos",

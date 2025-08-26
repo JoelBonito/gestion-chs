@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Eye, Download, Trash2, FileText, Image } from 'lucide-react';
 import { useAttachments } from '@/hooks/useAttachments';
 import { useUserRole } from '@/hooks/useUserRole';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface AttachmentListProps {
   entityType: string;
@@ -17,7 +17,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
   const { attachments, isLoading, deleteAttachment } = useAttachments(entityType, entityId);
   const { hasRole } = useUserRole();
   
-  const canDelete = hasRole('admin') || hasRole('ops') || hasRole('finance');
+  const canDelete = hasRole('admin') || hasRole('ops');
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -111,30 +111,30 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                 </Button>
                 
                 {canDelete && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
+                  <Dialog>
+                    <DialogTrigger asChild>
                       <Button size="sm" variant="outline">
                         <Trash2 className="h-4 w-4" />
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Remover anexo</AlertDialogTitle>
-                        <AlertDialogDescription>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Remover anexo</DialogTitle>
+                        <DialogDescription>
                           Tem certeza que deseja remover este anexo? Esta ação não pode ser desfeita.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline">Cancelar</Button>
+                        <Button
                           onClick={() => deleteAttachment(attachment.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          variant="destructive"
                         >
                           Remover
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 )}
               </div>
             </div>
