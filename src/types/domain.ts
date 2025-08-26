@@ -16,7 +16,7 @@ export type Produto = {
 
 export type Attachment = {
   id: string;
-  entity_type: 'produto' | 'encomenda' | 'financeiro';
+  entity_type: string; // Changed from literal union to string to match database
   entity_id: string;
   file_name: string;
   file_type: string;

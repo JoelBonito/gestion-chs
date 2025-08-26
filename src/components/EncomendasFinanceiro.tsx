@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +25,7 @@ export default function EncomendasFinanceiro() {
         .select(`
           *,
           clientes!inner(nome),
-          freight_rates(rate)
+          frete_encomenda(valor_frete)
         `)
         .gt("saldo_devedor", 0)
         .order("created_at", { ascending: false });
@@ -35,7 +34,7 @@ export default function EncomendasFinanceiro() {
 
       const encomendasFormatadas: EncomendaFinanceiro[] = data.map((e: any) => {
         const produtos = parseFloat(e.valor_total ?? 0);
-        const frete = parseFloat(e.freight_rates?.rate ?? 0);
+        const frete = parseFloat(e.frete_encomenda?.[0]?.valor_frete ?? 0);
         const pago = parseFloat(e.valor_pago ?? 0);
         const totalCaixa = produtos + frete;
         
@@ -191,7 +190,6 @@ export default function EncomendasFinanceiro() {
             <PagamentoForm 
               onSuccess={handlePagamentoSuccess}
               encomendas={[selectedEncomenda]}
-              preSelectedEncomenda={selectedEncomenda}
             />
           )}
         </DialogContent>

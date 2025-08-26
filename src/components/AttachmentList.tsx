@@ -5,10 +5,9 @@ import { Dialog, DialogContent, DialogClose, DialogHeader, DialogTitle, DialogTr
 import { Trash2, Eye, Download, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAttachments } from "@/hooks/useAttachments";
-import type { Attachment } from "@/types/domain";
 
 export interface AttachmentListProps {
-  entityType: 'produto' | 'encomenda' | 'financeiro';
+  entityType: string;
   entityId: string;
   onRefresh?: () => void;
 }
@@ -20,7 +19,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
 }) => {
   const { attachments, isLoading, deleteAttachment } = useAttachments(entityType, entityId);
 
-  const handleDelete = async (attachment: Attachment) => {
+  const handleDelete = async (attachment: any) => {
     try {
       await deleteAttachment(attachment);
       onRefresh?.();

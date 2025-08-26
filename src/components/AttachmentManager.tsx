@@ -46,6 +46,11 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       const attachmentResult = await createAttachment(fileData);
       console.log("AttachmentManager - Anexo criado com sucesso no banco de dados:", attachmentResult);
       
+      // Invalidate queries to refresh the attachment list
+      await queryClient.invalidateQueries({
+        queryKey: ["attachments", entityType, entityId],
+      });
+      
       // Chamar onRefreshParent para atualizar produto pai se necessário
       if (onRefreshParent) {
         console.log("AttachmentManager - Chamando onRefreshParent para refresh do produto pai");
@@ -60,7 +65,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       console.error("AttachmentManager - Erro ao criar anexo no banco:", error);
       throw error;
     }
-  }, [entityType, entityId, createAttachment, onRefreshParent]);
+  }, [entityType, entityId, createAttachment, onRefreshParent, queryClient]);
 
   if (!entityId) {
     console.log("AttachmentManager - EntityId não fornecido, não renderizando");
