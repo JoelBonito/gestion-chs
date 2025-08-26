@@ -30,12 +30,13 @@ interface Produto {
   nome: string;
   marca: string;
   tipo: string;
-  tamanho_ml: number;
-  peso_gramas: number;
   preco_custo: number;
   preco_venda: number;
   size_weight: number;
   fornecedor_id: string;
+  ativo: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 interface Fornecedor {
