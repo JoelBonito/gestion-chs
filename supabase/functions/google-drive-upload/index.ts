@@ -28,7 +28,10 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Starting Google Drive upload process...');
+    
     const { fileName, fileContent, mimeType, entityType, entityId }: GoogleDriveUploadRequest = await req.json();
+    console.log('Request data received:', { fileName, mimeType, entityType, entityId, fileContentLength: fileContent?.length });
 
     // Get the service account key from Supabase secrets
     const serviceAccountKey = Deno.env.get('GOOGLE_SERVICE_ACCOUNT_KEY');
@@ -36,19 +39,16 @@ serve(async (req) => {
       throw new Error('Google Service Account Key not found in secrets');
     }
 
-    console.log('Service account key length:', serviceAccountKey.length);
-    console.log('Service account key first 50 chars:', serviceAccountKey.substring(0, 50));
+    console.log('Service account key found, length:', serviceAccountKey.length);
 
     let credentials;
     try {
       credentials = JSON.parse(serviceAccountKey);
+      console.log('Service account parsed successfully, client_email:', credentials.client_email);
     } catch (parseError) {
       console.error('Error parsing service account key:', parseError);
-      console.error('Raw key value:', serviceAccountKey);
       throw new Error(`Failed to parse service account key: ${parseError.message}`);
     }
-
-    console.log('Using service account:', credentials.client_email);
 
     // Create JWT for Google API authentication
     const header = {
@@ -64,6 +64,8 @@ serve(async (req) => {
       exp: now + 3600, // 1 hour
       iat: now
     };
+
+    console.log('Creating JWT token...');
 
     // Create JWT token
     const encodedHeader = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -131,37 +133,11 @@ serve(async (req) => {
     
     if (entityType) {
       if (entityType === 'produto') {
-        // Buscar a subpasta ARTIGOS dentro da pasta principal
-        const searchResponse = await fetch(
-          `https://www.googleapis.com/drive/v3/files?q=name='ARTIGOS' and mimeType='application/vnd.google-apps.folder' and '${FOLDER_MAPPING.produto}' in parents`,
-          {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
-          }
-        );
-
-        const searchData = await searchResponse.json();
-        if (searchData.files && searchData.files.length > 0) {
-          folderId = searchData.files[0].id;
-          console.log('Using ARTIGOS folder for produto');
-        }
+        console.log('Using ARTIGOS folder for produto');
+        folderId = FOLDER_MAPPING.produto;
       } else if (entityType === 'financeiro') {
-        // Buscar a subpasta FINANCEIRO dentro da pasta principal
-        const searchResponse = await fetch(
-          `https://www.googleapis.com/drive/v3/files?q=name='FINANCEIRO' and mimeType='application/vnd.google-apps.folder' and '${FOLDER_MAPPING.financeiro}' in parents`,
-          {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
-          }
-        );
-
-        const searchData = await searchResponse.json();
-        if (searchData.files && searchData.files.length > 0) {
-          folderId = searchData.files[0].id;
-          console.log('Using FINANCEIRO folder for financeiro');
-        }
+        console.log('Using FINANCEIRO folder for financeiro');
+        folderId = FOLDER_MAPPING.financeiro;
       }
     }
 
@@ -178,26 +154,50 @@ serve(async (req) => {
       parents: [folderId]
     };
 
-    // Convert base64 to binary
-    const binaryContent = Uint8Array.from(atob(fileContent), c => c.charCodeAt(0));
+    // Convert base64 to binary safely
+    const binaryString = atob(fileContent);
+    const binaryArray = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      binaryArray[i] = binaryString.charCodeAt(i);
+    }
 
-    const multipartRequestBody = 
-      delimiter +
-      'Content-Type: application/json\r\n\r\n' +
-      JSON.stringify(metadata) +
-      delimiter +
-      `Content-Type: ${mimeType}\r\n` +
-      'Content-Transfer-Encoding: binary\r\n\r\n' +
-      String.fromCharCode.apply(null, Array.from(binaryContent)) +
-      close_delim;
+    // Create multipart body as string
+    const textEncoder = new TextEncoder();
+    const textDecoder = new TextDecoder();
+    
+    const metadataPart = delimiter + 
+      'Content-Type: application/json\r\n\r\n' + 
+      JSON.stringify(metadata);
+    
+    const filePart = delimiter + 
+      `Content-Type: ${mimeType}\r\n` + 
+      'Content-Transfer-Encoding: binary\r\n\r\n';
+    
+    // Combine parts
+    const metadataBytes = textEncoder.encode(metadataPart);
+    const filePartBytes = textEncoder.encode(filePart);
+    const closeDelimBytes = textEncoder.encode(close_delim);
+    
+    const totalLength = metadataBytes.length + filePartBytes.length + binaryArray.length + closeDelimBytes.length;
+    const combinedArray = new Uint8Array(totalLength);
+    
+    let offset = 0;
+    combinedArray.set(metadataBytes, offset);
+    offset += metadataBytes.length;
+    combinedArray.set(filePartBytes, offset);
+    offset += filePartBytes.length;
+    combinedArray.set(binaryArray, offset);
+    offset += binaryArray.length;
+    combinedArray.set(closeDelimBytes, offset);
 
     const uploadResponse = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': `multipart/related; boundary="${boundary}"`,
+        'Content-Length': combinedArray.length.toString(),
       },
-      body: multipartRequestBody,
+      body: combinedArray,
     });
 
     if (!uploadResponse.ok) {
@@ -210,17 +210,22 @@ serve(async (req) => {
     console.log('File uploaded successfully:', uploadData.id);
 
     // Make file publicly readable (optional)
-    await fetch(`https://www.googleapis.com/drive/v3/files/${uploadData.id}/permissions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        role: 'reader',
-        type: 'anyone',
-      }),
-    });
+    try {
+      await fetch(`https://www.googleapis.com/drive/v3/files/${uploadData.id}/permissions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          role: 'reader',
+          type: 'anyone',
+        }),
+      });
+      console.log('File permissions set successfully');
+    } catch (permError) {
+      console.error('Error setting permissions (non-critical):', permError);
+    }
 
     // Return the file information
     const result = {
