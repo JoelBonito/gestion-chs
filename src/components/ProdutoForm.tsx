@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logActivity } from "@/utils/activityLogger";
 import { Produto, Fornecedor } from "@/types/database";
+import { AttachmentManager } from "./AttachmentManager";
 
 const produtoSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
@@ -37,6 +38,7 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
   const [tiposExistentes, setTiposExistentes] = useState<string[]>([]);
   const [novaOpçaoDialog, setNovaOpçaoDialog] = useState<{tipo: string, aberto: boolean}>({tipo: '', aberto: false});
   const [novoValor, setNovoValor] = useState('');
+  const [produtoId, setProdutoId] = useState<string | null>(produto?.id || null);
 
   const isEditing = !!produto;
 
@@ -75,6 +77,7 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
       
       // Usar reset para SUBSTITUIR todos os valores
       form.reset(formData);
+      setProdutoId(produto.id);
     } else {
       // Para novos produtos, resetar com valores vazios
       form.reset({
@@ -86,6 +89,7 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
         size_weight: "",
         fornecedor_id: "",
       });
+      setProdutoId(null);
     }
   }, [produto, form]);
 
@@ -224,6 +228,9 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
 
         if (error) throw error;
         
+        // Set the product ID so attachments can be linked to it
+        setProdutoId(novoProduto.id);
+        
         await logActivity({
           entity: 'produto',
           entity_id: novoProduto.id,
@@ -250,171 +257,18 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="nome"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-display text-primary-dark">Nome do Produto</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Ex: Shampoo Premium" 
-                  className="input-elegant"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="fornecedor_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-display text-primary-dark">Fornecedor *</FormLabel>
-              <Select onValueChange={(value) => {
-                if (value === '__novo_fornecedor__') {
-                  handleNovaOpcao('fornecedor');
-                } else {
-                  field.onChange(value);
-                }
-              }} value={field.value}>
-                <FormControl>
-                  <SelectTrigger className="input-elegant">
-                    <SelectValue placeholder="Selecione um fornecedor" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {fornecedores.map((fornecedor) => (
-                    <SelectItem key={fornecedor.id} value={fornecedor.id}>
-                      {fornecedor.nome}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="__novo_fornecedor__" className="text-primary font-medium">
-                    <div className="flex items-center">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Adicionar novo fornecedor...
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
-            name="marca"
+            name="nome"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-display text-primary-dark">Marca</FormLabel>
-                <Select onValueChange={(value) => {
-                  if (value === '__nova_marca__') {
-                    handleNovaOpcao('marca');
-                  } else {
-                    field.onChange(value);
-                  }
-                }} value={field.value || ""}>
-                  <FormControl>
-                    <SelectTrigger className="input-elegant">
-                      <SelectValue placeholder="Selecione uma marca" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {marcasExistentes.map((marca) => (
-                      <SelectItem key={marca} value={marca}>
-                        {marca}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="__nova_marca__" className="text-primary font-medium">
-                      <div className="flex items-center">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Adicionar nova marca...
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="tipo"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-display text-primary-dark">Tipo</FormLabel>
-                <Select onValueChange={(value) => {
-                  if (value === '__novo_tipo__') {
-                    handleNovaOpcao('tipo');
-                  } else {
-                    field.onChange(value);
-                  }
-                }} value={field.value || ""}>
-                  <FormControl>
-                    <SelectTrigger className="input-elegant">
-                      <SelectValue placeholder="Selecione um tipo" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {tiposExistentes.map((tipo) => (
-                      <SelectItem key={tipo} value={tipo}>
-                        {tipo}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="__novo_tipo__" className="text-primary font-medium">
-                      <div className="flex items-center">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Adicionar novo tipo...
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="size_weight"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-display text-primary-dark">Tamanho e Peso</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number" 
-                  step="0.01" 
-                  placeholder="Ex.: 500 (para 500ml/500g)"
-                  className="input-elegant"
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="preco_custo"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-display text-primary-dark">Preço de Custo (€)</FormLabel>
+                <FormLabel className="font-display text-primary-dark">Nome do Produto</FormLabel>
                 <FormControl>
                   <Input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="0.00"
+                    placeholder="Ex: Shampoo Premium" 
                     className="input-elegant"
                     {...field} 
                   />
@@ -426,83 +280,250 @@ export function ProdutoForm({ produto, onSuccess }: ProdutoFormProps) {
 
           <FormField
             control={form.control}
-            name="preco_venda"
+            name="fornecedor_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="font-display text-primary-dark">Preço de Venda (€)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="0.00"
-                    className="input-elegant"
-                    {...field} 
-                  />
-                </FormControl>
+                <FormLabel className="font-display text-primary-dark">Fornecedor *</FormLabel>
+                <Select onValueChange={(value) => {
+                  if (value === '__novo_fornecedor__') {
+                    handleNovaOpcao('fornecedor');
+                  } else {
+                    field.onChange(value);
+                  }
+                }} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger className="input-elegant">
+                      <SelectValue placeholder="Selecione um fornecedor" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {fornecedores.map((fornecedor) => (
+                      <SelectItem key={fornecedor.id} value={fornecedor.id}>
+                        {fornecedor.nome}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__novo_fornecedor__" className="text-primary font-medium">
+                      <div className="flex items-center">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Adicionar novo fornecedor...
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
-        </div>
 
-        <Button 
-          type="submit" 
-          className="w-full bg-gradient-primary hover:shadow-hover transition-elegant font-display font-medium" 
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (isEditing ? "Salvando..." : "Cadastrando...") : (isEditing ? "Salvar Alterações" : "Cadastrar Produto")}
-        </Button>
-      </form>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="marca"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-display text-primary-dark">Marca</FormLabel>
+                  <Select onValueChange={(value) => {
+                    if (value === '__nova_marca__') {
+                      handleNovaOpcao('marca');
+                    } else {
+                      field.onChange(value);
+                    }
+                  }} value={field.value || ""}>
+                    <FormControl>
+                      <SelectTrigger className="input-elegant">
+                        <SelectValue placeholder="Selecione uma marca" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {marcasExistentes.map((marca) => (
+                        <SelectItem key={marca} value={marca}>
+                          {marca}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="__nova_marca__" className="text-primary font-medium">
+                        <div className="flex items-center">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Adicionar nova marca...
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-      <Dialog open={novaOpçaoDialog.aberto} onOpenChange={(aberto) => setNovaOpçaoDialog({...novaOpçaoDialog, aberto})}>
-        <DialogContent className="max-w-md shadow-elegant">
-          <DialogHeader>
-            <DialogTitle className="font-display text-primary-dark">
-              Adicionar {novaOpçaoDialog.tipo === 'marca' ? 'Nova Marca' : 
-                         novaOpçaoDialog.tipo === 'tipo' ? 'Novo Tipo' : 
-                         'Novo Fornecedor'}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="font-display text-primary-dark">
-                {novaOpçaoDialog.tipo === 'marca' ? 'Nome da Marca' : 
-                 novaOpçaoDialog.tipo === 'tipo' ? 'Nome do Tipo' : 
-                 'Nome do Fornecedor'}
-              </label>
-              <Input
-                value={novoValor}
-                onChange={(e) => setNovoValor(e.target.value)}
-                placeholder={novaOpçaoDialog.tipo === 'marca' ? 'Digite a nova marca' : 
-                           novaOpçaoDialog.tipo === 'tipo' ? 'Digite o novo tipo' : 
-                           'Digite o nome do fornecedor'}
-                className="input-elegant mt-2"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    adicionarNovaOpcao();
-                  }
-                }}
-              />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button 
-                variant="outline" 
-                onClick={() => setNovaOpçaoDialog({tipo: '', aberto: false})}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                onClick={adicionarNovaOpcao}
-                className="bg-gradient-primary"
-                disabled={!novoValor.trim()}
-              >
-                Adicionar
-              </Button>
-            </div>
+            <FormField
+              control={form.control}
+              name="tipo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-display text-primary-dark">Tipo</FormLabel>
+                  <Select onValueChange={(value) => {
+                    if (value === '__novo_tipo__') {
+                      handleNovaOpcao('tipo');
+                    } else {
+                      field.onChange(value);
+                    }
+                  }} value={field.value || ""}>
+                    <FormControl>
+                      <SelectTrigger className="input-elegant">
+                        <SelectValue placeholder="Selecione um tipo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {tiposExistentes.map((tipo) => (
+                        <SelectItem key={tipo} value={tipo}>
+                          {tipo}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="__novo_tipo__" className="text-primary font-medium">
+                        <div className="flex items-center">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Adicionar novo tipo...
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
-        </DialogContent>
-      </Dialog>
-    </Form>
+
+          <FormField
+            control={form.control}
+            name="size_weight"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-display text-primary-dark">Tamanho e Peso</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    placeholder="Ex.: 500 (para 500ml/500g)"
+                    className="input-elegant"
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="preco_custo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-display text-primary-dark">Preço de Custo (€)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      placeholder="0.00"
+                      className="input-elegant"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="preco_venda"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-display text-primary-dark">Preço de Venda (€)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.01" 
+                      placeholder="0.00"
+                      className="input-elegant"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <Button 
+            type="submit" 
+            className="w-full bg-gradient-primary hover:shadow-hover transition-elegant font-display font-medium" 
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (isEditing ? "Salvando..." : "Cadastrando...") : (isEditing ? "Salvar Alterações" : "Cadastrar Produto")}
+          </Button>
+        </form>
+
+        <Dialog open={novaOpçaoDialog.aberto} onOpenChange={(aberto) => setNovaOpçaoDialog({...novaOpçaoDialog, aberto})}>
+          <DialogContent className="max-w-md shadow-elegant">
+            <DialogHeader>
+              <DialogTitle className="font-display text-primary-dark">
+                Adicionar {novaOpçaoDialog.tipo === 'marca' ? 'Nova Marca' : 
+                           novaOpçaoDialog.tipo === 'tipo' ? 'Novo Tipo' : 
+                           'Novo Fornecedor'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="font-display text-primary-dark">
+                  {novaOpçaoDialog.tipo === 'marca' ? 'Nome da Marca' : 
+                   novaOpçaoDialog.tipo === 'tipo' ? 'Nome do Tipo' : 
+                   'Nome do Fornecedor'}
+                </label>
+                <Input
+                  value={novoValor}
+                  onChange={(e) => setNovoValor(e.target.value)}
+                  placeholder={novaOpçaoDialog.tipo === 'marca' ? 'Digite a nova marca' : 
+                             novaOpçaoDialog.tipo === 'tipo' ? 'Digite o novo tipo' : 
+                             'Digite o nome do fornecedor'}
+                  className="input-elegant mt-2"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      adicionarNovaOpcao();
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setNovaOpçaoDialog({tipo: '', aberto: false})}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={adicionarNovaOpcao}
+                  className="bg-gradient-primary"
+                  disabled={!novoValor.trim()}
+                >
+                  Adicionar
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </Form>
+
+      {/* Attachment section - only show if product has been created or is being edited */}
+      {produtoId && (
+        <div className="border-t pt-6">
+          <h3 className="font-display text-primary-dark text-lg font-medium mb-4">Anexos do Produto</h3>
+          <AttachmentManager 
+            entityType="produto"
+            entityId={produtoId}
+            title="Anexar Documentos"
+          />
+        </div>
+      )}
+    </div>
   );
 }
