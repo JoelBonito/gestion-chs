@@ -15,7 +15,7 @@ interface AttachmentManagerProps {
 export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
   entityType,
   entityId,
-  title = "Anexos",
+  title = "Faturas",
   onRefreshParent
 }) => {
   const { createAttachment } = useAttachments(entityType, entityId);
