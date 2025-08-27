@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Trash2, Edit, Archive, RotateCcw } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logActivity } from '@/utils/activityLogger';
@@ -28,42 +28,6 @@ interface FornecedorActionsProps {
 
 export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorActionsProps) {
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleArchive = async () => {
-    setIsLoading(true);
-    try {
-      await archiveFornecedor(fornecedor.id);
-      await logActivity({
-        entity: 'fornecedor',
-        entity_id: fornecedor.id,
-        action: 'archive',
-        details: { nome: fornecedor.nome }
-      });
-      onRefresh();
-    } catch (error) {
-      console.error('Erro ao arquivar fornecedor:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleReactivate = async () => {
-    setIsLoading(true);
-    try {
-      await reactivateFornecedor(fornecedor.id);
-      await logActivity({
-        entity: 'fornecedor',
-        entity_id: fornecedor.id,
-        action: 'reactivate',
-        details: { nome: fornecedor.nome }
-      });
-      onRefresh();
-    } catch (error) {
-      console.error('Erro ao reativar fornecedor:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleDelete = async () => {
     setIsLoading(true);
@@ -106,72 +70,6 @@ export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorA
         Editar
       </Button>
       
-      {fornecedor.active ? (
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-orange-600 hover:text-orange-700"
-              disabled={isLoading}
-            >
-              <Archive className="h-3 w-3" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar arquivamento</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem certeza que deseja arquivar o fornecedor "{fornecedor.nome}"?
-                O fornecedor será inativado e não aparecerá nas listagens, mas seus dados serão preservados.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={handleArchive}
-                disabled={isLoading}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                {isLoading ? 'Arquivando...' : 'Arquivar'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      ) : (
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-green-600 hover:text-green-700"
-              disabled={isLoading}
-            >
-              <RotateCcw className="h-3 w-3" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar reativação</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem certeza que deseja reativar o fornecedor "{fornecedor.nome}"?
-                O fornecedor voltará a aparecer nas listagens e poderá ser usado em novas encomendas.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={handleReactivate}
-                disabled={isLoading}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {isLoading ? 'Reativando...' : 'Reativar'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
-
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button 
@@ -185,11 +83,10 @@ export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorA
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão permanente</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              ⚠️ ATENÇÃO: Esta ação é irreversível!
-              Tem certeza que deseja excluir permanentemente o fornecedor "{fornecedor.nome}"?
-              Todos os dados relacionados serão perdidos.
+              Tem certeza que deseja excluir o fornecedor "{fornecedor.nome}"?
+              Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -199,7 +96,7 @@ export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorA
               disabled={isLoading}
               className="bg-red-600 hover:bg-red-700"
             >
-              {isLoading ? 'Excluindo...' : 'Excluir Permanentemente'}
+              {isLoading ? 'Excluindo...' : 'Excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

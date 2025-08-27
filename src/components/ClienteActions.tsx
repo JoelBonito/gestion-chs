@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Trash2, Edit, Archive, RotateCcw } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logActivity } from '@/utils/activityLogger';
@@ -25,42 +25,6 @@ interface ClienteActionsProps {
 
 export function ClienteActions({ cliente, onEdit, onRefresh }: ClienteActionsProps) {
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleArchive = async () => {
-    setIsLoading(true);
-    try {
-      await archiveCliente(cliente.id);
-      await logActivity({
-        entity: 'cliente',
-        entity_id: cliente.id,
-        action: 'archive',
-        details: { nome: cliente.nome }
-      });
-      onRefresh();
-    } catch (error) {
-      console.error('Erro ao arquivar cliente:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleReactivate = async () => {
-    setIsLoading(true);
-    try {
-      await reactivateCliente(cliente.id);
-      await logActivity({
-        entity: 'cliente',
-        entity_id: cliente.id,
-        action: 'reactivate',
-        details: { nome: cliente.nome }
-      });
-      onRefresh();
-    } catch (error) {
-      console.error('Erro ao reativar cliente:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleDelete = async () => {
     setIsLoading(true);
@@ -103,72 +67,6 @@ export function ClienteActions({ cliente, onEdit, onRefresh }: ClienteActionsPro
         Editar
       </Button>
       
-      {cliente.active ? (
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-orange-600 hover:text-orange-700"
-              disabled={isLoading}
-            >
-              <Archive className="h-3 w-3" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar arquivamento</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem certeza que deseja arquivar o cliente "{cliente.nome}"?
-                O cliente será inativado e não aparecerá nas listagens, mas seus dados serão preservados.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={handleArchive}
-                disabled={isLoading}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                {isLoading ? 'Arquivando...' : 'Arquivar'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      ) : (
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-green-600 hover:text-green-700"
-              disabled={isLoading}
-            >
-              <RotateCcw className="h-3 w-3" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar reativação</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem certeza que deseja reativar o cliente "{cliente.nome}"?
-                O cliente voltará a aparecer nas listagens e poderá ser usado em novas encomendas.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={handleReactivate}
-                disabled={isLoading}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {isLoading ? 'Reativando...' : 'Reativar'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      )}
-
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button 
@@ -182,11 +80,10 @@ export function ClienteActions({ cliente, onEdit, onRefresh }: ClienteActionsPro
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão permanente</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              ⚠️ ATENÇÃO: Esta ação é irreversível!
-              Tem certeza que deseja excluir permanentemente o cliente "{cliente.nome}"?
-              Todos os dados relacionados serão perdidos.
+              Tem certeza que deseja excluir o cliente "{cliente.nome}"?
+              Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -196,7 +93,7 @@ export function ClienteActions({ cliente, onEdit, onRefresh }: ClienteActionsPro
               disabled={isLoading}
               className="bg-red-600 hover:bg-red-700"
             >
-              {isLoading ? 'Excluindo...' : 'Excluir Permanentemente'}
+              {isLoading ? 'Excluindo...' : 'Excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
