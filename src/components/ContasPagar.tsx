@@ -23,7 +23,11 @@ interface ContaPagar {
   total_pagamentos: number;
 }
 
-export default function ContasPagar() {
+interface ContasPagarProps {
+  onRefreshNeeded?: () => void;
+}
+
+export default function ContasPagar({ onRefreshNeeded }: ContasPagarProps) {
   const [contas, setContas] = useState<ContaPagar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
@@ -98,11 +102,17 @@ export default function ContasPagar() {
     fetchContas();
     setShowPagamentoForm(false);
     setSelectedConta(null);
+    onRefreshNeeded?.();
   };
 
   const handleViewDetails = (conta: ContaPagar) => {
     setSelectedConta(conta);
     setShowDetails(true);
+  };
+
+  const handleAttachmentChange = () => {
+    fetchContas();
+    onRefreshNeeded?.();
   };
 
   if (isLoading) {
@@ -171,6 +181,7 @@ export default function ContasPagar() {
                           size="sm"
                           onClick={() => handleViewDetails(conta)}
                           title="Visualizar detalhes"
+                          type="button"
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -182,6 +193,7 @@ export default function ContasPagar() {
                             setShowPagamentoForm(true);
                           }}
                           title="Registrar pagamento"
+                          type="button"
                         >
                           <Plus className="w-4 h-4" />
                         </Button>
@@ -189,6 +201,7 @@ export default function ContasPagar() {
                           entityType="payable"
                           entityId={conta.encomenda_id}
                           title="Anexar Comprovante"
+                          onChanged={handleAttachmentChange}
                         />
                       </div>
                     </TableCell>
@@ -273,6 +286,7 @@ export default function ContasPagar() {
                   entityType="payable"
                   entityId={selectedConta.encomenda_id}
                   title="Comprovantes de Pagamento"
+                  onChanged={handleAttachmentChange}
                 />
               </div>
             </div>

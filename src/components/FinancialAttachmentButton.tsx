@@ -12,12 +12,14 @@ interface FinancialAttachmentButtonProps {
   entityId: string;
   entityType: 'receivable' | 'payable' | 'financeiro';
   title?: string;
+  onChanged?: () => void;
 }
 
 export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps> = ({
   entityId,
   entityType,
-  title = "Anexar Comprovante"
+  title = "Anexar Comprovante",
+  onChanged
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { attachments } = useAttachments(entityType, entityId);
@@ -25,6 +27,10 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
   
   // Check if user can access financial attachments
   const canAccess = hasRole('admin') || hasRole('finance');
+
+  const handleAttachmentChange = () => {
+    onChanged?.();
+  };
 
   if (!canAccess) {
     return null;
@@ -38,6 +44,7 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
           size="sm" 
           className="relative"
           title="Anexar comprovante"
+          type="button"
         >
           <Paperclip className="h-4 w-4 mr-1" />
           Anexar
@@ -60,10 +67,7 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
           entityType={entityType}
           entityId={entityId}
           title={title}
-          onRefreshParent={() => {
-            // Force a refresh of the parent component
-            window.location.reload();
-          }}
+          onChanged={handleAttachmentChange}
         />
       </DialogContent>
     </Dialog>

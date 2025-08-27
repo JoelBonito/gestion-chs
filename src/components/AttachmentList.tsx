@@ -12,9 +12,14 @@ import { supabase } from '@/integrations/supabase/client';
 interface AttachmentListProps {
   entityType: string;
   entityId: string;
+  onChanged?: () => void;
 }
 
-export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, entityId }) => {
+export const AttachmentList: React.FC<AttachmentListProps> = ({ 
+  entityType, 
+  entityId, 
+  onChanged 
+}) => {
   const { attachments, isLoading, deleteAttachment } = useAttachments(entityType, entityId);
   const { hasRole } = useUserRole();
   const [imagePreview, setImagePreview] = useState<{ url: string; fileName: string } | null>(null);
@@ -116,6 +121,21 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
     }
   };
 
+  const handleDelete = async (attachment: any) => {
+    try {
+      console.log("AttachmentList - Iniciando delete do anexo:", attachment);
+      await deleteAttachment(attachment);
+      
+      // Chamar callback após delete bem-sucedido
+      if (onChanged) {
+        console.log("AttachmentList - Executando onChanged após delete");
+        onChanged();
+      }
+    } catch (error) {
+      console.error("AttachmentList - Erro ao deletar anexo:", error);
+    }
+  };
+
   const handleIframeError = () => {
     console.log("AttachmentList - Iframe bloqueado, mudando para Google Viewer");
     if (pdfPreview && !pdfPreview.useGoogleViewer) {
@@ -172,6 +192,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                     size="sm"
                     onClick={() => handlePreview(attachment)}
                     title="Visualizar"
+                    type="button"
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
@@ -182,6 +203,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                       size="sm"
                       onClick={() => handleOpenInNewTab(attachment.storage_path)}
                       title="Abrir em nova aba"
+                      type="button"
                     >
                       <ExternalLink className="w-4 h-4" />
                     </Button>
@@ -192,6 +214,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                     size="sm"
                     onClick={() => handleDownload(attachment)}
                     title="Download"
+                    type="button"
                   >
                     <Download className="w-4 h-4" />
                   </Button>
@@ -199,7 +222,12 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                   {canDelete && (
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-destructive hover:text-destructive"
+                          type="button"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </DialogTrigger>
@@ -212,10 +240,11 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                           </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
-                          <Button variant="outline">Cancelar</Button>
+                          <Button variant="outline" type="button">Cancelar</Button>
                           <Button 
                             variant="destructive"
-                            onClick={() => deleteAttachment(attachment)}
+                            type="button"
+                            onClick={() => handleDelete(attachment)}
                           >
                             Excluir
                           </Button>
@@ -275,6 +304,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                     window.open(publicUrl, '_blank');
                   }}
                   title="Abrir em nova aba"
+                  type="button"
                 >
                   <ExternalLink className="w-4 h-4 mr-1" />
                   Nova aba
@@ -315,6 +345,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({ entityType, enti
                     size="sm"
                     onClick={() => window.open(pdfPreview.url, '_blank')}
                     className="p-0 h-auto text-sm"
+                    type="button"
                   >
                     Clique aqui para abrir em nova aba
                   </Button>

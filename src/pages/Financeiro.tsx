@@ -82,6 +82,12 @@ export default function Financeiro() {
     fetchEncomendas();
   }, []);
 
+  // Handler para refresh quando anexos são alterados
+  const handleFinancialDataRefresh = () => {
+    console.log("Financeiro - Refreshing financial data due to attachment change");
+    fetchEncomendas();
+  };
+
   // Cálculos para o resumo - apenas produtos (sem frete nos KPIs)
   const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor, 0);
   const totalPago = encomendas.reduce((sum, e) => sum + e.valor_pago, 0);
@@ -180,11 +186,11 @@ export default function Financeiro() {
           </TabsContent>
 
           <TabsContent value="encomendas">
-            <EncomendasFinanceiro />
+            <EncomendasFinanceiro onRefreshNeeded={handleFinancialDataRefresh} />
           </TabsContent>
 
           <TabsContent value="pagar">
-            <ContasPagar />
+            <ContasPagar onRefreshNeeded={handleFinancialDataRefresh} />
           </TabsContent>
 
           <TabsContent value="faturas">

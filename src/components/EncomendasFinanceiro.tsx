@@ -23,13 +23,16 @@ interface EncomendaFinanceira {
   total_pagamentos: number;
 }
 
-export default function EncomendasFinanceiro() {
+interface EncomendasFinanceiroProps {
+  onRefreshNeeded?: () => void;
+}
+
+export default function EncomendasFinanceiro({ onRefreshNeeded }: EncomendasFinanceiroProps) {
   const [encomendas, setEncomendas] = useState<EncomendaFinanceira[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEncomenda, setSelectedEncomenda] = useState<EncomendaFinanceira | null>(null);
   const [showPagamentoForm, setShowPagamentoForm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const [showAttachments, setShowAttachments] = useState(false);
   const { toast } = useToast();
 
   const fetchEncomendas = async () => {
@@ -89,6 +92,7 @@ export default function EncomendasFinanceiro() {
     fetchEncomendas();
     setShowPagamentoForm(false);
     setSelectedEncomenda(null);
+    onRefreshNeeded?.();
   };
 
   const handleViewDetails = (encomenda: EncomendaFinanceira) => {
@@ -96,9 +100,9 @@ export default function EncomendasFinanceiro() {
     setShowDetails(true);
   };
 
-  const handleShowAttachments = (encomenda: EncomendaFinanceira) => {
-    setSelectedEncomenda(encomenda);
-    setShowAttachments(true);
+  const handleAttachmentChange = () => {
+    fetchEncomendas();
+    onRefreshNeeded?.();
   };
 
   if (isLoading) {
@@ -170,6 +174,7 @@ export default function EncomendasFinanceiro() {
                             size="sm"
                             onClick={() => handleViewDetails(encomenda)}
                             title="Visualizar detalhes"
+                            type="button"
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -181,6 +186,7 @@ export default function EncomendasFinanceiro() {
                               setShowPagamentoForm(true);
                             }}
                             title="Registrar pagamento"
+                            type="button"
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
@@ -188,6 +194,7 @@ export default function EncomendasFinanceiro() {
                             entityType="receivable"
                             entityId={encomenda.id}
                             title="Anexar Comprovante"
+                            onChanged={handleAttachmentChange}
                           />
                         </div>
                       </TableCell>
@@ -216,7 +223,7 @@ export default function EncomendasFinanceiro() {
             </DialogHeader>
             <PagamentoForm
               onSuccess={handlePagamentoSuccess}
-              encomendaId={selectedEncomenda.id}
+              encomendas={selectedEncomenda.id}
               saldoDevedor={selectedEncomenda.saldo_devedor}
             />
           </DialogContent>
@@ -274,6 +281,7 @@ export default function EncomendasFinanceiro() {
                   entityType="receivable"
                   entityId={selectedEncomenda.id}
                   title="Comprovantes de Recebimento"
+                  onChanged={handleAttachmentChange}
                 />
               </div>
             </div>

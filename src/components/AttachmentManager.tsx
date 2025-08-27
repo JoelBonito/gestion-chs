@@ -9,14 +9,14 @@ interface AttachmentManagerProps {
   entityType: string;
   entityId: string;
   title?: string;
-  onRefreshParent?: () => void;
+  onChanged?: () => void;
 }
 
 export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
   entityType,
   entityId,
   title = "Anexos",
-  onRefreshParent
+  onChanged
 }) => {
   const { createAttachment, refetch } = useAttachments(entityType, entityId);
   const queryClient = useQueryClient();
@@ -50,10 +50,10 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       // Force refetch of current data
       await refetch();
       
-      // Chamar refresh do componente pai
-      if (onRefreshParent) {
-        console.log("AttachmentManager - Executando onRefreshParent");
-        setTimeout(() => onRefreshParent(), 500);
+      // Chamar callback de mudança
+      if (onChanged) {
+        console.log("AttachmentManager - Executando onChanged após upload");
+        onChanged();
       }
       
       console.log("AttachmentManager - Processo de refresh completo");
@@ -61,7 +61,14 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       console.error("AttachmentManager - Erro ao criar anexo:", error);
       throw error;
     }
-  }, [entityType, entityId, createAttachment, onRefreshParent, queryClient, refetch]);
+  }, [entityType, entityId, createAttachment, onChanged, queryClient, refetch]);
+
+  const handleDeleteSuccess = () => {
+    console.log("AttachmentManager - Delete bem-sucedido, executando onChanged");
+    if (onChanged) {
+      onChanged();
+    }
+  };
 
   if (!entityId) {
     console.log("AttachmentManager - EntityId não fornecido");
@@ -78,6 +85,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       <AttachmentList 
         entityType={entityType} 
         entityId={entityId}
+        onChanged={handleDeleteSuccess}
       />
     </div>
   );
