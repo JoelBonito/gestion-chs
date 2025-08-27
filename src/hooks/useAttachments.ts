@@ -116,7 +116,11 @@ export const useAttachments = (entityType: string, entityId: string) => {
       
       // Invalidate queries to trigger immediate refresh
       console.log("useAttachments - Invalidando queries para refresh imediato");
-      queryClient.invalidateQueries({ queryKey });
+      await queryClient.invalidateQueries({ queryKey });
+      
+      // Force refetch to ensure immediate update
+      console.log("useAttachments - Forçando refetch para atualização imediata");
+      await refetch();
       
       toast({
         title: "Anexo adicionado",
@@ -151,7 +155,10 @@ export const useAttachments = (entityType: string, entityId: string) => {
       if (error) throw error;
 
       // Invalidate queries to refresh the list
-      queryClient.invalidateQueries({ queryKey });
+      await queryClient.invalidateQueries({ queryKey });
+      
+      // Force refetch to ensure immediate update
+      await refetch();
 
       toast({
         title: "Anexo removido",

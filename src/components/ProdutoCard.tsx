@@ -98,7 +98,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
           </div>
           <div>
             <p className="text-muted-foreground">Peso</p>
-            <p className="text-sm font-medium font-body">{produtoData.size_weight} kg</p>
+            <p className="text-sm font-medium font-body">{produtoData.size_weight} g</p>
           </div>
         </div>
 
@@ -118,6 +118,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
                 <ProdutoForm 
                   produto={produtoData} 
                   onSuccess={handleEditSuccess}
+                  isEditing={true}
                 />
               </DialogContent>
             </Dialog>

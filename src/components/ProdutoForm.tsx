@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { AttachmentManager } from "@/components/AttachmentManager";
 import { useToast } from "@/hooks/use-toast";
 import { Save, X } from "lucide-react";
+import { FornecedorFormDialog } from "@/components/FornecedorFormDialog";
 
 interface Fornecedor {
   id: string;
@@ -32,16 +33,13 @@ interface ProdutoFormProps {
   isEditing?: boolean;
 }
 
-const tipos = [
-  "Cosmético",
-  "Produto de Beleza",
-  "Equipamento",
-  "Acessório",
-  "Outros"
-];
+// Tipos serão gerenciados dinamicamente
 
 export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFormProps) => {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
+  const [tipos, setTipos] = useState<string[]>([]);
+  const [novoTipo, setNovoTipo] = useState("");
+  const [mostrarNovoTipo, setMostrarNovoTipo] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -59,6 +57,7 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
 
   useEffect(() => {
     fetchFornecedores();
+    fetchTipos();
   }, []);
 
   const handleInputChange = (field: keyof ProdutoFormData, value: any) => {
@@ -83,6 +82,38 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
         variant: "destructive",
       });
     }
+  };
+
+  const fetchTipos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("produtos")
+        .select("tipo")
+        .not("tipo", "is", null);
+
+      if (error) throw error;
+      
+      // Extrair tipos únicos
+      const tiposUnicos = [...new Set(data?.map(p => p.tipo) || [])].sort();
+      setTipos(tiposUnicos);
+    } catch (error) {
+      console.error("Erro ao carregar tipos:", error);
+    }
+  };
+
+  const handleAdicionarTipo = () => {
+    if (novoTipo.trim() && !tipos.includes(novoTipo.trim())) {
+      const tipoAtualizado = novoTipo.trim();
+      setTipos([...tipos, tipoAtualizado].sort());
+      setFormData(prev => ({ ...prev, tipo: tipoAtualizado }));
+      setNovoTipo("");
+      setMostrarNovoTipo(false);
+    }
+  };
+
+  const handleFornecedorCriado = (novoFornecedor: { id: string; nome: string }) => {
+    setFornecedores(prev => [...prev, novoFornecedor].sort((a, b) => a.nome.localeCompare(b.nome)));
+    setFormData(prev => ({ ...prev, fornecedor_id: novoFornecedor.id }));
   };
 
   const resetForm = () => {
@@ -207,40 +238,85 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
 
           <div className="space-y-2">
             <Label htmlFor="tipo">Tipo *</Label>
-            <Select
-              value={formData.tipo}
-              onValueChange={(value) => handleInputChange("tipo", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                {tipos.map((tipo) => (
-                  <SelectItem key={tipo} value={tipo}>
-                    {tipo}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {!mostrarNovoTipo ? (
+              <div className="flex gap-2">
+                <Select
+                  value={formData.tipo}
+                  onValueChange={(value) => {
+                    if (value === "novo") {
+                      setMostrarNovoTipo(true);
+                    } else {
+                      handleInputChange("tipo", value);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tipos.map((tipo) => (
+                      <SelectItem key={tipo} value={tipo}>
+                        {tipo}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="novo">+ Novo Tipo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  value={novoTipo}
+                  onChange={(e) => setNovoTipo(e.target.value)}
+                  placeholder="Digite o novo tipo"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAdicionarTipo();
+                    }
+                  }}
+                />
+                <Button 
+                  type="button" 
+                  onClick={handleAdicionarTipo}
+                  disabled={!novoTipo.trim()}
+                >
+                  Adicionar
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => {
+                    setMostrarNovoTipo(false);
+                    setNovoTipo("");
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="fornecedor">Fornecedor</Label>
-            <Select
-              value={formData.fornecedor_id}
-              onValueChange={(value) => handleInputChange("fornecedor_id", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o fornecedor" />
-              </SelectTrigger>
-              <SelectContent>
-                {fornecedores.map((fornecedor) => (
-                  <SelectItem key={fornecedor.id} value={fornecedor.id}>
-                    {fornecedor.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select
+                value={formData.fornecedor_id}
+                onValueChange={(value) => handleInputChange("fornecedor_id", value)}
+              >
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Selecione o fornecedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {fornecedores.map((fornecedor) => (
+                    <SelectItem key={fornecedor.id} value={fornecedor.id}>
+                      {fornecedor.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FornecedorFormDialog onFornecedorCreated={handleFornecedorCriado} />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -341,7 +417,7 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
           disabled={isSubmitting}
         >
           <Save className="w-4 h-4 mr-2" />
-          {isSubmitting ? "Salvando..." : isEditing ? "Atualizar" : "Criar"}
+          {isSubmitting ? "Salvando..." : isEditing ? "Salvar" : "Criar"}
         </Button>
       </div>
     </form>

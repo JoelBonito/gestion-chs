@@ -12,12 +12,11 @@ interface FornecedorFormDialogProps {
 export function FornecedorFormDialog({ onFornecedorCreated }: FornecedorFormDialogProps) {
   const [open, setOpen] = useState(false);
 
-  const handleSuccess = () => {
+  const handleSuccess = (fornecedor?: { id: string; nome: string }) => {
     setOpen(false);
-    // Fetch the latest supplier data to get the created supplier
-    // Since we can't get the data directly from the form, we'll trigger a refresh
-    // The parent component should handle refetching the suppliers list
-    window.location.reload(); // Temporary solution to refresh data
+    if (fornecedor) {
+      onFornecedorCreated(fornecedor);
+    }
   };
 
   return (

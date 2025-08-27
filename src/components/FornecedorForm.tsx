@@ -29,7 +29,7 @@ interface Fornecedor {
 }
 
 interface FornecedorFormProps {
-  onSuccess?: () => void;
+  onSuccess?: (fornecedor?: { id: string; nome: string }) => void;
   initialData?: Fornecedor | null;
   isEditing?: boolean;
 }
@@ -87,8 +87,9 @@ export function FornecedorForm({ onSuccess, initialData, isEditing = false }: Fo
 
         if (error) throw error;
         toast.success("Fornecedor atualizado com sucesso!");
+        onSuccess?.();
       } else {
-        const { error } = await supabase
+        const { data: novoFornecedor, error } = await supabase
           .from("fornecedores")
           .insert([{
             nome: data.nome,
@@ -96,14 +97,15 @@ export function FornecedorForm({ onSuccess, initialData, isEditing = false }: Fo
             telefone: data.telefone || null,
             endereco: data.endereco || null,
             contato: data.contato || null,
-          }]);
+          }])
+          .select()
+          .single();
 
         if (error) throw error;
         toast.success("Fornecedor cadastrado com sucesso!");
+        form.reset();
+        onSuccess?.(novoFornecedor ? { id: novoFornecedor.id, nome: novoFornecedor.nome } : undefined);
       }
-
-      if (!isEditing) form.reset();
-      onSuccess?.();
     } catch (error) {
       console.error("Erro ao salvar fornecedor:", error);
       toast.error("Erro ao salvar fornecedor");
