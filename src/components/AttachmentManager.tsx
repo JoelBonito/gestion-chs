@@ -21,7 +21,6 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
   const { createAttachment } = useAttachments(entityType, entityId);
   const queryClient = useQueryClient();
 
-  // Memoizar o callback para evitar re-renders desnecessários
   const handleUploadSuccess = useMemo(() => async (fileData: {
     file_name: string;
     file_type: string;
@@ -29,37 +28,42 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
     storage_url: string;
     file_size: number;
   }) => {
-    console.log("=== ATTACHMENT UPLOAD SUCCESS - Iniciando processo completo ===");
-    console.log("AttachmentManager - Upload bem-sucedido, dados do arquivo:", fileData);
-    console.log(`AttachmentManager - Criando anexo no banco para entityType: ${entityType}, entityId: ${entityId}`);
+    console.log("AttachmentManager - Upload bem-sucedido:", fileData);
+    console.log(`AttachmentManager - Criando anexo para ${entityType}:${entityId}`);
     
     try {
       const result = await createAttachment(fileData);
-      console.log("AttachmentManager - Anexo criado com sucesso no banco de dados:", result);
+      console.log("AttachmentManager - Anexo criado:", result);
       
-      // Chamar onRefreshParent para atualizar produto pai se necessário
-      if (onRefreshParent) {
-        console.log("AttachmentManager - Chamando onRefreshParent para refresh do produto pai");
-        await onRefreshParent();
-        console.log("AttachmentManager - onRefreshParent executado com sucesso");
-      } else {
-        console.log("AttachmentManager - AVISO: onRefreshParent não fornecido");
+      // Invalidar todas as queries relacionadas com anexos
+      await queryClient.invalidateQueries({ 
+        queryKey: ['attachments', entityType, entityId] 
+      });
+      
+      // Invalidar queries financeiras se necessário
+      if (entityType.includes('financeiro') || entityType.includes('encomenda')) {
+        await queryClient.invalidateQueries({ 
+          queryKey: ['financial-attachments', entityType, entityId] 
+        });
       }
       
-      console.log("=== ATTACHMENT PROCESS COMPLETED - Anexo adicionado e lista atualizada ===");
+      // Chamar refresh do componente pai
+      if (onRefreshParent) {
+        console.log("AttachmentManager - Executando onRefreshParent");
+        await onRefreshParent();
+      }
+      
+      console.log("AttachmentManager - Processo de refresh completo");
     } catch (error) {
-      console.error("AttachmentManager - Erro ao criar anexo no banco:", error);
+      console.error("AttachmentManager - Erro ao criar anexo:", error);
       throw error;
     }
-  }, [entityType, entityId, createAttachment, onRefreshParent]);
+  }, [entityType, entityId, createAttachment, onRefreshParent, queryClient]);
 
   if (!entityId) {
-    console.log("AttachmentManager - EntityId não fornecido, não renderizando");
+    console.log("AttachmentManager - EntityId não fornecido");
     return null;
   }
-
-  console.log(`AttachmentManager - Renderizando para entityType: ${entityType}, entityId: ${entityId}`);
-  console.log("AttachmentManager - onRefreshParent callback:", onRefreshParent ? "PRESENTE" : "AUSENTE");
 
   return (
     <div className="space-y-6">

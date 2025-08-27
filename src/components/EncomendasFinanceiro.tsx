@@ -15,6 +15,7 @@ import { FinancialAttachmentUpload } from "./FinancialAttachmentUpload";
 import { FinancialAttachmentPreview } from "./FinancialAttachmentPreview";
 import { useFinancialAttachments } from "@/hooks/useFinancialAttachments";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Encomenda {
   id: string;
@@ -52,6 +53,7 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
   const [selectedEncomendaId, setSelectedEncomendaId] = useState<string | null>(null);
   const { toast } = useToast();
   const { hasRole } = useUserRole();
+  const queryClient = useQueryClient();
   
   const canAttach = hasRole('admin') || hasRole('finance');
 
@@ -60,7 +62,8 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
     isLoading: attachmentsLoading,
     createAttachment,
     deleteAttachment,
-    isCreating
+    isCreating,
+    refetch: refetchAttachments
   } = useFinancialAttachments('encomenda-receber', selectedEncomendaId || '');
 
   const fetchEncomendas = async () => {
@@ -125,6 +128,30 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
     setPagamentoDialogOpen(false);
     setSelectedEncomenda(null);
     fetchEncomendas();
+  };
+
+  // Função para atualizar anexos com invalidação de cache
+  const handleAttachmentSuccess = async (fileData: any) => {
+    console.log("EncomendasFinanceiro - Upload bem-sucedido:", fileData);
+    
+    try {
+      await createAttachment(fileData);
+      
+      // Invalidar todas as queries relacionadas
+      await queryClient.invalidateQueries({ 
+        queryKey: ['financial-attachments', 'encomenda-receber', selectedEncomendaId] 
+      });
+      await queryClient.invalidateQueries({ 
+        queryKey: ['attachments', 'encomenda-receber', selectedEncomendaId] 
+      });
+      
+      // Forçar refetch dos anexos
+      await refetchAttachments();
+      
+      console.log("EncomendasFinanceiro - Anexos atualizados com sucesso");
+    } catch (error) {
+      console.error("EncomendasFinanceiro - Erro ao processar anexo:", error);
+    }
   };
 
   const filteredEncomendas = encomendas.filter(
@@ -351,7 +378,7 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
                   <FinancialAttachmentUpload
                     entityType="encomenda-receber"
                     entityId={viewEncomendaId}
-                    onUploadSuccess={createAttachment}
+                    onUploadSuccess={handleAttachmentSuccess}
                     disabled={isCreating}
                   />
                   <FinancialAttachmentPreview
@@ -378,7 +405,7 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
             <FinancialAttachmentUpload
               entityType="encomenda-receber"
               entityId={selectedEncomendaId || ''}
-              onUploadSuccess={createAttachment}
+              onUploadSuccess={handleAttachmentSuccess}
               disabled={isCreating}
             />
             

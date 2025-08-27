@@ -3,9 +3,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertTriangle, Plus, Eye, DollarSign } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertTriangle, Plus, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import PagamentoFornecedorForm from "@/components/PagamentoFornecedorForm";
@@ -14,6 +13,9 @@ interface ContaPagar {
   encomenda_id: string;
   numero_encomenda: string;
   fornecedor_nome: string;
+  valor_total_custo: number;
+  valor_pago_fornecedor: number;
+  saldo_devedor_fornecedor: number;
 }
 
 export default function ContasPagar() {
@@ -46,6 +48,9 @@ export default function ContasPagar() {
         encomenda_id: encomenda.id,
         numero_encomenda: encomenda.numero_encomenda,
         fornecedor_nome: encomenda.fornecedores.nome,
+        valor_total_custo: parseFloat(encomenda.valor_total_custo || 0),
+        valor_pago_fornecedor: parseFloat(encomenda.valor_pago_fornecedor || 0),
+        saldo_devedor_fornecedor: parseFloat(encomenda.saldo_devedor_fornecedor || 0),
       }));
 
       setContas(contasFormatadas);
@@ -99,6 +104,9 @@ export default function ContasPagar() {
                 <TableRow>
                   <TableHead>Encomenda</TableHead>
                   <TableHead>Fornecedor</TableHead>
+                  <TableHead>Valor Total</TableHead>
+                  <TableHead>Valor Pago</TableHead>
+                  <TableHead>Saldo Devedor</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -109,26 +117,29 @@ export default function ContasPagar() {
                       {conta.numero_encomenda}
                     </TableCell>
                     <TableCell>{conta.fornecedor_nome}</TableCell>
+                    <TableCell>€{conta.valor_total_custo.toFixed(2)}</TableCell>
+                    <TableCell>€{conta.valor_pago_fornecedor.toFixed(2)}</TableCell>
+                    <TableCell className="font-semibold text-warning">
+                      €{conta.saldo_devedor_fornecedor.toFixed(2)}
+                    </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedConta(conta);
-                            setShowPagamentoForm(true);
-                          }}
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Pagar
-                        </Button>
-                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedConta(conta);
+                          setShowPagamentoForm(true);
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Pagar
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
                 {contas.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       Nenhuma conta a pagar encontrada
                     </TableCell>
                   </TableRow>
@@ -148,14 +159,7 @@ export default function ContasPagar() {
             </DialogHeader>
             <PagamentoFornecedorForm
               onSuccess={handlePagamentoSuccess}
-              conta={{
-                encomenda_id: selectedConta.encomenda_id,
-                numero_encomenda: selectedConta.numero_encomenda,
-                fornecedor_nome: selectedConta.fornecedor_nome,
-                valor_total_custo: 0,
-                valor_pago_fornecedor: 0,
-                saldo_devedor_fornecedor: 0,
-              }}
+              conta={selectedConta}
             />
           </DialogContent>
         </Dialog>

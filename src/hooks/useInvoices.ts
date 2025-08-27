@@ -22,9 +22,9 @@ export const useInvoices = () => {
     queryFn: async (): Promise<Invoice[]> => {
       console.log('useInvoices - Buscando faturas');
       
-      // First get invoices
-      const { data: invoicesData, error: invoicesError } = await supabase
-        .from('invoices' as any)
+      // Buscar faturas usando type assertion temporária
+      const { data: invoicesData, error: invoicesError } = await (supabase as any)
+        .from('invoices')
         .select('*')
         .order('invoice_date', { ascending: false });
 
@@ -38,7 +38,7 @@ export const useInvoices = () => {
         return [];
       }
 
-      // Get attachments for invoices that have attachment_id
+      // Buscar anexos para faturas que tenham attachment_id
       const invoicesWithAttachments = await Promise.all(
         invoicesData.map(async (invoice: any) => {
           if (invoice.attachment_id) {
@@ -59,7 +59,9 @@ export const useInvoices = () => {
       
       console.log(`useInvoices - Encontradas ${invoicesWithAttachments.length} faturas`);
       return invoicesWithAttachments as Invoice[];
-    }
+    },
+    staleTime: 0, // Sempre buscar dados frescos
+    gcTime: 0 // Não manter cache
   });
 
   const createInvoiceMutation = useMutation({
@@ -114,7 +116,7 @@ export const useInvoices = () => {
         attachmentId = attachment.id;
       }
 
-      // Criar a fatura
+      // Criar a fatura usando type assertion
       const { data: invoice, error: invoiceError } = await (supabase as any)
         .from('invoices')
         .insert([{
@@ -142,9 +144,9 @@ export const useInvoices = () => {
       
       return invoice;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       console.log("useInvoices - Fatura criada com sucesso");
-      queryClient.invalidateQueries({ queryKey });
+      await queryClient.invalidateQueries({ queryKey });
       refetch();
       toast({
         title: "Fatura criada",
@@ -178,9 +180,9 @@ export const useInvoices = () => {
 
       return { id, ...data };
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       console.log("useInvoices - Fatura atualizada com sucesso");
-      queryClient.invalidateQueries({ queryKey });
+      await queryClient.invalidateQueries({ queryKey });
       refetch();
       toast({
         title: "Fatura atualizada",
@@ -224,9 +226,9 @@ export const useInvoices = () => {
 
       return invoice;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       console.log("useInvoices - Fatura deletada com sucesso");
-      queryClient.invalidateQueries({ queryKey });
+      await queryClient.invalidateQueries({ queryKey });
       refetch();
       toast({
         title: "Fatura removida",

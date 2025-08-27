@@ -39,12 +39,14 @@ export const useFinancialAttachments = (entityType: string, entityId: string) =>
       console.log(`useFinancialAttachments - Encontrados ${data?.length || 0} anexos`);
       return data || [];
     },
-    enabled: !!entityId
+    enabled: !!entityId,
+    staleTime: 0, // Sempre buscar dados frescos
+    gcTime: 0 // Não manter cache
   });
 
   const createAttachmentMutation = useMutation({
     mutationFn: async (attachmentData: AttachmentUploadData) => {
-      console.log(`useFinancialAttachments - Criando anexo no banco para ${entityType}:${entityId}`, attachmentData);
+      console.log(`useFinancialAttachments - Criando anexo para ${entityType}:${entityId}`, attachmentData);
       
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
@@ -76,10 +78,18 @@ export const useFinancialAttachments = (entityType: string, entityId: string) =>
       
       return data;
     },
-    onSuccess: () => {
-      console.log("useFinancialAttachments - Upload bem-sucedido, fazendo refetch");
-      queryClient.invalidateQueries({ queryKey });
+    onSuccess: async () => {
+      console.log("useFinancialAttachments - Upload bem-sucedido, invalidando queries");
+      
+      // Invalidar múltiplas queries relacionadas
+      await queryClient.invalidateQueries({ queryKey });
+      await queryClient.invalidateQueries({ 
+        queryKey: ['attachments', entityType, entityId] 
+      });
+      
+      // Forçar refetch imediato
       refetch();
+      
       toast({
         title: "Anexo adicionado",
         description: "Comprovante anexado com sucesso.",
@@ -110,10 +120,16 @@ export const useFinancialAttachments = (entityType: string, entityId: string) =>
 
       return attachment;
     },
-    onSuccess: () => {
-      console.log("useFinancialAttachments - Delete bem-sucedido, fazendo refetch");
-      queryClient.invalidateQueries({ queryKey });
+    onSuccess: async () => {
+      console.log("useFinancialAttachments - Delete bem-sucedido, invalidando queries");
+      
+      await queryClient.invalidateQueries({ queryKey });
+      await queryClient.invalidateQueries({ 
+        queryKey: ['attachments', entityType, entityId] 
+      });
+      
       refetch();
+      
       toast({
         title: "Anexo removido",
         description: "Comprovante removido com sucesso.",
