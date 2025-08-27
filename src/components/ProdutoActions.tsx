@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -6,42 +5,31 @@ import { Trash2, Edit, Archive, RotateCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logActivity } from '@/utils/activityLogger';
-import { archiveFornecedor, reactivateFornecedor } from '@/lib/soft-delete-actions';
+import { archiveProduto, reactivateProduto } from '@/lib/soft-delete-actions';
+import type { Produto } from '@/types/database';
 
-interface Fornecedor {
-  id: string;
-  nome: string;
-  email?: string;
-  telefone?: string;
-  endereco?: string;
-  contato?: string;
-  active: boolean;
-  catalog_url?: string;
-  catalog_file?: string;
-}
-
-interface FornecedorActionsProps {
-  fornecedor: Fornecedor;
-  onEdit: (fornecedor: Fornecedor) => void;
+interface ProdutoActionsProps {
+  produto: Produto;
+  onEdit: (produto: Produto) => void;
   onRefresh: () => void;
 }
 
-export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorActionsProps) {
+export function ProdutoActions({ produto, onEdit, onRefresh }: ProdutoActionsProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleArchive = async () => {
     setIsLoading(true);
     try {
-      await archiveFornecedor(fornecedor.id);
+      await archiveProduto(produto.id);
       await logActivity({
-        entity: 'fornecedor',
-        entity_id: fornecedor.id,
+        entity: 'produto',
+        entity_id: produto.id,
         action: 'archive',
-        details: { nome: fornecedor.nome }
+        details: { nome: produto.nome }
       });
       onRefresh();
     } catch (error) {
-      console.error('Erro ao arquivar fornecedor:', error);
+      console.error('Erro ao arquivar produto:', error);
     } finally {
       setIsLoading(false);
     }
@@ -50,16 +38,16 @@ export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorA
   const handleReactivate = async () => {
     setIsLoading(true);
     try {
-      await reactivateFornecedor(fornecedor.id);
+      await reactivateProduto(produto.id);
       await logActivity({
-        entity: 'fornecedor',
-        entity_id: fornecedor.id,
+        entity: 'produto',
+        entity_id: produto.id,
         action: 'reactivate',
-        details: { nome: fornecedor.nome }
+        details: { nome: produto.nome }
       });
       onRefresh();
     } catch (error) {
-      console.error('Erro ao reativar fornecedor:', error);
+      console.error('Erro ao reativar produto:', error);
     } finally {
       setIsLoading(false);
     }
@@ -70,24 +58,24 @@ export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorA
     try {
       // Hard delete para casos específicos (apenas admin)
       const { error } = await supabase
-        .from('fornecedores')
+        .from('produtos')
         .delete()
-        .eq('id', fornecedor.id);
+        .eq('id', produto.id);
 
       if (error) throw error;
 
       await logActivity({
-        entity: 'fornecedor',
-        entity_id: fornecedor.id,
+        entity: 'produto',
+        entity_id: produto.id,
         action: 'hard_delete',
-        details: { nome: fornecedor.nome }
+        details: { nome: produto.nome }
       });
 
-      toast.success('Fornecedor removido permanentemente');
+      toast.success('Produto removido permanentemente');
       onRefresh();
     } catch (error) {
-      console.error('Erro ao deletar fornecedor:', error);
-      toast.error('Erro ao deletar fornecedor');
+      console.error('Erro ao deletar produto:', error);
+      toast.error('Erro ao deletar produto');
     } finally {
       setIsLoading(false);
     }
@@ -99,14 +87,14 @@ export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorA
         variant="ghost" 
         size="sm" 
         className="flex-1" 
-        onClick={() => onEdit(fornecedor)}
+        onClick={() => onEdit(produto)}
         disabled={isLoading}
       >
         <Edit className="h-3 w-3 mr-1" />
         Editar
       </Button>
       
-      {fornecedor.active ? (
+      {produto.ativo ? (
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button 
@@ -122,8 +110,8 @@ export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorA
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar arquivamento</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja arquivar o fornecedor "{fornecedor.nome}"?
-                O fornecedor será inativado e não aparecerá nas listagens, mas seus dados serão preservados.
+                Tem certeza que deseja arquivar o produto "{produto.nome}"?
+                O produto será inativado e não aparecerá nas listagens, mas seus dados serão preservados.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -154,8 +142,8 @@ export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorA
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar reativação</AlertDialogTitle>
               <AlertDialogDescription>
-                Tem certeza que deseja reativar o fornecedor "{fornecedor.nome}"?
-                O fornecedor voltará a aparecer nas listagens e poderá ser usado em novas encomendas.
+                Tem certeza que deseja reativar o produto "{produto.nome}"?
+                O produto voltará a aparecer nas listagens e poderá ser usado em novas encomendas.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -188,7 +176,7 @@ export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorA
             <AlertDialogTitle>Confirmar exclusão permanente</AlertDialogTitle>
             <AlertDialogDescription>
               ⚠️ ATENÇÃO: Esta ação é irreversível!
-              Tem certeza que deseja excluir permanentemente o fornecedor "{fornecedor.nome}"?
+              Tem certeza que deseja excluir permanentemente o produto "{produto.nome}"?
               Todos os dados relacionados serão perdidos.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ItensEncomendaManager, type ItemEncomenda } from "./ItensEncomendaManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { handleEntityInactiveError } from "@/lib/soft-delete-actions";
 
 const encomendaSchema = z.object({
   numero_encomenda: z.string().min(1, "Número da encomenda é obrigatório"),
@@ -209,6 +210,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
                 produto_id: item.produto_id,
                 quantidade: item.quantidade,
                 preco_unitario: item.preco_venda,
+                produto_nome_snapshot: item.produto_nome,
               },
             ]);
 
@@ -220,6 +222,10 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
         toast.success("Encomenda atualizada com sucesso!");
       } else {
+        // Get cliente and fornecedor names for snapshots
+        const cliente = clientes.find(c => c.id === data.cliente_id);
+        const fornecedor = fornecedores.find(f => f.id === data.fornecedor_id);
+
         // Criar nova encomenda
         const { data: newEncomenda, error } = await supabase
           .from("encomendas")
@@ -232,6 +238,8 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
               data_envio_estimada: data.data_envio_estimada || null,
               observacoes: data.observacoes || null,
               valor_total: valorTotal,
+              cliente_nome_snapshot: cliente?.nome || '',
+              fornecedor_nome_snapshot: fornecedor?.nome || '',
             },
           ])
           .select()
@@ -251,6 +259,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
                   produto_id: item.produto_id,
                   quantidade: item.quantidade,
                   preco_unitario: item.preco_venda,
+                  produto_nome_snapshot: item.produto_nome,
                 },
               ]);
 
@@ -264,9 +273,13 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         }
       }
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar encomenda:", error);
-      toast.error("Erro ao salvar encomenda");
+      
+      // Handle specific errors for inactive entities
+      if (!handleEntityInactiveError('Cliente/Fornecedor', error)) {
+        toast.error("Erro ao salvar encomenda");
+      }
     } finally {
       setIsSubmitting(false);
     }

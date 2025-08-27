@@ -2,10 +2,11 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Trash2, Edit } from 'lucide-react';
+import { Trash2, Edit, Archive, RotateCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logActivity } from '@/utils/activityLogger';
+import { archiveCliente, reactivateCliente } from '@/lib/soft-delete-actions';
 
 interface Cliente {
   id: string;
@@ -23,62 +24,69 @@ interface ClienteActionsProps {
 }
 
 export function ClienteActions({ cliente, onEdit, onRefresh }: ClienteActionsProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleArchive = async () => {
+    setIsLoading(true);
+    try {
+      await archiveCliente(cliente.id);
+      await logActivity({
+        entity: 'cliente',
+        entity_id: cliente.id,
+        action: 'archive',
+        details: { nome: cliente.nome }
+      });
+      onRefresh();
+    } catch (error) {
+      console.error('Erro ao arquivar cliente:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReactivate = async () => {
+    setIsLoading(true);
+    try {
+      await reactivateCliente(cliente.id);
+      await logActivity({
+        entity: 'cliente',
+        entity_id: cliente.id,
+        action: 'reactivate',
+        details: { nome: cliente.nome }
+      });
+      onRefresh();
+    } catch (error) {
+      console.error('Erro ao reativar cliente:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleDelete = async () => {
-    setIsDeleting(true);
+    setIsLoading(true);
     try {
-      // Verificar se há vínculos (encomendas, pagamentos)
-      const { data: encomendas } = await supabase
-        .from('encomendas')
-        .select('id')
-        .eq('cliente_id', cliente.id)
-        .limit(1);
+      // Hard delete para casos específicos (apenas admin)
+      const { error } = await supabase
+        .from('clientes')
+        .delete()
+        .eq('id', cliente.id);
 
-      const hasLinks = encomendas && encomendas.length > 0;
+      if (error) throw error;
 
-      if (hasLinks) {
-        // Soft delete
-        const { error } = await supabase
-          .from('clientes')
-          .update({ active: false })
-          .eq('id', cliente.id);
+      await logActivity({
+        entity: 'cliente',
+        entity_id: cliente.id,
+        action: 'hard_delete',
+        details: { nome: cliente.nome }
+      });
 
-        if (error) throw error;
-
-        await logActivity({
-          entity: 'cliente',
-          entity_id: cliente.id,
-          action: 'soft_delete',
-          details: { nome: cliente.nome, reason: 'has_links' }
-        });
-
-        toast.success('Cliente desativado (possui vínculos)');
-      } else {
-        // Hard delete
-        const { error } = await supabase
-          .from('clientes')
-          .delete()
-          .eq('id', cliente.id);
-
-        if (error) throw error;
-
-        await logActivity({
-          entity: 'cliente',
-          entity_id: cliente.id,
-          action: 'hard_delete',
-          details: { nome: cliente.nome }
-        });
-
-        toast.success('Cliente removido');
-      }
-
+      toast.success('Cliente removido permanentemente');
       onRefresh();
     } catch (error) {
       console.error('Erro ao deletar cliente:', error);
       toast.error('Erro ao deletar cliente');
     } finally {
-      setIsDeleting(false);
+      setIsLoading(false);
     }
   };
 
@@ -89,32 +97,106 @@ export function ClienteActions({ cliente, onEdit, onRefresh }: ClienteActionsPro
         size="sm" 
         className="flex-1" 
         onClick={() => onEdit(cliente)}
+        disabled={isLoading}
       >
         <Edit className="h-3 w-3 mr-1" />
         Editar
       </Button>
+      
+      {cliente.active ? (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-orange-600 hover:text-orange-700"
+              disabled={isLoading}
+            >
+              <Archive className="h-3 w-3" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar arquivamento</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja arquivar o cliente "{cliente.nome}"?
+                O cliente será inativado e não aparecerá nas listagens, mas seus dados serão preservados.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleArchive}
+                disabled={isLoading}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                {isLoading ? 'Arquivando...' : 'Arquivar'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      ) : (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-green-600 hover:text-green-700"
+              disabled={isLoading}
+            >
+              <RotateCcw className="h-3 w-3" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar reativação</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja reativar o cliente "{cliente.nome}"?
+                O cliente voltará a aparecer nas listagens e poderá ser usado em novas encomendas.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleReactivate}
+                disabled={isLoading}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isLoading ? 'Reativando...' : 'Reativar'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-red-600 hover:text-red-700"
+            disabled={isLoading}
+          >
             <Trash2 className="h-3 w-3" />
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão permanente</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o cliente "{cliente.nome}"?
-              {cliente.active ? ' Se houver vínculos, será desativado ao invés de removido.' : ''}
+              ⚠️ ATENÇÃO: Esta ação é irreversível!
+              Tem certeza que deseja excluir permanentemente o cliente "{cliente.nome}"?
+              Todos os dados relacionados serão perdidos.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDelete}
-              disabled={isDeleting}
+              disabled={isLoading}
               className="bg-red-600 hover:bg-red-700"
             >
-              {isDeleting ? 'Excluindo...' : 'Excluir'}
+              {isLoading ? 'Excluindo...' : 'Excluir Permanentemente'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
