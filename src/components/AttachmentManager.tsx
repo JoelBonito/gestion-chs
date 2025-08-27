@@ -35,17 +35,18 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       const result = await createAttachment(fileData);
       console.log("AttachmentManager - Anexo criado:", result);
       
-      // Invalidar todas as queries relacionadas com anexos
+      // Invalidar TODAS as queries relacionadas com anexos
       await queryClient.invalidateQueries({ 
-        queryKey: ['attachments', entityType, entityId] 
+        queryKey: ['attachments'] 
       });
       
-      // Invalidar queries financeiras se necessário
-      if (entityType === 'receivable' || entityType === 'payable' || entityType.includes('financeiro')) {
-        await queryClient.invalidateQueries({ 
-          queryKey: ['financial-attachments', entityType, entityId] 
-        });
-      }
+      // Invalidar queries financeiras
+      await queryClient.invalidateQueries({ 
+        queryKey: ['financial-attachments'] 
+      });
+      
+      // Wait a bit to ensure all queries are invalidated
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       // Force refetch of current data
       await refetch();
@@ -63,8 +64,20 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
     }
   }, [entityType, entityId, createAttachment, onChanged, queryClient, refetch]);
 
-  const handleDeleteSuccess = () => {
+  const handleDeleteSuccess = async () => {
     console.log("AttachmentManager - Delete bem-sucedido, executando onChanged");
+    
+    // Invalidar todas as queries de anexos
+    await queryClient.invalidateQueries({ 
+      queryKey: ['attachments'] 
+    });
+    
+    await queryClient.invalidateQueries({ 
+      queryKey: ['financial-attachments'] 
+    });
+    
+    await refetch();
+    
     if (onChanged) {
       onChanged();
     }

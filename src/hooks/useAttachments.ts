@@ -54,7 +54,9 @@ export const useAttachments = (entityType: string, entityId: string) => {
       console.log(`useAttachments - Anexos encontrados (${data?.length || 0}):`, data);
       return data || [];
     },
-    enabled: !!entityId
+    enabled: !!entityId,
+    staleTime: 0, // Always fetch fresh data
+    gcTime: 0 // Don't cache data
   });
 
   const createAttachment = async (attachmentData: {

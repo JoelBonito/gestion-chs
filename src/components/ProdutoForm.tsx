@@ -390,7 +390,10 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
             <AttachmentManager
               entityType="produto"
               entityId={produto.id}
-              onChanged={onSuccess}
+              onChanged={() => {
+                console.log("ProdutoForm - Attachment changed, triggering success callback");
+                onSuccess?.();
+              }}
             />
           )}
           {!produto?.id && (
