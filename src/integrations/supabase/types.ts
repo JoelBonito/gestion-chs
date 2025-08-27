@@ -87,6 +87,9 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string | null
+          created_by: string
+          deactivated_at: string | null
+          deactivated_reason: string | null
           email: string | null
           endereco: string | null
           id: string
@@ -97,6 +100,9 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string | null
+          created_by?: string
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
           email?: string | null
           endereco?: string | null
           id?: string
@@ -107,6 +113,9 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string | null
+          created_by?: string
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
           email?: string | null
           endereco?: string | null
           id?: string
@@ -120,6 +129,7 @@ export type Database = {
         Row: {
           cliente_id: string
           created_at: string | null
+          created_by: string
           data_criacao: string
           data_entrega: string | null
           data_envio_estimada: string | null
@@ -144,6 +154,7 @@ export type Database = {
         Insert: {
           cliente_id: string
           created_at?: string | null
+          created_by?: string
           data_criacao?: string
           data_entrega?: string | null
           data_envio_estimada?: string | null
@@ -168,6 +179,7 @@ export type Database = {
         Update: {
           cliente_id?: string
           created_at?: string | null
+          created_by?: string
           data_criacao?: string
           data_entrega?: string | null
           data_envio_estimada?: string | null
@@ -214,6 +226,8 @@ export type Database = {
           contato: string | null
           created_at: string
           created_by: string
+          deactivated_at: string | null
+          deactivated_reason: string | null
           email: string | null
           endereco: string | null
           id: string
@@ -228,6 +242,8 @@ export type Database = {
           contato?: string | null
           created_at?: string
           created_by?: string
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
           email?: string | null
           endereco?: string | null
           id?: string
@@ -242,6 +258,8 @@ export type Database = {
           contato?: string | null
           created_at?: string
           created_by?: string
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
           email?: string | null
           endereco?: string | null
           id?: string
@@ -445,6 +463,9 @@ export type Database = {
         Row: {
           ativo: boolean
           created_at: string
+          created_by: string
+          deactivated_at: string | null
+          deactivated_reason: string | null
           fornecedor_id: string | null
           id: string
           marca: string
@@ -458,6 +479,9 @@ export type Database = {
         Insert: {
           ativo?: boolean
           created_at?: string
+          created_by?: string
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
           fornecedor_id?: string | null
           id?: string
           marca: string
@@ -471,6 +495,9 @@ export type Database = {
         Update: {
           ativo?: boolean
           created_at?: string
+          created_by?: string
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
           fornecedor_id?: string | null
           id?: string
           marca?: string
