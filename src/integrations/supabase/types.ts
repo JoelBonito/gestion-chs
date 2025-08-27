@@ -344,6 +344,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_itens_encomenda_produto_id"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "itens_encomenda_encomenda_id_fkey"
             columns: ["encomenda_id"]
             isOneToOne: false

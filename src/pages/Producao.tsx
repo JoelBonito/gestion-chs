@@ -137,7 +137,7 @@ export default function Producao() {
         .from("itens_encomenda")
         .select(`
           *,
-          produtos(nome, marca, tipo)
+          produtos!inner(nome, marca, tipo)
         `)
         .eq("encomenda_id", encomendaId);
 

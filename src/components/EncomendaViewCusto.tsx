@@ -94,7 +94,7 @@ export function EncomendaViewCusto({ encomendaId }: EncomendaViewCustoProps) {
         .from("itens_encomenda")
         .select(`
           *,
-          produtos(nome, marca, tipo, preco_custo)
+          produtos!inner(nome, marca, tipo, preco_custo)
         `)
         .eq("encomenda_id", encomendaId);
 
