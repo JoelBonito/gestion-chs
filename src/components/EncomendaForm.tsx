@@ -171,6 +171,36 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
   const onSubmit = async (data: EncomendaFormData) => {
     setIsSubmitting(true);
     try {
+      // 1. Validate session before proceeding
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        toast.error("Sessão expirada. Faça login novamente.");
+        return;
+      }
+
+      // 2. Validate client and supplier are active and belong to user
+      const { data: clienteData } = await supabase
+        .from('clientes')
+        .select('id, nome')
+        .eq('id', data.cliente_id)
+        .maybeSingle();
+
+      if (!clienteData) {
+        toast.error("Cliente inválido ou inativo. Verifique se o cliente está ativo.");
+        return;
+      }
+
+      const { data: fornecedorData } = await supabase
+        .from('fornecedores')
+        .select('id, nome')
+        .eq('id', data.fornecedor_id)
+        .maybeSingle();
+
+      if (!fornecedorData) {
+        toast.error("Fornecedor inválido ou inativo. Verifique se o fornecedor está ativo.");
+        return;
+      }
+
       if (isEditing && initialData?.id) {
         console.log("Atualizando encomenda:", initialData.id);
         console.log("Dados do formulário:", data);
@@ -183,6 +213,8 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
             numero_encomenda: data.numero_encomenda,
             cliente_id: data.cliente_id,
             fornecedor_id: data.fornecedor_id,
+            cliente_nome: clienteData.nome,
+            fornecedor_nome: fornecedorData.nome,
             data_producao_estimada: data.data_producao_estimada || null,
             data_envio_estimada: data.data_envio_estimada || null,
             observacoes: data.observacoes || null,
@@ -222,11 +254,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
         toast.success("Encomenda atualizada com sucesso!");
       } else {
-        // Get cliente and fornecedor names for snapshots
-        const cliente = clientes.find(c => c.id === data.cliente_id);
-        const fornecedor = fornecedores.find(f => f.id === data.fornecedor_id);
-
-        // Criar nova encomenda
+        // Criar nova encomenda with validated data
         const { data: newEncomenda, error } = await supabase
           .from("encomendas")
           .insert([
@@ -234,12 +262,12 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
               numero_encomenda: data.numero_encomenda,
               cliente_id: data.cliente_id,
               fornecedor_id: data.fornecedor_id,
+              cliente_nome: clienteData.nome,
+              fornecedor_nome: fornecedorData.nome,
               data_producao_estimada: data.data_producao_estimada || null,
               data_envio_estimada: data.data_envio_estimada || null,
               observacoes: data.observacoes || null,
               valor_total: valorTotal,
-              cliente_nome_snapshot: cliente?.nome || '',
-              fornecedor_nome_snapshot: fornecedor?.nome || '',
             },
           ])
           .select()
@@ -276,9 +304,15 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
     } catch (error: any) {
       console.error("Erro ao salvar encomenda:", error);
       
-      // Handle specific errors for inactive entities
-      if (!handleEntityInactiveError('Cliente/Fornecedor', error)) {
-        toast.error("Erro ao salvar encomenda");
+      // Handle specific error cases
+      if (error.code === '42501' || error.code === 'PGRST301') {
+        toast.error("Permissão negada. Verifique se você tem acesso aos dados.");
+      } else if (error.code === 'PGRST116' || error.message?.includes('row-level security')) {
+        toast.error("Cliente ou fornecedor inválido ou inativo. Verifique se ambos estão ativos e pertencem a você.");
+      } else if (error.code === '23503') {
+        toast.error("Erro de referência: cliente ou fornecedor não encontrado.");
+      } else if (!handleEntityInactiveError('Cliente/Fornecedor', error)) {
+        toast.error(error.message || "Erro ao salvar encomenda");
       }
     } finally {
       setIsSubmitting(false);

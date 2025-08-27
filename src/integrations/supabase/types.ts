@@ -128,6 +128,7 @@ export type Database = {
       encomendas: {
         Row: {
           cliente_id: string
+          cliente_nome: string | null
           created_at: string | null
           created_by: string
           data_criacao: string
@@ -135,6 +136,7 @@ export type Database = {
           data_envio_estimada: string | null
           data_producao_estimada: string | null
           fornecedor_id: string
+          fornecedor_nome: string | null
           frete_calculado: boolean | null
           id: string
           numero_encomenda: string
@@ -153,6 +155,7 @@ export type Database = {
         }
         Insert: {
           cliente_id: string
+          cliente_nome?: string | null
           created_at?: string | null
           created_by?: string
           data_criacao?: string
@@ -160,6 +163,7 @@ export type Database = {
           data_envio_estimada?: string | null
           data_producao_estimada?: string | null
           fornecedor_id: string
+          fornecedor_nome?: string | null
           frete_calculado?: boolean | null
           id?: string
           numero_encomenda: string
@@ -178,6 +182,7 @@ export type Database = {
         }
         Update: {
           cliente_id?: string
+          cliente_nome?: string | null
           created_at?: string | null
           created_by?: string
           data_criacao?: string
@@ -185,6 +190,7 @@ export type Database = {
           data_envio_estimada?: string | null
           data_producao_estimada?: string | null
           fornecedor_id?: string
+          fornecedor_nome?: string | null
           frete_calculado?: boolean | null
           id?: string
           numero_encomenda?: string
