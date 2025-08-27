@@ -224,7 +224,6 @@ export default function EncomendasFinanceiro({ onRefreshNeeded }: EncomendasFina
             <PagamentoForm
               onSuccess={handlePagamentoSuccess}
               encomendas={[selectedEncomenda]}
-              saldoDevedor={selectedEncomenda.saldo_devedor}
             />
           </DialogContent>
         </Dialog>

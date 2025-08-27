@@ -132,12 +132,7 @@ export function ProdutoForm({ onSuccess, produto, isEditing = false }: ProdutoFo
     ativo: produto?.ativo ?? true
   });
 
-  useEffect(() => {
-    if (produto?.variacoes_produto) {
-      setVariacoes(produto.variacoes_produto);
-      setShowVariacoes(produto.variacoes_produto.length > 0);
-    }
-  }, [produto]);
+  // Note: Variações functionality disabled as variacoes_produto table doesn't exist
 
   useEffect(() => {
     fetchFornecedores();
@@ -155,7 +150,7 @@ export function ProdutoForm({ onSuccess, produto, isEditing = false }: ProdutoFo
       const { data, error } = await supabase
         .from("fornecedores")
         .select("id, nome")
-        .eq("ativo", true)
+        .eq("active", true)
         .order("nome");
 
       if (error) throw error;
@@ -222,7 +217,16 @@ export function ProdutoForm({ onSuccess, produto, isEditing = false }: ProdutoFo
       if (isEditing) {
         const { data, error } = await supabase
           .from("produtos")
-          .update(formData)
+          .update({
+            nome: formData.nome,
+            marca: formData.marca,
+            tipo: formData.categoria,
+            preco_custo: formData.preco_compra || 0,
+            preco_venda: formData.preco_venda || 0,
+            size_weight: formData.peso || 0,
+            fornecedor_id: formData.fornecedor_id,
+            ativo: formData.ativo
+          })
           .eq("id", produto.id)
           .select()
           .single();
@@ -233,7 +237,16 @@ export function ProdutoForm({ onSuccess, produto, isEditing = false }: ProdutoFo
       } else {
         const { data, error } = await supabase
           .from("produtos")
-          .insert([formData])
+          .insert([{
+            nome: formData.nome,
+            marca: formData.marca,
+            tipo: formData.categoria,
+            preco_custo: formData.preco_compra || 0,
+            preco_venda: formData.preco_venda || 0,
+            size_weight: formData.peso || 0,
+            fornecedor_id: formData.fornecedor_id,
+            ativo: formData.ativo
+          }])
           .select()
           .single();
 
@@ -242,35 +255,7 @@ export function ProdutoForm({ onSuccess, produto, isEditing = false }: ProdutoFo
         toast.success("Produto criado com sucesso!");
       }
 
-      // Gerenciar variações
-      if (showVariacoes && variacoes.length > 0) {
-        // Remove variações existentes se estiver editando
-        if (isEditing) {
-          await supabase
-            .from("variacoes_produto")
-            .delete()
-            .eq("produto_id", produto_id);
-        }
-
-        // Inserir novas variações
-        const variacoesParaInserir = variacoes
-          .filter(v => v.nome.trim() && v.valor.trim())
-          .map(v => ({
-            produto_id,
-            nome: v.nome,
-            valor: v.valor,
-            estoque: v.estoque || 0,
-            preco_adicional: v.preco_adicional || 0
-          }));
-
-        if (variacoesParaInserir.length > 0) {
-          const { error: variacoesError } = await supabase
-            .from("variacoes_produto")
-            .insert(variacoesParaInserir);
-
-          if (variacoesError) throw variacoesError;
-        }
-      }
+      // Note: Variações functionality removed as variacoes_produto table doesn't exist in current schema
 
       onSuccess?.();
     } catch (error: any) {

@@ -118,8 +118,6 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
                 <ProdutoForm 
                   produto={produtoData} 
                   onSuccess={handleEditSuccess}
-                  onAttachmentRefresh={handleAttachmentRefresh}
-                  onProdutoUpdate={setProdutoData}
                 />
               </DialogContent>
             </Dialog>
