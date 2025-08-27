@@ -7,15 +7,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Eye, Download, Edit, Trash2, FileText, ExternalLink } from 'lucide-react';
+import { Eye, Download, Edit, Trash2, FileText, ExternalLink, Paperclip } from 'lucide-react';
 import { Invoice } from '@/types/invoice';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
+import { InvoiceAttachmentManager } from './InvoiceAttachmentManager';
 
 interface InvoiceListProps {
   invoices: Invoice[];
   onUpdate: (id: string, data: { invoice_date: string; amount: number; description?: string }) => void;
   onDelete: (invoice: Invoice) => void;
+  onRefresh: () => void;
   isLoading?: boolean;
 }
 
@@ -23,10 +25,12 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   invoices,
   onUpdate,
   onDelete,
+  onRefresh,
   isLoading = false
 }) => {
   const { hasRole } = useUserRole();
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
   const [editFormData, setEditFormData] = useState({
     invoice_date: '',
     amount: 0,
@@ -164,15 +168,24 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setViewingInvoice(invoice)}
+                          title="Ver detalhes"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+
                         {invoice.attachment && (
                           <>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handlePreview(invoice)}
-                              title="Visualizar"
+                              title="Visualizar PDF"
                             >
-                              <Eye className="w-4 h-4" />
+                              <FileText className="w-4 h-4" />
                             </Button>
 
                             <Button
@@ -296,6 +309,46 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                 </Button>
               </div>
             </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* View Invoice Details Modal */}
+      {viewingInvoice && (
+        <Dialog open={!!viewingInvoice} onOpenChange={() => setViewingInvoice(null)}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Detalhes da Fatura</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Data da Fatura</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(viewingInvoice.invoice_date).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+                <div>
+                  <Label>Valor</Label>
+                  <p className="text-sm font-semibold">€{viewingInvoice.amount.toFixed(2)}</p>
+                </div>
+              </div>
+              
+              {viewingInvoice.description && (
+                <div>
+                  <Label>Descrição</Label>
+                  <p className="text-sm text-muted-foreground">{viewingInvoice.description}</p>
+                </div>
+              )}
+              
+              <InvoiceAttachmentManager 
+                invoice={viewingInvoice} 
+                onUpdate={() => {
+                  onRefresh();
+                  setViewingInvoice(null);
+                }} 
+              />
+            </div>
           </DialogContent>
         </Dialog>
       )}

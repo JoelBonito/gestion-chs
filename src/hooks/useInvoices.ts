@@ -22,8 +22,7 @@ export const useInvoices = () => {
     queryFn: async (): Promise<Invoice[]> => {
       console.log('useInvoices - Buscando faturas');
       
-      // Usar type assertion temporário até sync dos tipos
-      const { data: invoicesData, error: invoicesError } = await (supabase as any)
+      const { data: invoicesData, error: invoicesError } = await supabase
         .from('invoices')
         .select('*')
         .order('invoice_date', { ascending: false });
@@ -66,7 +65,7 @@ export const useInvoices = () => {
 
   const createInvoiceMutation = useMutation({
     mutationFn: async (invoiceData: InvoiceFormData) => {
-      console.log('useInvoices - Criando fatura', invoiceData);
+      console.log('useInvoices - Criando fatura:', invoiceData);
       
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       
@@ -78,6 +77,7 @@ export const useInvoices = () => {
 
       // Upload do arquivo se fornecido
       if (invoiceData.file) {
+        console.log('useInvoices - Fazendo upload do arquivo');
         const date = new Date(invoiceData.invoice_date);
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -92,12 +92,14 @@ export const useInvoices = () => {
           throw new Error("Erro no upload do arquivo");
         }
 
-        // Criar registro na tabela attachments
+        console.log('useInvoices - Upload concluído, criando registro de anexo');
+
+        // Criar registro temporário na tabela attachments
         const { data: attachment, error: attachmentError } = await supabase
           .from('attachments')
           .insert([{
             entity_type: 'invoice',
-            entity_id: 'temp', // Será atualizado após criar a fatura
+            entity_id: 'temp-invoice', // Será atualizado após criar a fatura
             file_name: result.fileName,
             file_type: result.mimeType,
             storage_path: result.path,
@@ -114,10 +116,13 @@ export const useInvoices = () => {
         }
 
         attachmentId = attachment.id;
+        console.log('useInvoices - Anexo criado com ID:', attachmentId);
       }
 
-      // Usar type assertion temporário até sync dos tipos
-      const { data: invoice, error: invoiceError } = await (supabase as any)
+      console.log('useInvoices - Criando registro da fatura');
+
+      // Criar a fatura
+      const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
         .insert([{
           invoice_date: invoiceData.invoice_date,
@@ -134,20 +139,30 @@ export const useInvoices = () => {
         throw invoiceError;
       }
 
+      console.log('useInvoices - Fatura criada:', invoice);
+
       // Atualizar entity_id do attachment se necessário
-      if (attachmentId) {
-        await supabase
+      if (attachmentId && invoice.id) {
+        console.log('useInvoices - Atualizando entity_id do anexo');
+        const { error: updateError } = await supabase
           .from('attachments')
           .update({ entity_id: invoice.id })
           .eq('id', attachmentId);
+
+        if (updateError) {
+          console.error("useInvoices - Erro ao atualizar entity_id:", updateError);
+        }
       }
       
       return invoice;
     },
-    onSuccess: async () => {
-      console.log("useInvoices - Fatura criada com sucesso");
+    onSuccess: async (data) => {
+      console.log("useInvoices - Fatura criada com sucesso:", data);
+      
+      // Invalidar e refetch
       await queryClient.invalidateQueries({ queryKey });
-      refetch();
+      await refetch();
+      
       toast({
         title: "Fatura criada",
         description: "Fatura salva com sucesso.",

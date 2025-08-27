@@ -31,11 +31,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     e.preventDefault();
     
     if (!canCreate) return;
-    
-    if (!selectedFile) {
-      alert('Por favor, selecione um arquivo PDF.');
-      return;
-    }
 
     const today = new Date().toISOString().split('T')[0];
     if (formData.invoice_date > today) {
@@ -51,7 +46,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     try {
       await onSubmit({
         ...formData,
-        file: selectedFile
+        file: selectedFile || undefined // Arquivo é opcional agora
       });
 
       // Reset form only after successful submission
@@ -141,7 +136,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="file">Documento PDF *</Label>
+          <Label htmlFor="file">Documento PDF (Opcional)</Label>
           <div className="flex items-center gap-2">
             <Input
               id="file"
@@ -149,7 +144,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               accept=".pdf"
               onChange={handleFileChange}
               className="flex-1"
-              required
             />
             {selectedFile && (
               <div className="flex items-center gap-1 text-sm text-success">
@@ -159,13 +153,13 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            Apenas arquivos PDF até 10MB são permitidos.
+            Anexe um arquivo PDF até 10MB. Você pode adicionar o anexo depois se preferir.
           </p>
         </div>
 
         <Button 
           type="submit" 
-          disabled={isSubmitting || !selectedFile}
+          disabled={isSubmitting}
           className="w-full"
         >
           {isSubmitting ? (

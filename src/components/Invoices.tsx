@@ -16,6 +16,7 @@ export const Invoices: React.FC = () => {
     createInvoice,
     updateInvoice,
     deleteInvoice,
+    refetch,
     isCreating
   } = useInvoices();
 
@@ -51,6 +52,7 @@ export const Invoices: React.FC = () => {
         invoices={invoices}
         onUpdate={updateInvoice}
         onDelete={deleteInvoice}
+        onRefresh={refetch}
         isLoading={isLoading}
       />
 
