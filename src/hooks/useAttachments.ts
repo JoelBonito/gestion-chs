@@ -3,7 +3,19 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSupabaseStorage } from './useSupabaseStorage';
-import type { Attachment } from '@/types/domain';
+
+interface Attachment {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  file_name: string;
+  file_type: string;
+  storage_path: string;
+  storage_url: string;
+  file_size: number;
+  uploaded_by: string;
+  created_at: string;
+}
 
 export const useAttachments = (entityType: string, entityId: string) => {
   const { toast } = useToast();
@@ -102,9 +114,9 @@ export const useAttachments = (entityType: string, entityId: string) => {
       
       console.log("useAttachments - Anexo inserido com sucesso no banco:", data);
       
-      // Invalidate queries to trigger immediate refresh with specific queryKey
+      // Invalidate queries to trigger immediate refresh
       console.log("useAttachments - Invalidando queries para refresh imediato");
-      await queryClient.invalidateQueries({ queryKey: ['attachments', entityType, entityId] });
+      queryClient.invalidateQueries({ queryKey });
       
       toast({
         title: "Anexo adicionado",
@@ -138,8 +150,8 @@ export const useAttachments = (entityType: string, entityId: string) => {
 
       if (error) throw error;
 
-      // Invalidate queries to refresh the list with specific queryKey
-      await queryClient.invalidateQueries({ queryKey: ['attachments', entityType, entityId] });
+      // Invalidate queries to refresh the list
+      queryClient.invalidateQueries({ queryKey });
 
       toast({
         title: "Anexo removido",

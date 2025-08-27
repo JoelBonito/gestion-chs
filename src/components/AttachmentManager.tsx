@@ -22,34 +22,20 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
   const queryClient = useQueryClient();
 
   // Memoizar o callback para evitar re-renders desnecessários
-  const handleUploadSuccess = useMemo(() => async (result: {
-    path: string;
-    fullPath: string;
-    publicUrl: string;
-    fileName: string;
-    mimeType: string;
-    size: number;
+  const handleUploadSuccess = useMemo(() => async (fileData: {
+    file_name: string;
+    file_type: string;
+    storage_path: string;
+    storage_url: string;
+    file_size: number;
   }) => {
     console.log("=== ATTACHMENT UPLOAD SUCCESS - Iniciando processo completo ===");
-    console.log("AttachmentManager - Upload bem-sucedido, dados do arquivo:", result);
+    console.log("AttachmentManager - Upload bem-sucedido, dados do arquivo:", fileData);
     console.log(`AttachmentManager - Criando anexo no banco para entityType: ${entityType}, entityId: ${entityId}`);
     
     try {
-      const fileData = {
-        file_name: result.fileName,
-        file_type: result.mimeType,
-        storage_path: result.fullPath ?? result.path,
-        storage_url: result.publicUrl,
-        file_size: result.size,
-      };
-
-      const attachmentResult = await createAttachment(fileData);
-      console.log("AttachmentManager - Anexo criado com sucesso no banco de dados:", attachmentResult);
-      
-      // Invalidate queries to refresh the attachment list
-      await queryClient.invalidateQueries({
-        queryKey: ["attachments", entityType, entityId],
-      });
+      const result = await createAttachment(fileData);
+      console.log("AttachmentManager - Anexo criado com sucesso no banco de dados:", result);
       
       // Chamar onRefreshParent para atualizar produto pai se necessário
       if (onRefreshParent) {
@@ -65,7 +51,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       console.error("AttachmentManager - Erro ao criar anexo no banco:", error);
       throw error;
     }
-  }, [entityType, entityId, createAttachment, onRefreshParent, queryClient]);
+  }, [entityType, entityId, createAttachment, onRefreshParent]);
 
   if (!entityId) {
     console.log("AttachmentManager - EntityId não fornecido, não renderizando");

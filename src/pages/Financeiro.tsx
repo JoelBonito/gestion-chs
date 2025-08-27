@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Download, TrendingUp, TrendingDown, DollarSign, AlertCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import EncomendasFinanceiro from "@/components/EncomendasFinanceiro";
 import ContasPagar from "@/components/ContasPagar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { EncomendaFinanceiro, ContaPagar } from "@/types/financeiro";
+import { AttachmentManager } from "@/components/AttachmentManager";
 
 // Mock data para movimentações
 const movimentacoes = [
@@ -44,98 +43,36 @@ const movimentacoes = [
 
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState("resumo");
-  const [encomendas, setEncomendas] = useState<EncomendaFinanceiro[]>([]);
-  const [contasPagar, setContasPagar] = useState<ContaPagar[]>([]);
+  const [encomendas, setEncomendas] = useState<any[]>([]);
   const [showPagamentoDialog, setShowPagamentoDialog] = useState(false);
   const { toast } = useToast();
 
-  const fetchDadosFinanceiros = async () => {
+  const fetchEncomendas = async () => {
     try {
-      // Buscar encomendas a receber
-      const { data: encomendasData, error: encomendasError } = await supabase
+      const { data, error } = await supabase
         .from("encomendas")
         .select(`
-          id,
-          numero_encomenda,
-          valor_total,
-          valor_pago,
-          freight_rates,
-          clientes(id, nome)
+          *,
+          clientes!inner(nome)
         `)
+        .gt("saldo_devedor", 0)
         .order("created_at", { ascending: false });
 
-      if (encomendasError) throw encomendasError;
+      if (error) throw error;
 
-      const encomendasFormatadas: EncomendaFinanceiro[] = (encomendasData ?? []).map((e: any) => {
-        const produtos = Number(e.valor_total || 0);
-        const frete = Number(e.freight_rates || 0);
-        const pago = Number(e.valor_pago || 0);
-        
-        const totalCaixa = produtos + frete;
-        const saldoDevedorCaixa = Math.max(totalCaixa - pago, 0);
-
-        return {
-          id: e.id,
-          numero_encomenda: e.numero_encomenda,
-          cliente_nome: e.clientes?.nome || "",
-          valor_total: produtos,
-          valor_pago: pago,
-          saldo_devedor: Math.max(0, produtos - pago), // manter compatibilidade
-          freight_rates: frete,
-          total_caixa: totalCaixa,
-          saldo_devedor_caixa: saldoDevedorCaixa,
-        };
-      });
-
-      // Buscar contas a pagar com cálculo de custo real
-      const { data: contasData, error: contasError } = await supabase
-        .from("encomendas")
-        .select(`
-          id,
-          numero_encomenda,
-          valor_pago_fornecedor,
-          freight_rates,
-          fornecedores(id, nome),
-          itens_encomenda(
-            quantidade,
-            produtos(preco_custo)
-          )
-        `)
-        .order("created_at", { ascending: false });
-
-      if (contasError) throw contasError;
-
-      const contasFormatadas: ContaPagar[] = (contasData ?? []).map((e: any) => {
-        // Calcular custo real dos produtos
-        const custoProducts = (e.itens_encomenda || []).reduce((total: number, item: any) => {
-          const quantidade = Number(item.quantidade || 0);
-          const precoCusto = Number(item.produtos?.preco_custo || 0);
-          return total + (quantidade * precoCusto);
-        }, 0);
-        
-        const frete = Number(e.freight_rates || 0);
-        const pagoFornecedor = Number(e.valor_pago_fornecedor || 0);
-        
-        const totalCaixaPagar = custoProducts + frete;
-        const saldoPagarCaixa = Math.max(totalCaixaPagar - pagoFornecedor, 0);
-        
-        return {
-          id: e.id,
-          numero_encomenda: e.numero_encomenda,
-          fornecedor_nome: e.fornecedores?.nome || '',
-          custo_produtos: custoProducts,
-          valor_pago_fornecedor: pagoFornecedor,
-          freight_rates: frete,
-          total_caixa_pagar: totalCaixaPagar,
-          saldo_pagar_caixa: saldoPagarCaixa,
-        };
-      });
+      const encomendasFormatadas = data.map((encomenda: any) => ({
+        id: encomenda.id,
+        numero_encomenda: encomenda.numero_encomenda,
+        cliente_nome: encomenda.clientes.nome,
+        valor_total: parseFloat(encomenda.valor_total),
+        valor_pago: parseFloat(encomenda.valor_pago),
+        saldo_devedor: parseFloat(encomenda.saldo_devedor),
+      }));
 
       setEncomendas(encomendasFormatadas);
-      setContasPagar(contasFormatadas);
     } catch (error: any) {
       toast({
-        title: "Erro ao carregar dados financeiros",
+        title: "Erro ao carregar encomendas",
         description: error.message,
         variant: "destructive",
       });
@@ -143,22 +80,18 @@ export default function Financeiro() {
   };
 
   useEffect(() => {
-    fetchDadosFinanceiros();
+    fetchEncomendas();
   }, []);
 
   const handlePagamentoSuccess = () => {
     setShowPagamentoDialog(false);
-    fetchDadosFinanceiros();
+    fetchEncomendas();
   };
 
-  // Cálculos para KPIs - usando valores corretos
-  const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor_caixa, 0); // Total Caixa - Pago
-  const totalPagar = contasPagar.reduce((sum, c) => sum + c.saldo_pagar_caixa, 0); // Custo + Frete - Pago
-  const totalReceita = encomendas.reduce((sum, e) => sum + e.valor_total, 0); // Apenas produtos para KPI (sem frete)
-  
-  // Count orders with pending balances (usando novos campos)
-  const encomendasPendentes = encomendas.filter(e => e.saldo_devedor_caixa > 0).length;
-  const contasPendentes = contasPagar.filter(c => c.saldo_pagar_caixa > 0).length;
+  // Cálculos para o resumo
+  const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor, 0);
+  const totalPago = encomendas.reduce((sum, e) => sum + e.valor_pago, 0);
+  const totalGeral = encomendas.reduce((sum, e) => sum + e.valor_total, 0);
 
   return (
     <div className="space-y-6">
@@ -178,7 +111,7 @@ export default function Financeiro() {
             <DialogContent className="max-w-2xl">
               <PagamentoForm 
                 onSuccess={handlePagamentoSuccess}
-                encomendas={encomendas.filter(e => e.saldo_devedor_caixa > 0)}
+                encomendas={encomendas}
               />
             </DialogContent>
           </Dialog>
@@ -192,46 +125,37 @@ export default function Financeiro() {
       {/* Financial Stats */}
       <div className="grid gap-6 md:grid-cols-3">
         <StatCard
-          title="A Receber"
-          value={`€${totalReceber.toFixed(2)}`}
-          subtitle={`${encomendasPendentes} encomendas pendentes (produtos + frete)`}
+          title="Total Geral"
+          value={`€${totalGeral.toFixed(2)}`}
+          subtitle="Valor total das encomendas"
+          icon={<DollarSign className="h-6 w-6" />}
+          variant="default"
+        />
+        
+        <StatCard
+          title="Total Pago"
+          value={`€${totalPago.toFixed(2)}`}
+          subtitle="Pagamentos recebidos"
           icon={<TrendingUp className="h-6 w-6" />}
           variant="success"
         />
         
         <StatCard
-          title="A Pagar"
-          value={`€${totalPagar.toFixed(2)}`}
-          subtitle={`${contasPendentes} contas pendentes (custo + frete)`}
+          title="A Receber"
+          value={`€${totalReceber.toFixed(2)}`}
+          subtitle="Pendente de recebimento"
           icon={<TrendingDown className="h-6 w-6" />}
           variant="warning"
-        />
-        
-        <StatCard
-          title="Receita Produtos"
-          value={`€${totalReceita.toFixed(2)}`}
-          subtitle={`${encomendas.length} encomendas (valor total dos produtos apenas)`}
-          icon={<DollarSign className="h-6 w-6" />}
-          variant="default"
         />
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
-          <TabsTrigger value="encomendas">
-            A Receber 
-            {encomendasPendentes > 0 && (
-              <Badge variant="secondary" className="ml-2">{encomendasPendentes}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="pagar">
-            A Pagar
-            {contasPendentes > 0 && (
-              <Badge variant="secondary" className="ml-2">{contasPendentes}</Badge>
-            )}
-          </TabsTrigger>
+          <TabsTrigger value="encomendas">A Receber</TabsTrigger>
+          <TabsTrigger value="pagar">A Pagar</TabsTrigger>
+          <TabsTrigger value="anexos">Anexos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumo" className="space-y-6">
@@ -267,33 +191,13 @@ export default function Financeiro() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {encomendasPendentes > 0 && (
-                    <div className="flex items-start p-3 bg-warning/10 border border-warning/20 rounded-lg">
-                      <AlertCircle className="h-5 w-5 text-warning mr-3 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-sm">Pagamentos pendentes de clientes</p>
-                        <p className="text-xs text-muted-foreground">{encomendasPendentes} encomendas com saldo devedor</p>
-                      </div>
+                  <div className="flex items-start p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                    <AlertCircle className="h-5 w-5 text-warning mr-3 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-sm">Pagamentos pendentes</p>
+                      <p className="text-xs text-muted-foreground">{encomendas.length} encomendas com saldo devedor</p>
                     </div>
-                  )}
-                  {contasPendentes > 0 && (
-                    <div className="flex items-start p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                      <AlertCircle className="h-5 w-5 text-destructive mr-3 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-sm">Pagamentos pendentes a fornecedores</p>
-                        <p className="text-xs text-muted-foreground">{contasPendentes} contas a pagar</p>
-                      </div>
-                    </div>
-                  )}
-                  {encomendasPendentes === 0 && contasPendentes === 0 && (
-                    <div className="flex items-start p-3 bg-success/10 border border-success/20 rounded-lg">
-                      <AlertCircle className="h-5 w-5 text-success mr-3 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-sm">Situação financeira em dia</p>
-                        <p className="text-xs text-muted-foreground">Não há pagamentos pendentes</p>
-                      </div>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -306,6 +210,23 @@ export default function Financeiro() {
 
         <TabsContent value="pagar">
           <ContasPagar />
+        </TabsContent>
+
+        <TabsContent value="anexos">
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle>Documentos Financeiros</CardTitle>
+              <CardDescription>
+                Gerencie documentos e comprovantes relacionados ao financeiro
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AttachmentManager 
+                entityType="financeiro" 
+                entityId="financial-docs"
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

@@ -1,116 +1,108 @@
 
-import React, { useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import { Upload, X } from "lucide-react";
-import { useSupabaseStorage } from "@/hooks/useSupabaseStorage";
+import React, { useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Paperclip, Upload } from 'lucide-react';
+import { useSupabaseStorage } from '@/hooks/useSupabaseStorage';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface AttachmentUploadProps {
-  entityType: string;
-  entityId: string;
-  onUploadSuccess: (result: {
-    path: string;
-    fullPath: string;
-    publicUrl: string;
-    fileName: string;
-    mimeType: string;
-    size: number;
+  entityType?: string;
+  entityId?: string;
+  onUploadSuccess: (fileData: {
+    file_name: string;
+    file_type: string;
+    storage_path: string;
+    storage_url: string;
+    file_size: number;
   }) => void;
-  onUploadError?: (error: string) => void;
 }
 
-export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
-  entityType,
-  entityId,
-  onUploadSuccess,
-  onUploadError
+export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ 
+  entityType, 
+  entityId, 
+  onUploadSuccess 
 }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading, uploadProgress } = useSupabaseStorage();
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const { hasRole } = useUserRole();
+  
+  // Check if user can upload files
+  const canUpload = hasRole('admin') || hasRole('ops');
 
-  const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    const file = files[0];
-    
-    // Validate file type
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-    if (!allowedTypes.includes(file.type)) {
-      onUploadError?.("Tipo de arquivo não suportado. Use PDF, JPEG ou PNG.");
-      return;
-    }
-
-    // Validate file size (10MB max)
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      onUploadError?.("Arquivo muito grande. Tamanho máximo: 10MB.");
-      return;
-    }
-
-    try {
-      const result = await uploadFile(file, entityType, entityId);
-      
-      if (result) {
-        onUploadSuccess(result);
-      }
-    } catch (error: any) {
-      console.error("Erro no upload:", error);
-      onUploadError?.(error.message || "Erro ao fazer upload do arquivo");
-    } finally {
-      // Clear the input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  }, [uploadFile, entityType, entityId, onUploadSuccess, onUploadError]);
-
-  const handleButtonClick = () => {
+  const handleFileSelect = () => {
     fileInputRef.current?.click();
   };
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    console.log('Iniciando upload do arquivo:', file.name, 'para entidade:', entityType, entityId);
+
+    try {
+      const result = await uploadFile(file, entityType, entityId);
+      if (result) {
+        // Transform the SupabaseUploadResult to match the expected interface
+        onUploadSuccess({
+          file_name: result.fileName,
+          file_type: result.mimeType,
+          storage_path: result.path,
+          storage_url: result.publicUrl,
+          file_size: result.size
+        });
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  if (!canUpload) {
+    return null;
+  }
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-center w-full">
-        <Input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf,.jpg,.jpeg,.png"
-          onChange={handleFileSelect}
-          disabled={isUploading}
-          className="hidden"
-        />
-        
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleButtonClick}
-          disabled={isUploading}
-          className="w-full border-dashed border-2 h-20 flex flex-col items-center justify-center gap-2"
-        >
-          {isUploading ? (
-            <>
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-              <span className="text-sm">Enviando...</span>
-            </>
-          ) : (
-            <>
-              <Upload className="h-6 w-6" />
-              <div className="text-center">
-                <span className="text-sm font-medium">Clique para anexar arquivo</span>
-                <p className="text-xs text-muted-foreground">PDF, JPEG, PNG (max 10MB)</p>
-              </div>
-            </>
-          )}
-        </Button>
-      </div>
+    <div className="space-y-2">
+      <input
+        ref={fileInputRef}
+        type="file"
+        onChange={handleFileChange}
+        className="hidden"
+        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+        multiple={false}
+      />
+      
+      <Button 
+        type="button"
+        onClick={handleFileSelect}
+        disabled={isUploading}
+        variant="outline"
+        size="sm"
+        className="w-full"
+      >
+        {isUploading ? (
+          <>
+            <Upload className="w-4 h-4 mr-2 animate-spin" />
+            Enviando para Supabase...
+          </>
+        ) : (
+          <>
+            <Paperclip className="w-4 h-4 mr-2" />
+            Anexar Arquivo
+          </>
+        )}
+      </Button>
 
       {isUploading && (
-        <div className="space-y-2">
-          <Progress value={uploadProgress} className="w-full" />
-          <p className="text-sm text-center text-muted-foreground">
-            {uploadProgress}% concluído
+        <div className="space-y-1">
+          <Progress value={uploadProgress} className="h-2" />
+          <p className="text-xs text-muted-foreground text-center">
+            {uploadProgress}% enviado
           </p>
         </div>
       )}
