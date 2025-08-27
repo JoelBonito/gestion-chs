@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,8 +8,8 @@ import { AlertTriangle, Plus, Eye, Paperclip } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import PagamentoFornecedorForm from "@/components/PagamentoFornecedorForm";
-import { useFinancialAttachments } from "@/hooks/useFinancialAttachments";
 import { FinancialAttachmentButton } from "@/components/FinancialAttachmentButton";
+import { AttachmentManager } from "@/components/AttachmentManager";
 
 interface ContaPagar {
   encomenda_id: string;
@@ -73,7 +74,7 @@ export default function ContasPagar() {
           valor_total_custo: parseFloat(encomenda.valor_total_custo || 0),
           valor_pago_fornecedor: parseFloat(encomenda.valor_pago_fornecedor || 0),
           saldo_devedor_fornecedor: parseFloat(encomenda.saldo_devedor_fornecedor || 0),
-          total_pagamentos: totalPagamentos,
+          total_pagamentos: encomenda.pagamentos_fornecedor?.length || 0,
         };
       });
 
@@ -169,6 +170,7 @@ export default function ContasPagar() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleViewDetails(conta)}
+                          title="Visualizar detalhes"
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -179,13 +181,14 @@ export default function ContasPagar() {
                             setSelectedConta(conta);
                             setShowPagamentoForm(true);
                           }}
+                          title="Registrar pagamento"
                         >
                           <Plus className="w-4 h-4" />
                         </Button>
                         <FinancialAttachmentButton
-                          entityType="financeiro"
+                          entityType="payable"
                           entityId={conta.encomenda_id}
-                          title="Anexar Fatura"
+                          title="Anexar Comprovante"
                         />
                       </div>
                     </TableCell>
@@ -219,14 +222,15 @@ export default function ContasPagar() {
         </Dialog>
       )}
 
-      {/* Details Dialog */}
+      {/* Details Dialog with Attachments */}
       {selectedConta && (
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Detalhes da Conta a Pagar</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Order Details Section */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Encomenda:</label>
@@ -260,6 +264,16 @@ export default function ContasPagar() {
                   <label className="text-sm font-medium">Quantidade de Pagamentos:</label>
                   <p className="text-sm text-muted-foreground">{selectedConta.total_pagamentos}</p>
                 </div>
+              </div>
+
+              {/* Attachments Section */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-medium mb-4">Comprovantes e Anexos</h3>
+                <AttachmentManager 
+                  entityType="payable"
+                  entityId={selectedConta.encomenda_id}
+                  title="Comprovantes de Pagamento"
+                />
               </div>
             </div>
           </DialogContent>

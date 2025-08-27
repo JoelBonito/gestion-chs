@@ -15,10 +15,10 @@ interface AttachmentManagerProps {
 export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
   entityType,
   entityId,
-  title = "Faturas",
+  title = "Anexos",
   onRefreshParent
 }) => {
-  const { createAttachment } = useAttachments(entityType, entityId);
+  const { createAttachment, refetch } = useAttachments(entityType, entityId);
   const queryClient = useQueryClient();
 
   const handleUploadSuccess = useMemo(() => async (fileData: {
@@ -41,16 +41,19 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       });
       
       // Invalidar queries financeiras se necessário
-      if (entityType.includes('financeiro') || entityType.includes('encomenda')) {
+      if (entityType === 'receivable' || entityType === 'payable' || entityType.includes('financeiro')) {
         await queryClient.invalidateQueries({ 
           queryKey: ['financial-attachments', entityType, entityId] 
         });
       }
       
+      // Force refetch of current data
+      await refetch();
+      
       // Chamar refresh do componente pai
       if (onRefreshParent) {
         console.log("AttachmentManager - Executando onRefreshParent");
-        await onRefreshParent();
+        setTimeout(() => onRefreshParent(), 500);
       }
       
       console.log("AttachmentManager - Processo de refresh completo");
@@ -58,7 +61,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       console.error("AttachmentManager - Erro ao criar anexo:", error);
       throw error;
     }
-  }, [entityType, entityId, createAttachment, onRefreshParent, queryClient]);
+  }, [entityType, entityId, createAttachment, onRefreshParent, queryClient, refetch]);
 
   if (!entityId) {
     console.log("AttachmentManager - EntityId não fornecido");
