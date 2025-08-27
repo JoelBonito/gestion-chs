@@ -89,12 +89,13 @@ export function EncomendaView({ encomendaId }: EncomendaViewProps) {
         .from("itens_encomenda")
         .select(`
           *,
-          produtos!inner(nome, marca, tipo)
+          produtos(nome, marca, tipo)
         `)
         .eq("encomenda_id", encomendaId);
 
       if (error) throw error;
       setItens(data || []);
+      console.log("Itens carregados na visualização:", data);
     } catch (error) {
       console.error("Erro ao carregar itens:", error);
       toast.error("Erro ao carregar itens da encomenda");

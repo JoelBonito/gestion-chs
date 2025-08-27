@@ -67,8 +67,8 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
       return total + (item.quantidade * (item.peso_produto || 0));
     }, 0);
     
-    const pesoTotalKg = pesoTotalGramas / 1000;
-    const pesoBrutoCalculado = pesoTotalKg * 1.30;
+    // Multiplicar por 1.30 e converter para kg: (gramas * 1.30) / 1000
+    const pesoBrutoCalculado = (pesoTotalGramas * 1.30) / 1000;
     setPesoBruto(pesoBrutoCalculado);
   }, [itens]);
 
@@ -141,19 +141,22 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
           return;
         }
 
-        if (itensData) {
+        if (itensData && itensData.length > 0) {
           const itensFormatados = itensData.map((item: any) => ({
             id: item.id,
             produto_id: item.produto_id,
-            produto_nome: item.produtos ? `${item.produtos.nome} - ${item.produtos.marca} - ${item.produtos.tipo}` : "",
+            produto_nome: item.produtos ? `${item.produtos.nome} - ${item.produtos.marca} - ${item.produtos.tipo}` : "Produto não encontrado",
             quantidade: item.quantidade,
             preco_custo: item.produtos?.preco_custo || 0,
             preco_venda: item.preco_unitario,
-            subtotal: item.subtotal,
+            subtotal: item.subtotal || (item.quantidade * item.preco_unitario),
             peso_produto: item.produtos?.size_weight || 0,
           }));
-          console.log("Itens formatados:", itensFormatados);
+          console.log("Itens formatados para edição:", itensFormatados);
           setItens(itensFormatados);
+        } else {
+          console.log("Nenhum item encontrado para esta encomenda");
+          setItens([]);
         }
       };
 

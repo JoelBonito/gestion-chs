@@ -93,12 +93,14 @@ export default function Encomendas() {
 
       if (error || !itens) return 0;
 
+      // Calcular peso bruto: (quantidade * peso_unitário_em_gramas) * 1.30 / 1000 para kg
       const pesoTotalGramas = itens.reduce((total, item: any) => {
         return total + (item.quantidade * (item.produtos?.size_weight || 0));
       }, 0);
 
-      const pesoTotalKg = pesoTotalGramas / 1000;
-      return pesoTotalKg * 1.30;
+      // Multiplicar por 1.30 e converter para kg
+      const pesoBrutoKg = (pesoTotalGramas * 1.30) / 1000;
+      return pesoBrutoKg;
     } catch (error) {
       console.error("Erro ao calcular peso:", error);
       return 0;
