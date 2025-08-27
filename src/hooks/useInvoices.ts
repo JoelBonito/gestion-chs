@@ -251,10 +251,10 @@ export const useInvoices = () => {
     isLoading,
     error,
     refetch,
-    createInvoice: createInvoiceMutation.mutate,
+    createInvoice: createInvoiceMutation.mutateAsync,
     updateInvoice: (id: string, data: { invoice_date: string; amount: number; description?: string }) => 
-      updateInvoiceMutation.mutate({ id, data }),
-    deleteInvoice: deleteInvoiceMutation.mutate,
+      updateInvoiceMutation.mutateAsync({ id, data }),
+    deleteInvoice: deleteInvoiceMutation.mutateAsync,
     isCreating: createInvoiceMutation.isPending,
     isUpdating: updateInvoiceMutation.isPending,
     isDeleting: deleteInvoiceMutation.isPending

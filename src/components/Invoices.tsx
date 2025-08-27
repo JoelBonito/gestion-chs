@@ -19,9 +19,14 @@ export const Invoices: React.FC = () => {
     isCreating
   } = useInvoices();
 
-  const handleCreateInvoice = (data: any) => {
-    createInvoice(data);
-    setShowNewInvoiceDialog(false);
+  const handleCreateInvoice = async (data: any) => {
+    try {
+      await createInvoice(data);
+      setShowNewInvoiceDialog(false);
+    } catch (error) {
+      // O erro já é tratado no hook useInvoices
+      console.error('Erro ao criar fatura:', error);
+    }
   };
 
   return (

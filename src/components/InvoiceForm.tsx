@@ -9,7 +9,7 @@ import { InvoiceFormData } from '@/types/invoice';
 import { useUserRole } from '@/hooks/useUserRole';
 
 interface InvoiceFormProps {
-  onSubmit: (data: InvoiceFormData) => void;
+  onSubmit: (data: InvoiceFormData) => Promise<void>;
   isSubmitting?: boolean;
 }
 
@@ -27,7 +27,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   
   const canCreate = hasRole('admin') || hasRole('finance');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!canCreate) return;
@@ -48,18 +48,23 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       return;
     }
 
-    onSubmit({
-      ...formData,
-      file: selectedFile
-    });
+    try {
+      await onSubmit({
+        ...formData,
+        file: selectedFile
+      });
 
-    // Reset form
-    setFormData({
-      invoice_date: new Date().toISOString().split('T')[0],
-      amount: 0,
-      description: '',
-    });
-    setSelectedFile(null);
+      // Reset form only after successful submission
+      setFormData({
+        invoice_date: new Date().toISOString().split('T')[0],
+        amount: 0,
+        description: '',
+      });
+      setSelectedFile(null);
+    } catch (error) {
+      // Error is handled by the parent component/hook
+      console.error('Erro ao submeter fatura:', error);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

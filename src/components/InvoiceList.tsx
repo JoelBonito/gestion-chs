@@ -40,7 +40,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   const canEdit = hasRole('admin') || hasRole('finance');
 
   const getPublicUrl = (storagePath: string) => {
-    const { data } = supabase.storage.from('invoices').getPublicUrl(storagePath);
+    const { data } = supabase.storage.from('attachments').getPublicUrl(storagePath);
     return data.publicUrl;
   };
 
