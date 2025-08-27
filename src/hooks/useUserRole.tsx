@@ -6,11 +6,16 @@ import { useAuth } from './useAuth';
 type UserRole = 'admin' | 'ops' | 'client' | 'factory' | 'finance';
 
 export function useUserRole() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
     if (!user) {
       setRoles([]);
       setLoading(false);
@@ -19,6 +24,7 @@ export function useUserRole() {
 
     const fetchRoles = async () => {
       try {
+        setLoading(true);
         const { data, error } = await supabase
           .from('user_roles')
           .select('role')
@@ -35,10 +41,10 @@ export function useUserRole() {
     };
 
     fetchRoles();
-  }, [user]);
+  }, [user, authLoading]);
 
   const hasRole = (role: UserRole) => roles.includes(role);
   const canEdit = () => hasRole('admin') || hasRole('ops');
 
-  return { roles, hasRole, canEdit, loading };
+  return { roles, hasRole, canEdit, loading: loading || authLoading };
 }
