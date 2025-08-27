@@ -11,34 +11,6 @@ import { RoleGuard } from "@/components/RoleGuard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock data para movimentações
-const movimentacoes = [
-  {
-    id: "MOV-001",
-    tipo: "recebimento",
-    descricao: "Pagamento Beauty Gamma",
-    valor: 3200.00,
-    data: "2024-01-13",
-    categoria: "Vendas"
-  },
-  {
-    id: "MOV-002",
-    tipo: "pagamento",
-    descricao: "Pagamento Fábrica Premium Hair",
-    valor: -1500.00,
-    data: "2024-01-12",
-    categoria: "Fornecedores"
-  },
-  {
-    id: "MOV-003",
-    tipo: "recebimento",
-    descricao: "Pagamento Cosméticos Beta",
-    valor: 1800.00,
-    data: "2024-01-11",
-    categoria: "Vendas"
-  }
-];
-
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState("resumo");
   const [encomendas, setEncomendas] = useState<any[]>([]);
