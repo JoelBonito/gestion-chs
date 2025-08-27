@@ -246,6 +246,31 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
   const onSubmit = async (data: EncomendaFormData) => {
     setIsSubmitting(true);
     try {
+      // 1) Garantir sessão
+const { data: sessionData } = await supabase.auth.getSession();
+if (!sessionData?.session) {
+  toast.error("Faça login para salvar a encomenda.");
+  setIsSubmitting(false);
+  return;
+}
+
+// 2) Validar cliente/fornecedor
+const [{ data: clienteOk }, { data: fornecedorOk }] = await Promise.all([
+  supabase.from("clientes").select("id").eq("id", data.cliente_id).maybeSingle(),
+  supabase.from("fornecedores").select("id").eq("id", data.fornecedor_id).maybeSingle(),
+]);
+
+if (!clienteOk) {
+  toast.error("Cliente inválido ou inativo.");
+  setIsSubmitting(false);
+  return;
+}
+if (!fornecedorOk) {
+  toast.error("Fornecedor inválido ou inativo.");
+  setIsSubmitting(false);
+  return;
+}
+
       // 1. Validate session before proceeding
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
