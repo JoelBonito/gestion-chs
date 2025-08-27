@@ -8,19 +8,29 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
-  const [email, setEmail] = useState("joel@admin.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha email e senha",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
 
@@ -35,7 +45,7 @@ export default function Login() {
     } catch (error: any) {
       toast({
         title: "Erro no login",
-        description: error.message,
+        description: error.message || "Credenciais inválidas",
         variant: "destructive",
       });
     } finally {
@@ -65,6 +75,7 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
                 required
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -78,6 +89,7 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Sua senha"
                 required
+                autoComplete="current-password"
               />
             </div>
             <Button 
