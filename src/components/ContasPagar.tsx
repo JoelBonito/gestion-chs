@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import PagamentoFornecedorForm from "@/components/PagamentoFornecedorForm";
 import { useFinancialAttachments } from "@/hooks/useFinancialAttachments";
-import FinancialAttachmentButton from "@/components/FinancialAttachmentButton";
+import { FinancialAttachmentButton } from "@/components/FinancialAttachmentButton";
 
 interface ContaPagar {
   encomenda_id: string;
@@ -184,10 +183,9 @@ export default function ContasPagar() {
                           <Plus className="w-4 h-4" />
                         </Button>
                         <FinancialAttachmentButton
-                          entityType="encomenda"
+                          entityType="financeiro"
                           entityId={conta.encomenda_id}
-                          variant="outline"
-                          size="sm"
+                          title="Anexar Fatura"
                         />
                       </div>
                     </TableCell>
