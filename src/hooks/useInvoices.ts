@@ -23,7 +23,7 @@ export const useInvoices = () => {
       console.log('useInvoices - Buscando faturas');
       
       const { data, error } = await supabase
-        .from('invoices')
+        .from('invoices' as any)
         .select(`
           *,
           attachment:attachments(
@@ -42,7 +42,7 @@ export const useInvoices = () => {
       }
       
       console.log(`useInvoices - Encontradas ${data?.length || 0} faturas`);
-      return data || [];
+      return (data || []) as Invoice[];
     }
   });
 
@@ -99,7 +99,7 @@ export const useInvoices = () => {
       }
 
       // Criar a fatura
-      const { data: invoice, error: invoiceError } = await supabase
+      const { data: invoice, error: invoiceError } = await (supabase as any)
         .from('invoices')
         .insert([{
           invoice_date: invoiceData.invoice_date,
@@ -149,7 +149,7 @@ export const useInvoices = () => {
     mutationFn: async ({ id, data }: { id: string; data: Partial<InvoiceFormData> }) => {
       console.log("useInvoices - Atualizando fatura:", id);
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('invoices')
         .update({
           invoice_date: data.invoice_date,
@@ -199,7 +199,7 @@ export const useInvoices = () => {
       }
 
       // Deletar fatura
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('invoices')
         .delete()
         .eq('id', invoice.id);
@@ -233,7 +233,8 @@ export const useInvoices = () => {
     error,
     refetch,
     createInvoice: createInvoiceMutation.mutate,
-    updateInvoice: updateInvoiceMutation.mutate,
+    updateInvoice: (id: string, data: { invoice_date: string; amount: number; description?: string }) => 
+      updateInvoiceMutation.mutate({ id, data }),
     deleteInvoice: deleteInvoiceMutation.mutate,
     isCreating: createInvoiceMutation.isPending,
     isUpdating: updateInvoiceMutation.isPending,
