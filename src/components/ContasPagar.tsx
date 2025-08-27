@@ -4,18 +4,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertTriangle, Plus, Eye } from "lucide-react";
+import { AlertTriangle, Plus, Eye, Paperclip } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import PagamentoFornecedorForm from "@/components/PagamentoFornecedorForm";
+import { useFinancialAttachments } from "@/hooks/useFinancialAttachments";
+import FinancialAttachmentButton from "@/components/FinancialAttachmentButton";
 
 interface ContaPagar {
   encomenda_id: string;
   numero_encomenda: string;
   fornecedor_nome: string;
+  valor_produtos: number;
+  valor_frete: number;
   valor_total_custo: number;
   valor_pago_fornecedor: number;
   saldo_devedor_fornecedor: number;
+  total_pagamentos: number;
 }
 
 export default function ContasPagar() {
@@ -23,6 +28,7 @@ export default function ContasPagar() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
   const [showPagamentoForm, setShowPagamentoForm] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const { toast } = useToast();
 
   const fetchContas = async () => {
@@ -37,21 +43,40 @@ export default function ContasPagar() {
           valor_total_custo,
           valor_pago_fornecedor,
           saldo_devedor_fornecedor,
-          fornecedores!inner(nome)
+          valor_frete,
+          fornecedores!inner(nome),
+          itens_encomenda(
+            quantidade,
+            preco_unitario,
+            produtos(nome, marca)
+          ),
+          pagamentos_fornecedor(
+            valor_pagamento
+          )
         `)
         .gt("saldo_devedor_fornecedor", 0)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const contasFormatadas = data.map((encomenda: any) => ({
-        encomenda_id: encomenda.id,
-        numero_encomenda: encomenda.numero_encomenda,
-        fornecedor_nome: encomenda.fornecedores.nome,
-        valor_total_custo: parseFloat(encomenda.valor_total_custo || 0),
-        valor_pago_fornecedor: parseFloat(encomenda.valor_pago_fornecedor || 0),
-        saldo_devedor_fornecedor: parseFloat(encomenda.saldo_devedor_fornecedor || 0),
-      }));
+      const contasFormatadas = data.map((encomenda: any) => {
+        const valorProdutos = encomenda.valor_total_custo - (parseFloat(encomenda.valor_frete || 0));
+        const totalPagamentos = encomenda.pagamentos_fornecedor?.reduce(
+          (sum: number, pag: any) => sum + parseFloat(pag.valor_pagamento || 0), 0
+        ) || 0;
+
+        return {
+          encomenda_id: encomenda.id,
+          numero_encomenda: encomenda.numero_encomenda,
+          fornecedor_nome: encomenda.fornecedores.nome,
+          valor_produtos: valorProdutos,
+          valor_frete: parseFloat(encomenda.valor_frete || 0),
+          valor_total_custo: parseFloat(encomenda.valor_total_custo || 0),
+          valor_pago_fornecedor: parseFloat(encomenda.valor_pago_fornecedor || 0),
+          saldo_devedor_fornecedor: parseFloat(encomenda.saldo_devedor_fornecedor || 0),
+          total_pagamentos: totalPagamentos,
+        };
+      });
 
       setContas(contasFormatadas);
     } catch (error: any) {
@@ -73,6 +98,11 @@ export default function ContasPagar() {
     fetchContas();
     setShowPagamentoForm(false);
     setSelectedConta(null);
+  };
+
+  const handleViewDetails = (conta: ContaPagar) => {
+    setSelectedConta(conta);
+    setShowDetails(true);
   };
 
   if (isLoading) {
@@ -102,11 +132,14 @@ export default function ContasPagar() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Encomenda</TableHead>
+                  <TableHead>Nº Encomenda</TableHead>
                   <TableHead>Fornecedor</TableHead>
-                  <TableHead>Valor Total</TableHead>
-                  <TableHead>Valor Pago</TableHead>
-                  <TableHead>Saldo Devedor</TableHead>
+                  <TableHead>Produtos</TableHead>
+                  <TableHead>Frete</TableHead>
+                  <TableHead>Total a Pagar</TableHead>
+                  <TableHead>Pago</TableHead>
+                  <TableHead>Saldo a Pagar</TableHead>
+                  <TableHead>Pagamentos</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -117,29 +150,52 @@ export default function ContasPagar() {
                       {conta.numero_encomenda}
                     </TableCell>
                     <TableCell>{conta.fornecedor_nome}</TableCell>
-                    <TableCell>€{conta.valor_total_custo.toFixed(2)}</TableCell>
-                    <TableCell>€{conta.valor_pago_fornecedor.toFixed(2)}</TableCell>
+                    <TableCell>€{conta.valor_produtos.toFixed(2)}</TableCell>
+                    <TableCell>€{conta.valor_frete.toFixed(2)}</TableCell>
+                    <TableCell className="font-semibold">
+                      €{conta.valor_total_custo.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-success">
+                      €{conta.valor_pago_fornecedor.toFixed(2)}
+                    </TableCell>
                     <TableCell className="font-semibold text-warning">
                       €{conta.saldo_devedor_fornecedor.toFixed(2)}
                     </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {conta.total_pagamentos > 0 ? `${conta.total_pagamentos} pag.` : 'Nenhum'}
+                    </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedConta(conta);
-                          setShowPagamentoForm(true);
-                        }}
-                      >
-                        <Plus className="w-4 h-4 mr-1" />
-                        Pagar
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetails(conta)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedConta(conta);
+                            setShowPagamentoForm(true);
+                          }}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                        <FinancialAttachmentButton
+                          entityType="encomenda"
+                          entityId={conta.encomenda_id}
+                          variant="outline"
+                          size="sm"
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
                 {contas.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       Nenhuma conta a pagar encontrada
                     </TableCell>
                   </TableRow>
@@ -161,6 +217,53 @@ export default function ContasPagar() {
               onSuccess={handlePagamentoSuccess}
               conta={selectedConta}
             />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Details Dialog */}
+      {selectedConta && (
+        <Dialog open={showDetails} onOpenChange={setShowDetails}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Detalhes da Conta a Pagar</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Encomenda:</label>
+                  <p className="text-sm text-muted-foreground">{selectedConta.numero_encomenda}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Fornecedor:</label>
+                  <p className="text-sm text-muted-foreground">{selectedConta.fornecedor_nome}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Valor Produtos:</label>
+                  <p className="text-sm text-muted-foreground">€{selectedConta.valor_produtos.toFixed(2)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Valor Frete:</label>
+                  <p className="text-sm text-muted-foreground">€{selectedConta.valor_frete.toFixed(2)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Total a Pagar:</label>
+                  <p className="text-sm font-semibold">€{selectedConta.valor_total_custo.toFixed(2)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Valor Pago:</label>
+                  <p className="text-sm text-success">€{selectedConta.valor_pago_fornecedor.toFixed(2)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Saldo a Pagar:</label>
+                  <p className="text-sm font-semibold text-warning">€{selectedConta.saldo_devedor_fornecedor.toFixed(2)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Quantidade de Pagamentos:</label>
+                  <p className="text-sm text-muted-foreground">{selectedConta.total_pagamentos}</p>
+                </div>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       )}
