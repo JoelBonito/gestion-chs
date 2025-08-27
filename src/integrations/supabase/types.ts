@@ -212,7 +212,8 @@ export type Database = {
           catalog_file: string | null
           catalog_url: string | null
           contato: string | null
-          created_at: string | null
+          created_at: string
+          created_by: string
           email: string | null
           endereco: string | null
           id: string
@@ -225,7 +226,8 @@ export type Database = {
           catalog_file?: string | null
           catalog_url?: string | null
           contato?: string | null
-          created_at?: string | null
+          created_at?: string
+          created_by?: string
           email?: string | null
           endereco?: string | null
           id?: string
@@ -238,7 +240,8 @@ export type Database = {
           catalog_file?: string | null
           catalog_url?: string | null
           contato?: string | null
-          created_at?: string | null
+          created_at?: string
+          created_by?: string
           email?: string | null
           endereco?: string | null
           id?: string
@@ -278,6 +281,39 @@ export type Database = {
         }
         Relationships: []
       }
+      invoices: {
+        Row: {
+          amount: number
+          attachment_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          invoice_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          attachment_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          invoice_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          attachment_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          invoice_date?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       itens_encomenda: {
         Row: {
           created_at: string | null
@@ -312,13 +348,6 @@ export type Database = {
             columns: ["encomenda_id"]
             isOneToOne: false
             referencedRelation: "encomendas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "itens_encomenda_produto_id_fkey"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "produtos"
             referencedColumns: ["id"]
           },
         ]
@@ -524,7 +553,7 @@ export type Database = {
         | "EMBALAGEM"
         | "TRANSPORTE"
         | "ENTREGUE"
-      user_role: "admin" | "ops" | "client" | "factory"
+      user_role: "admin" | "ops" | "client" | "factory" | "finance"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -659,7 +688,7 @@ export const Constants = {
         "TRANSPORTE",
         "ENTREGUE",
       ],
-      user_role: ["admin", "ops", "client", "factory"],
+      user_role: ["admin", "ops", "client", "factory", "finance"],
     },
   },
 } as const
