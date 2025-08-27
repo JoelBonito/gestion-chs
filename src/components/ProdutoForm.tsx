@@ -1,569 +1,718 @@
+
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { logActivity } from "@/utils/activityLogger";
-import { Produto, Fornecedor } from "@/types/database";
-import { AttachmentManager } from "./AttachmentManager";
+import { AttachmentManager } from "@/components/AttachmentManager";
+import { useToast } from "@/hooks/use-toast";
+import { Plus, Minus, Save, X } from "lucide-react";
 
-const produtoSchema = z.object({
-  nome: z.string().min(1, "Nome é obrigatório"),
-  marca: z.string().min(1, "Marca é obrigatória"),
-  tipo: z.string().min(1, "Tipo é obrigatório"),
-  preco_custo: z.string().min(1, "Preço de custo é obrigatório"),
-  preco_venda: z.string().min(1, "Preço de venda é obrigatório"),
-  size_weight: z.string().min(1, "Tamanho e peso é obrigatório"),
-  fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
-});
-
-type ProdutoFormData = z.infer<typeof produtoSchema>;
-
-interface ProdutoFormProps {
-  produto?: Produto;
-  onSuccess?: () => void;
-  onAttachmentRefresh?: () => void;
-  onProdutoUpdate?: (produto: Produto) => void;
+interface Fornecedor {
+  id: string;
+  nome: string;
 }
 
-export function ProdutoForm({ produto, onSuccess, onAttachmentRefresh, onProdutoUpdate }: ProdutoFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+interface ProdutoFormData {
+  nome: string;
+  marca: string;
+  categoria: string;
+  subcategoria: string;
+  descricao?: string;
+  codigo_barras?: string;
+  peso?: number;
+  dimensoes?: string;
+  cor?: string;
+  tamanho?: string;
+  material?: string;
+  origem?: string;
+  ingredientes?: string;
+  instrucoes_uso?: string;
+  cuidados_especiais?: string;
+  data_validade?: string;
+  preco_compra?: number;
+  preco_venda?: number;
+  margem_lucro?: number;
+  fornecedor_id?: string;
+  estoque_minimo?: number;
+  estoque_maximo?: number;
+  unidade_medida: string;
+  ativo: boolean;
+}
+
+interface Variacao {
+  id?: string;
+  nome: string;
+  valor: string;
+  estoque: number;
+  preco_adicional: number;
+}
+
+interface ProdutoFormProps {
+  onSuccess?: () => void;
+  produto?: any;
+  isEditing?: boolean;
+}
+
+const categorias = [
+  "Cabelo",
+  "Pele",
+  "Unhas",
+  "Maquiagem",
+  "Perfumaria",
+  "Corporal",
+  "Facial",
+  "Equipamentos",
+  "Acessórios",
+  "Outros"
+];
+
+const subcategorias: Record<string, string[]> = {
+  "Cabelo": ["Shampoo", "Condicionador", "Máscara", "Leave-in", "Óleo", "Mousse", "Gel", "Spray", "Tintura", "Descolorante"],
+  "Pele": ["Hidratante", "Protetor Solar", "Sérum", "Tônico", "Esfoliante", "Máscara Facial", "Água Micelar", "Demaquilante"],
+  "Unhas": ["Esmalte", "Base", "Top Coat", "Removedor", "Fortalecedor", "Óleo Cutícula", "Lixa", "Alicate"],
+  "Maquiagem": ["Base", "Corretivo", "Pó", "Blush", "Bronzer", "Sombra", "Delineador", "Rímel", "Batom", "Gloss"],
+  "Perfumaria": ["Perfume", "Colônia", "Desodorante", "Spray Corporal", "Óleo Essencial"],
+  "Corporal": ["Hidratante Corporal", "Sabonete", "Esfoliante Corporal", "Óleo Corporal", "Desodorante"],
+  "Facial": ["Limpador Facial", "Hidratante Facial", "Sérum Facial", "Protetor Solar Facial", "Máscara Facial"],
+  "Equipamentos": ["Secador", "Chapinha", "Modelador", "Escova", "Pente", "Alicate", "Tesoura"],
+  "Acessórios": ["Presilha", "Elástico", "Tiara", "Lenço", "Bolsa", "Necessaire"],
+  "Outros": ["Kit", "Conjunto", "Promocional", "Brinde", "Diversos"]
+};
+
+const unidadesMedida = [
+  "UN - Unidade",
+  "ML - Mililitro",
+  "L - Litro",
+  "G - Grama",
+  "KG - Quilograma",
+  "M - Metro",
+  "CM - Centímetro",
+  "PC - Peça",
+  "CX - Caixa",
+  "PCT - Pacote"
+];
+
+export function ProdutoForm({ onSuccess, produto, isEditing = false }: ProdutoFormProps) {
+  const { toast: hookToast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
-  const [marcasExistentes, setMarcasExistentes] = useState<string[]>([]);
-  const [tiposExistentes, setTiposExistentes] = useState<string[]>([]);
-  const [novaOpçaoDialog, setNovaOpçaoDialog] = useState<{tipo: string, aberto: boolean}>({tipo: '', aberto: false});
-  const [novoValor, setNovoValor] = useState('');
-  const [produtoId, setProdutoId] = useState<string | null>(produto?.id || null);
-  const [isFormInitialized, setIsFormInitialized] = useState(false);
-
-  const isEditing = !!produto;
-
-  const form = useForm<ProdutoFormData>({
-    resolver: zodResolver(produtoSchema),
-    defaultValues: {
-      nome: "",
-      marca: "",
-      tipo: "",
-      preco_custo: "",
-      preco_venda: "",
-      size_weight: "",
-      fornecedor_id: "",
-    },
+  const [variacoes, setVariacoes] = useState<Variacao[]>([]);
+  const [showVariacoes, setShowVariacoes] = useState(false);
+  
+  const [formData, setFormData] = useState<ProdutoFormData>({
+    nome: produto?.nome || "",
+    marca: produto?.marca || "",
+    categoria: produto?.categoria || "",
+    subcategoria: produto?.subcategoria || "",
+    descricao: produto?.descricao || "",
+    codigo_barras: produto?.codigo_barras || "",
+    peso: produto?.peso || undefined,
+    dimensoes: produto?.dimensoes || "",
+    cor: produto?.cor || "",
+    tamanho: produto?.tamanho || "",
+    material: produto?.material || "",
+    origem: produto?.origem || "",
+    ingredientes: produto?.ingredientes || "",
+    instrucoes_uso: produto?.instrucoes_uso || "",
+    cuidados_especiais: produto?.cuidados_especiais || "",
+    data_validade: produto?.data_validade || "",
+    preco_compra: produto?.preco_compra || undefined,
+    preco_venda: produto?.preco_venda || undefined,
+    margem_lucro: produto?.margem_lucro || undefined,
+    fornecedor_id: produto?.fornecedor_id || "",
+    estoque_minimo: produto?.estoque_minimo || undefined,
+    estoque_maximo: produto?.estoque_maximo || undefined,
+    unidade_medida: produto?.unidade_medida || "UN - Unidade",
+    ativo: produto?.ativo ?? true
   });
 
   useEffect(() => {
-    console.log("ProdutoForm montado, carregando dados iniciais");
-    const loadInitialData = async () => {
-      await Promise.all([
-        carregarFornecedores(),
-        carregarOpcoesExistentes(),
-      ]);
-      setIsFormInitialized(true);
-    };
-    loadInitialData();
+    if (produto?.variacoes_produto) {
+      setVariacoes(produto.variacoes_produto);
+      setShowVariacoes(produto.variacoes_produto.length > 0);
+    }
+  }, [produto]);
+
+  useEffect(() => {
+    fetchFornecedores();
   }, []);
 
   useEffect(() => {
-    if (!isFormInitialized) return;
-    
-    console.log("Preenchendo formulário - isFormInitialized:", isFormInitialized, "produto:", produto);
-    
-    if (produto && isFormInitialized) {
-      console.log("Preenchendo formulário com dados do produto:", {
-        nome: produto.nome,
-        marca: produto.marca,
-        tipo: produto.tipo,
-        fornecedor_id: produto.fornecedor_id,
-        preco_custo: produto.preco_custo,
-        preco_venda: produto.preco_venda,
-        size_weight: produto.size_weight
-      });
-      
-      form.reset({
-        nome: produto.nome || "",
-        marca: produto.marca || "",
-        tipo: produto.tipo || "",
-        preco_custo: produto.preco_custo ? produto.preco_custo.toString() : "",
-        preco_venda: produto.preco_venda ? produto.preco_venda.toString() : "",
-        size_weight: produto.size_weight ? produto.size_weight.toString() : "0",
-        fornecedor_id: produto.fornecedor_id || "",
-      });
-      
-      setProdutoId(produto.id);
-    } else if (!produto && isFormInitialized) {
-      console.log("Novo produto, resetando formulário");
-      form.reset({
-        nome: "",
-        marca: "",
-        tipo: "",
-        preco_custo: "",
-        preco_venda: "",
-        size_weight: "",
-        fornecedor_id: "",
-      });
-      setProdutoId(null);
+    if (formData.preco_compra && formData.preco_venda) {
+      const margem = ((formData.preco_venda - formData.preco_compra) / formData.preco_compra) * 100;
+      setFormData(prev => ({ ...prev, margem_lucro: Number(margem.toFixed(2)) }));
     }
-  }, [produto, isFormInitialized, form]);
+  }, [formData.preco_compra, formData.preco_venda]);
 
-  const carregarFornecedores = async () => {
+  const fetchFornecedores = async () => {
     try {
-      console.log("Carregando fornecedores...");
       const { data, error } = await supabase
         .from("fornecedores")
-        .select("id, nome, active")
-        .eq("active", true)
+        .select("id, nome")
+        .eq("ativo", true)
         .order("nome");
 
       if (error) throw error;
-      console.log("Fornecedores carregados:", data);
       setFornecedores(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao carregar fornecedores:", error);
-      toast.error("Erro ao carregar fornecedores");
+      hookToast({
+        title: "Erro ao carregar fornecedores",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   };
 
-  const carregarOpcoesExistentes = async () => {
+  const handleInputChange = (field: keyof ProdutoFormData, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const adicionarVariacao = () => {
+    setVariacoes(prev => [...prev, {
+      nome: "",
+      valor: "",
+      estoque: 0,
+      preco_adicional: 0
+    }]);
+  };
+
+  const removerVariacao = (index: number) => {
+    setVariacoes(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleVariacaoChange = (index: number, field: keyof Variacao, value: any) => {
+    setVariacoes(prev => prev.map((variacao, i) => 
+      i === index ? { ...variacao, [field]: value } : variacao
+    ));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.nome.trim()) {
+      toast.error("Nome é obrigatório");
+      return;
+    }
+
+    if (!formData.categoria) {
+      toast.error("Categoria é obrigatória");
+      return;
+    }
+
+    if (!formData.unidade_medida) {
+      toast.error("Unidade de medida é obrigatória");
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      console.log("Carregando opções existentes...");
-      const { data: produtos, error } = await supabase
-        .from("produtos")
-        .select("marca, tipo");
+      let produto_id = produto?.id;
 
-      if (error) {
-        console.error("Erro ao carregar opções existentes:", error);
-        return;
-      }
-
-      if (produtos) {
-        const marcasUnicas = [...new Set(produtos.map(p => p.marca))].filter(Boolean).sort();
-        const tiposUnicos = [...new Set(produtos.map(p => p.tipo))].filter(Boolean).sort();
-
-        console.log("Marcas carregadas:", marcasUnicas);
-        console.log("Tipos carregados:", tiposUnicos);
-        
-        setMarcasExistentes(marcasUnicas);
-        setTiposExistentes(tiposUnicos);
-      }
-    } catch (error) {
-      console.error("Erro ao carregar opções existentes:", error);
-    }
-  };
-
-  const handleNovaOpcao = (tipo: string) => {
-    setNovaOpçaoDialog({tipo, aberto: true});
-    setNovoValor('');
-  };
-
-  const adicionarNovaOpcao = async () => {
-    if (!novoValor.trim()) return;
-    
-    const campo = novaOpçaoDialog.tipo;
-    const valor = novoValor.trim();
-    
-    if (campo === 'marca') {
-      if (!marcasExistentes.includes(valor)) {
-        setMarcasExistentes(prev => [...prev, valor].sort());
-      }
-      form.setValue('marca', valor);
-    } else if (campo === 'tipo') {
-      if (!tiposExistentes.includes(valor)) {
-        setTiposExistentes(prev => [...prev, valor].sort());
-      }
-      form.setValue('tipo', valor);
-    } else if (campo === 'fornecedor') {
-      try {
-        const { data: novoFornecedor, error } = await supabase
-          .from("fornecedores")
-          .insert([{
-            nome: valor,
-            active: true
-          }])
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        setFornecedores(prev => [...prev, novoFornecedor].sort((a, b) => a.nome.localeCompare(b.nome)));
-        form.setValue('fornecedor_id', novoFornecedor.id);
-        toast.success("Fornecedor adicionado com sucesso!");
-      } catch (error) {
-        console.error("Erro ao adicionar fornecedor:", error);
-        toast.error("Erro ao adicionar fornecedor");
-        return;
-      }
-    }
-    
-    setNovaOpçaoDialog({tipo: '', aberto: false});
-    setNovoValor('');
-  };
-
-  const onSubmit = async (data: ProdutoFormData) => {
-    setIsSubmitting(true);
-    try {
-      if (isEditing && produto && produto.id) {
-        const { data: updatedProduct, error } = await supabase
+      if (isEditing) {
+        const { data, error } = await supabase
           .from("produtos")
-          .update({
-            nome: data.nome,
-            marca: data.marca,
-            tipo: data.tipo,
-            preco_custo: parseFloat(data.preco_custo),
-            preco_venda: parseFloat(data.preco_venda),
-            size_weight: parseFloat(data.size_weight),
-            fornecedor_id: data.fornecedor_id,
-          })
+          .update(formData)
           .eq("id", produto.id)
           .select()
           .single();
 
         if (error) throw error;
-        
-        // Update the local product data if callback is provided
-        if (onProdutoUpdate && updatedProduct) {
-          onProdutoUpdate(updatedProduct);
-        }
-        
-        await logActivity({
-          entity: 'produto',
-          entity_id: produto.id,
-          action: 'update',
-          details: { nome: data.nome }
-        });
-        
+        produto_id = data.id;
         toast.success("Produto atualizado com sucesso!");
       } else {
-        const { data: novoProduto, error } = await supabase
+        const { data, error } = await supabase
           .from("produtos")
-          .insert({
-            nome: data.nome,
-            marca: data.marca,
-            tipo: data.tipo,
-            preco_custo: parseFloat(data.preco_custo),
-            preco_venda: parseFloat(data.preco_venda),
-            size_weight: parseFloat(data.size_weight),
-            fornecedor_id: data.fornecedor_id,
-          })
+          .insert([formData])
           .select()
           .single();
 
         if (error) throw error;
-        
-        setProdutoId(novoProduto.id);
-        
-        await logActivity({
-          entity: 'produto',
-          entity_id: novoProduto.id,
-          action: 'create',
-          details: { nome: data.nome }
-        });
-        
-        toast.success("Produto cadastrado com sucesso!");
+        produto_id = data.id;
+        toast.success("Produto criado com sucesso!");
       }
 
-      if (!isEditing) {
-        form.reset();
+      // Gerenciar variações
+      if (showVariacoes && variacoes.length > 0) {
+        // Remove variações existentes se estiver editando
+        if (isEditing) {
+          await supabase
+            .from("variacoes_produto")
+            .delete()
+            .eq("produto_id", produto_id);
+        }
+
+        // Inserir novas variações
+        const variacoesParaInserir = variacoes
+          .filter(v => v.nome.trim() && v.valor.trim())
+          .map(v => ({
+            produto_id,
+            nome: v.nome,
+            valor: v.valor,
+            estoque: v.estoque || 0,
+            preco_adicional: v.preco_adicional || 0
+          }));
+
+        if (variacoesParaInserir.length > 0) {
+          const { error: variacoesError } = await supabase
+            .from("variacoes_produto")
+            .insert(variacoesParaInserir);
+
+          if (variacoesError) throw variacoesError;
+        }
       }
-      
+
       onSuccess?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar produto:", error);
-      toast.error("Erro ao salvar produto");
+      toast.error("Erro ao salvar produto: " + error.message);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  const formValues = form.watch();
-  console.log("Valores atuais do form:", formValues);
+  const subcategoriaOptions = formData.categoria ? subcategorias[formData.categoria] || [] : [];
 
   return (
-    <div className="space-y-6">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="nome"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-display text-primary-dark">Nome do Produto</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="Ex: Shampoo Premium" 
-                    className="input-elegant"
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="fornecedor_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-display text-primary-dark">Fornecedor *</FormLabel>
-                <Select 
-                  onValueChange={(value) => {
-                    console.log("Fornecedor selecionado:", value);
-                    if (value === '__novo_fornecedor__') {
-                      handleNovaOpcao('fornecedor');
-                    } else {
-                      field.onChange(value);
-                    }
-                  }} 
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger className="input-elegant">
-                      <SelectValue placeholder="Selecione um fornecedor" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {fornecedores.map((fornecedor) => (
-                      <SelectItem key={fornecedor.id} value={fornecedor.id}>
-                        {fornecedor.nome}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="__novo_fornecedor__" className="text-primary font-medium">
-                      <div className="flex items-center">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Adicionar novo fornecedor...
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="marca"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-display text-primary-dark">Marca</FormLabel>
-                  <Select 
-                    onValueChange={(value) => {
-                      console.log("Marca selecionada:", value);
-                      if (value === '__nova_marca__') {
-                        handleNovaOpcao('marca');
-                      } else {
-                        field.onChange(value);
-                      }
-                    }} 
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="input-elegant">
-                        <SelectValue placeholder="Selecione uma marca" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {marcasExistentes.map((marca) => (
-                        <SelectItem key={marca} value={marca}>
-                          {marca}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="__nova_marca__" className="text-primary font-medium">
-                        <div className="flex items-center">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Adicionar nova marca...
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="tipo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-display text-primary-dark">Tipo</FormLabel>
-                  <Select 
-                    onValueChange={(value) => {
-                      console.log("Tipo selecionado:", value);
-                      if (value === '__novo_tipo__') {
-                        handleNovaOpcao('tipo');
-                      } else {
-                        field.onChange(value);
-                      }
-                    }} 
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="input-elegant">
-                        <SelectValue placeholder="Selecione um tipo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {tiposExistentes.map((tipo) => (
-                        <SelectItem key={tipo} value={tipo}>
-                          {tipo}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="__novo_tipo__" className="text-primary font-medium">
-                        <div className="flex items-center">
-                          <Plus className="h-4 w-4 mr-2" />
-                          Adicionar novo tipo...
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Informações Básicas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Informações Básicas</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="nome">Nome do Produto *</Label>
+            <Input
+              id="nome"
+              value={formData.nome}
+              onChange={(e) => handleInputChange("nome", e.target.value)}
+              placeholder="Ex: Shampoo Hidratante"
+              required
             />
           </div>
 
-          <FormField
-            control={form.control}
-            name="size_weight"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="font-display text-primary-dark">Tamanho e Peso</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01" 
-                    placeholder="Ex.: 500 (para 500ml/500g)"
-                    className="input-elegant"
-                    {...field} 
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="preco_custo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-display text-primary-dark">Preço de Custo (€)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="0.00"
-                      className="input-elegant"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="preco_venda"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-display text-primary-dark">Preço de Venda (€)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="0.00"
-                      className="input-elegant"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          <div className="space-y-2">
+            <Label htmlFor="marca">Marca</Label>
+            <Input
+              id="marca"
+              value={formData.marca}
+              onChange={(e) => handleInputChange("marca", e.target.value)}
+              placeholder="Ex: L'Oréal"
             />
           </div>
 
-          <Button 
-            type="submit" 
-            className="w-full bg-gradient-primary hover:shadow-hover transition-elegant font-display font-medium" 
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (isEditing ? "Salvando..." : "Cadastrando...") : (isEditing ? "Salvar Alterações" : "Cadastrar Produto")}
-          </Button>
-        </form>
+          <div className="space-y-2">
+            <Label htmlFor="categoria">Categoria *</Label>
+            <Select value={formData.categoria} onValueChange={(value) => handleInputChange("categoria", value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {categorias.map((categoria) => (
+                  <SelectItem key={categoria} value={categoria}>
+                    {categoria}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <Dialog open={novaOpçaoDialog.aberto} onOpenChange={(aberto) => setNovaOpçaoDialog({...novaOpçaoDialog, aberto})}>
-          <DialogContent className="max-w-md shadow-elegant">
-            <DialogHeader>
-              <DialogTitle className="font-display text-primary-dark">
-                Adicionar {novaOpçaoDialog.tipo === 'marca' ? 'Nova Marca' : 
-                           novaOpçaoDialog.tipo === 'tipo' ? 'Novo Tipo' : 
-                           'Novo Fornecedor'}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="font-display text-primary-dark">
-                  {novaOpçaoDialog.tipo === 'marca' ? 'Nome da Marca' : 
-                   novaOpçaoDialog.tipo === 'tipo' ? 'Nome do Tipo' : 
-                   'Nome do Fornecedor'}
-                </label>
-                <Input
-                  value={novoValor}
-                  onChange={(e) => setNovoValor(e.target.value)}
-                  placeholder={novaOpçaoDialog.tipo === 'marca' ? 'Digite a nova marca' : 
-                             novaOpçaoDialog.tipo === 'tipo' ? 'Digite o novo tipo' : 
-                             'Digite o nome do fornecedor'}
-                  className="input-elegant mt-2"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      adicionarNovaOpcao();
-                    }
-                  }}
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setNovaOpçaoDialog({tipo: '', aberto: false})}
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  onClick={adicionarNovaOpcao}
-                  className="bg-gradient-primary"
-                  disabled={!novoValor.trim()}
-                >
-                  Adicionar
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </Form>
+          <div className="space-y-2">
+            <Label htmlFor="subcategoria">Subcategoria</Label>
+            <Select 
+              value={formData.subcategoria} 
+              onValueChange={(value) => handleInputChange("subcategoria", value)}
+              disabled={!formData.categoria}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a subcategoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {subcategoriaOptions.map((subcategoria) => (
+                  <SelectItem key={subcategoria} value={subcategoria}>
+                    {subcategoria}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      {produtoId && (
-        <div className="border-t pt-6">
-          <h3 className="font-display text-primary-dark text-lg font-medium mb-4">Anexos do Produto</h3>
-          <AttachmentManager 
-            entityType="produto"
-            entityId={produtoId}
-            title="Anexar Documentos"
-            onRefreshParent={onAttachmentRefresh}
-          />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="codigo_barras">Código de Barras</Label>
+            <Input
+              id="codigo_barras"
+              value={formData.codigo_barras}
+              onChange={(e) => handleInputChange("codigo_barras", e.target.value)}
+              placeholder="Ex: 7891234567890"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="unidade_medida">Unidade de Medida *</Label>
+            <Select value={formData.unidade_medida} onValueChange={(value) => handleInputChange("unidade_medida", value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a unidade" />
+              </SelectTrigger>
+              <SelectContent>
+                {unidadesMedida.map((unidade) => (
+                  <SelectItem key={unidade} value={unidade}>
+                    {unidade}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="col-span-2 space-y-2">
+            <Label htmlFor="descricao">Descrição</Label>
+            <Textarea
+              id="descricao"
+              value={formData.descricao}
+              onChange={(e) => handleInputChange("descricao", e.target.value)}
+              placeholder="Descrição detalhada do produto"
+              rows={3}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Características Físicas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Características Físicas</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="peso">Peso (g)</Label>
+            <Input
+              id="peso"
+              type="number"
+              step="0.01"
+              value={formData.peso || ""}
+              onChange={(e) => handleInputChange("peso", e.target.value ? parseFloat(e.target.value) : undefined)}
+              placeholder="Ex: 250"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="dimensoes">Dimensões</Label>
+            <Input
+              id="dimensoes"
+              value={formData.dimensoes}
+              onChange={(e) => handleInputChange("dimensoes", e.target.value)}
+              placeholder="Ex: 15x10x5 cm"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cor">Cor</Label>
+            <Input
+              id="cor"
+              value={formData.cor}
+              onChange={(e) => handleInputChange("cor", e.target.value)}
+              placeholder="Ex: Azul"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tamanho">Tamanho</Label>
+            <Input
+              id="tamanho"
+              value={formData.tamanho}
+              onChange={(e) => handleInputChange("tamanho", e.target.value)}
+              placeholder="Ex: P, M, G"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="material">Material</Label>
+            <Input
+              id="material"
+              value={formData.material}
+              onChange={(e) => handleInputChange("material", e.target.value)}
+              placeholder="Ex: Plástico, Metal"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="origem">Origem</Label>
+            <Input
+              id="origem"
+              value={formData.origem}
+              onChange={(e) => handleInputChange("origem", e.target.value)}
+              placeholder="Ex: Brasil, Importado"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Informações Específicas */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Informações Específicas</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="ingredientes">Ingredientes</Label>
+            <Textarea
+              id="ingredientes"
+              value={formData.ingredientes}
+              onChange={(e) => handleInputChange("ingredientes", e.target.value)}
+              placeholder="Lista de ingredientes"
+              rows={2}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="instrucoes_uso">Instruções de Uso</Label>
+            <Textarea
+              id="instrucoes_uso"
+              value={formData.instrucoes_uso}
+              onChange={(e) => handleInputChange("instrucoes_uso", e.target.value)}
+              placeholder="Como usar o produto"
+              rows={2}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cuidados_especiais">Cuidados Especiais</Label>
+            <Textarea
+              id="cuidados_especiais"
+              value={formData.cuidados_especiais}
+              onChange={(e) => handleInputChange("cuidados_especiais", e.target.value)}
+              placeholder="Cuidados especiais e contraindicações"
+              rows={2}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="data_validade">Data de Validade</Label>
+            <Input
+              id="data_validade"
+              type="date"
+              value={formData.data_validade}
+              onChange={(e) => handleInputChange("data_validade", e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Informações Comerciais */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Informações Comerciais</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="preco_compra">Preço de Compra (€)</Label>
+            <Input
+              id="preco_compra"
+              type="number"
+              step="0.01"
+              value={formData.preco_compra || ""}
+              onChange={(e) => handleInputChange("preco_compra", e.target.value ? parseFloat(e.target.value) : undefined)}
+              placeholder="0.00"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="preco_venda">Preço de Venda (€)</Label>
+            <Input
+              id="preco_venda"
+              type="number"
+              step="0.01"
+              value={formData.preco_venda || ""}
+              onChange={(e) => handleInputChange("preco_venda", e.target.value ? parseFloat(e.target.value) : undefined)}
+              placeholder="0.00"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="margem_lucro">Margem de Lucro (%)</Label>
+            <Input
+              id="margem_lucro"
+              type="number"
+              step="0.01"
+              value={formData.margem_lucro || ""}
+              onChange={(e) => handleInputChange("margem_lucro", e.target.value ? parseFloat(e.target.value) : undefined)}
+              placeholder="0.00"
+              readOnly
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="fornecedor_id">Fornecedor Principal</Label>
+            <Select value={formData.fornecedor_id} onValueChange={(value) => handleInputChange("fornecedor_id", value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o fornecedor" />
+              </SelectTrigger>
+              <SelectContent>
+                {fornecedores.map((fornecedor) => (
+                  <SelectItem key={fornecedor.id} value={fornecedor.id}>
+                    {fornecedor.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="estoque_minimo">Estoque Mínimo</Label>
+            <Input
+              id="estoque_minimo"
+              type="number"
+              value={formData.estoque_minimo || ""}
+              onChange={(e) => handleInputChange("estoque_minimo", e.target.value ? parseInt(e.target.value) : undefined)}
+              placeholder="0"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="estoque_maximo">Estoque Máximo</Label>
+            <Input
+              id="estoque_maximo"
+              type="number"
+              value={formData.estoque_maximo || ""}
+              onChange={(e) => handleInputChange("estoque_maximo", e.target.value ? parseInt(e.target.value) : undefined)}
+              placeholder="0"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Variações do Produto */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            Variações do Produto
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowVariacoes(!showVariacoes)}
+            >
+              {showVariacoes ? "Ocultar" : "Adicionar"} Variações
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        {showVariacoes && (
+          <CardContent className="space-y-4">
+            {variacoes.map((variacao, index) => (
+              <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
+                <div className="space-y-2">
+                  <Label>Nome da Variação</Label>
+                  <Input
+                    value={variacao.nome}
+                    onChange={(e) => handleVariacaoChange(index, "nome", e.target.value)}
+                    placeholder="Ex: Tamanho, Cor"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Valor</Label>
+                  <Input
+                    value={variacao.valor}
+                    onChange={(e) => handleVariacaoChange(index, "valor", e.target.value)}
+                    placeholder="Ex: 250ml, Azul"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Estoque</Label>
+                  <Input
+                    type="number"
+                    value={variacao.estoque}
+                    onChange={(e) => handleVariacaoChange(index, "estoque", parseInt(e.target.value) || 0)}
+                    placeholder="0"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Preço Adicional (€)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={variacao.preco_adicional}
+                      onChange={(e) => handleVariacaoChange(index, "preco_adicional", parseFloat(e.target.value) || 0)}
+                      placeholder="0.00"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removerVariacao(index)}
+                    >
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            <Button
+              type="button"
+              variant="outline"
+              onClick={adicionarVariacao}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Adicionar Variação
+            </Button>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* Anexos - Only show for existing products */}
+      {isEditing && produto?.id && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Anexos do Produto</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AttachmentManager
+              entityType="produto"
+              entityId={produto.id}
+              title="Anexos do Produto"
+              onChanged={() => {
+                // Refresh parent component if needed
+                console.log("Attachment changed for product:", produto.id);
+              }}
+            />
+          </CardContent>
+        </Card>
       )}
-    </div>
+
+      {/* Botões de Ação */}
+      <div className="flex justify-end gap-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => onSuccess?.()}
+          disabled={isLoading}
+        >
+          <X className="w-4 h-4 mr-2" />
+          Cancelar
+        </Button>
+        <Button
+          type="submit"
+          disabled={isLoading}
+        >
+          <Save className="w-4 h-4 mr-2" />
+          {isLoading ? "Salvando..." : isEditing ? "Atualizar Produto" : "Criar Produto"}
+        </Button>
+      </div>
+    </form>
   );
 }
