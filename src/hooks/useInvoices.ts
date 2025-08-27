@@ -22,8 +22,8 @@ export const useInvoices = () => {
     queryFn: async (): Promise<Invoice[]> => {
       console.log('useInvoices - Buscando faturas');
       
-      // Buscar faturas usando type assertion temporária
-      const { data: invoicesData, error: invoicesError } = await (supabase as any)
+      // Buscar faturas da tabela criada
+      const { data: invoicesData, error: invoicesError } = await supabase
         .from('invoices')
         .select('*')
         .order('invoice_date', { ascending: false });
@@ -116,8 +116,8 @@ export const useInvoices = () => {
         attachmentId = attachment.id;
       }
 
-      // Criar a fatura usando type assertion
-      const { data: invoice, error: invoiceError } = await (supabase as any)
+      // Criar a fatura usando a tabela correta
+      const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
         .insert([{
           invoice_date: invoiceData.invoice_date,
@@ -167,7 +167,7 @@ export const useInvoices = () => {
     mutationFn: async ({ id, data }: { id: string; data: Partial<InvoiceFormData> }) => {
       console.log("useInvoices - Atualizando fatura:", id);
 
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('invoices')
         .update({
           invoice_date: data.invoice_date,
@@ -217,7 +217,7 @@ export const useInvoices = () => {
       }
 
       // Deletar fatura
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('invoices')
         .delete()
         .eq('id', invoice.id);
