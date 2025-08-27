@@ -1,14 +1,20 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Search, DollarSign, Clock, CheckCircle, CreditCard, Eye } from "lucide-react";
+import { Search, DollarSign, Clock, CheckCircle, CreditCard, Eye, Paperclip } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import PagamentoForm from "@/components/PagamentoForm";
 import { EncomendaView } from "@/components/EncomendaView";
+import { FinancialAttachmentUpload } from "./FinancialAttachmentUpload";
+import { FinancialAttachmentPreview } from "./FinancialAttachmentPreview";
+import { useFinancialAttachments } from "@/hooks/useFinancialAttachments";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface Encomenda {
   id: string;
@@ -17,6 +23,7 @@ interface Encomenda {
   valor_total: number;
   valor_pago: number;
   saldo_devedor: number;
+  valor_frete: number;
   status: string;
   data_criacao: string;
   data_entrega: string;
@@ -41,7 +48,20 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
   const [pagamentoDialogOpen, setPagamentoDialogOpen] = useState(false);
   const [viewEncomendaId, setViewEncomendaId] = useState<string | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
+  const [selectedEncomendaId, setSelectedEncomendaId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { hasRole } = useUserRole();
+  
+  const canAttach = hasRole('admin') || hasRole('finance');
+
+  const {
+    attachments,
+    isLoading: attachmentsLoading,
+    createAttachment,
+    deleteAttachment,
+    isCreating
+  } = useFinancialAttachments('encomenda-receber', selectedEncomendaId || '');
 
   const fetchEncomendas = async () => {
     try {
@@ -60,9 +80,10 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
         id: encomenda.id,
         numero_encomenda: encomenda.numero_encomenda,
         cliente_nome: encomenda.clientes.nome,
-        valor_total: parseFloat(encomenda.valor_total),
-        valor_pago: parseFloat(encomenda.valor_pago),
-        saldo_devedor: parseFloat(encomenda.saldo_devedor),
+        valor_total: parseFloat(encomenda.valor_total || 0),
+        valor_pago: parseFloat(encomenda.valor_pago || 0),
+        saldo_devedor: parseFloat(encomenda.saldo_devedor || 0),
+        valor_frete: parseFloat(encomenda.valor_frete || 0),
         status: encomenda.status,
         data_criacao: encomenda.data_criacao,
         data_entrega: encomenda.data_entrega,
@@ -90,6 +111,11 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
     setViewDialogOpen(true);
   };
 
+  const handleAttachmentClick = (encomendaId: string) => {
+    setSelectedEncomendaId(encomendaId);
+    setAttachmentDialogOpen(true);
+  };
+
   const handlePagamentoClick = (encomenda: Encomenda) => {
     setSelectedEncomenda(encomenda);
     setPagamentoDialogOpen(true);
@@ -101,22 +127,18 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
     fetchEncomendas();
   };
 
-  const getStatusBadge = (saldoDevedor: number) => {
-    if (saldoDevedor <= 0) {
-      return { label: "Pago", variant: "outline" as const, icon: CheckCircle };
-    }
-    return { label: "Pendente", variant: "secondary" as const, icon: Clock };
-  };
-
   const filteredEncomendas = encomendas.filter(
     (encomenda) =>
       encomenda.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       encomenda.numero_encomenda.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalAPagar = encomendas.reduce((sum, e) => sum + e.saldo_devedor, 0);
+  // Cálculos com valores corretos incluindo frete
+  const totalProdutos = encomendas.reduce((sum, e) => sum + e.valor_total, 0);
+  const totalFrete = encomendas.reduce((sum, e) => sum + e.valor_frete, 0);
+  const totalCaixa = totalProdutos + totalFrete;
   const totalPago = encomendas.reduce((sum, e) => sum + e.valor_pago, 0);
-  const totalGeral = encomendas.reduce((sum, e) => sum + e.valor_total, 0);
+  const saldoCaixa = Math.max(totalCaixa - totalPago, 0);
 
   if (loading) {
     return (
@@ -131,14 +153,26 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
   return (
     <div className="space-y-6">
       {/* Resumo Financeiro */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card className="shadow-card">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <DollarSign className="h-5 w-5 text-primary" />
               <div>
-                <p className="text-sm font-medium">Total Geral</p>
-                <p className="text-lg font-bold">€{totalGeral.toFixed(2)}</p>
+                <p className="text-sm font-medium">Produtos</p>
+                <p className="text-lg font-bold">€{totalProdutos.toFixed(2)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <DollarSign className="h-5 w-5 text-blue-500" />
+              <div>
+                <p className="text-sm font-medium">Frete</p>
+                <p className="text-lg font-bold">€{totalFrete.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -149,8 +183,8 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-5 w-5 text-success" />
               <div>
-                <p className="text-sm font-medium">Total Pago</p>
-                <p className="text-lg font-bold text-success">€{totalPago.toFixed(2)}</p>
+                <p className="text-sm font-medium">Total (Caixa)</p>
+                <p className="text-lg font-bold">€{totalCaixa.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -161,8 +195,8 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
             <div className="flex items-center space-x-2">
               <Clock className="h-5 w-5 text-warning" />
               <div>
-                <p className="text-sm font-medium">A Receber</p>
-                <p className="text-lg font-bold text-warning">€{totalAPagar.toFixed(2)}</p>
+                <p className="text-sm font-medium">Saldo (Caixa)</p>
+                <p className="text-lg font-bold text-warning">€{saldoCaixa.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -172,9 +206,9 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
       {/* Lista de Encomendas */}
       <Card className="shadow-card">
         <CardHeader>
-          <CardTitle>Encomendas e Pagamentos</CardTitle>
+          <CardTitle>Encomendas - A Receber</CardTitle>
           <CardDescription>
-            Visualize o status financeiro de cada encomenda e registre pagamentos
+            Controle de recebimentos por encomenda incluindo produtos e frete
           </CardDescription>
           
           <div className="flex items-center space-x-2">
@@ -196,15 +230,20 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
                 <TableRow>
                   <TableHead>Nº Encomenda</TableHead>
                   <TableHead>Cliente</TableHead>
-                  <TableHead>Valor Total</TableHead>
-                  <TableHead>Valor Pago</TableHead>
-                  <TableHead>Saldo Devedor</TableHead>
+                  <TableHead>Produtos</TableHead>
+                  <TableHead>Frete</TableHead>
+                  <TableHead>Total (Caixa)</TableHead>
+                  <TableHead>Pago</TableHead>
+                  <TableHead>Saldo (Caixa)</TableHead>
                   <TableHead>Pagamentos</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredEncomendas.map((encomenda) => {
+                  const totalCaixaEncomenda = encomenda.valor_total + encomenda.valor_frete;
+                  const saldoCaixaEncomenda = Math.max(totalCaixaEncomenda - encomenda.valor_pago, 0);
+                  
                   return (
                     <TableRow key={encomenda.id} className="hover:bg-muted/50">
                       <TableCell className="font-medium">
@@ -214,12 +253,18 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
                       <TableCell className="font-semibold">
                         €{encomenda.valor_total.toFixed(2)}
                       </TableCell>
+                      <TableCell className="font-semibold">
+                        €{encomenda.valor_frete.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="font-semibold text-primary">
+                        €{totalCaixaEncomenda.toFixed(2)}
+                      </TableCell>
                       <TableCell className="text-success font-semibold">
                         €{encomenda.valor_pago.toFixed(2)}
                       </TableCell>
                       <TableCell className="font-semibold">
-                        <span className={encomenda.saldo_devedor > 0 ? "text-warning" : "text-success"}>
-                          €{encomenda.saldo_devedor.toFixed(2)}
+                        <span className={saldoCaixaEncomenda > 0 ? "text-warning" : "text-success"}>
+                          €{saldoCaixaEncomenda.toFixed(2)}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -245,7 +290,7 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
                             <Eye className="h-4 w-4 mr-1" />
                             Visualizar
                           </Button>
-                          {encomenda.saldo_devedor > 0 && (
+                          {saldoCaixaEncomenda > 0 && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -253,6 +298,17 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
                             >
                               <CreditCard className="h-4 w-4 mr-1" />
                               Pagamento
+                            </Button>
+                          )}
+                          {canAttach && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAttachmentClick(encomenda.id)}
+                              title="Anexar comprovante"
+                            >
+                              <Paperclip className="h-4 w-4 mr-1" />
+                              Anexar
                             </Button>
                           )}
                         </div>
@@ -282,8 +338,56 @@ export default function EncomendasFinanceiro({ onSelectEncomenda }: EncomendasFi
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           {viewEncomendaId && (
-            <EncomendaView encomendaId={viewEncomendaId} />
+            <Tabs defaultValue="details" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="details">Detalhes da Encomenda</TabsTrigger>
+                <TabsTrigger value="attachments">Anexos</TabsTrigger>
+              </TabsList>
+              <TabsContent value="details">
+                <EncomendaView encomendaId={viewEncomendaId} />
+              </TabsContent>
+              <TabsContent value="attachments" className="space-y-4">
+                <div className="space-y-4">
+                  <FinancialAttachmentUpload
+                    entityType="encomenda-receber"
+                    entityId={viewEncomendaId}
+                    onUploadSuccess={createAttachment}
+                    disabled={isCreating}
+                  />
+                  <FinancialAttachmentPreview
+                    attachments={attachments}
+                    onDelete={deleteAttachment}
+                    isLoading={attachmentsLoading}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Anexos */}
+      <Dialog open={attachmentDialogOpen} onOpenChange={setAttachmentDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Paperclip className="h-5 w-5" />
+              <h3 className="text-lg font-semibold">Comprovantes de Recebimento</h3>
+            </div>
+            
+            <FinancialAttachmentUpload
+              entityType="encomenda-receber"
+              entityId={selectedEncomendaId || ''}
+              onUploadSuccess={createAttachment}
+              disabled={isCreating}
+            />
+            
+            <FinancialAttachmentPreview
+              attachments={attachments}
+              onDelete={deleteAttachment}
+              isLoading={attachmentsLoading}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

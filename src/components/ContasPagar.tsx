@@ -1,22 +1,30 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Search, DollarSign, Clock, CheckCircle, CreditCard, Eye } from "lucide-react";
+import { Search, DollarSign, Clock, CheckCircle, CreditCard, Eye, Paperclip } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import PagamentoFornecedorForm from "@/components/PagamentoFornecedorForm";
 import { EncomendaViewCusto } from "@/components/EncomendaViewCusto";
+import { FinancialAttachmentUpload } from "./FinancialAttachmentUpload";
+import { FinancialAttachmentPreview } from "./FinancialAttachmentPreview";
+import { useFinancialAttachments } from "@/hooks/useFinancialAttachments";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface ContaPagar {
   encomenda_id: string;
   numero_encomenda: string;
   fornecedor_nome: string;
-  valor_total_custo: number;
+  custo_produtos: number;
+  valor_frete: number;
+  total_caixa_pagar: number;
   valor_pago_fornecedor: number;
-  saldo_devedor_fornecedor: number;
+  saldo_pagar_caixa: number;
   pagamentos_fornecedor: Array<{
     id: string;
     valor_pagamento: number;
@@ -34,21 +42,32 @@ export default function ContasPagar() {
   const [pagamentoDialogOpen, setPagamentoDialogOpen] = useState(false);
   const [viewEncomendaId, setViewEncomendaId] = useState<string | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [attachmentDialogOpen, setAttachmentDialogOpen] = useState(false);
+  const [selectedEncomendaId, setSelectedEncomendaId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { hasRole } = useUserRole();
+  
+  const canAttach = hasRole('admin') || hasRole('finance');
+
+  const {
+    attachments,
+    isLoading: attachmentsLoading,
+    createAttachment,
+    deleteAttachment,
+    isCreating
+  } = useFinancialAttachments('encomenda-pagar', selectedEncomendaId || '');
 
   const fetchContasPagar = async () => {
     try {
       console.log("Buscando contas a pagar...");
       
-      // Buscar encomendas com seus itens e pagamentos fornecedor
       const { data: encomendasData, error: encomendasError } = await supabase
         .from("encomendas")
         .select(`
           id,
           numero_encomenda,
-          valor_total_custo,
+          valor_frete,
           valor_pago_fornecedor,
-          saldo_devedor_fornecedor,
           fornecedores!inner(nome),
           itens_encomenda(
             quantidade,
@@ -62,51 +81,43 @@ export default function ContasPagar() {
         throw encomendasError;
       }
 
-      console.log("Encomendas encontradas:", encomendasData?.length || 0);
-
-      // Buscar pagamentos de fornecedores separadamente
       const { data: pagamentosData, error: pagamentosError } = await supabase
         .from("pagamentos_fornecedor")
         .select("*");
 
       if (pagamentosError) {
         console.error("Erro ao buscar pagamentos fornecedor:", pagamentosError);
-        // Não vamos falhar se não conseguir buscar pagamentos
       }
 
-      console.log("Pagamentos fornecedor encontrados:", pagamentosData?.length || 0);
-
       const contasFormatadas = encomendasData?.map((encomenda: any) => {
-        // Calcular o valor total de custo dos itens se não estiver definido
-        let valorTotalCusto = encomenda.valor_total_custo || 0;
-        
-        if (valorTotalCusto === 0 && encomenda.itens_encomenda?.length > 0) {
-          valorTotalCusto = encomenda.itens_encomenda.reduce((sum: number, item: any) => {
-            const precoCusto = parseFloat(item.produtos?.preco_custo || 0);
-            return sum + (item.quantidade * precoCusto);
-          }, 0);
-        }
+        // Calcular custo dos produtos
+        const custoItens = encomenda.itens_encomenda?.reduce((sum: number, item: any) => {
+          const precoCusto = parseFloat(item.produtos?.preco_custo || 0);
+          return sum + (item.quantidade * precoCusto);
+        }, 0) || 0;
 
-        // Buscar pagamentos desta encomenda
+        const valorFrete = parseFloat(encomenda.valor_frete || 0);
+        const totalCaixaPagar = custoItens + valorFrete;
+
         const pagamentosFornecedor = pagamentosData?.filter(
           (pagamento: any) => pagamento.encomenda_id === encomenda.id
         ) || [];
 
-        // Calcular valor pago ao fornecedor
         const valorPagoFornecedor = pagamentosFornecedor.reduce((sum: number, pagamento: any) => {
           return sum + parseFloat(pagamento.valor_pagamento || 0);
         }, 0);
 
-        // Calcular saldo devedor
-        const saldoDevedorFornecedor = valorTotalCusto - valorPagoFornecedor;
+        const saldoPagarCaixa = Math.max(totalCaixaPagar - valorPagoFornecedor, 0);
 
         return {
           encomenda_id: encomenda.id,
           numero_encomenda: encomenda.numero_encomenda,
           fornecedor_nome: encomenda.fornecedores?.nome || "N/A",
-          valor_total_custo: valorTotalCusto,
+          custo_produtos: custoItens,
+          valor_frete: valorFrete,
+          total_caixa_pagar: totalCaixaPagar,
           valor_pago_fornecedor: valorPagoFornecedor,
-          saldo_devedor_fornecedor: saldoDevedorFornecedor,
+          saldo_pagar_caixa: saldoPagarCaixa,
           pagamentos_fornecedor: pagamentosFornecedor.map((p: any) => ({
             id: p.id,
             valor_pagamento: parseFloat(p.valor_pagamento),
@@ -118,8 +129,6 @@ export default function ContasPagar() {
       }) || [];
 
       console.log("Contas formatadas:", contasFormatadas.length);
-      console.log("Primeira conta:", contasFormatadas[0]);
-
       setContas(contasFormatadas);
     } catch (error: any) {
       console.error("Erro completo:", error);
@@ -153,15 +162,23 @@ export default function ContasPagar() {
     setViewDialogOpen(true);
   };
 
+  const handleAttachmentClick = (encomendaId: string) => {
+    setSelectedEncomendaId(encomendaId);
+    setAttachmentDialogOpen(true);
+  };
+
   const filteredContas = contas.filter(
     (conta) =>
       conta.fornecedor_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       conta.numero_encomenda.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalGeral = contas.reduce((sum, c) => sum + c.valor_total_custo, 0);
+  // Cálculos dos totais
+  const totalCustoProdutos = contas.reduce((sum, c) => sum + c.custo_produtos, 0);
+  const totalFrete = contas.reduce((sum, c) => sum + c.valor_frete, 0);
+  const totalCaixa = contas.reduce((sum, c) => sum + c.total_caixa_pagar, 0);
   const totalPago = contas.reduce((sum, c) => sum + c.valor_pago_fornecedor, 0);
-  const totalAPagar = contas.reduce((sum, c) => sum + c.saldo_devedor_fornecedor, 0);
+  const saldoCaixa = contas.reduce((sum, c) => sum + c.saldo_pagar_caixa, 0);
 
   if (loading) {
     return (
@@ -176,14 +193,38 @@ export default function ContasPagar() {
   return (
     <div className="space-y-6">
       {/* Resumo Financeiro */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-5">
         <Card className="shadow-card">
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <DollarSign className="h-5 w-5 text-primary" />
               <div>
-                <p className="text-sm font-medium">Total Geral</p>
-                <p className="text-lg font-bold">€{totalGeral.toFixed(2)}</p>
+                <p className="text-sm font-medium">Custo Produtos</p>
+                <p className="text-lg font-bold">€{totalCustoProdutos.toFixed(2)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <DollarSign className="h-5 w-5 text-blue-500" />
+              <div>
+                <p className="text-sm font-medium">Frete</p>
+                <p className="text-lg font-bold">€{totalFrete.toFixed(2)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-card">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <DollarSign className="h-5 w-5 text-purple-500" />
+              <div>
+                <p className="text-sm font-medium">Total (Caixa)</p>
+                <p className="text-lg font-bold">€{totalCaixa.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -194,7 +235,7 @@ export default function ContasPagar() {
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-5 w-5 text-success" />
               <div>
-                <p className="text-sm font-medium">Total Pago</p>
+                <p className="text-sm font-medium">Pago Fornecedor</p>
                 <p className="text-lg font-bold text-success">€{totalPago.toFixed(2)}</p>
               </div>
             </div>
@@ -206,8 +247,8 @@ export default function ContasPagar() {
             <div className="flex items-center space-x-2">
               <Clock className="h-5 w-5 text-warning" />
               <div>
-                <p className="text-sm font-medium">Por Pagar</p>
-                <p className="text-lg font-bold text-warning">€{totalAPagar.toFixed(2)}</p>
+                <p className="text-sm font-medium">Saldo (Caixa)</p>
+                <p className="text-lg font-bold text-warning">€{saldoCaixa.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
@@ -219,7 +260,7 @@ export default function ContasPagar() {
         <CardHeader>
           <CardTitle>Contas a Pagar</CardTitle>
           <CardDescription>
-            Valores devidos aos fornecedores por encomenda e controle de pagamentos
+            Valores devidos aos fornecedores incluindo custos de produtos e frete
           </CardDescription>
           
           <div className="flex items-center space-x-2">
@@ -238,10 +279,7 @@ export default function ContasPagar() {
           {contas.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">
-                Nenhuma conta a pagar encontrada. 
-                {" "}
-                <br />
-                Certifique-se de que existem encomendas com itens e fornecedores cadastrados.
+                Nenhuma conta a pagar encontrada.
               </p>
             </div>
           ) : (
@@ -251,9 +289,11 @@ export default function ContasPagar() {
                   <TableRow>
                     <TableHead>Nº Encomenda</TableHead>
                     <TableHead>Fornecedor</TableHead>
-                    <TableHead>Valor Total (Custo)</TableHead>
-                    <TableHead>Valor Pago</TableHead>
-                    <TableHead>Saldo Devedor</TableHead>
+                    <TableHead>Custo Produtos</TableHead>
+                    <TableHead>Frete</TableHead>
+                    <TableHead>Total (Caixa)</TableHead>
+                    <TableHead>Pago Fornecedor</TableHead>
+                    <TableHead>Saldo (Caixa)</TableHead>
                     <TableHead>Pagamentos</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
@@ -266,14 +306,20 @@ export default function ContasPagar() {
                       </TableCell>
                       <TableCell>{conta.fornecedor_nome}</TableCell>
                       <TableCell className="font-semibold">
-                        €{conta.valor_total_custo.toFixed(2)}
+                        €{conta.custo_produtos.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        €{conta.valor_frete.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="font-semibold text-primary">
+                        €{conta.total_caixa_pagar.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-success font-semibold">
                         €{conta.valor_pago_fornecedor.toFixed(2)}
                       </TableCell>
                       <TableCell className="font-semibold">
-                        <span className={conta.saldo_devedor_fornecedor > 0 ? "text-warning" : "text-success"}>
-                          €{conta.saldo_devedor_fornecedor.toFixed(2)}
+                        <span className={conta.saldo_pagar_caixa > 0 ? "text-warning" : "text-success"}>
+                          €{conta.saldo_pagar_caixa.toFixed(2)}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -307,6 +353,17 @@ export default function ContasPagar() {
                             <CreditCard className="h-4 w-4 mr-1" />
                             Pagamento
                           </Button>
+                          {canAttach && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleAttachmentClick(conta.encomenda_id)}
+                              title="Anexar comprovante"
+                            >
+                              <Paperclip className="h-4 w-4 mr-1" />
+                              Anexar
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -330,12 +387,60 @@ export default function ContasPagar() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Visualização com Preços de Custo */}
+      {/* Dialog de Visualização */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           {viewEncomendaId && (
-            <EncomendaViewCusto encomendaId={viewEncomendaId} />
+            <Tabs defaultValue="details" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="details">Detalhes da Encomenda</TabsTrigger>
+                <TabsTrigger value="attachments">Anexos</TabsTrigger>
+              </TabsList>
+              <TabsContent value="details">
+                <EncomendaViewCusto encomendaId={viewEncomendaId} />
+              </TabsContent>
+              <TabsContent value="attachments" className="space-y-4">
+                <div className="space-y-4">
+                  <FinancialAttachmentUpload
+                    entityType="encomenda-pagar"
+                    entityId={viewEncomendaId}
+                    onUploadSuccess={createAttachment}
+                    disabled={isCreating}
+                  />
+                  <FinancialAttachmentPreview
+                    attachments={attachments}
+                    onDelete={deleteAttachment}
+                    isLoading={attachmentsLoading}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Anexos */}
+      <Dialog open={attachmentDialogOpen} onOpenChange={setAttachmentDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Paperclip className="h-5 w-5" />
+              <h3 className="text-lg font-semibold">Comprovantes de Pagamento</h3>
+            </div>
+            
+            <FinancialAttachmentUpload
+              entityType="encomenda-pagar"
+              entityId={selectedEncomendaId || ''}
+              onUploadSuccess={createAttachment}
+              disabled={isCreating}
+            />
+            
+            <FinancialAttachmentPreview
+              attachments={attachments}
+              onDelete={deleteAttachment}
+              isLoading={attachmentsLoading}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

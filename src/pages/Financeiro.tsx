@@ -1,12 +1,9 @@
+
 import { useState, useEffect } from "react";
-import { Download, TrendingUp, TrendingDown, DollarSign, AlertCircle, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { TrendingUp, TrendingDown, DollarSign, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import StatCard from "@/components/StatCard";
-import PagamentoForm from "@/components/PagamentoForm";
 import EncomendasFinanceiro from "@/components/EncomendasFinanceiro";
 import ContasPagar from "@/components/ContasPagar";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +41,6 @@ const movimentacoes = [
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState("resumo");
   const [encomendas, setEncomendas] = useState<any[]>([]);
-  const [showPagamentoDialog, setShowPagamentoDialog] = useState(false);
   const { toast } = useToast();
 
   const fetchEncomendas = async () => {
@@ -67,6 +63,7 @@ export default function Financeiro() {
         valor_total: parseFloat(encomenda.valor_total),
         valor_pago: parseFloat(encomenda.valor_pago),
         saldo_devedor: parseFloat(encomenda.saldo_devedor),
+        valor_frete: parseFloat(encomenda.valor_frete || 0),
       }));
 
       setEncomendas(encomendasFormatadas);
@@ -83,12 +80,7 @@ export default function Financeiro() {
     fetchEncomendas();
   }, []);
 
-  const handlePagamentoSuccess = () => {
-    setShowPagamentoDialog(false);
-    fetchEncomendas();
-  };
-
-  // Cálculos para o resumo
+  // Cálculos para o resumo - apenas produtos (sem frete nos KPIs)
   const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor, 0);
   const totalPago = encomendas.reduce((sum, e) => sum + e.valor_pago, 0);
   const totalGeral = encomendas.reduce((sum, e) => sum + e.valor_total, 0);
@@ -100,29 +92,10 @@ export default function Financeiro() {
           <h1 className="text-3xl font-bold text-foreground">Financeiro</h1>
           <p className="text-muted-foreground">Controle financeiro do seu negócio</p>
         </div>
-        <div className="flex gap-2">
-          <Dialog open={showPagamentoDialog} onOpenChange={setShowPagamentoDialog}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
-                <Plus className="mr-2 h-4 w-4" />
-                Lançar Pagamento
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <PagamentoForm 
-                onSuccess={handlePagamentoSuccess}
-                encomendas={encomendas}
-              />
-            </DialogContent>
-          </Dialog>
-          <Button variant="outline">
-            <Download className="mr-2 h-4 w-4" />
-            Exportar Relatório
-          </Button>
-        </div>
+        {/* Botões removidos conforme solicitado */}
       </div>
 
-      {/* Financial Stats */}
+      {/* Financial Stats - KPIs baseados apenas em produtos */}
       <div className="grid gap-6 md:grid-cols-3">
         <StatCard
           title="Total Geral"
