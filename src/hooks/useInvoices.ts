@@ -19,30 +19,46 @@ export const useInvoices = () => {
     error
   } = useQuery({
     queryKey,
-    queryFn: async () => {
+    queryFn: async (): Promise<Invoice[]> => {
       console.log('useInvoices - Buscando faturas');
       
-      const { data, error } = await supabase
+      // First get invoices
+      const { data: invoicesData, error: invoicesError } = await supabase
         .from('invoices' as any)
-        .select(`
-          *,
-          attachment:attachments(
-            id,
-            file_name,
-            file_type,
-            storage_url,
-            storage_path
-          )
-        `)
+        .select('*')
         .order('invoice_date', { ascending: false });
 
-      if (error) {
-        console.error("useInvoices - Erro:", error);
-        throw error;
+      if (invoicesError) {
+        console.error("useInvoices - Erro:", invoicesError);
+        throw invoicesError;
       }
+
+      if (!invoicesData || invoicesData.length === 0) {
+        console.log('useInvoices - Nenhuma fatura encontrada');
+        return [];
+      }
+
+      // Get attachments for invoices that have attachment_id
+      const invoicesWithAttachments = await Promise.all(
+        invoicesData.map(async (invoice: any) => {
+          if (invoice.attachment_id) {
+            const { data: attachment } = await supabase
+              .from('attachments')
+              .select('id, file_name, file_type, storage_url, storage_path')
+              .eq('id', invoice.attachment_id)
+              .single();
+            
+            return {
+              ...invoice,
+              attachment
+            };
+          }
+          return invoice;
+        })
+      );
       
-      console.log(`useInvoices - Encontradas ${data?.length || 0} faturas`);
-      return (data || []) as Invoice[];
+      console.log(`useInvoices - Encontradas ${invoicesWithAttachments.length} faturas`);
+      return invoicesWithAttachments as Invoice[];
     }
   });
 
