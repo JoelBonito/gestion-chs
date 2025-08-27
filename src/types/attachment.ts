@@ -4,11 +4,11 @@ export interface Attachment {
   entity_type: string;
   entity_id: string;
   file_name: string;
-  file_path: string;
-  file_url: string;
-  mime_type: string;
+  file_type: string;
   file_size: number;
-  created_by: string;
+  storage_path: string;
+  storage_url: string;
+  uploaded_by: string;
   created_at: string;
 }
 
