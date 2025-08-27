@@ -585,6 +585,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      recalc_valor_total_custo_encomenda: {
+        Args: { p_encomenda: string }
+        Returns: undefined
+      }
     }
     Enums: {
       status_encomenda:

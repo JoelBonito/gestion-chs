@@ -246,30 +246,41 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
   const onSubmit = async (data: EncomendaFormData) => {
     setIsSubmitting(true);
     try {
-      // 1) Garantir sessão
-const { data: sessionData } = await supabase.auth.getSession();
-if (!sessionData?.session) {
-  toast.error("Faça login para salvar a encomenda.");
-  setIsSubmitting(false);
-  return;
-}
+      // 1. Verificar sessão ativa
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        toast.error("Faça login para salvar a encomenda.");
+        setIsSubmitting(false);
+        return;
+      }
 
-// 2) Validar cliente/fornecedor
-const [{ data: clienteOk }, { data: fornecedorOk }] = await Promise.all([
-  supabase.from("clientes").select("id").eq("id", data.cliente_id).maybeSingle(),
-  supabase.from("fornecedores").select("id").eq("id", data.fornecedor_id).maybeSingle(),
-]);
+      // 2. Validar cliente e fornecedor
+      const [{ data: clienteOk }, { data: fornecedorOk }] = await Promise.all([
+        supabase.from("clientes").select("id").eq("id", data.cliente_id).maybeSingle(),
+        supabase.from("fornecedores").select("id").eq("id", data.fornecedor_id).maybeSingle(),
+      ]);
 
-if (!clienteOk) {
-  toast.error("Cliente inválido ou inativo.");
-  setIsSubmitting(false);
-  return;
-}
-if (!fornecedorOk) {
-  toast.error("Fornecedor inválido ou inativo.");
-  setIsSubmitting(false);
-  return;
-}
+      if (!clienteOk) {
+        toast.error("Cliente inválido ou inativo.");
+        setIsSubmitting(false);
+        return;
+      }
+      if (!fornecedorOk) {
+        toast.error("Fornecedor inválido ou inativo.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 3. Verificar duplicação de número da encomenda e gerar novo se necessário
+      if (!isEditing) {
+        const isUniqueNumber = await validateUniqueOrderNumber(data.numero_encomenda);
+        if (!isUniqueNumber) {
+          const newUniqueNumber = await generateUniqueOrderNumber();
+          data.numero_encomenda = newUniqueNumber;
+          form.setValue("numero_encomenda", newUniqueNumber);
+          toast.info(`Número da encomenda alterado para ${newUniqueNumber} para evitar duplicação.`);
+        }
+      }
 
       // 3. Validate client and supplier are active and belong to user
       const { data: clienteData } = await supabase
