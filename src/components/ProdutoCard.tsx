@@ -23,14 +23,32 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
   const [produtoData, setProdutoData] = useState(produto);
   const { canEdit } = useUserRole();
 
-  const handleEditSuccess = () => {
+  const handleEditSuccess = async () => {
     console.log("=== PRODUTO EDITADO COM SUCESSO ===");
     console.log("ProdutoCard - Produto editado com sucesso, fechando dialog");
     setIsEditDialogOpen(false);
     
-    // Não fazemos refresh da lista geral, apenas fechamos o dialog
-    // O produto já foi atualizado internamente no formulário
-    console.log("ProdutoCard - Dialog fechado, produto foi editado internamente");
+    // Recarregar dados do produto do banco de dados para garantir que os anexos estejam atualizados
+    try {
+      console.log("ProdutoCard - Buscando dados atualizados do produto no banco");
+      const { data: updatedProduct, error } = await supabase
+        .from('produtos')
+        .select('*')
+        .eq('id', produtoData.id)
+        .single();
+
+      if (error) {
+        console.error("ProdutoCard - Erro ao recarregar produto:", error);
+      } else if (updatedProduct) {
+        console.log("ProdutoCard - Produto recarregado com sucesso:", updatedProduct);
+        setProdutoData(updatedProduct);
+        console.log("ProdutoCard - Estado local do produto atualizado");
+      }
+    } catch (error) {
+      console.error("ProdutoCard - Erro no refresh do produto:", error);
+    }
+    
+    console.log("ProdutoCard - Dialog fechado, produto atualizado");
   };
 
   const handleAttachmentRefresh = async () => {
@@ -118,6 +136,8 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
                 <ProdutoForm 
                   produto={produtoData} 
                   onSuccess={handleEditSuccess}
+                  isEditing={true}
+                  onAttachmentChanged={handleAttachmentRefresh}
                 />
               </DialogContent>
             </Dialog>

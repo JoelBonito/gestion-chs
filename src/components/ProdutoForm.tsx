@@ -30,6 +30,7 @@ interface ProdutoFormProps {
   onSuccess?: () => void;
   produto?: any;
   isEditing?: boolean;
+  onAttachmentChanged?: () => void;
 }
 
 const tipos = [
@@ -40,7 +41,7 @@ const tipos = [
   "Outros"
 ];
 
-export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFormProps) => {
+export const ProdutoForm = ({ onSuccess, produto, isEditing = false, onAttachmentChanged }: ProdutoFormProps) => {
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -314,7 +315,7 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
             <AttachmentManager
               entityType="produto"
               entityId={produto.id}
-              onChanged={onSuccess}
+              onChanged={onAttachmentChanged || onSuccess}
             />
           )}
           {!produto?.id && (
