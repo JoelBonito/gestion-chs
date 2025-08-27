@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ export default function ContasPagar({ onRefreshNeeded }: ContasPagarProps) {
   const [showDetails, setShowDetails] = useState(false);
   const { toast } = useToast();
 
-  const fetchContas = async () => {
+  const fetchContas = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -97,11 +97,11 @@ export default function ContasPagar({ onRefreshNeeded }: ContasPagarProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     fetchContas();
-  }, []);
+  }, [fetchContas]);
 
   const handlePagamentoSuccess = () => {
     fetchContas();
