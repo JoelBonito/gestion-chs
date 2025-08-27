@@ -22,8 +22,8 @@ export const useInvoices = () => {
     queryFn: async (): Promise<Invoice[]> => {
       console.log('useInvoices - Buscando faturas');
       
-      // Buscar faturas da tabela criada
-      const { data: invoicesData, error: invoicesError } = await supabase
+      // Usar type assertion temporário até sync dos tipos
+      const { data: invoicesData, error: invoicesError } = await (supabase as any)
         .from('invoices')
         .select('*')
         .order('invoice_date', { ascending: false });
@@ -116,8 +116,8 @@ export const useInvoices = () => {
         attachmentId = attachment.id;
       }
 
-      // Criar a fatura usando a tabela correta
-      const { data: invoice, error: invoiceError } = await supabase
+      // Usar type assertion temporário até sync dos tipos
+      const { data: invoice, error: invoiceError } = await (supabase as any)
         .from('invoices')
         .insert([{
           invoice_date: invoiceData.invoice_date,
@@ -167,7 +167,8 @@ export const useInvoices = () => {
     mutationFn: async ({ id, data }: { id: string; data: Partial<InvoiceFormData> }) => {
       console.log("useInvoices - Atualizando fatura:", id);
 
-      const { error } = await supabase
+      // Usar type assertion temporário até sync dos tipos
+      const { error } = await (supabase as any)
         .from('invoices')
         .update({
           invoice_date: data.invoice_date,
@@ -216,8 +217,8 @@ export const useInvoices = () => {
           .eq('id', invoice.attachment_id);
       }
 
-      // Deletar fatura
-      const { error } = await supabase
+      // Usar type assertion temporário até sync dos tipos
+      const { error } = await (supabase as any)
         .from('invoices')
         .delete()
         .eq('id', invoice.id);
