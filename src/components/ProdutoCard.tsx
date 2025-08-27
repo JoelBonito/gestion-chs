@@ -2,11 +2,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2, Trash2, Paperclip } from "lucide-react";
 import { ProdutoForm } from "@/components/ProdutoForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useUserRole } from "@/hooks/useUserRole";
+import { FinancialAttachmentButton } from "./FinancialAttachmentButton";
 import { useState } from "react";
 import { Produto } from "@/types/database";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +22,7 @@ interface ProdutoCardProps {
 export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [produtoData, setProdutoData] = useState(produto);
-  const { canEdit } = useUserRole();
+  const { canEdit, hasRole } = useUserRole();
 
   const handleEditSuccess = () => {
     console.log("=== PRODUTO EDITADO COM SUCESSO ===");
@@ -88,10 +89,12 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
             <p className="text-muted-foreground">Tipo</p>
             <p className="font-medium font-body">{produtoData.tipo}</p>
           </div>
-          <div>
-            <p className="text-muted-foreground">Preço Venda</p>
-            <p className="text-sm font-medium font-body">R$ {produtoData.preco_venda?.toFixed(2)}</p>
-          </div>
+          {!hasRole('factory') && (
+            <div>
+              <p className="text-muted-foreground">Preço Venda</p>
+              <p className="text-sm font-medium font-body">R$ {produtoData.preco_venda?.toFixed(2)}</p>
+            </div>
+          )}
           <div>
             <p className="text-muted-foreground">Preço Custo</p> 
             <p className="text-sm font-medium font-body">R$ {produtoData.preco_custo?.toFixed(2)}</p>
@@ -102,53 +105,64 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
           </div>
         </div>
 
-        {canEdit() && (
-          <div className="flex gap-2 pt-2">
-            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1">
-                  <Edit2 className="w-4 h-4 mr-2" />
-                  Editar
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto shadow-elegant">
-                <DialogHeader>
-                  <DialogTitle className="font-display text-primary-dark">Editar Produto</DialogTitle>
-                </DialogHeader>
-                <ProdutoForm 
-                  produto={produtoData} 
-                  onSuccess={handleEditSuccess}
-                  isEditing={true}
-                />
-              </DialogContent>
-            </Dialog>
+        <div className="flex gap-2 pt-2">
+          {hasRole('factory') && (
+            <FinancialAttachmentButton 
+              entityId={produtoData.id}
+              entityType="financeiro"
+              title="Anexar Arquivos do Produto"
+              onChanged={handleAttachmentRefresh}
+            />
+          )}
+          
+          {canEdit() && (
+            <>
+              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Editar
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto shadow-elegant">
+                  <DialogHeader>
+                    <DialogTitle className="font-display text-primary-dark">Editar Produto</DialogTitle>
+                  </DialogHeader>
+                  <ProdutoForm 
+                    produto={produtoData} 
+                    onSuccess={handleEditSuccess}
+                    isEditing={true}
+                  />
+                </DialogContent>
+              </Dialog>
 
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" className="flex-shrink-0">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tem certeza que deseja excluir o produto "{produtoData.nome}"? Esta ação não pode ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => onDelete(produtoData.id)}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Excluir
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" className="flex-shrink-0">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja excluir o produto "{produtoData.nome}"? Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => onDelete(produtoData.id)}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

@@ -371,6 +371,13 @@ export type Database = {
             foreignKeyName: "fk_itens_encomenda_produto_id"
             columns: ["produto_id"]
             isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_itens_encomenda_produto_id"
+            columns: ["produto_id"]
+            isOneToOne: false
             referencedRelation: "produtos"
             referencedColumns: ["id"]
           },
@@ -571,7 +578,62 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      products_public: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          created_by: string | null
+          deactivated_at: string | null
+          deactivated_reason: string | null
+          fornecedor_id: string | null
+          id: string | null
+          marca: string | null
+          nome: string | null
+          preco_custo: number | null
+          size_weight: number | null
+          tipo: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
+          fornecedor_id?: string | null
+          id?: string | null
+          marca?: string | null
+          nome?: string | null
+          preco_custo?: number | null
+          size_weight?: number | null
+          tipo?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          created_by?: string | null
+          deactivated_at?: string | null
+          deactivated_reason?: string | null
+          fornecedor_id?: string | null
+          id?: string | null
+          marca?: string | null
+          nome?: string | null
+          preco_custo?: number | null
+          size_weight?: number | null
+          tipo?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       can_edit: {
@@ -579,10 +641,12 @@ export type Database = {
         Returns: boolean
       }
       has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["user_role"]
-          _user_id: string
-        }
+        Args:
+          | {
+              _role: Database["public"]["Enums"]["user_role"]
+              _user_id: string
+            }
+          | { p_role: string }
         Returns: boolean
       }
       recalc_valor_total_custo_encomenda: {

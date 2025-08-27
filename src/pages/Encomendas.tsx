@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -37,6 +38,7 @@ interface Encomenda {
 }
 
 export default function Encomendas() {
+  const { canEdit } = useUserRole();
   const [searchTerm, setSearchTerm] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("TODOS");
@@ -187,23 +189,25 @@ export default function Encomendas() {
           <h1 className="text-3xl font-bold text-foreground">Encomendas</h1>
           <p className="text-muted-foreground">Gerencie os pedidos dos seus clientes</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Encomenda
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[1000px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Nova Encomenda</DialogTitle>
-              <DialogDescription>
-                Crie uma nova encomenda no sistema
-              </DialogDescription>
-            </DialogHeader>
-            <EncomendaForm onSuccess={handleSuccess} />
-          </DialogContent>
-        </Dialog>
+        {canEdit() && (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Encomenda
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[1000px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Nova Encomenda</DialogTitle>
+                <DialogDescription>
+                  Crie uma nova encomenda no sistema
+                </DialogDescription>
+              </DialogHeader>
+              <EncomendaForm onSuccess={handleSuccess} />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Search and filters */}

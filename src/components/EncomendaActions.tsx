@@ -5,6 +5,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useUserRole } from "@/hooks/useUserRole";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 
@@ -29,6 +30,7 @@ interface EncomendaActionsProps {
 }
 
 export function EncomendaActions({ encomenda, onView, onEdit, onDelete }: EncomendaActionsProps) {
+  const { hasRole, canEdit } = useUserRole();
   const handleDelete = async () => {
     try {
       const { error } = await supabase
@@ -59,30 +61,34 @@ export function EncomendaActions({ encomenda, onView, onEdit, onDelete }: Encome
           <Eye className="mr-2 h-4 w-4" />
           Visualizar
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={onEdit}>
-          <Edit className="mr-2 h-4 w-4" />
-          Editar
-        </DropdownMenuItem>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              <Trash2 className="mr-2 h-4 w-4" />
-              Excluir
+        {canEdit() && (
+          <>
+            <DropdownMenuItem onClick={onEdit}>
+              <Edit className="mr-2 h-4 w-4" />
+              Editar
             </DropdownMenuItem>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta ação não pode ser desfeita. Isso excluirá permanentemente a encomenda {encomenda.numero_encomenda}.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir
+                </DropdownMenuItem>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Isso excluirá permanentemente a encomenda {encomenda.numero_encomenda}.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

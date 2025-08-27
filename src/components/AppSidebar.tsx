@@ -10,6 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { useLocation } from "react-router-dom";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const items = [
   {
@@ -51,6 +52,21 @@ const items = [
 
 export function AppSidebar() {
   const location = useLocation();
+  const { hasRole } = useUserRole();
+
+  // Filter items based on user role
+  const getFilteredItems = () => {
+    if (hasRole('factory')) {
+      return items.filter(item => 
+        item.url === '/produtos' || 
+        item.url === '/encomendas' || 
+        item.url === '/financeiro'
+      );
+    }
+    return items;
+  };
+
+  const filteredItems = getFilteredItems();
 
   return (
     <Sidebar>
@@ -61,7 +77,7 @@ export function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-2 px-2">
-              {items.map((item) => {
+              {filteredItems.map((item) => {
                 const isActive = location.pathname === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
