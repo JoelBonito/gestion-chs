@@ -48,7 +48,8 @@ export default function ContasPagar({ onRefreshNeeded }: ContasPagarProps) {
           valor_pago_fornecedor,
           saldo_devedor_fornecedor,
           valor_frete,
-          fornecedores!inner(nome),
+          fornecedor_id,
+          fornecedores(nome),
           itens_encomenda(
             quantidade,
             preco_unitario,
@@ -58,32 +59,36 @@ export default function ContasPagar({ onRefreshNeeded }: ContasPagarProps) {
             valor_pagamento
           )
         `)
+        .not("fornecedor_id", "is", null)
         .gt("saldo_devedor_fornecedor", 0)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const contasFormatadas = data.map((encomenda: any) => {
-        const valorProdutos = encomenda.valor_total_custo - (parseFloat(encomenda.valor_frete || 0));
-        const totalPagamentos = encomenda.pagamentos_fornecedor?.reduce(
-          (sum: number, pag: any) => sum + parseFloat(pag.valor_pagamento || 0), 0
-        ) || 0;
+      const contasFormatadas = data
+        .filter((encomenda: any) => encomenda.fornecedores?.nome)
+        .map((encomenda: any) => {
+          const valorProdutos = parseFloat(encomenda.valor_total_custo || 0) - parseFloat(encomenda.valor_frete || 0);
+          const totalPagamentos = encomenda.pagamentos_fornecedor?.reduce(
+            (sum: number, pag: any) => sum + parseFloat(pag.valor_pagamento || 0), 0
+          ) || 0;
 
-        return {
-          encomenda_id: encomenda.id,
-          numero_encomenda: encomenda.numero_encomenda,
-          fornecedor_nome: encomenda.fornecedores.nome,
-          valor_produtos: valorProdutos,
-          valor_frete: parseFloat(encomenda.valor_frete || 0),
-          valor_total_custo: parseFloat(encomenda.valor_total_custo || 0),
-          valor_pago_fornecedor: parseFloat(encomenda.valor_pago_fornecedor || 0),
-          saldo_devedor_fornecedor: parseFloat(encomenda.saldo_devedor_fornecedor || 0),
-          total_pagamentos: encomenda.pagamentos_fornecedor?.length || 0,
-        };
-      });
+          return {
+            encomenda_id: encomenda.id,
+            numero_encomenda: encomenda.numero_encomenda,
+            fornecedor_nome: encomenda.fornecedores.nome,
+            valor_produtos: valorProdutos,
+            valor_frete: parseFloat(encomenda.valor_frete || 0),
+            valor_total_custo: parseFloat(encomenda.valor_total_custo || 0),
+            valor_pago_fornecedor: parseFloat(encomenda.valor_pago_fornecedor || 0),
+            saldo_devedor_fornecedor: parseFloat(encomenda.saldo_devedor_fornecedor || 0),
+            total_pagamentos: encomenda.pagamentos_fornecedor?.length || 0,
+          };
+        });
 
       setContas(contasFormatadas);
     } catch (error: any) {
+      console.error("ContasPagar - Error loading data:", error);
       toast({
         title: "Erro ao carregar contas a pagar",
         description: error.message,
