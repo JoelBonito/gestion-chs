@@ -161,11 +161,86 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
     }
   }, [initialData, isEditing, form, clientes, fornecedores]);
 
-  const generateOrderNumber = () => {
+  const generateOrderNumber = async () => {
     const now = new Date();
     const year = now.getFullYear();
-    const random = Math.floor(Math.random() * 1000);
-    form.setValue("numero_encomenda", `ENC-${year}-${random.toString().padStart(3, '0')}`);
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      let orderNumber;
+      
+      if (attempts === 0) {
+        // First attempt: use random number
+        const random = Math.floor(Math.random() * 1000);
+        orderNumber = `ENC-${year}-${random.toString().padStart(3, '0')}`;
+      } else {
+        // Subsequent attempts: use timestamp to ensure uniqueness
+        orderNumber = `ENC-${Date.now()}`;
+      }
+      
+      // Check if this number already exists for the current user
+      const { data: existingOrder } = await supabase
+        .from('encomendas')
+        .select('numero_encomenda')
+        .eq('numero_encomenda', orderNumber)
+        .maybeSingle();
+      
+      if (!existingOrder) {
+        // Number is unique, use it
+        form.setValue("numero_encomenda", orderNumber);
+        return;
+      }
+      
+      attempts++;
+    }
+    
+    // Fallback: use timestamp if all attempts failed
+    const fallbackNumber = `ENC-${Date.now()}`;
+    form.setValue("numero_encomenda", fallbackNumber);
+  };
+
+  const validateUniqueOrderNumber = async (orderNumber: string): Promise<boolean> => {
+    if (isEditing && initialData?.numero_encomenda === orderNumber) {
+      // If editing and number hasn't changed, it's valid
+      return true;
+    }
+    
+    const { data: existingOrder } = await supabase
+      .from('encomendas')
+      .select('numero_encomenda')
+      .eq('numero_encomenda', orderNumber)
+      .maybeSingle();
+      
+    return !existingOrder;
+  };
+
+  const generateUniqueOrderNumber = async (): Promise<string> => {
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      let orderNumber;
+      
+      if (attempts === 0) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const random = Math.floor(Math.random() * 1000);
+        orderNumber = `ENC-${year}-${random.toString().padStart(3, '0')}`;
+      } else {
+        orderNumber = `ENC-${Date.now()}`;
+      }
+      
+      const isUnique = await validateUniqueOrderNumber(orderNumber);
+      if (isUnique) {
+        return orderNumber;
+      }
+      
+      attempts++;
+    }
+    
+    // Fallback
+    return `ENC-${Date.now()}`;
   };
 
   const onSubmit = async (data: EncomendaFormData) => {
@@ -178,7 +253,16 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         return;
       }
 
-      // 2. Validate client and supplier are active and belong to user
+      // 2. Check if numero_encomenda is unique, if not generate a new one
+      const isUniqueNumber = await validateUniqueOrderNumber(data.numero_encomenda);
+      if (!isUniqueNumber) {
+        const newUniqueNumber = await generateUniqueOrderNumber();
+        data.numero_encomenda = newUniqueNumber;
+        form.setValue("numero_encomenda", newUniqueNumber);
+        toast.info(`Número da encomenda alterado para ${newUniqueNumber} para evitar duplicação.`);
+      }
+
+      // 3. Validate client and supplier are active and belong to user
       const { data: clienteData } = await supabase
         .from('clientes')
         .select('id, nome')
