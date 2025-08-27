@@ -6,9 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatCard from "@/components/StatCard";
 import EncomendasFinanceiro from "@/components/EncomendasFinanceiro";
 import ContasPagar from "@/components/ContasPagar";
+import Invoices from "@/components/Invoices";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AttachmentManager } from "@/components/AttachmentManager";
 
 // Mock data para movimentações
 const movimentacoes = [
@@ -92,7 +92,6 @@ export default function Financeiro() {
           <h1 className="text-3xl font-bold text-foreground">Financeiro</h1>
           <p className="text-muted-foreground">Controle financeiro do seu negócio</p>
         </div>
-        {/* Botões removidos conforme solicitado */}
       </div>
 
       {/* Financial Stats - KPIs baseados apenas em produtos */}
@@ -128,7 +127,7 @@ export default function Financeiro() {
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
           <TabsTrigger value="encomendas">A Receber</TabsTrigger>
           <TabsTrigger value="pagar">A Pagar</TabsTrigger>
-          <TabsTrigger value="anexos">Anexos</TabsTrigger>
+          <TabsTrigger value="faturas">Faturas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumo" className="space-y-6">
@@ -185,21 +184,8 @@ export default function Financeiro() {
           <ContasPagar />
         </TabsContent>
 
-        <TabsContent value="anexos">
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Documentos Financeiros</CardTitle>
-              <CardDescription>
-                Gerencie documentos e comprovantes relacionados ao financeiro
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AttachmentManager 
-                entityType="financeiro" 
-                entityId="financial-docs"
-              />
-            </CardContent>
-          </Card>
+        <TabsContent value="faturas">
+          <Invoices />
         </TabsContent>
       </Tabs>
     </div>
