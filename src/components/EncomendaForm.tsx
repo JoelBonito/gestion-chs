@@ -271,22 +271,6 @@ if (!fornecedorOk) {
   return;
 }
 
-      // 1. Validate session before proceeding
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        toast.error("Sessão expirada. Faça login novamente.");
-        return;
-      }
-
-      // 2. Check if numero_encomenda is unique, if not generate a new one
-      const isUniqueNumber = await validateUniqueOrderNumber(data.numero_encomenda);
-      if (!isUniqueNumber) {
-        const newUniqueNumber = await generateUniqueOrderNumber();
-        data.numero_encomenda = newUniqueNumber;
-        form.setValue("numero_encomenda", newUniqueNumber);
-        toast.info(`Número da encomenda alterado para ${newUniqueNumber} para evitar duplicação.`);
-      }
-
       // 3. Validate client and supplier are active and belong to user
       const { data: clienteData } = await supabase
         .from('clientes')
