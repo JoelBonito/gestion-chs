@@ -218,22 +218,28 @@ export function EncomendaView({ encomendaId }: EncomendaViewProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {itens.map((item) => (
-              <div key={item.id} className="flex justify-between items-center p-3 border rounded-lg">
-                <div>
-                  <h4 className="font-medium">{item.produtos?.nome}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {item.produtos?.marca} • {item.produtos?.tipo}
-                  </p>
+            {itens.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                Nenhum item encontrado nesta encomenda.
+              </p>
+            ) : (
+              itens.map((item) => (
+                <div key={item.id} className="flex justify-between items-center p-3 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">{item.produtos?.nome || 'Produto não encontrado'}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {item.produtos?.marca} • {item.produtos?.tipo}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">{formatCurrency(item.subtotal || 0)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {item.quantidade}x {formatCurrency(item.preco_unitario)}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold">{formatCurrency(item.subtotal)}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {item.quantidade}x {formatCurrency(item.preco_unitario)}
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

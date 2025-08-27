@@ -249,6 +249,13 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
   const onSubmit = async (data: EncomendaFormData) => {
     setIsSubmitting(true);
     try {
+      // Validar se há itens na encomenda
+      if (itens.length === 0) {
+        toast.error("Adicione pelo menos um item à encomenda antes de salvá-la.");
+        setIsSubmitting(false);
+        return;
+      }
+
       // 1. Verificar sessão ativa
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData?.session) {
@@ -341,6 +348,11 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
         // Inserir novos itens
         for (const item of itens) {
+          if (!item.produto_id) {
+            console.warn("Item sem produto_id, pulando:", item);
+            continue;
+          }
+          
           const { error: itemError } = await supabase
             .from("itens_encomenda")
             .insert([
@@ -349,7 +361,6 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
                 produto_id: item.produto_id,
                 quantidade: item.quantidade,
                 preco_unitario: item.preco_venda,
-                produto_nome_snapshot: item.produto_nome,
               },
             ]);
 
@@ -386,6 +397,11 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
           // Associar itens à encomenda sem incluir o subtotal (é calculado automaticamente)
           for (const item of itens) {
+            if (!item.produto_id) {
+              console.warn("Item sem produto_id, pulando:", item);
+              continue;
+            }
+            
             const { error: itemError } = await supabase
               .from("itens_encomenda")
               .insert([
@@ -394,7 +410,6 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
                   produto_id: item.produto_id,
                   quantidade: item.quantidade,
                   preco_unitario: item.preco_venda,
-                  produto_nome_snapshot: item.produto_nome,
                 },
               ]);
 
