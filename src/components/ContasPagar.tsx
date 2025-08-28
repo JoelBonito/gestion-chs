@@ -35,6 +35,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
   const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
   const [showPagamentoForm, setShowPagamentoForm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [localShowCompleted, setLocalShowCompleted] = useState(showCompleted);
   const { toast } = useToast();
 
   const fetchContas = async () => {
@@ -60,7 +61,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
             valor_pagamento
           )
         `)
-        .gt("saldo_devedor_fornecedor", 0)
+        .gte("saldo_devedor_fornecedor", localShowCompleted ? 0 : 0.01)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -98,7 +99,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
 
   useEffect(() => {
     fetchContas();
-  }, []);
+  }, [localShowCompleted]);
 
   const handlePagamentoSuccess = () => {
     fetchContas();
@@ -131,13 +132,27 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
     <div className="space-y-6">
       <Card className="shadow-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-warning" />
-            Contas a Pagar - Fornecedores
-          </CardTitle>
-          <CardDescription>
-            Encomendas com saldo devedor para fornecedores
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+                Contas a Pagar - Fornecedores
+              </CardTitle>
+              <CardDescription>
+                Encomendas com saldo devedor para fornecedores
+              </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id="show-completed-payable"
+                checked={localShowCompleted} 
+                onChange={(e) => setLocalShowCompleted(e.target.checked)}
+                className="rounded"
+              />
+              <label htmlFor="show-completed-payable" className="text-sm">Mostrar Concluídos</label>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">

@@ -147,7 +147,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
             produto_id: item.produto_id,
             produto_nome: item.produtos ? `${item.produtos.nome} - ${item.produtos.marca} - ${item.produtos.tipo}` : "Produto não encontrado",
             quantidade: item.quantidade,
-            preco_custo: item.produtos?.preco_custo || 0,
+            preco_custo: item.preco_custo || 0,
             preco_venda: item.preco_unitario,
             subtotal: item.subtotal || (item.quantidade * item.preco_unitario),
             peso_produto: item.produtos?.size_weight || 0,
@@ -353,16 +353,17 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
             continue;
           }
           
-          const { error: itemError } = await supabase
-            .from("itens_encomenda")
-            .insert([
-              {
-                encomenda_id: initialData.id,
-                produto_id: item.produto_id,
-                quantidade: item.quantidade,
-                preco_unitario: item.preco_venda,
-              },
-            ]);
+            const { error: itemError } = await supabase
+              .from("itens_encomenda")
+              .insert([
+                {
+                  encomenda_id: initialData.id,
+                  produto_id: item.produto_id,
+                  quantidade: item.quantidade,
+                  preco_unitario: item.preco_venda,
+                  preco_custo: item.preco_custo,
+                },
+              ]);
 
           if (itemError) {
             console.error("Erro ao inserir item:", itemError);
@@ -410,6 +411,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
                   produto_id: item.produto_id,
                   quantidade: item.quantidade,
                   preco_unitario: item.preco_venda,
+                  preco_custo: item.preco_custo,
                 },
               ]);
 

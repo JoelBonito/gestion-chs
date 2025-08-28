@@ -7,13 +7,13 @@ interface OrderItem {
   id: string;
   quantidade: number;
   preco_unitario: number;
+  preco_custo: number;
   subtotal: number;
   produto_id: string;
   produtos?: { 
     nome: string; 
     marca: string; 
     tipo: string;
-    preco_custo: number;
   };
 }
 
@@ -39,9 +39,10 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
           id,
           quantidade,
           preco_unitario,
+          preco_custo,
           subtotal,
           produto_id,
-          produtos(nome, marca, tipo, preco_custo)
+          produtos(nome, marca, tipo)
         `)
         .eq("encomenda_id", encomendaId);
 
@@ -111,7 +112,7 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
                   </TableCell>
                   <TableCell>{item.quantidade}</TableCell>
                   {showCostPrices && (
-                    <TableCell>€{(item.produtos?.preco_custo || 0).toFixed(2)}</TableCell>
+                    <TableCell>€{(item.preco_custo || 0).toFixed(2)}</TableCell>
                   )}
                   <TableCell>€{item.preco_unitario.toFixed(2)}</TableCell>
                   <TableCell className="font-semibold">€{item.subtotal.toFixed(2)}</TableCell>
