@@ -24,14 +24,34 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
   const [produtoData, setProdutoData] = useState(produto);
   const { canEdit, hasRole } = useUserRole();
 
-  const handleEditSuccess = () => {
+  const handleEditSuccess = async () => {
     console.log("=== PRODUTO EDITADO COM SUCESSO ===");
-    console.log("ProdutoCard - Produto editado com sucesso, fechando dialog");
-    setIsEditDialogOpen(false);
+    console.log("ProdutoCard - Produto editado com sucesso, recarregando dados");
     
-    // Não fazemos refresh da lista geral, apenas fechamos o dialog
-    // O produto já foi atualizado internamente no formulário
-    console.log("ProdutoCard - Dialog fechado, produto foi editado internamente");
+    try {
+      // Recarregar dados do produto do banco de dados
+      const { data: updatedProduct, error } = await supabase
+        .from('produtos')
+        .select('*')
+        .eq('id', produtoData.id)
+        .single();
+
+      if (error) {
+        console.error("ProdutoCard - Erro ao recarregar produto após edição:", error);
+        throw error;
+      }
+
+      if (updatedProduct) {
+        console.log("ProdutoCard - Produto recarregado após edição:", updatedProduct);
+        setProdutoData(updatedProduct);
+      }
+      
+      setIsEditDialogOpen(false);
+      console.log("ProdutoCard - Dados do produto atualizados e dialog fechado");
+    } catch (error) {
+      console.error("ProdutoCard - Erro ao atualizar dados do produto:", error);
+      setIsEditDialogOpen(false);
+    }
   };
 
   const handleAttachmentRefresh = async () => {
