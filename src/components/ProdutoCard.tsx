@@ -2,8 +2,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2, Paperclip } from "lucide-react";
+import { Edit2, Trash2, Eye, Copy, Paperclip } from "lucide-react";
 import { ProdutoForm } from "@/components/ProdutoForm";
+import { ProdutoView } from "@/components/ProdutoView";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -11,6 +12,7 @@ import { FinancialAttachmentButton } from "./FinancialAttachmentButton";
 import { useState } from "react";
 import { Produto } from "@/types/database";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ProdutoCardProps {
   produto: Produto;
@@ -21,6 +23,7 @@ interface ProdutoCardProps {
 
 export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [produtoData, setProdutoData] = useState(produto);
   const { canEdit, hasRole } = useUserRole();
 
@@ -88,6 +91,37 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
     }
   };
 
+  const handleDuplicate = async () => {
+    try {
+      const duplicatedProduct = {
+        nome: `${produtoData.nome} (Cópia)`,
+        marca: produtoData.marca,
+        tipo: produtoData.tipo,
+        preco_custo: produtoData.preco_custo,
+        preco_venda: produtoData.preco_venda,
+        size_weight: produtoData.size_weight,
+        fornecedor_id: produtoData.fornecedor_id,
+        ativo: true
+      };
+
+      const { error } = await supabase
+        .from('produtos')
+        .insert(duplicatedProduct);
+
+      if (error) {
+        console.error("Erro ao duplicar produto:", error);
+        toast.error("Erro ao duplicar produto");
+        return;
+      }
+
+      toast.success("Produto duplicado com sucesso!");
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao duplicar produto:", error);
+      toast.error("Erro ao duplicar produto");
+    }
+  };
+
   return (
     <Card className="shadow-card border-border/40 hover:shadow-card-hover transition-shadow">
       <CardHeader className="pb-3">
@@ -125,8 +159,33 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
           </div>
         </div>
 
-        <div className="flex gap-2 pt-2">
-          {(hasRole('factory') || hasRole('admin')) && (
+        <div className="flex flex-wrap gap-2 pt-2">
+          {/* Visualizar - todos podem ver */}
+          <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Eye className="w-4 h-4 mr-2" />
+                Visualizar
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto shadow-elegant">
+              <DialogHeader>
+                <DialogTitle className="font-display text-primary-dark">Detalhes do Produto</DialogTitle>
+              </DialogHeader>
+              <ProdutoView produto={produtoData} />
+            </DialogContent>
+          </Dialog>
+
+          {/* Duplicar - admins e ops podem duplicar */}
+          {canEdit() && (
+            <Button variant="outline" size="sm" onClick={handleDuplicate}>
+              <Copy className="w-4 h-4 mr-2" />
+              Duplicar
+            </Button>
+          )}
+
+          {/* Anexar - factory e admin podem anexar */}
+          {(hasRole('factory') || hasRole('admin') || hasRole('finance')) && (
             <FinancialAttachmentButton 
               entityId={produtoData.id}
               entityType="financeiro"
@@ -135,11 +194,12 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
             />
           )}
           
+          {/* Editar e Excluir - apenas admins e ops */}
           {canEdit() && (
             <>
               <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button variant="outline" size="sm">
                     <Edit2 className="w-4 h-4 mr-2" />
                     Editar
                   </Button>
@@ -158,7 +218,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" className="flex-shrink-0">
+                  <Button variant="destructive" size="sm">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </AlertDialogTrigger>
