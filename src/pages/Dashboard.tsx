@@ -68,9 +68,9 @@ export default function Dashboard() {
       
       const { data, error } = await supabase
         .from('encomendas')
-        .select('valor_total, valor_total_custo, data_criacao')
-        .gte('data_criacao', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
-        .lt('data_criacao', `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`);
+        .select('valor_total, valor_total_custo, data_producao_estimada')
+        .gte('data_producao_estimada', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
+        .lt('data_producao_estimada', `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`);
       
       if (error) return 0;
       

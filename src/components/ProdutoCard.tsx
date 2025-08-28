@@ -163,9 +163,8 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
           {/* Visualizar - todos podem ver */}
           <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Eye className="w-4 h-4 mr-2" />
-                Visualizar
+              <Button variant="outline" size="sm" title="Visualizar">
+                <Eye className="w-4 h-4" />
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto shadow-elegant">
@@ -178,9 +177,8 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
 
           {/* Duplicar - admins e ops podem duplicar */}
           {canEdit() && (
-            <Button variant="outline" size="sm" onClick={handleDuplicate}>
-              <Copy className="w-4 h-4 mr-2" />
-              Duplicar
+            <Button variant="outline" size="sm" onClick={handleDuplicate} title="Duplicar">
+              <Copy className="w-4 h-4" />
             </Button>
           )}
 
@@ -199,9 +197,8 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
             <>
               <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Edit2 className="w-4 h-4 mr-2" />
-                    Editar
+                  <Button variant="outline" size="sm" title="Editar">
+                    <Edit2 className="w-4 h-4" />
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto shadow-elegant">
@@ -218,7 +215,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
+                  <Button variant="destructive" size="sm" title="Excluir">
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </AlertDialogTrigger>

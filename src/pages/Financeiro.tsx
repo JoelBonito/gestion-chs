@@ -84,27 +84,27 @@ export default function Financeiro() {
         {!hasRole('factory') && (
           <div className="grid gap-6 md:grid-cols-3">
             <StatCard
-              title="Total Geral"
-              value={`€${totalGeral.toFixed(2)}`}
-              subtitle="Valor total das encomendas"
-              icon={<DollarSign className="h-6 w-6" />}
-              variant="default"
-            />
-            
-            <StatCard
-              title="Total Pago"
+              title="A Pagar"
               value={`€${totalPago.toFixed(2)}`}
-              subtitle="Pagamentos recebidos"
-              icon={<TrendingUp className="h-6 w-6" />}
-              variant="success"
+              subtitle="Total a pagar a fornecedores"
+              icon={<TrendingDown className="h-6 w-6" />}
+              variant="warning"
             />
             
             <StatCard
               title="A Receber"
               value={`€${totalReceber.toFixed(2)}`}
               subtitle="Pendente de recebimento"
-              icon={<TrendingDown className="h-6 w-6" />}
-              variant="warning"
+              icon={<TrendingUp className="h-6 w-6" />}
+              variant="success"
+            />
+            
+            <StatCard
+              title="Total Geral"
+              value={`€${(totalReceber - totalPago).toFixed(2)}`}
+              subtitle="Diferença entre receber e pagar"
+              icon={<DollarSign className="h-6 w-6" />}
+              variant="default"
             />
           </div>
         )}

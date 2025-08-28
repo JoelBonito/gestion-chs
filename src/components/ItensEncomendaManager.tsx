@@ -233,17 +233,18 @@ export function ItensEncomendaManager({
                             </Select>
                           </div>
                           
-                          <div>
-                            <label className="text-sm font-medium mb-2 block">Quantidade *</label>
-                            <Input
-                              type="number"
-                              min="1"
-                              value={item.quantidade || ""}
-                              onChange={(e) => atualizarItem(index, "quantidade", parseInt(e.target.value) || 1)}
-                              placeholder="0"
-                              disabled={!isTransportMode && item.produto_id === ""}
-                            />
-                          </div>
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">Quantidade *</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={item.quantidade || ""}
+                            onChange={(e) => atualizarItem(index, "quantidade", parseFloat(e.target.value) || 1)}
+                            placeholder="0"
+                            disabled={!isTransportMode && item.produto_id === ""}
+                          />
+                        </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -263,10 +264,9 @@ export function ItensEncomendaManager({
                               type="number"
                               step="0.01"
                               min="0"
-                              value={item.preco_custo || ""}
+                              value={item.preco_custo !== undefined ? item.preco_custo : ""}
                               onChange={(e) => atualizarItem(index, "preco_custo", parseFloat(e.target.value) || 0)}
                               placeholder="0.00"
-                              disabled={isTransportMode}
                             />
                           </div>
                           
@@ -276,7 +276,7 @@ export function ItensEncomendaManager({
                               type="number"
                               step="0.01"
                               min="0"
-                              value={item.preco_venda || ""}
+                              value={item.preco_venda !== undefined ? item.preco_venda : ""}
                               onChange={(e) => atualizarItem(index, "preco_venda", parseFloat(e.target.value) || 0)}
                               placeholder="0.00"
                               disabled={!isTransportMode && item.produto_id === ""}
