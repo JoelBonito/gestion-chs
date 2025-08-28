@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import PagamentoForm from "@/components/PagamentoForm";
 import { FinancialAttachmentButton } from "@/components/FinancialAttachmentButton";
 import { AttachmentManager } from "@/components/AttachmentManager";
+import { OrderItemsView } from "@/components/OrderItemsView";
 
 interface EncomendaFinanceira {
   id: string;
@@ -25,9 +26,10 @@ interface EncomendaFinanceira {
 
 interface EncomendasFinanceiroProps {
   onRefreshNeeded?: () => void;
+  showCompleted?: boolean;
 }
 
-export default function EncomendasFinanceiro({ onRefreshNeeded }: EncomendasFinanceiroProps) {
+export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = false }: EncomendasFinanceiroProps) {
   const [encomendas, setEncomendas] = useState<EncomendaFinanceira[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedEncomenda, setSelectedEncomenda] = useState<EncomendaFinanceira | null>(null);
@@ -272,6 +274,9 @@ export default function EncomendasFinanceiro({ onRefreshNeeded }: EncomendasFina
                   <p className="text-sm text-muted-foreground">{selectedEncomenda.total_pagamentos}</p>
                 </div>
               </div>
+
+              {/* Order Items Section */}
+              <OrderItemsView encomendaId={selectedEncomenda.id} />
 
               {/* Attachments Section */}
               <div className="border-t pt-6">

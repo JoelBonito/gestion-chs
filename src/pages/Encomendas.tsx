@@ -154,6 +154,27 @@ export default function Encomendas() {
     fetchEncomendas();
   };
 
+  const handleDateUpdate = async (encomendaId: string, field: string, value: string) => {
+    try {
+      const { error } = await supabase
+        .from('encomendas')
+        .update({ [field]: value || null })
+        .eq('id', encomendaId);
+
+      if (error) throw error;
+      
+      // Atualizar localmente
+      setEncomendas(prev => prev.map(enc => 
+        enc.id === encomendaId ? { ...enc, [field]: value } : enc
+      ));
+      
+      toast.success("Data atualizada com sucesso!");
+    } catch (error) {
+      console.error("Erro ao atualizar data:", error);
+      toast.error("Erro ao atualizar data");
+    }
+  };
+
   const filteredEncomendas = encomendas.filter(encomenda => {
     const matchesSearch = encomenda.numero_encomenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (encomenda.clientes?.nome && encomenda.clientes.nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -322,11 +343,21 @@ export default function Encomendas() {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Data Produção</p>
-                        <p className="font-medium">{formatDate(encomenda.data_producao_estimada)}</p>
+                        <Input
+                          type="date"
+                          value={encomenda.data_producao_estimada ? new Date(encomenda.data_producao_estimada).toISOString().split('T')[0] : ''}
+                          onChange={(e) => handleDateUpdate(encomenda.id, 'data_producao_estimada', e.target.value)}
+                          className="font-medium text-sm h-8"
+                        />
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Data Entrega</p>
-                        <p className="font-medium">{formatDate(encomenda.data_envio_estimada)}</p>
+                        <Input
+                          type="date"
+                          value={encomenda.data_envio_estimada ? new Date(encomenda.data_envio_estimada).toISOString().split('T')[0] : ''}
+                          onChange={(e) => handleDateUpdate(encomenda.id, 'data_envio_estimada', e.target.value)}
+                          className="font-medium text-sm h-8"
+                        />
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Peso Bruto</p>

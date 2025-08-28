@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import PagamentoFornecedorForm from "@/components/PagamentoFornecedorForm";
 import { FinancialAttachmentButton } from "@/components/FinancialAttachmentButton";
 import { AttachmentManager } from "@/components/AttachmentManager";
+import { OrderItemsView } from "@/components/OrderItemsView";
 
 interface ContaPagar {
   encomenda_id: string;
@@ -25,9 +26,10 @@ interface ContaPagar {
 
 interface ContasPagarProps {
   onRefreshNeeded?: () => void;
+  showCompleted?: boolean;
 }
 
-export default function ContasPagar({ onRefreshNeeded }: ContasPagarProps) {
+export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: ContasPagarProps) {
   const [contas, setContas] = useState<ContaPagar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
@@ -278,6 +280,9 @@ export default function ContasPagar({ onRefreshNeeded }: ContasPagarProps) {
                   <p className="text-sm text-muted-foreground">{selectedConta.total_pagamentos}</p>
                 </div>
               </div>
+
+              {/* Order Items Section */}
+              <OrderItemsView encomendaId={selectedConta.encomenda_id} showCostPrices={true} />
 
               {/* Attachments Section */}
               <div className="border-t pt-6">

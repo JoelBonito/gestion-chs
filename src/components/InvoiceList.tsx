@@ -336,8 +336,10 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
               
               {viewingInvoice.description && (
                 <div>
-                  <Label>Descrição</Label>
-                  <p className="text-sm text-muted-foreground">{viewingInvoice.description}</p>
+                  <Label>Observações</Label>
+                  <div className="bg-muted p-3 rounded-md">
+                    <p className="text-sm whitespace-pre-wrap">{viewingInvoice.description}</p>
+                  </div>
                 </div>
               )}
               

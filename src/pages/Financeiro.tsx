@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { TrendingUp, TrendingDown, DollarSign, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import StatCard from "@/components/StatCard";
 import EncomendasFinanceiro from "@/components/EncomendasFinanceiro";
 import ContasPagar from "@/components/ContasPagar";
@@ -19,6 +21,7 @@ export default function Financeiro() {
   const { hasRole } = useUserRole();
   const [activeTab, setActiveTab] = useState(hasRole('factory') ? "a-pagar" : "resumo");
   const [encomendas, setEncomendas] = useState<any[]>([]);
+  const [showCompleted, setShowCompleted] = useState(false);
   const { toast } = useToast();
 
   const fetchEncomendas = async () => {
@@ -116,12 +119,25 @@ export default function Financeiro() {
               <TabsTrigger value="a-pagar">A Pagar</TabsTrigger>
             </TabsList>
           ) : (
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="resumo">Resumo</TabsTrigger>
-              <TabsTrigger value="encomendas">A Receber</TabsTrigger>
-              <TabsTrigger value="pagar">A Pagar</TabsTrigger>
-              <TabsTrigger value="faturas">Faturas</TabsTrigger>
-            </TabsList>
+            <div className="space-y-4">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="resumo">Resumo</TabsTrigger>
+                <TabsTrigger value="encomendas">A Receber</TabsTrigger>
+                <TabsTrigger value="pagar">A Pagar</TabsTrigger>
+                <TabsTrigger value="faturas">Faturas</TabsTrigger>
+              </TabsList>
+              
+              <div className="flex items-center justify-center">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="show-completed"
+                    checked={showCompleted}
+                    onCheckedChange={setShowCompleted}
+                  />
+                  <Label htmlFor="show-completed">Mostrar Concluídos</Label>
+                </div>
+              </div>
+            </div>
           )}
 
           {!hasRole('factory') && (
@@ -174,12 +190,18 @@ export default function Financeiro() {
 
           {!hasRole('factory') && (
             <TabsContent value="encomendas">
-              <EncomendasFinanceiro onRefreshNeeded={handleFinancialDataRefresh} />
+              <EncomendasFinanceiro 
+                onRefreshNeeded={handleFinancialDataRefresh} 
+                showCompleted={showCompleted}
+              />
             </TabsContent>
           )}
 
           <TabsContent value={hasRole('factory') ? "a-pagar" : "pagar"}>
-            <ContasPagar onRefreshNeeded={handleFinancialDataRefresh} />
+            <ContasPagar 
+              onRefreshNeeded={handleFinancialDataRefresh}
+              showCompleted={showCompleted}
+            />
           </TabsContent>
 
           {!hasRole('factory') && (
