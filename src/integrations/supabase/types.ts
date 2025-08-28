@@ -643,6 +643,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      delete_encomenda_safely: {
+        Args: { p_encomenda_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args:
           | {

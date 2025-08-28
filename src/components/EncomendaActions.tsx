@@ -33,18 +33,17 @@ export function EncomendaActions({ encomenda, onView, onEdit, onDelete }: Encome
   const { hasRole, canEdit } = useUserRole();
   const handleDelete = async () => {
     try {
-      const { error } = await supabase
-        .from("encomendas")
-        .delete()
-        .eq("id", encomenda.id);
+      const { data, error } = await supabase.rpc('delete_encomenda_safely', {
+        p_encomenda_id: encomenda.id
+      });
 
       if (error) throw error;
       
       toast.success("Encomenda excluída com sucesso!");
       onDelete();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao excluir encomenda:", error);
-      toast.error("Erro ao excluir encomenda");
+      toast.error(error.message || "Erro ao excluir encomenda");
     }
   };
 
