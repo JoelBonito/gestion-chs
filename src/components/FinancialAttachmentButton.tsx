@@ -26,7 +26,7 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
   const { hasRole } = useUserRole();
   
   // Check if user can access financial attachments
-  const canAccess = hasRole('admin') || hasRole('finance');
+  const canAccess = hasRole('admin') || hasRole('finance') || hasRole('factory');
 
   const handleAttachmentChange = async () => {
     console.log("FinancialAttachmentButton - Attachment changed, forcing refresh");

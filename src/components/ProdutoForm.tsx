@@ -351,7 +351,7 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="preco_compra">Preço de Compra (R$) *</Label>
+            <Label htmlFor="preco_compra">Preço de Compra (€) *</Label>
             <Input
               id="preco_compra"
               type="number"
@@ -365,7 +365,7 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="preco_venda">Preço de Venda (R$) *</Label>
+            <Label htmlFor="preco_venda">Preço de Venda (€) *</Label>
             <Input
               id="preco_venda"
               type="number"

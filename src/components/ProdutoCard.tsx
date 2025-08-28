@@ -112,12 +112,12 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
           {!hasRole('factory') && (
             <div>
               <p className="text-muted-foreground">Preço Venda</p>
-              <p className="text-sm font-medium font-body">R$ {produtoData.preco_venda?.toFixed(2)}</p>
+              <p className="text-sm font-medium font-body">€ {produtoData.preco_venda?.toFixed(2)}</p>
             </div>
           )}
           <div>
             <p className="text-muted-foreground">Preço Custo</p> 
-            <p className="text-sm font-medium font-body">R$ {produtoData.preco_custo?.toFixed(2)}</p>
+            <p className="text-sm font-medium font-body">€ {produtoData.preco_custo?.toFixed(2)}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Peso</p>
@@ -126,7 +126,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
         </div>
 
         <div className="flex gap-2 pt-2">
-          {hasRole('factory') && (
+          {(hasRole('factory') || hasRole('admin')) && (
             <FinancialAttachmentButton 
               entityId={produtoData.id}
               entityType="financeiro"
