@@ -396,28 +396,47 @@ export default function Encomendas() {
             return (
               <Card key={encomenda.id} className="shadow-card hover:shadow-elevated transition-shadow">
                 <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-10 gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Pedido</p>
-                        <p className="font-semibold">#{encomenda.numero_encomenda}</p>
+                  <div className="space-y-4">
+                    {/* Header row with order info */}
+                    <div className="flex items-center justify-between pb-2 border-b border-border">
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Pedido</p>
+                          <p className="font-bold text-lg">#{encomenda.numero_encomenda}</p>
+                        </div>
+                        <div className="h-8 w-px bg-border"></div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Cliente</p>
+                          <p className="font-semibold">{encomenda.clientes?.nome}</p>
+                        </div>
+                        <div className="h-8 w-px bg-border"></div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Fornecedor</p>
+                          <p className="font-semibold">{encomenda.fornecedores?.nome}</p>
+                        </div>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">Cliente</p>
-                        <p className="font-medium">{encomenda.clientes?.nome}</p>
+                        <p className="text-sm text-muted-foreground">Status</p>
+                        <EncomendaStatusSelect
+                          encomendaId={encomenda.id}
+                          currentStatus={encomenda.status}
+                          numeroEncomenda={encomenda.numero_encomenda}
+                          onStatusChange={handleStatusChange}
+                        />
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Fornecedor</p>
-                        <p className="font-medium">{encomenda.fornecedores?.nome}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Data Produção</p>
+                    </div>
+
+                    {/* Details grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 items-start">
+                      <div className="flex flex-col">
+                        <p className="text-sm text-muted-foreground mb-1">Data Produção</p>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
                               variant="outline"
+                              size="sm"
                               className={cn(
-                                "w-full h-8 justify-start text-left font-medium text-sm transition-all",
+                                "w-full justify-start text-left font-medium text-sm transition-all",
                                 !encomenda.data_producao_estimada && "text-muted-foreground",
                                 canEditDate('data_producao_estimada') 
                                   ? 'hover:border-primary cursor-pointer' 
@@ -429,7 +448,7 @@ export default function Encomendas() {
                               {encomenda.data_producao_estimada ? (
                                 format(new Date(encomenda.data_producao_estimada), "dd/MM/yyyy")
                               ) : (
-                                <span>Selecionar data</span>
+                                <span className="text-xs">Selecionar</span>
                               )}
                             </Button>
                           </PopoverTrigger>
@@ -448,14 +467,16 @@ export default function Encomendas() {
                           </PopoverContent>
                         </Popover>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Data Entrega</p>
+
+                      <div className="flex flex-col">
+                        <p className="text-sm text-muted-foreground mb-1">Data Entrega</p>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
                               variant="outline"
+                              size="sm"
                               className={cn(
-                                "w-full h-8 justify-start text-left font-medium text-sm transition-all",
+                                "w-full justify-start text-left font-medium text-sm transition-all",
                                 !encomenda.data_envio_estimada && "text-muted-foreground",
                                 canEditDate('data_envio_estimada') 
                                   ? 'hover:border-primary cursor-pointer' 
@@ -467,7 +488,7 @@ export default function Encomendas() {
                               {encomenda.data_envio_estimada ? (
                                 format(new Date(encomenda.data_envio_estimada), "dd/MM/yyyy")
                               ) : (
-                                <span>Selecionar data</span>
+                                <span className="text-xs">Selecionar</span>
                               )}
                             </Button>
                           </PopoverTrigger>
@@ -486,45 +507,55 @@ export default function Encomendas() {
                           </PopoverContent>
                         </Popover>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Peso Bruto</p>
-                        <p className="font-medium text-blue-600">
-                          {pesoBruto.toFixed(2)} kg
-                        </p>
+
+                      <div className="flex flex-col">
+                        <p className="text-sm text-muted-foreground mb-1">Peso Bruto</p>
+                        <div className="px-3 py-2 bg-blue-50 dark:bg-blue-950/20 rounded-md border">
+                          <p className="font-semibold text-blue-700 dark:text-blue-400 text-sm">
+                            {pesoBruto.toFixed(2)} kg
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Valor Frete</p>
-                        <p className="font-medium text-orange-600">
-                          €{(pesoBruto * 4.50).toFixed(2)}
-                        </p>
+
+                      <div className="flex flex-col">
+                        <p className="text-sm text-muted-foreground mb-1">Valor Frete</p>
+                        <div className="px-3 py-2 bg-orange-50 dark:bg-orange-950/20 rounded-md border">
+                          <p className="font-semibold text-orange-700 dark:text-orange-400 text-sm">
+                            €{(pesoBruto * 4.50).toFixed(2)}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Status</p>
-                        <EncomendaStatusSelect
-                          encomendaId={encomenda.id}
-                          currentStatus={encomenda.status}
-                          numeroEncomenda={encomenda.numero_encomenda}
-                          onStatusChange={handleStatusChange}
+
+                      <div className="flex flex-col">
+                        <p className="text-sm text-muted-foreground mb-1">Valor Total</p>
+                        <div className="px-3 py-2 bg-gray-50 dark:bg-gray-950/20 rounded-md border">
+                          <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">
+                            {formatCurrency(encomenda.valor_total)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col">
+                        <p className="text-sm text-muted-foreground mb-1">Comissão</p>
+                        <div className={cn(
+                          "px-3 py-2 rounded-md border font-bold text-sm",
+                          (encomenda.commission_amount || 0) >= 0 
+                            ? "bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400" 
+                            : "bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400"
+                        )}>
+                          <p>{formatCommission(encomenda.commission_amount || 0).formatted}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-center">
+                        <EncomendaActions
+                          encomenda={encomenda}
+                          onView={() => handleView(encomenda)}
+                          onEdit={() => handleEdit(encomenda)}
+                          onDelete={handleDelete}
                         />
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Valor Total</p>
-                        <p className="font-semibold">{formatCurrency(encomenda.valor_total)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Comissão</p>
-                        <p className={formatCommission(encomenda.commission_amount || 0).className}>
-                          {formatCommission(encomenda.commission_amount || 0).formatted}
-                        </p>
-                      </div>
                     </div>
-                    
-                    <EncomendaActions
-                      encomenda={encomenda}
-                      onView={() => handleView(encomenda)}
-                      onEdit={() => handleEdit(encomenda)}
-                      onDelete={handleDelete}
-                    />
                   </div>
                 </CardContent>
               </Card>
