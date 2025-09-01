@@ -397,7 +397,7 @@ export default function Encomendas() {
               <Card key={encomenda.id} className="shadow-card hover:shadow-elevated transition-shadow">
                 <CardContent className="p-6">
                   <div className="space-y-4">
-                    {/* Header row with order info */}
+                    {/* Header row with order info and actions */}
                     <div className="flex items-center justify-between pb-2 border-b border-border">
                       <div className="flex items-center gap-4">
                         <div>
@@ -415,19 +415,18 @@ export default function Encomendas() {
                           <p className="font-semibold">{encomenda.fornecedores?.nome}</p>
                         </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Status</p>
-                        <EncomendaStatusSelect
-                          encomendaId={encomenda.id}
-                          currentStatus={encomenda.status}
-                          numeroEncomenda={encomenda.numero_encomenda}
-                          onStatusChange={handleStatusChange}
+                      <div className="flex items-center gap-2">
+                        <EncomendaActions
+                          encomenda={encomenda}
+                          onView={() => handleView(encomenda)}
+                          onEdit={() => handleEdit(encomenda)}
+                          onDelete={handleDelete}
                         />
                       </div>
                     </div>
 
                     {/* Details grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 items-start">
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 items-start">
                       <div className="flex flex-col">
                         <p className="text-sm text-muted-foreground mb-1">Data Produção</p>
                         <Popover>
@@ -546,14 +545,20 @@ export default function Encomendas() {
                           <p>{formatCommission(encomenda.commission_amount || 0).formatted}</p>
                         </div>
                       </div>
+                    </div>
 
-                      <div className="flex items-center justify-center">
-                        <EncomendaActions
-                          encomenda={encomenda}
-                          onView={() => handleView(encomenda)}
-                          onEdit={() => handleEdit(encomenda)}
-                          onDelete={handleDelete}
-                        />
+                    {/* Status row */}
+                    <div className="pt-2 border-t border-border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <p className="text-sm text-muted-foreground mr-3">Status:</p>
+                          <EncomendaStatusSelect
+                            encomendaId={encomenda.id}
+                            currentStatus={encomenda.status}
+                            numeroEncomenda={encomenda.numero_encomenda}
+                            onStatusChange={handleStatusChange}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
