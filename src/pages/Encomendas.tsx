@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { EncomendaForm } from "@/components/EncomendaForm";
 import { EncomendaView } from "@/components/EncomendaView";
 import { EncomendaActions } from "@/components/EncomendaActions";
@@ -408,33 +412,79 @@ export default function Encomendas() {
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Data Produção</p>
-                        <Input
-                          type="date"
-                          value={encomenda.data_producao_estimada ? new Date(encomenda.data_producao_estimada).toISOString().split('T')[0] : ''}
-                          onChange={(e) => handleDateUpdate(encomenda.id, 'data_producao_estimada', e.target.value)}
-                          className={`font-medium text-sm h-8 transition-all ${
-                            canEditDate('data_producao_estimada') 
-                              ? 'hover:border-primary cursor-pointer' 
-                              : 'opacity-60 cursor-not-allowed'
-                          }`}
-                          disabled={!canEditDate('data_producao_estimada')}
-                          placeholder="Selecionar data"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full h-8 justify-start text-left font-medium text-sm transition-all",
+                                !encomenda.data_producao_estimada && "text-muted-foreground",
+                                canEditDate('data_producao_estimada') 
+                                  ? 'hover:border-primary cursor-pointer' 
+                                  : 'opacity-60 cursor-not-allowed'
+                              )}
+                              disabled={!canEditDate('data_producao_estimada')}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {encomenda.data_producao_estimada ? (
+                                format(new Date(encomenda.data_producao_estimada), "dd/MM/yyyy")
+                              ) : (
+                                <span>Selecionar data</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={encomenda.data_producao_estimada ? new Date(encomenda.data_producao_estimada) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  handleDateUpdate(encomenda.id, 'data_producao_estimada', date.toISOString().split('T')[0]);
+                                }
+                              }}
+                              className="p-3 pointer-events-auto"
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Data Entrega</p>
-                        <Input
-                          type="date"
-                          value={encomenda.data_envio_estimada ? new Date(encomenda.data_envio_estimada).toISOString().split('T')[0] : ''}
-                          onChange={(e) => handleDateUpdate(encomenda.id, 'data_envio_estimada', e.target.value)}
-                          className={`font-medium text-sm h-8 transition-all ${
-                            canEditDate('data_envio_estimada') 
-                              ? 'hover:border-primary cursor-pointer' 
-                              : 'opacity-60 cursor-not-allowed'
-                          }`}
-                          disabled={!canEditDate('data_envio_estimada')}
-                          placeholder="Selecionar data"
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full h-8 justify-start text-left font-medium text-sm transition-all",
+                                !encomenda.data_envio_estimada && "text-muted-foreground",
+                                canEditDate('data_envio_estimada') 
+                                  ? 'hover:border-primary cursor-pointer' 
+                                  : 'opacity-60 cursor-not-allowed'
+                              )}
+                              disabled={!canEditDate('data_envio_estimada')}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {encomenda.data_envio_estimada ? (
+                                format(new Date(encomenda.data_envio_estimada), "dd/MM/yyyy")
+                              ) : (
+                                <span>Selecionar data</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={encomenda.data_envio_estimada ? new Date(encomenda.data_envio_estimada) : undefined}
+                              onSelect={(date) => {
+                                if (date) {
+                                  handleDateUpdate(encomenda.id, 'data_envio_estimada', date.toISOString().split('T')[0]);
+                                }
+                              }}
+                              className="p-3 pointer-events-auto"
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Peso Bruto</p>
