@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Calendar as CalendarIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import { EncomendaForm } from "@/components/EncomendaForm";
 import { EncomendaView } from "@/components/EncomendaView";
 import { EncomendaActions } from "@/components/EncomendaActions";
@@ -51,17 +55,31 @@ export default function Encomendas() {
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
   const [loading, setLoading] = useState(true);
   const [pesoTransporte, setPesoTransporte] = useState<{ [key: string]: number }>({});
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
 
   const fetchEncomendas = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("encomendas")
         .select(`
           *,
           clientes(nome),
           fornecedores(nome)
-        `)
-        .order("created_at", { ascending: false });
+        `);
+
+      // Apply date filters
+      if (startDate) {
+        const startDateString = startDate.toISOString().split('T')[0];
+        query = query.gte('data_criacao', startDateString);
+      }
+      
+      if (endDate) {
+        const endDateString = endDate.toISOString().split('T')[0];
+        query = query.lte('data_criacao', endDateString);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
       
@@ -140,7 +158,7 @@ export default function Encomendas() {
 
   useEffect(() => {
     fetchEncomendas();
-  }, []);
+  }, [startDate, endDate]);
 
   const handleSuccess = () => {
     setDialogOpen(false);
@@ -241,6 +259,40 @@ export default function Encomendas() {
     };
   };
 
+  const clearDateFilters = () => {
+    setStartDate(undefined);
+    setEndDate(undefined);
+  };
+
+  const setQuickFilter = (type: 'today' | 'week' | 'month' | '30days') => {
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    switch (type) {
+      case 'today':
+        setStartDate(startOfToday);
+        setEndDate(startOfToday);
+        break;
+      case 'week':
+        const startOfWeek = new Date(startOfToday);
+        startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+        setStartDate(startOfWeek);
+        setEndDate(startOfToday);
+        break;
+      case 'month':
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        setStartDate(startOfMonth);
+        setEndDate(startOfToday);
+        break;
+      case '30days':
+        const thirtyDaysAgo = new Date(startOfToday);
+        thirtyDaysAgo.setDate(startOfToday.getDate() - 30);
+        setStartDate(thirtyDaysAgo);
+        setEndDate(startOfToday);
+        break;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -298,6 +350,146 @@ export default function Encomendas() {
               selectedStatus={selectedStatus}
               onStatusChange={setSelectedStatus}
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Date Filters */}
+      <Card className="shadow-card">
+        <CardContent className="pt-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Filtros de Data</h3>
+              {(startDate || endDate) && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={clearDateFilters}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X className="mr-1 h-3 w-3" />
+                  Limpar
+                </Button>
+              )}
+            </div>
+            
+            {/* Quick filters */}
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setQuickFilter('today')}
+                className="text-xs"
+              >
+                Hoje
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setQuickFilter('week')}
+                className="text-xs"
+              >
+                Esta Semana
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setQuickFilter('month')}
+                className="text-xs"
+              >
+                Este Mês
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setQuickFilter('30days')}
+                className="text-xs"
+              >
+                Últimos 30 dias
+              </Button>
+            </div>
+            
+            {/* Date range selectors */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="start-date">Data Inicial</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="start-date"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !startDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? format(startDate, "dd/MM/yyyy") : "Selecionar data inicial"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      disabled={(date) => 
+                        date > new Date() || (endDate && date > endDate)
+                      }
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="end-date">Data Final</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="end-date"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !endDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {endDate ? format(endDate, "dd/MM/yyyy") : "Selecionar data final"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      disabled={(date) => 
+                        date > new Date() || (startDate && date < startDate)
+                      }
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            
+            {/* Active filter indicator */}
+            {(startDate || endDate) && (
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <span>Filtros ativos:</span>
+                {startDate && (
+                  <span className="px-2 py-1 bg-primary/10 text-primary rounded-md">
+                    A partir de {format(startDate, "dd/MM/yyyy")}
+                  </span>
+                )}
+                {endDate && (
+                  <span className="px-2 py-1 bg-primary/10 text-primary rounded-md">
+                    Até {format(endDate, "dd/MM/yyyy")}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
