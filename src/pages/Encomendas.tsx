@@ -35,6 +35,7 @@ interface Encomenda {
   fornecedor_id: string;
   clientes?: { nome: string };
   fornecedores?: { nome: string };
+  commission_amount?: number;
 }
 
 export default function Encomendas() {
@@ -65,11 +66,39 @@ export default function Encomendas() {
       if (error) throw error;
       
       if (data) {
-        setEncomendas(data || []);
+        // Calculate commission for each order
+        const encomendasWithCommission = await Promise.all(
+          data.map(async (encomenda) => {
+            const { data: itens, error: itensError } = await supabase
+              .from("itens_encomenda")
+              .select(`
+                quantidade,
+                produtos(preco_venda, preco_custo)
+              `)
+              .eq("encomenda_id", encomenda.id);
+
+            let commission_amount = 0;
+            if (!itensError && itens) {
+              commission_amount = itens.reduce((total, item: any) => {
+                const receita = item.quantidade * (item.produtos?.preco_venda || 0);
+                const custo = item.quantidade * (item.produtos?.preco_custo || 0);
+                return total + (receita - custo);
+              }, 0);
+            }
+
+            return {
+              ...encomenda,
+              commission_amount
+            };
+          })
+        );
+
+        setEncomendas(encomendasWithCommission || []);
+
         
         // Calcular peso para transporte de cada encomenda
         const pesos: { [key: string]: number } = {};
-        for (const encomenda of data) {
+        for (const encomenda of encomendasWithCommission) {
           const pesoCalculado = await calcularPesoTransporte(encomenda.id);
           pesos[encomenda.id] = pesoCalculado;
         }
@@ -203,6 +232,15 @@ export default function Encomendas() {
     return pesoBruto * 4.50;
   };
 
+  const formatCommission = (value: number) => {
+    const formatted = formatCurrency(value);
+    const isPositive = value >= 0;
+    return {
+      formatted,
+      className: isPositive ? "text-green-600 font-semibold" : "text-red-600 font-semibold"
+    };
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -328,7 +366,7 @@ export default function Encomendas() {
               <Card key={encomenda.id} className="shadow-card hover:shadow-elevated transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-9 gap-4">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-10 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground">Pedido</p>
                         <p className="font-semibold">#{encomenda.numero_encomenda}</p>
@@ -383,6 +421,12 @@ export default function Encomendas() {
                       <div>
                         <p className="text-sm text-muted-foreground">Valor Total</p>
                         <p className="font-semibold">{formatCurrency(encomenda.valor_total)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Comissão</p>
+                        <p className={formatCommission(encomenda.commission_amount || 0).className}>
+                          {formatCommission(encomenda.commission_amount || 0).formatted}
+                        </p>
                       </div>
                     </div>
                     
