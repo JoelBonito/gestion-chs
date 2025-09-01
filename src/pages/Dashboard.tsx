@@ -59,26 +59,44 @@ export default function Dashboard() {
     }
   });
 
-  // Comissões Mensais
+  // Comissões Mensais - baseado na data de produção
   const { data: comissoesMensais = 0 } = useQuery({
     queryKey: ['comissoes-mensais'],
     queryFn: async () => {
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
       
-      const { data, error } = await supabase
+      // Get orders with production date in current month
+      const { data: encomendas, error } = await supabase
         .from('encomendas')
-        .select('valor_total, valor_total_custo, data_producao_estimada')
+        .select('id')
         .gte('data_producao_estimada', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
         .lt('data_producao_estimada', `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`);
       
-      if (error) return 0;
+      if (error || !encomendas) return 0;
       
-      const totalCommission = data?.reduce((sum, encomenda) => {
-        const valorTotal = parseFloat(String(encomenda.valor_total || 0)) || 0;
-        const valorCusto = parseFloat(String(encomenda.valor_total_custo || 0)) || 0;
-        return sum + (valorTotal - valorCusto);
-      }, 0) || 0;
+      let totalCommission = 0;
+      
+      // Calculate commission for each order
+      for (const encomenda of encomendas) {
+        const { data: itens, error: itensError } = await supabase
+          .from("itens_encomenda")
+          .select(`
+            quantidade,
+            produtos(preco_venda, preco_custo)
+          `)
+          .eq("encomenda_id", encomenda.id);
+
+        if (!itensError && itens) {
+          const commission = itens.reduce((total, item: any) => {
+            const receita = item.quantidade * (item.produtos?.preco_venda || 0);
+            const custo = item.quantidade * (item.produtos?.preco_custo || 0);
+            return total + (receita - custo);
+          }, 0);
+          
+          totalCommission += commission;
+        }
+      }
       
       return totalCommission;
     }
