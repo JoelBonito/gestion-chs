@@ -396,37 +396,55 @@ export default function Encomendas() {
             return (
               <Card key={encomenda.id} className="shadow-card hover:shadow-elevated transition-shadow">
                 <CardContent className="p-6">
-                  <div className="space-y-4">
-                    {/* Header row with order info and actions */}
-                    <div className="flex items-center justify-between pb-2 border-b border-border">
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Pedido</p>
-                          <p className="font-bold text-lg">#{encomenda.numero_encomenda}</p>
-                        </div>
-                        <div className="h-8 w-px bg-border"></div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Cliente</p>
-                          <p className="font-semibold">{encomenda.clientes?.nome}</p>
-                        </div>
-                        <div className="h-8 w-px bg-border"></div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Fornecedor</p>
-                          <p className="font-semibold">{encomenda.fornecedores?.nome}</p>
-                        </div>
+                  <div className="space-y-3">
+                    {/* First line: PEDIDO, CLIENTE, FORNECEDOR, ACTION BUTTONS */}
+                    <div className="grid grid-cols-6 gap-4 items-center">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Pedido</p>
+                        <p className="font-bold text-lg">#{encomenda.numero_encomenda}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <EncomendaActions
-                          encomenda={encomenda}
-                          onView={() => handleView(encomenda)}
-                          onEdit={() => handleEdit(encomenda)}
-                          onDelete={handleDelete}
-                        />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Cliente</p>
+                        <p className="font-semibold">{encomenda.clientes?.nome}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Fornecedor</p>
+                        <p className="font-semibold">{encomenda.fornecedores?.nome}</p>
+                      </div>
+                      <div className="flex justify-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleView(encomenda)}
+                          className="w-full"
+                        >
+                          Visualizar
+                        </Button>
+                      </div>
+                      <div className="flex justify-center">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(encomenda)}
+                          className="w-full"
+                        >
+                          Editar
+                        </Button>
+                      </div>
+                      <div className="flex justify-center">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete()}
+                          className="w-full"
+                        >
+                          Deletar
+                        </Button>
                       </div>
                     </div>
 
-                    {/* Details grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 items-start">
+                    {/* Second line: DATA PRODUÇÃO, DATA ENTREGA, PESO BRUTO, VALOR FRETE, STATUS, COMISSÃO, VALOR TOTAL */}
+                    <div className="grid grid-cols-7 gap-4 items-start pt-2 border-t border-border">
                       <div className="flex flex-col">
                         <p className="text-sm text-muted-foreground mb-1">Data Produção</p>
                         <Popover>
@@ -526,12 +544,13 @@ export default function Encomendas() {
                       </div>
 
                       <div className="flex flex-col">
-                        <p className="text-sm text-muted-foreground mb-1">Valor Total</p>
-                        <div className="px-3 py-2 bg-gray-50 dark:bg-gray-950/20 rounded-md border">
-                          <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">
-                            {formatCurrency(encomenda.valor_total)}
-                          </p>
-                        </div>
+                        <p className="text-sm text-muted-foreground mb-1">Status</p>
+                        <EncomendaStatusSelect
+                          encomendaId={encomenda.id}
+                          currentStatus={encomenda.status}
+                          numeroEncomenda={encomenda.numero_encomenda}
+                          onStatusChange={handleStatusChange}
+                        />
                       </div>
 
                       <div className="flex flex-col">
@@ -545,19 +564,13 @@ export default function Encomendas() {
                           <p>{formatCommission(encomenda.commission_amount || 0).formatted}</p>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Status row */}
-                    <div className="pt-2 border-t border-border">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center">
-                          <p className="text-sm text-muted-foreground mr-3">Status:</p>
-                          <EncomendaStatusSelect
-                            encomendaId={encomenda.id}
-                            currentStatus={encomenda.status}
-                            numeroEncomenda={encomenda.numero_encomenda}
-                            onStatusChange={handleStatusChange}
-                          />
+                      <div className="flex flex-col">
+                        <p className="text-sm text-muted-foreground mb-1">Valor Total</p>
+                        <div className="px-3 py-2 bg-gray-50 dark:bg-gray-950/20 rounded-md border">
+                          <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">
+                            {formatCurrency(encomenda.valor_total)}
+                          </p>
                         </div>
                       </div>
                     </div>
