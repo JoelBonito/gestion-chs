@@ -321,7 +321,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         console.log("Itens para salvar:", itens);
 
         // Atualizar encomenda existente
-        const { error } = await supabase
+        const { error: updateError } = await supabase
           .from("encomendas")
           .update({
             numero_encomenda: data.numero_encomenda,
@@ -332,28 +332,70 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
             data_producao_estimada: data.data_producao_estimada || null,
             data_envio_estimada: data.data_envio_estimada || null,
             observacoes: data.observacoes || null,
-            valor_total: valorTotal,
           })
           .eq("id", initialData.id);
 
-        if (error) throw error;
+        if (updateError) {
+          console.error("Erro ao atualizar encomenda:", updateError);
+          throw updateError;
+        }
 
-        // Remover todos os itens existentes e inserir os novos
-        const { error: deleteError } = await supabase
+        // Get existing items to compare
+        const { data: existingItems, error: fetchError } = await supabase
           .from("itens_encomenda")
-          .delete()
+          .select("id, produto_id, quantidade, preco_unitario, preco_custo")
           .eq("encomenda_id", initialData.id);
 
-        if (deleteError) throw deleteError;
+        if (fetchError) {
+          console.error("Erro ao buscar itens existentes:", fetchError);
+          throw fetchError;
+        }
 
-        // Inserir novos itens
+        // Process items more carefully
+        const existingItemIds = new Set((existingItems || []).map(item => item.id));
+        const currentItemIds = new Set(itens.filter(item => item.id).map(item => item.id));
+
+        // Delete items that are no longer in the list
+        for (const existingItem of existingItems || []) {
+          if (!currentItemIds.has(existingItem.id)) {
+            const { error: deleteError } = await supabase
+              .from("itens_encomenda")
+              .delete()
+              .eq("id", existingItem.id);
+
+            if (deleteError) {
+              console.error("Erro ao deletar item:", deleteError);
+              throw deleteError;
+            }
+          }
+        }
+
+        // Update existing items and insert new ones
         for (const item of itens) {
           if (!item.produto_id) {
             console.warn("Item sem produto_id, pulando:", item);
             continue;
           }
           
-            const { error: itemError } = await supabase
+          if (item.id && existingItemIds.has(item.id)) {
+            // Update existing item
+            const { error: updateItemError } = await supabase
+              .from("itens_encomenda")
+              .update({
+                produto_id: item.produto_id,
+                quantidade: item.quantidade,
+                preco_unitario: item.preco_venda,
+                preco_custo: item.preco_custo,
+              })
+              .eq("id", item.id);
+
+            if (updateItemError) {
+              console.error("Erro ao atualizar item:", updateItemError);
+              throw updateItemError;
+            }
+          } else {
+            // Insert new item
+            const { error: insertItemError } = await supabase
               .from("itens_encomenda")
               .insert([
                 {
@@ -365,9 +407,10 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
                 },
               ]);
 
-          if (itemError) {
-            console.error("Erro ao inserir item:", itemError);
-            throw itemError;
+            if (insertItemError) {
+              console.error("Erro ao inserir item:", insertItemError);
+              throw insertItemError;
+            }
           }
         }
 

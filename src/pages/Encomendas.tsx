@@ -435,8 +435,23 @@ export default function Encomendas() {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleDelete()}
+                          onClick={async () => {
+                            try {
+                              const { data, error } = await supabase.rpc('delete_encomenda_safely', {
+                                p_encomenda_id: encomenda.id
+                              });
+
+                              if (error) throw error;
+                              
+                              toast.success("Encomenda excluída com sucesso!");
+                              handleDelete();
+                            } catch (error: any) {
+                              console.error("Erro ao excluir encomenda:", error);
+                              toast.error(error.message || "Erro ao excluir encomenda");
+                            }
+                          }}
                           className="w-full"
+                          disabled={!canEdit()}
                         >
                           Deletar
                         </Button>
