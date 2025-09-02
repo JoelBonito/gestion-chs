@@ -67,7 +67,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
       if (error) throw error;
 
       const contasFormatadas = data.map((encomenda: any) => {
-        const valorProdutos = encomenda.valor_total_custo - (parseFloat(encomenda.valor_frete || 0));
+        const valorProdutos = encomenda.valor_total_custo;
         const totalPagamentos = encomenda.pagamentos_fornecedor?.reduce(
           (sum: number, pag: any) => sum + parseFloat(pag.valor_pagamento || 0), 0
         ) || 0;
@@ -161,8 +161,6 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                 <TableRow>
                   <TableHead>Nº Encomenda</TableHead>
                   <TableHead>Fornecedor</TableHead>
-                  <TableHead>Produtos</TableHead>
-                  <TableHead>Frete</TableHead>
                   <TableHead>Total a Pagar</TableHead>
                   <TableHead>Pago</TableHead>
                   <TableHead>Saldo a Pagar</TableHead>
@@ -177,8 +175,6 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                       {conta.numero_encomenda}
                     </TableCell>
                     <TableCell>{conta.fornecedor_nome}</TableCell>
-                    <TableCell>€{conta.valor_produtos.toFixed(2)}</TableCell>
-                    <TableCell>€{conta.valor_frete.toFixed(2)}</TableCell>
                     <TableCell className="font-semibold">
                       €{conta.valor_total_custo.toFixed(2)}
                     </TableCell>
@@ -226,7 +222,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                 ))}
                 {contas.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Nenhuma conta a pagar encontrada
                     </TableCell>
                   </TableRow>

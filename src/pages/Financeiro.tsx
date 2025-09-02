@@ -66,12 +66,34 @@ export default function Financeiro() {
   const handleFinancialDataRefresh = () => {
     console.log("Financeiro - Refreshing financial data due to attachment change");
     fetchEncomendas();
+    fetchTotalPagar();
   };
 
-  // Cálculos para o resumo - apenas produtos (sem frete nos KPIs)
+  // Cálculos para o resumo - Total a receber
   const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor, 0);
-  const totalPago = encomendas.reduce((sum, e) => sum + e.valor_pago, 0);
-  const totalGeral = encomendas.reduce((sum, e) => sum + e.valor_total, 0);
+  
+  // Buscar total a pagar para fornecedores
+  const [totalPagar, setTotalPagar] = useState<number>(0);
+  
+  const fetchTotalPagar = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("encomendas")
+        .select("saldo_devedor_fornecedor")
+        .gt("saldo_devedor_fornecedor", 0);
+      
+      if (error) throw error;
+      
+      const total = data.reduce((sum: number, e: any) => sum + parseFloat(e.saldo_devedor_fornecedor || 0), 0);
+      setTotalPagar(total);
+    } catch (error) {
+      console.error('Erro ao carregar total a pagar:', error);
+    }
+  };
+  
+  useEffect(() => {
+    fetchTotalPagar();
+  }, []);
 
   return (
     <RoleGuard allowedRoles={['admin', 'finance', 'factory']}>
@@ -88,7 +110,7 @@ export default function Financeiro() {
           <div className="grid gap-6 md:grid-cols-3">
             <StatCard
               title="A Pagar"
-              value={`€${totalPago.toFixed(2)}`}
+              value={`€${totalPagar.toFixed(2)}`}
               subtitle="Total a pagar a fornecedores"
               icon={<TrendingDown className="h-6 w-6" />}
               variant="warning"
@@ -104,7 +126,7 @@ export default function Financeiro() {
             
             <StatCard
               title="Total Geral"
-              value={`€${(totalReceber - totalPago).toFixed(2)}`}
+              value={`€${(totalReceber - totalPagar).toFixed(2)}`}
               subtitle="Diferença entre receber e pagar"
               icon={<DollarSign className="h-6 w-6" />}
               variant="default"

@@ -151,8 +151,6 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
                 <TableRow>
                   <TableHead>Nº Encomenda</TableHead>
                   <TableHead>Cliente</TableHead>
-                  <TableHead>Produtos</TableHead>
-                  <TableHead>Frete</TableHead>
                   <TableHead>Total a Receber</TableHead>
                   <TableHead>Recebido</TableHead>
                   <TableHead>Saldo a Receber</TableHead>
@@ -170,8 +168,6 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
                         {encomenda.numero_encomenda}
                       </TableCell>
                       <TableCell>{encomenda.cliente_nome}</TableCell>
-                      <TableCell>€{valorProdutos.toFixed(2)}</TableCell>
-                      <TableCell>€{encomenda.valor_frete.toFixed(2)}</TableCell>
                       <TableCell className="font-semibold">
                         €{encomenda.valor_total.toFixed(2)}
                       </TableCell>
@@ -220,7 +216,7 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
                 })}
                 {encomendas.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       Nenhuma conta a receber encontrada
                     </TableCell>
                   </TableRow>
