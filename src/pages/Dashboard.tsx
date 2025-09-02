@@ -77,20 +77,21 @@ export default function Dashboard() {
       
       let totalCommission = 0;
       
-      // Calculate commission for each order
+      // Calculate commission for each order based on item prices in the order
       for (const encomenda of encomendas) {
         const { data: itens, error: itensError } = await supabase
           .from("itens_encomenda")
           .select(`
             quantidade,
-            produtos(preco_venda, preco_custo)
+            preco_unitario,
+            preco_custo
           `)
           .eq("encomenda_id", encomenda.id);
 
         if (!itensError && itens) {
           const commission = itens.reduce((total, item: any) => {
-            const receita = item.quantidade * (item.produtos?.preco_venda || 0);
-            const custo = item.quantidade * (item.produtos?.preco_custo || 0);
+            const receita = item.quantidade * (item.preco_unitario || 0);
+            const custo = item.quantidade * (item.preco_custo || 0);
             return total + (receita - custo);
           }, 0);
           
@@ -102,25 +103,44 @@ export default function Dashboard() {
     }
   });
 
-  // Comissões Anuais
+  // Comissões Anuais - baseado nos preços lançados na encomenda
   const { data: comissoesAnuais = 0 } = useQuery({
     queryKey: ['comissoes-anuais'],
     queryFn: async () => {
       const currentYear = new Date().getFullYear();
       
-      const { data, error } = await supabase
+      // Get orders from current year
+      const { data: encomendas, error } = await supabase
         .from('encomendas')
-        .select('valor_total, valor_total_custo, data_criacao')
+        .select('id')
         .gte('data_criacao', `${currentYear}-01-01`)
         .lt('data_criacao', `${currentYear + 1}-01-01`);
       
-      if (error) return 0;
+      if (error || !encomendas) return 0;
       
-      const totalCommission = data?.reduce((sum, encomenda) => {
-        const valorTotal = parseFloat(String(encomenda.valor_total || 0)) || 0;
-        const valorCusto = parseFloat(String(encomenda.valor_total_custo || 0)) || 0;
-        return sum + (valorTotal - valorCusto);
-      }, 0) || 0;
+      let totalCommission = 0;
+      
+      // Calculate commission for each order based on item prices in the order
+      for (const encomenda of encomendas) {
+        const { data: itens, error: itensError } = await supabase
+          .from("itens_encomenda")
+          .select(`
+            quantidade,
+            preco_unitario,
+            preco_custo
+          `)
+          .eq("encomenda_id", encomenda.id);
+
+        if (!itensError && itens) {
+          const commission = itens.reduce((total, item: any) => {
+            const receita = item.quantidade * (item.preco_unitario || 0);
+            const custo = item.quantidade * (item.preco_custo || 0);
+            return total + (receita - custo);
+          }, 0);
+          
+          totalCommission += commission;
+        }
+      }
       
       return totalCommission;
     }
