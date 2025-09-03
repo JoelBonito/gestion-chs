@@ -13,7 +13,7 @@ export interface ItemEncomenda {
   produto_nome?: string;
   quantidade: number;
   preco_custo: number;
-  preco_venda: number;
+  preco_venda: number; // Este será mapeado para preco_unitario no banco
   subtotal: number;
   peso_produto?: number;
 }

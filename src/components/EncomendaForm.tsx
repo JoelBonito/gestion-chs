@@ -320,100 +320,52 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         console.log("Dados do formulário:", data);
         console.log("Itens para salvar:", itens);
 
-        // Atualizar encomenda existente
-        const { error: updateError } = await supabase
-          .from("encomendas")
-          .update({
-            numero_encomenda: data.numero_encomenda,
-            cliente_id: data.cliente_id,
-            fornecedor_id: data.fornecedor_id,
-            cliente_nome: clienteData.nome,
-            fornecedor_nome: fornecedorData.nome,
-            data_producao_estimada: data.data_producao_estimada || null,
-            data_envio_estimada: data.data_envio_estimada || null,
-            observacoes: data.observacoes || null,
-          })
-          .eq("id", initialData.id);
+        // Preparar dados básicos para a RPC
+        const payload = {
+          numero_encomenda: data.numero_encomenda,
+          cliente_id: data.cliente_id,
+          fornecedor_id: data.fornecedor_id,
+          data_envio_estimada: data.data_envio_estimada || null,
+          data_producao_estimada: data.data_producao_estimada || null,
+          observacoes: data.observacoes || null,
+          valor_frete: null // Pode ser implementado futuramente
+        };
+
+        // Preparar itens para salvar (mapear de preco_venda para preco_unitario)
+        const itensParaSalvar = itens
+          .filter(item => item.produto_id) // Filtrar itens sem produto
+          .map(item => ({
+            id: item.id || null,
+            produto_id: item.produto_id,
+            quantidade: Number(item.quantidade) || 0,
+            preco_unitario: Number(item.preco_venda) || 0,
+          }));
+
+        console.log("Payload para RPC:", payload);
+        console.log("Itens para RPC:", itensParaSalvar);
+
+        // Chamar função RPC que faz tudo em uma transação
+        const { data: resultado, error: updateError } = await supabase.rpc('salvar_edicao_encomenda', {
+          p_encomenda_id: initialData.id,
+          p_dados: payload,
+          p_itens: itensParaSalvar
+        });
 
         if (updateError) {
-          console.error("Erro ao atualizar encomenda:", updateError);
+          console.error('Erro ao salvar edição:', updateError);
+          if (updateError.code === '42501') {
+            toast.error('Você não tem permissão para editar esta encomenda');
+          } else if (updateError.code === 'P0002') {
+            toast.error('Encomenda não encontrada');
+          } else {
+            toast.error('Erro ao salvar alterações: ' + (updateError.message || 'Erro desconhecido'));
+          }
           throw updateError;
         }
 
-        // Get existing items to compare
-        const { data: existingItems, error: fetchError } = await supabase
-          .from("itens_encomenda")
-          .select("id, produto_id, quantidade, preco_unitario, preco_custo")
-          .eq("encomenda_id", initialData.id);
-
-        if (fetchError) {
-          console.error("Erro ao buscar itens existentes:", fetchError);
-          throw fetchError;
+        if (resultado) {
+          console.log('Resultado da RPC:', resultado);
         }
-
-        // Process items more carefully
-        const existingItemIds = new Set((existingItems || []).map(item => item.id));
-        const currentItemIds = new Set(itens.filter(item => item.id).map(item => item.id));
-
-        // Delete items that are no longer in the list
-        for (const existingItem of existingItems || []) {
-          if (!currentItemIds.has(existingItem.id)) {
-            const { error: deleteError } = await supabase
-              .from("itens_encomenda")
-              .delete()
-              .eq("id", existingItem.id);
-
-            if (deleteError) {
-              console.error("Erro ao deletar item:", deleteError);
-              throw deleteError;
-            }
-          }
-        }
-
-        // Update existing items and insert new ones
-        for (const item of itens) {
-          if (!item.produto_id) {
-            console.warn("Item sem produto_id, pulando:", item);
-            continue;
-          }
-          
-          if (item.id && existingItemIds.has(item.id)) {
-            // Update existing item
-            const { error: updateItemError } = await supabase
-              .from("itens_encomenda")
-              .update({
-                produto_id: item.produto_id,
-                quantidade: item.quantidade,
-                preco_unitario: item.preco_venda,
-                preco_custo: item.preco_custo,
-              })
-              .eq("id", item.id);
-
-            if (updateItemError) {
-              console.error("Erro ao atualizar item:", updateItemError);
-              throw updateItemError;
-            }
-          } else {
-            // Insert new item
-            const { error: insertItemError } = await supabase
-              .from("itens_encomenda")
-              .insert([
-                {
-                  encomenda_id: initialData.id,
-                  produto_id: item.produto_id,
-                  quantidade: item.quantidade,
-                  preco_unitario: item.preco_venda,
-                  preco_custo: item.preco_custo,
-                },
-              ]);
-
-            if (insertItemError) {
-              console.error("Erro ao inserir item:", insertItemError);
-              throw insertItemError;
-            }
-          }
-        }
-
         toast.success("Encomenda atualizada com sucesso!");
       } else {
         // Criar nova encomenda with validated data

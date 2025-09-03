@@ -660,6 +660,20 @@ export type Database = {
         Args: { p_encomenda: string }
         Returns: undefined
       }
+      recalc_valor_total_venda_encomenda: {
+        Args: { p_encomenda: string }
+        Returns: undefined
+      }
+      salvar_edicao_encomenda: {
+        Args: { p_dados: Json; p_encomenda_id: string; p_itens: Json }
+        Returns: {
+          id: string
+          saldo_devedor_fornecedor: number
+          valor_pago_fornecedor: number
+          valor_total: number
+          valor_total_custo: number
+        }[]
+      }
     }
     Enums: {
       status_encomenda:
