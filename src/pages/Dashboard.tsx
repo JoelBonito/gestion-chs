@@ -272,14 +272,7 @@ export default function Dashboard() {
         <StatCard
           title="Comissões (Ano)"
           value={formatCurrency(comissoesAnuais)}
-          subtitle={
-            <div className="flex flex-col">
-              <span>Todas as encomendas do ano</span>
-              <p className="text-xs text-muted-foreground">
-                Base: {COMMISSION_BASE} • Taxa: {(COMMISSION_RATE * 100).toFixed(1)}%
-              </p>
-            </div>
-          }
+          subtitle="Comissões de todas as encomendas"
           icon={<div />}
         />
       </div>
