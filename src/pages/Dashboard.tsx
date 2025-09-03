@@ -1,25 +1,9 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import StatCard from "@/components/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
-
-const COMMISSION_RATE = Number(import.meta.env.VITE_COMMISSION_RATE ?? 0.05); // 5%
-const COMMISSION_BASE: "lucro" | "receita" =
-  (import.meta.env.VITE_COMMISSION_BASE as "lucro" | "receita") ?? "lucro";
-
-function calcularComissao(itens: Array<{ quantidade: number; preco_unitario?: number | null; preco_custo?: number | null; }>) {
-  return itens.reduce((acc, item) => {
-    const q = item.quantidade ?? 0;
-    const venda = q * (item.preco_unitario ?? 0);
-    const custo = q * (item.preco_custo ?? 0);
-    const lucro = venda - custo;
-    const base = COMMISSION_BASE === "lucro" ? lucro : venda;
-    return acc + (COMMISSION_RATE * base);
-  }, 0);
-}
 
 export default function Dashboard() {
   // Encomendas Ativas (não entregues)
@@ -81,71 +65,58 @@ export default function Dashboard() {
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
       
-      // Get orders with production date in current month
-      const { data: encomendas, error } = await supabase
-        .from('encomendas')
-        .select('id')
-        .gte('data_producao_estimada', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
-        .lt('data_producao_estimada', `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`);
+      // Get order items from orders with production date in current month
+      const { data: itens, error } = await supabase
+        .from("itens_encomenda")
+        .select(`
+          quantidade,
+          preco_unitario,
+          preco_custo,
+          encomendas!inner(data_producao_estimada)
+        `)
+        .gte('encomendas.data_producao_estimada', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
+        .lt('encomendas.data_producao_estimada', `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`);
       
-      if (error || !encomendas) return 0;
+      if (error || !itens) return 0;
       
-      const allItens: Array<{ quantidade: number; preco_unitario?: number | null; preco_custo?: number | null; }> = [];
+      // Calculate total profit (commission) from current month items
+      const total = itens.reduce((acc, item) => {
+        const quantidade = item.quantidade || 0;
+        const precoUnitario = item.preco_unitario || 0;
+        const precoCusto = item.preco_custo || 0;
+        const lucro = quantidade * precoUnitario - quantidade * precoCusto;
+        return acc + lucro;
+      }, 0);
       
-      // Calculate commission for each order based on item prices in the order
-      for (const encomenda of encomendas) {
-        const { data: itens, error: itensError } = await supabase
-          .from("itens_encomenda")
-          .select(`
-            quantidade,
-            preco_unitario,
-            preco_custo
-          `)
-          .eq("encomenda_id", encomenda.id);
-
-        if (!itensError && itens) {
-          allItens.push(...itens);
-        }
-      }
-      
-      return calcularComissao(allItens);
+      return total;
     }
   });
 
-  // Comissões Anuais - baseado nos preços lançados na encomenda
+  // Comissões Anuais - soma de todas as encomendas
   const { data: comissoesAnuais = 0 } = useQuery({
     queryKey: ['comissoes-anuais'],
     queryFn: async () => {
-      const currentYear = new Date().getFullYear();
+      // Get all order items with their prices
+      const { data: itens, error } = await supabase
+        .from("itens_encomenda")
+        .select(`
+          quantidade,
+          preco_unitario,
+          preco_custo
+        `);
       
-      // Get orders from current year
-      const { data: encomendas, error } = await supabase
-        .from('encomendas')
-        .select('id')
-        .gte('data_criacao', `${currentYear}-01-01`)
-        .lt('data_criacao', `${currentYear + 1}-01-01`);
+      if (error || !itens) return 0;
       
-      if (error || !encomendas) return 0;
+      // Calculate total profit (commission) from all items
+      const total = itens.reduce((acc, item) => {
+        const quantidade = item.quantidade || 0;
+        const precoUnitario = item.preco_unitario || 0;
+        const precoCusto = item.preco_custo || 0;
+        const lucro = quantidade * precoUnitario - quantidade * precoCusto;
+        return acc + lucro;
+      }, 0);
       
-      const allItens: Array<{ quantidade: number; preco_unitario?: number | null; preco_custo?: number | null; }> = [];
-      
-      // Calculate commission for each order based on item prices in the order
-      for (const encomenda of encomendas) {
-        const { data: itens, error: itensError } = await supabase
-          .from("itens_encomenda")
-          .select(`
-            quantidade,
-            preco_unitario,
-            preco_custo
-          `)
-          .eq("encomenda_id", encomenda.id);
-
-        if (!itensError && itens) {
-          allItens.push(...itens);
-        }
-      }
-      
-      return calcularComissao(allItens);
+      return total;
     }
   });
 
@@ -255,7 +226,7 @@ export default function Dashboard() {
         <StatCard
           title="Comissões (Mês)"
           value={formatCurrency(comissoesMensais)}
-          subtitle="Comissões do mês atual por data de produção"
+          subtitle="Lucro do mês atual por data de produção"
           icon={<div />}
         />
       </div>
@@ -265,7 +236,7 @@ export default function Dashboard() {
         <StatCard
           title="Comissões (Ano)"
           value={formatCurrency(comissoesAnuais)}
-          subtitle="Comissões de todas as encomendas"
+          subtitle="Lucro total de todas as encomendas"
           icon={<div />}
         />
       </div>
