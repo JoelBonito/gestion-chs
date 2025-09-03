@@ -274,7 +274,7 @@ export default function Dashboard() {
           value={formatCurrency(comissoesAnuais)}
           subtitle={
             <div className="flex flex-col">
-              <span>Lucro do ano atual</span>
+              <span>Todas as encomendas do ano</span>
               <p className="text-xs text-muted-foreground">
                 Base: {COMMISSION_BASE} • Taxa: {(COMMISSION_RATE * 100).toFixed(1)}%
               </p>
