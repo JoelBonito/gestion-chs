@@ -337,7 +337,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
           .map(item => ({
             id: item.id || null,
             produto_id: item.produto_id,
-            quantidade: Number(item.quantidade) || 0,
+            quantidade: Math.floor(Number(item.quantidade)) || 0,
             preco_unitario: Number(item.preco_venda) || 0,
           }));
 
@@ -404,7 +404,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
                 {
                   encomenda_id: encomendaId,
                   produto_id: item.produto_id,
-                  quantidade: item.quantidade,
+                  quantidade: Math.floor(item.quantidade),
                   preco_unitario: item.preco_venda,
                   preco_custo: item.preco_custo,
                 },

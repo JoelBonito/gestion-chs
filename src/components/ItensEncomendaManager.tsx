@@ -106,7 +106,7 @@ export function ItensEncomendaManager({
         item.peso_produto = produto.size_weight;
       }
     } else if (campo === "quantidade") {
-      item.quantidade = valor;
+      item.quantidade = Math.floor(valor); // Ensure integer
     } else if (campo === "preco_custo") {
       item.preco_custo = valor;
     } else if (campo === "preco_venda") {
@@ -237,10 +237,10 @@ export function ItensEncomendaManager({
                           <label className="text-sm font-medium mb-2 block">Quantidade *</label>
                           <Input
                             type="number"
-                            step="0.01"
+                            step="1"
                             min="0"
                             value={item.quantidade || ""}
-                            onChange={(e) => atualizarItem(index, "quantidade", parseFloat(e.target.value) || 1)}
+                            onChange={(e) => atualizarItem(index, "quantidade", parseInt(e.target.value) || 1)}
                             placeholder="0"
                             disabled={!isTransportMode && item.produto_id === ""}
                           />

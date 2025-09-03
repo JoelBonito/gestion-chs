@@ -44,6 +44,7 @@ interface Encomenda {
 }
 
 export default function Encomendas() {
+  const queryClient = useQueryClient();
   const { canEdit, hasRole } = useUserRole();
   const [searchTerm, setSearchTerm] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
@@ -150,18 +151,27 @@ export default function Encomendas() {
   const handleSuccess = () => {
     setDialogOpen(false);
     fetchEncomendas();
+    // Invalidate commission queries to update dashboard
+    queryClient.invalidateQueries({ queryKey: ['comissoes-mensais'] });
+    queryClient.invalidateQueries({ queryKey: ['comissoes-anuais'] });
   };
 
   const handleEditSuccess = () => {
     setEditDialogOpen(false);
     setSelectedEncomenda(null);
     fetchEncomendas();
+    // Invalidate commission queries to update dashboard
+    queryClient.invalidateQueries({ queryKey: ['comissoes-mensais'] });
+    queryClient.invalidateQueries({ queryKey: ['comissoes-anuais'] });
   };
 
   const handleTransportSuccess = () => {
     setTransportDialogOpen(false);
     setSelectedEncomenda(null);
     fetchEncomendas();
+    // Invalidate commission queries to update dashboard
+    queryClient.invalidateQueries({ queryKey: ['comissoes-mensais'] });
+    queryClient.invalidateQueries({ queryKey: ['comissoes-anuais'] });
   };
 
   const handleEdit = (encomenda: Encomenda) => {
