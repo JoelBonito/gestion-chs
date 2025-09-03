@@ -6,6 +6,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
+const COMMISSION_RATE = Number(import.meta.env.VITE_COMMISSION_RATE ?? 0.05); // 5%
+const COMMISSION_BASE: "lucro" | "receita" =
+  (import.meta.env.VITE_COMMISSION_BASE as "lucro" | "receita") ?? "lucro";
+
+function calcularComissao(itens: Array<{ quantidade: number; preco_unitario?: number | null; preco_custo?: number | null; }>) {
+  return itens.reduce((acc, item) => {
+    const q = item.quantidade ?? 0;
+    const venda = q * (item.preco_unitario ?? 0);
+    const custo = q * (item.preco_custo ?? 0);
+    const lucro = venda - custo;
+    const base = COMMISSION_BASE === "lucro" ? lucro : venda;
+    return acc + (COMMISSION_RATE * base);
+  }, 0);
+}
+
 export default function Dashboard() {
   // Encomendas Ativas (não entregues)
   const { data: encomendasAtivas = 0 } = useQuery({
@@ -75,7 +90,7 @@ export default function Dashboard() {
       
       if (error || !encomendas) return 0;
       
-      let totalCommission = 0;
+      const allItens: Array<{ quantidade: number; preco_unitario?: number | null; preco_custo?: number | null; }> = [];
       
       // Calculate commission for each order based on item prices in the order
       for (const encomenda of encomendas) {
@@ -89,17 +104,11 @@ export default function Dashboard() {
           .eq("encomenda_id", encomenda.id);
 
         if (!itensError && itens) {
-          const commission = itens.reduce((total, item: any) => {
-            const receita = item.quantidade * (item.preco_unitario || 0);
-            const custo = item.quantidade * (item.preco_custo || 0);
-            return total + (receita - custo);
-          }, 0);
-          
-          totalCommission += commission;
+          allItens.push(...itens);
         }
       }
       
-      return totalCommission;
+      return calcularComissao(allItens);
     }
   });
 
@@ -118,7 +127,7 @@ export default function Dashboard() {
       
       if (error || !encomendas) return 0;
       
-      let totalCommission = 0;
+      const allItens: Array<{ quantidade: number; preco_unitario?: number | null; preco_custo?: number | null; }> = [];
       
       // Calculate commission for each order based on item prices in the order
       for (const encomenda of encomendas) {
@@ -132,17 +141,11 @@ export default function Dashboard() {
           .eq("encomenda_id", encomenda.id);
 
         if (!itensError && itens) {
-          const commission = itens.reduce((total, item: any) => {
-            const receita = item.quantidade * (item.preco_unitario || 0);
-            const custo = item.quantidade * (item.preco_custo || 0);
-            return total + (receita - custo);
-          }, 0);
-          
-          totalCommission += commission;
+          allItens.push(...itens);
         }
       }
       
-      return totalCommission;
+      return calcularComissao(allItens);
     }
   });
 
@@ -252,7 +255,14 @@ export default function Dashboard() {
         <StatCard
           title="Comissões (Mês)"
           value={formatCurrency(comissoesMensais)}
-          subtitle="Lucro do mês atual"
+          subtitle={
+            <div className="flex flex-col">
+              <span>Lucro do mês atual</span>
+              <p className="text-xs text-muted-foreground">
+                Base: {COMMISSION_BASE} • Taxa: {(COMMISSION_RATE * 100).toFixed(1)}%
+              </p>
+            </div>
+          }
           icon={<div />}
         />
       </div>
@@ -262,7 +272,14 @@ export default function Dashboard() {
         <StatCard
           title="Comissões (Ano)"
           value={formatCurrency(comissoesAnuais)}
-          subtitle="Lucro do ano atual"
+          subtitle={
+            <div className="flex flex-col">
+              <span>Lucro do ano atual</span>
+              <p className="text-xs text-muted-foreground">
+                Base: {COMMISSION_BASE} • Taxa: {(COMMISSION_RATE * 100).toFixed(1)}%
+              </p>
+            </div>
+          }
           icon={<div />}
         />
       </div>

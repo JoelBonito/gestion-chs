@@ -24,12 +24,13 @@ interface Encomenda {
 
 interface EncomendaActionsProps {
   encomenda: Encomenda;
-  onView: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
+  onView?: () => void;
+  onEdit?: (data: any) => void;
+  onDelete?: () => void;
+  onDuplicate?: (id: string) => void;
 }
 
-export function EncomendaActions({ encomenda, onView, onEdit, onDelete }: EncomendaActionsProps) {
+export function EncomendaActions({ encomenda, onView, onEdit, onDelete, onDuplicate }: EncomendaActionsProps) {
   const { hasRole, canEdit } = useUserRole();
   const handleDelete = async () => {
     try {
@@ -62,9 +63,13 @@ export function EncomendaActions({ encomenda, onView, onEdit, onDelete }: Encome
         </DropdownMenuItem>
         {canEdit() && (
           <>
-            <DropdownMenuItem onClick={onEdit}>
+            <DropdownMenuItem onClick={() => onEdit?.(encomenda)}>
               <Edit className="mr-2 h-4 w-4" />
               Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDuplicate?.(encomenda.id)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Duplicar
             </DropdownMenuItem>
             <AlertDialog>
               <AlertDialogTrigger asChild>

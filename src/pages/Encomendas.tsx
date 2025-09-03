@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, Search, CalendarIcon } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Input } from "@/components/ui/input";
