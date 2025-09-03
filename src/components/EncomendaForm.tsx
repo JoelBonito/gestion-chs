@@ -363,10 +363,13 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
           throw updateError;
         }
 
-        if (resultado) {
-          console.log('Resultado da RPC:', resultado);
+        if (resultado && resultado.length > 0) {
+          console.log('Resultado da RPC:', resultado[0]);
+          const dadosAtualizados = resultado[0];
+          toast.success(`Encomenda atualizada com sucesso! Valor total: R$ ${dadosAtualizados.valor_total}`);
+        } else {
+          toast.success("Encomenda atualizada com sucesso!");
         }
-        toast.success("Encomenda atualizada com sucesso!");
       } else {
         // Criar nova encomenda with validated data
         const { data: newEncomenda, error } = await supabase
