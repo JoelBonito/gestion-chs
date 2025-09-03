@@ -320,34 +320,34 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         console.log("Dados do formulário:", data);
         console.log("Itens para salvar:", itens);
 
-        // Preparar dados básicos para a RPC
-        const payload = {
+        // Preparar dados para a RPC (nova assinatura)
+        const payloadEncomenda = {
+          id: initialData.id, // ID da encomenda para edição
           numero_encomenda: data.numero_encomenda,
           cliente_id: data.cliente_id,
           fornecedor_id: data.fornecedor_id,
           data_envio_estimada: data.data_envio_estimada || null,
           data_producao_estimada: data.data_producao_estimada || null,
-          observacoes: data.observacoes || null,
-          valor_frete: null // Pode ser implementado futuramente
+          observacoes: data.observacoes || null
         };
 
-        // Preparar itens para salvar (mapear de preco_venda para preco_unitario)
+        // Preparar itens para salvar (incluindo preco_custo)
         const itensParaSalvar = itens
           .filter(item => item.produto_id) // Filtrar itens sem produto
           .map(item => ({
-            id: item.id || null,
+            ...(item.id ? { id: item.id } : {}), // Inclui ID se existir
             produto_id: item.produto_id,
             quantidade: Math.floor(Number(item.quantidade)) || 0,
             preco_unitario: Number(item.preco_venda) || 0,
+            preco_custo: Number(item.preco_custo) || 0,
           }));
 
-        console.log("Payload para RPC:", payload);
+        console.log("Payload encomenda para RPC:", payloadEncomenda);
         console.log("Itens para RPC:", itensParaSalvar);
 
-        // Chamar função RPC que faz tudo em uma transação
+        // Chamar função RPC com nova assinatura
         const { data: resultado, error: updateError } = await supabase.rpc('salvar_edicao_encomenda', {
-          p_encomenda_id: initialData.id,
-          p_dados: payload,
+          p_encomenda: payloadEncomenda,
           p_itens: itensParaSalvar
         });
 
