@@ -665,7 +665,9 @@ export type Database = {
         Returns: undefined
       }
       salvar_edicao_encomenda: {
-        Args: { p_dados: Json; p_encomenda_id: string; p_itens: Json }
+        Args:
+          | { p_dados: Json; p_encomenda_id: string; p_itens: Json }
+          | { p_encomenda: Json; p_itens: Json }
         Returns: {
           id: string
           saldo_devedor_fornecedor: number
