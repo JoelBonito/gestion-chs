@@ -79,16 +79,18 @@ export default function Encomendas() {
               .from("itens_encomenda")
               .select(`
                 quantidade,
-                produtos(preco_venda, preco_custo)
+                preco_unitario,
+                preco_custo
               `)
               .eq("encomenda_id", encomenda.id);
 
             let commission_amount = 0;
             if (!itensError && itens) {
               commission_amount = itens.reduce((total, item: any) => {
-                const receita = item.quantidade * (item.produtos?.preco_venda || 0);
-                const custo = item.quantidade * (item.produtos?.preco_custo || 0);
-                return total + (receita - custo);
+                const receita = item.quantidade * (item.preco_unitario || 0);
+                const custo = item.quantidade * (item.preco_custo || 0);
+                const lucro = receita - custo;
+                return total + lucro;
               }, 0);
             }
 
