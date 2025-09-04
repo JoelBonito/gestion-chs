@@ -1,13 +1,12 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Paperclip, Upload } from 'lucide-react';
 import { AttachmentManager } from './AttachmentManager';
-import { useAttachments } from '@/hooks/useAttachments';
 import { Badge } from '@/components/ui/badge';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useIsCollaborator } from '@/hooks/useIsCollaborator';
+import { supabase } from '@/integrations/supabase/client';
 
 interface FinancialAttachmentButtonProps {
   entityId: string;
@@ -23,17 +22,56 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
   onChanged
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { attachments, refetch } = useAttachments(entityType, entityId);
+  const [attachmentCount, setAttachmentCount] = useState(0);
+  const [hasLoadedCount, setHasLoadedCount] = useState(false);
   const { hasRole, isHardcodedAdmin } = useUserRole();
   const isCollaborator = useIsCollaborator();
   
   // Check if user can access financial attachments
   const canAccess = isHardcodedAdmin || hasRole('admin') || hasRole('finance') || hasRole('factory') || isCollaborator;
 
-  const handleAttachmentChange = async () => {
-    console.log("FinancialAttachmentButton - Attachment changed, forcing refresh");
-    await refetch();
+  // Load attachment count only when dialog opens or component mounts
+  const loadAttachmentCount = async () => {
+    if (hasLoadedCount) return;
+    
+    try {
+      const { count, error } = await supabase
+        .from('attachments')
+        .select('*', { count: 'exact', head: true })
+        .eq('entity_type', entityType)
+        .eq('entity_id', entityId);
+
+      if (error) {
+        console.error('Error loading attachment count:', error);
+        return;
+      }
+
+      setAttachmentCount(count || 0);
+      setHasLoadedCount(true);
+    } catch (error) {
+      console.error('Error loading attachment count:', error);
+    }
+  };
+
+  // Load count when dialog opens
+  useEffect(() => {
+    if (isOpen && !hasLoadedCount) {
+      loadAttachmentCount();
+    }
+  }, [isOpen]);
+
+  const handleAttachmentChange = () => {
+    console.log("FinancialAttachmentButton - Attachment changed, reloading count");
+    setHasLoadedCount(false); // Force reload count
+    loadAttachmentCount();
     onChanged?.();
+  };
+
+  const handleDialogOpen = (open: boolean) => {
+    setIsOpen(open);
+    if (open && !hasLoadedCount) {
+      loadAttachmentCount();
+    }
   };
 
   if (!canAccess) {
@@ -41,7 +79,7 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleDialogOpen}>
       <DialogTrigger asChild>
         <Button 
           variant="outline" 
@@ -49,11 +87,12 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
           className="relative"
           title="Anexar comprovante"
           type="button"
+          onMouseEnter={() => !hasLoadedCount && loadAttachmentCount()}
         >
           <Paperclip className="h-4 w-4" />
-          {attachments.length > 0 && (
+          {hasLoadedCount && attachmentCount > 0 && (
             <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-              {attachments.length}
+              {attachmentCount}
             </Badge>
           )}
         </Button>
