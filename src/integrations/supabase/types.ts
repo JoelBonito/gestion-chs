@@ -656,6 +656,10 @@ export type Database = {
           | { p_role: string }
         Returns: boolean
       }
+      is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       recalc_valor_total_custo_encomenda: {
         Args: { p_encomenda: string }
         Returns: undefined
