@@ -58,12 +58,18 @@ export default function Dashboard() {
     }
   });
 
+  // Função utilitária para gerar datas ISO
+  function isoDate(d: Date) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T00:00:00`;
+  }
+
   // Comissões Mensais - baseado na data de produção
   const { data: comissoesMensais = 0 } = useQuery({
     queryKey: ['comissoes-mensais'],
     queryFn: async () => {
-      const currentMonth = new Date().getMonth() + 1;
-      const currentYear = new Date().getFullYear();
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
       
       // Get order items from orders with production date in current month
       const { data: itens, error } = await supabase
@@ -74,8 +80,8 @@ export default function Dashboard() {
           preco_custo,
           encomendas!inner(data_producao_estimada)
         `)
-        .gte('encomendas.data_producao_estimada', `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`)
-        .lt('encomendas.data_producao_estimada', `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`);
+        .gte('encomendas.data_producao_estimada', isoDate(start))
+        .lt('encomendas.data_producao_estimada', isoDate(end));
       
       if (error || !itens) return 0;
       
