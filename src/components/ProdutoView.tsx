@@ -10,7 +10,7 @@ interface ProdutoViewProps {
 }
 
 export const ProdutoView = ({ produto }: ProdutoViewProps) => {
-  const { hasRole } = useUserRole();
+  const { hasRole, isHardcodedAdmin } = useUserRole();
   const isCollaborator = useIsCollaborator();
 
   return (
@@ -75,7 +75,7 @@ export const ProdutoView = ({ produto }: ProdutoViewProps) => {
         </CardContent>
       </Card>
 
-      {(hasRole('factory') || hasRole('admin') || hasRole('finance') || isCollaborator) && (
+      {(isHardcodedAdmin || hasRole('factory') || hasRole('admin') || hasRole('finance') || isCollaborator) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-display text-primary-dark">
