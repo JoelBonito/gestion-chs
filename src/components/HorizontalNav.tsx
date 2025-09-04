@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useToast } from "@/hooks/use-toast";
 import { 
   LayoutDashboard, 
@@ -23,6 +24,7 @@ export function HorizontalNav() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { roles } = useUserRole();
+  const isCollaborator = useIsCollaborator();
   const { toast } = useToast();
 
   const handleLogout = async () => {
@@ -47,12 +49,26 @@ export function HorizontalNav() {
     { name: "Financeiro", href: "/financeiro", icon: CreditCard },
   ];
 
+  // Filter navigation based on user role
+  const getFilteredNavigation = () => {
+    if (isCollaborator) {
+      return navigation.filter(item => 
+        item.href === '/produtos' || 
+        item.href === '/encomendas' || 
+        item.href === '/financeiro'
+      );
+    }
+    return navigation;
+  };
+
+  const filteredNavigation = getFilteredNavigation();
+
   return (
     <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/50 sticky top-0 z-50">
       <div className="container mx-auto">
         <div className="flex h-16 items-center justify-between px-6">
           <div className="flex items-center space-x-8">
-            <Link to="/dashboard" className="flex items-center space-x-3">
+            <Link to={isCollaborator ? "/produtos" : "/dashboard"} className="flex items-center space-x-3">
               <img 
                 src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png" 
                 alt="Gestion CHS Logo" 
@@ -64,7 +80,7 @@ export function HorizontalNav() {
             </Link>
             
             <div className="hidden md:flex space-x-1">
-              {navigation.map((item) => {
+              {filteredNavigation.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.href;
                 

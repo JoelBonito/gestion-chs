@@ -7,6 +7,7 @@ import { AttachmentManager } from './AttachmentManager';
 import { useAttachments } from '@/hooks/useAttachments';
 import { Badge } from '@/components/ui/badge';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useIsCollaborator } from '@/hooks/useIsCollaborator';
 
 interface FinancialAttachmentButtonProps {
   entityId: string;
@@ -24,9 +25,10 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
   const [isOpen, setIsOpen] = useState(false);
   const { attachments, refetch } = useAttachments(entityType, entityId);
   const { hasRole } = useUserRole();
+  const isCollaborator = useIsCollaborator();
   
   // Check if user can access financial attachments
-  const canAccess = hasRole('admin') || hasRole('finance') || hasRole('factory');
+  const canAccess = hasRole('admin') || hasRole('finance') || hasRole('factory') || isCollaborator;
 
   const handleAttachmentChange = async () => {
     console.log("FinancialAttachmentButton - Attachment changed, forcing refresh");
