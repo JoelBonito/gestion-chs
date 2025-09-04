@@ -3,6 +3,7 @@ import { Plus, Search, CalendarIcon } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -18,6 +19,7 @@ import { EncomendaActions } from "@/components/EncomendaActions";
 import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
 import { EncomendaStatusFilter } from "@/components/EncomendaStatusFilter";
 import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
+import { EncomendaObservations } from "@/components/EncomendaObservations";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -41,11 +43,13 @@ interface Encomenda {
   clientes?: { nome: string };
   fornecedores?: { nome: string };
   commission_amount?: number;
+  valor_total_custo?: number;
 }
 
 export default function Encomendas() {
   const queryClient = useQueryClient();
   const { canEdit, hasRole } = useUserRole();
+  const isCollaborator = useIsCollaborator();
   const [searchTerm, setSearchTerm] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("TODOS");
@@ -85,6 +89,7 @@ export default function Encomendas() {
               .eq("encomenda_id", encomenda.id);
 
             let commission_amount = 0;
+            let valor_total_custo = 0;
             if (!itensError && itens) {
               commission_amount = itens.reduce((total, item: any) => {
                 const receita = item.quantidade * (item.preco_unitario || 0);
@@ -92,11 +97,16 @@ export default function Encomendas() {
                 const lucro = receita - custo;
                 return total + lucro;
               }, 0);
+              
+              valor_total_custo = itens.reduce((total, item: any) => {
+                return total + (item.quantidade * (item.preco_custo || 0));
+              }, 0);
             }
 
             return {
               ...encomenda,
-              commission_amount
+              commission_amount,
+              valor_total_custo
             };
           })
         );
@@ -440,6 +450,7 @@ export default function Encomendas() {
                           size="sm"
                           onClick={() => handleEdit(encomenda)}
                           className="w-full"
+                          disabled={isCollaborator}
                         >
                           Editar
                         </Button>
@@ -464,7 +475,7 @@ export default function Encomendas() {
                             }
                           }}
                           className="w-full"
-                          disabled={!canEdit()}
+                          disabled={!canEdit() || isCollaborator}
                         >
                           Deletar
                         </Button>
@@ -594,14 +605,28 @@ export default function Encomendas() {
                       </div>
 
                       <div className="flex flex-col">
-                        <p className="text-sm text-muted-foreground mb-1">Valor Total</p>
+                        <p className="text-sm text-muted-foreground mb-1">
+                          {isCollaborator ? "Valor Total (Custo)" : "Valor Total"}
+                        </p>
                         <div className="px-3 py-2 bg-gray-50 dark:bg-gray-950/20 rounded-md border">
                           <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">
-                            {formatCurrency(encomenda.valor_total)}
+                            {formatCurrency(isCollaborator ? (encomenda.valor_total_custo || 0) : encomenda.valor_total)}
                           </p>
                         </div>
                       </div>
                     </div>
+
+                    {/* Third line: Observações (só aparece se isCollaborator for true) */}
+                    {isCollaborator && (
+                      <div className="pt-3 border-t border-border">
+                        <EncomendaObservations
+                          encomendaId={encomenda.id}
+                          observacoes={encomenda.observacoes}
+                          onUpdate={fetchEncomendas}
+                          canEdit={true}
+                        />
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

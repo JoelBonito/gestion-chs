@@ -6,6 +6,7 @@ import { MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 
@@ -32,6 +33,7 @@ interface EncomendaActionsProps {
 
 export function EncomendaActions({ encomenda, onView, onEdit, onDelete, onDuplicate }: EncomendaActionsProps) {
   const { hasRole, canEdit } = useUserRole();
+  const isCollaborator = useIsCollaborator();
   const handleDelete = async () => {
     try {
       const { data, error } = await supabase.rpc('delete_encomenda_safely', {
@@ -61,7 +63,7 @@ export function EncomendaActions({ encomenda, onView, onEdit, onDelete, onDuplic
           <Eye className="mr-2 h-4 w-4" />
           Visualizar
         </DropdownMenuItem>
-        {canEdit() && (
+        {canEdit() && !isCollaborator && (
           <>
             <DropdownMenuItem onClick={() => onEdit?.(encomenda)}>
               <Edit className="mr-2 h-4 w-4" />

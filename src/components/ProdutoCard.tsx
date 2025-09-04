@@ -182,7 +182,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
             </Button>
           )}
 
-          {/* Anexar - factory e admin podem anexar */}
+          {/* Anexar - factory, admin, finance e colaboradores podem anexar */}
           {(hasRole('factory') || hasRole('admin') || hasRole('finance')) && (
             <FinancialAttachmentButton 
               entityId={produtoData.id}

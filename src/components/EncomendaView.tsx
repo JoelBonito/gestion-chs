@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useIsCollaborator } from "@/hooks/useIsCollaborator";
+import { OrderItemsView } from "@/components/OrderItemsView";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 
@@ -27,14 +29,6 @@ interface Encomenda {
   fornecedores?: { nome: string };
 }
 
-interface ItemEncomenda {
-  id: string;
-  quantidade: number;
-  preco_unitario: number;
-  subtotal: number;
-  produto_id: string;
-  produtos?: { nome: string; marca: string; tipo: string };
-}
 
 interface EncomendaViewProps {
   encomendaId: string;
@@ -53,12 +47,11 @@ const getStatusColor = (status: StatusEncomenda) => {
 
 export function EncomendaView({ encomendaId }: EncomendaViewProps) {
   const [encomenda, setEncomenda] = useState<Encomenda | null>(null);
-  const [itens, setItens] = useState<ItemEncomenda[]>([]);
   const [loading, setLoading] = useState(true);
+  const isCollaborator = useIsCollaborator();
 
   useEffect(() => {
     fetchEncomenda();
-    fetchItens();
   }, [encomendaId]);
 
   const fetchEncomenda = async () => {
@@ -83,24 +76,6 @@ export function EncomendaView({ encomendaId }: EncomendaViewProps) {
     }
   };
 
-  const fetchItens = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("itens_encomenda")
-        .select(`
-          *,
-          produtos(nome, marca, tipo)
-        `)
-        .eq("encomenda_id", encomendaId);
-
-      if (error) throw error;
-      setItens(data || []);
-      console.log("Itens carregados na visualização:", data);
-    } catch (error) {
-      console.error("Erro ao carregar itens:", error);
-      toast.error("Erro ao carregar itens da encomenda");
-    }
-  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-PT', {
@@ -212,37 +187,7 @@ export function EncomendaView({ encomendaId }: EncomendaViewProps) {
       </Card>
 
       {/* Items */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Itens da Encomenda</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {itens.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
-                Nenhum item encontrado nesta encomenda.
-              </p>
-            ) : (
-              itens.map((item) => (
-                <div key={item.id} className="flex justify-between items-center p-3 border rounded-lg">
-                  <div>
-                    <h4 className="font-medium">{item.produtos?.nome || 'Produto não encontrado'}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {item.produtos?.marca} • {item.produtos?.tipo}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{formatCurrency(item.subtotal || 0)}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {item.quantidade}x {formatCurrency(item.preco_unitario)}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <OrderItemsView encomendaId={encomendaId} showCostPrices={isCollaborator} />
     </div>
   );
 }

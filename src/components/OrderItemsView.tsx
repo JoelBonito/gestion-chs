@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 
 interface OrderItem {
   id: string;
@@ -25,6 +26,10 @@ interface OrderItemsViewProps {
 export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderItemsViewProps) {
   const [items, setItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const isCollaborator = useIsCollaborator();
+  
+  // Se for colaborador, sempre mostrar preços de custo
+  const shouldShowCostPrices = showCostPrices || isCollaborator;
 
   useEffect(() => {
     fetchItems();
@@ -90,7 +95,7 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
               <TableRow>
                 <TableHead>Produto</TableHead>
                 <TableHead>Quantidade</TableHead>
-                {showCostPrices ? <TableHead>Preço Custo</TableHead> : <TableHead>Preço Unitário</TableHead>}
+                {shouldShowCostPrices ? <TableHead>Preço Custo</TableHead> : <TableHead>Preço Unitário</TableHead>}
                 <TableHead>Subtotal</TableHead>
               </TableRow>
             </TableHeader>
@@ -111,10 +116,10 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
                   </TableCell>
                   <TableCell>{item.quantidade}</TableCell>
                   <TableCell>
-                    €{showCostPrices ? (item.preco_custo || 0).toFixed(2) : item.preco_unitario.toFixed(2)}
+                    €{shouldShowCostPrices ? (item.preco_custo || 0).toFixed(2) : item.preco_unitario.toFixed(2)}
                   </TableCell>
                   <TableCell className="font-semibold">
-                    €{showCostPrices 
+                    €{shouldShowCostPrices 
                       ? (item.quantidade * (item.preco_custo || 0)).toFixed(2)
                       : item.subtotal.toFixed(2)
                     }
@@ -130,7 +135,7 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Total dos Itens:</p>
               <p className="text-lg font-semibold">
-                €{showCostPrices 
+                €{shouldShowCostPrices 
                   ? items.reduce((sum, item) => sum + (item.quantidade * (item.preco_custo || 0)), 0).toFixed(2)
                   : items.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2)
                 }
