@@ -26,11 +26,11 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading, uploadProgress } = useSupabaseStorage();
-  const { hasRole } = useUserRole();
+  const { hasRole, isHardcodedAdmin } = useUserRole();
   const isCollaborator = useIsCollaborator();
   
   // Check if user can upload files
-  const canUpload = hasRole('admin') || hasRole('ops') || hasRole('factory') || hasRole('finance') || isCollaborator;
+  const canUpload = isHardcodedAdmin || hasRole('admin') || hasRole('ops') || hasRole('factory') || hasRole('finance') || isCollaborator;
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();

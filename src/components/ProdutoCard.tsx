@@ -26,7 +26,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [produtoData, setProdutoData] = useState(produto);
-  const { canEdit, hasRole } = useUserRole();
+  const { canEdit, hasRole, isHardcodedAdmin } = useUserRole();
   const isCollaborator = useIsCollaborator();
 
   const handleEditSuccess = async () => {
@@ -185,7 +185,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
           )}
 
           {/* Anexar - factory, admin, finance e colaboradores podem anexar */}
-          {(hasRole('factory') || hasRole('admin') || hasRole('finance') || isCollaborator) && (
+          {(isHardcodedAdmin || hasRole('factory') || hasRole('admin') || hasRole('finance') || isCollaborator) && (
             <FinancialAttachmentButton 
               entityId={produtoData.id}
               entityType="financeiro"

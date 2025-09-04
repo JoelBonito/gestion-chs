@@ -44,7 +44,11 @@ export function useUserRole() {
   }, [user, authLoading]);
 
   const hasRole = (role: UserRole) => roles.includes(role);
-  const canEdit = () => hasRole('admin') || hasRole('ops');
+  
+  // Check if user is a hardcoded admin email
+  const isHardcodedAdmin = user?.email === 'jbento1@gmail.com' || user?.email === 'admin@admin.com';
+  
+  const canEdit = () => isHardcodedAdmin || hasRole('admin') || hasRole('ops');
 
-  return { roles, hasRole, canEdit, loading: loading || authLoading };
+  return { roles, hasRole, canEdit, loading: loading || authLoading, isHardcodedAdmin };
 }

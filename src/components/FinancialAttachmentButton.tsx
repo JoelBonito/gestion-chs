@@ -24,11 +24,11 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const { attachments, refetch } = useAttachments(entityType, entityId);
-  const { hasRole } = useUserRole();
+  const { hasRole, isHardcodedAdmin } = useUserRole();
   const isCollaborator = useIsCollaborator();
   
   // Check if user can access financial attachments
-  const canAccess = hasRole('admin') || hasRole('finance') || hasRole('factory') || isCollaborator;
+  const canAccess = isHardcodedAdmin || hasRole('admin') || hasRole('finance') || hasRole('factory') || isCollaborator;
 
   const handleAttachmentChange = async () => {
     console.log("FinancialAttachmentButton - Attachment changed, forcing refresh");
