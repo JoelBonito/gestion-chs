@@ -11,6 +11,7 @@ import PagamentoFornecedorForm from "@/components/PagamentoFornecedorForm";
 import { FinancialAttachmentButton } from "@/components/FinancialAttachmentButton";
 import { AttachmentManager } from "@/components/AttachmentManager";
 import { OrderItemsView } from "@/components/OrderItemsView";
+import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 
 interface ContaPagar {
   encomenda_id: string;
@@ -37,6 +38,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
   const [showDetails, setShowDetails] = useState(false);
   const [localShowCompleted, setLocalShowCompleted] = useState(showCompleted);
   const { toast } = useToast();
+  const isCollaborator = useIsCollaborator();
 
   const fetchContas = async () => {
     try {
@@ -198,24 +200,28 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedConta(conta);
-                            setShowPagamentoForm(true);
-                          }}
-                          title="Registrar pagamento"
-                          type="button"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                        <FinancialAttachmentButton
-                          entityType="payable"
-                          entityId={conta.encomenda_id}
-                          title="Anexar Comprovante"
-                          onChanged={handleAttachmentChange}
-                        />
+                        {!isCollaborator && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedConta(conta);
+                                setShowPagamentoForm(true);
+                              }}
+                              title="Registrar pagamento"
+                              type="button"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                            <FinancialAttachmentButton
+                              entityType="payable"
+                              entityId={conta.encomenda_id}
+                              title="Anexar Comprovante"
+                              onChanged={handleAttachmentChange}
+                            />
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
