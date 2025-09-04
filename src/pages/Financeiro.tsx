@@ -9,7 +9,6 @@ import StatCard from "@/components/StatCard";
 import EncomendasFinanceiro from "@/components/EncomendasFinanceiro";
 import ContasPagar from "@/components/ContasPagar";
 import Invoices from "@/components/Invoices";
-import { RoleGuard } from "@/components/RoleGuard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -98,8 +97,7 @@ export default function Financeiro() {
   }, []);
 
   return (
-    <RoleGuard allowedRoles={['admin', 'finance', 'factory']}>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Financeiro</h1>
@@ -235,6 +233,5 @@ export default function Financeiro() {
           )}
         </Tabs>
       </div>
-    </RoleGuard>
   );
 }

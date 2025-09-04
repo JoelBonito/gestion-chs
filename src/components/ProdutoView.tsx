@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Produto } from "@/types/database";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { AttachmentManager } from "./AttachmentManager";
 
 interface ProdutoViewProps {
@@ -10,6 +11,7 @@ interface ProdutoViewProps {
 
 export const ProdutoView = ({ produto }: ProdutoViewProps) => {
   const { hasRole } = useUserRole();
+  const isCollaborator = useIsCollaborator();
 
   return (
     <div className="space-y-6">
@@ -45,7 +47,7 @@ export const ProdutoView = ({ produto }: ProdutoViewProps) => {
               <p className="text-sm text-muted-foreground">Preço Custo</p>
               <p className="font-medium">€ {produto.preco_custo?.toFixed(2)}</p>
             </div>
-            {!hasRole('factory') && (
+            {!hasRole('factory') && !isCollaborator && (
               <div>
                 <p className="text-sm text-muted-foreground">Preço Venda</p>
                 <p className="font-medium">€ {produto.preco_venda?.toFixed(2)}</p>
@@ -73,7 +75,7 @@ export const ProdutoView = ({ produto }: ProdutoViewProps) => {
         </CardContent>
       </Card>
 
-      {(hasRole('factory') || hasRole('admin') || hasRole('finance')) && (
+      {(hasRole('factory') || hasRole('admin') || hasRole('finance') || isCollaborator) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-display text-primary-dark">

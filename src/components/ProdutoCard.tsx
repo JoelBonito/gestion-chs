@@ -8,6 +8,7 @@ import { ProdutoView } from "@/components/ProdutoView";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { FinancialAttachmentButton } from "./FinancialAttachmentButton";
 import { useState } from "react";
 import { Produto } from "@/types/database";
@@ -26,6 +27,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [produtoData, setProdutoData] = useState(produto);
   const { canEdit, hasRole } = useUserRole();
+  const isCollaborator = useIsCollaborator();
 
   const handleEditSuccess = async () => {
     console.log("=== PRODUTO EDITADO COM SUCESSO ===");
@@ -143,7 +145,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
             <p className="text-muted-foreground">Tipo</p>
             <p className="font-medium font-body">{produtoData.tipo}</p>
           </div>
-          {!hasRole('factory') && (
+          {!hasRole('factory') && !isCollaborator && (
             <div>
               <p className="text-muted-foreground">Preço Venda</p>
               <p className="text-sm font-medium font-body">€ {produtoData.preco_venda?.toFixed(2)}</p>
@@ -183,7 +185,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
           )}
 
           {/* Anexar - factory, admin, finance e colaboradores podem anexar */}
-          {(hasRole('factory') || hasRole('admin') || hasRole('finance')) && (
+          {(hasRole('factory') || hasRole('admin') || hasRole('finance') || isCollaborator) && (
             <FinancialAttachmentButton 
               entityId={produtoData.id}
               entityType="financeiro"
