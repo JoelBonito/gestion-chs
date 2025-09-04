@@ -23,6 +23,7 @@ interface ContaPagar {
   valor_pago_fornecedor: number;
   saldo_devedor_fornecedor: number;
   total_pagamentos: number;
+  data_producao_estimada?: string;
 }
 
 interface ContasPagarProps {
@@ -53,6 +54,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
           valor_pago_fornecedor,
           saldo_devedor_fornecedor,
           valor_frete,
+          data_producao_estimada,
           fornecedores!inner(nome),
           itens_encomenda(
             quantidade,
@@ -84,6 +86,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
           valor_pago_fornecedor: parseFloat(encomenda.valor_pago_fornecedor || 0),
           saldo_devedor_fornecedor: parseFloat(encomenda.saldo_devedor_fornecedor || 0),
           total_pagamentos: encomenda.pagamentos_fornecedor?.length || 0,
+          data_producao_estimada: encomenda.data_producao_estimada,
         };
       });
 
@@ -118,6 +121,11 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
   const handleAttachmentChange = () => {
     fetchContas();
     onRefreshNeeded?.();
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('pt-PT');
   };
 
   if (isLoading) {
@@ -163,6 +171,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                 <TableRow>
                   <TableHead>Nº Encomenda</TableHead>
                   <TableHead>Fornecedor</TableHead>
+                  <TableHead>Data Produção</TableHead>
                   <TableHead>Total a Pagar</TableHead>
                   <TableHead>Pago</TableHead>
                   <TableHead>Saldo a Pagar</TableHead>
@@ -177,6 +186,9 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                       {conta.numero_encomenda}
                     </TableCell>
                     <TableCell>{conta.fornecedor_nome}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(conta.data_producao_estimada)}
+                    </TableCell>
                     <TableCell className="font-semibold">
                       €{conta.valor_total_custo.toFixed(2)}
                     </TableCell>
@@ -228,7 +240,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                 ))}
                 {contas.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Nenhuma conta a pagar encontrada
                     </TableCell>
                   </TableRow>
@@ -271,6 +283,10 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                 <div>
                   <label className="text-sm font-medium">Fornecedor:</label>
                   <p className="text-sm text-muted-foreground">{selectedConta.fornecedor_nome}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Data Produção:</label>
+                  <p className="text-sm text-muted-foreground">{formatDate(selectedConta.data_producao_estimada)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Valor Produtos:</label>

@@ -22,6 +22,7 @@ interface EncomendaFinanceira {
   saldo_devedor: number;
   valor_frete: number;
   total_pagamentos: number;
+  data_producao_estimada?: string;
 }
 
 interface EncomendasFinanceiroProps {
@@ -51,6 +52,7 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
           valor_pago,
           saldo_devedor,
           valor_frete,
+          data_producao_estimada,
           clientes!inner(nome),
           pagamentos(valor_pagamento)
         `)
@@ -71,6 +73,7 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
           saldo_devedor: parseFloat(encomenda.saldo_devedor || 0),
           valor_frete: parseFloat(encomenda.valor_frete || 0),
           total_pagamentos: totalPagamentos,
+          data_producao_estimada: encomenda.data_producao_estimada,
         };
       });
 
@@ -106,6 +109,11 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
   const handleAttachmentChange = () => {
     fetchEncomendas();
     onRefreshNeeded?.();
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('pt-PT');
   };
 
   if (isLoading) {
@@ -151,6 +159,7 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
                 <TableRow>
                   <TableHead>Nº Encomenda</TableHead>
                   <TableHead>Cliente</TableHead>
+                  <TableHead>Data Produção</TableHead>
                   <TableHead>Total a Receber</TableHead>
                   <TableHead>Recebido</TableHead>
                   <TableHead>Saldo a Receber</TableHead>
@@ -168,6 +177,9 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
                         {encomenda.numero_encomenda}
                       </TableCell>
                       <TableCell>{encomenda.cliente_nome}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(encomenda.data_producao_estimada)}
+                      </TableCell>
                       <TableCell className="font-semibold">
                         €{encomenda.valor_total.toFixed(2)}
                       </TableCell>
@@ -216,7 +228,7 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
                 })}
                 {encomendas.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       Nenhuma conta a receber encontrada
                     </TableCell>
                   </TableRow>
@@ -259,6 +271,10 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
                 <div>
                   <label className="text-sm font-medium">Cliente:</label>
                   <p className="text-sm text-muted-foreground">{selectedEncomenda.cliente_nome}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Data Produção:</label>
+                  <p className="text-sm text-muted-foreground">{formatDate(selectedEncomenda.data_producao_estimada)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Valor Produtos:</label>
