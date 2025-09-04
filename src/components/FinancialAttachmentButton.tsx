@@ -50,10 +50,9 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
           title="Anexar comprovante"
           type="button"
         >
-          <Paperclip className="h-4 w-4 mr-1" />
-          Anexar
+          <Paperclip className="h-4 w-4" />
           {attachments.length > 0 && (
-            <Badge variant="secondary" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+            <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
               {attachments.length}
             </Badge>
           )}
