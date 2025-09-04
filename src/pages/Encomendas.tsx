@@ -616,15 +616,6 @@ export default function Encomendas() {
                       </div>
                     </div>
 
-                    {/* Third line: Observações (aparece para todos os usuários) */}
-                    <div className="pt-3 border-t border-border">
-                      <EncomendaObservations
-                        encomendaId={encomenda.id}
-                        observacoes={encomenda.observacoes}
-                        onUpdate={fetchEncomendas}
-                        canEdit={isCollaborator}
-                      />
-                    </div>
                   </div>
                 </CardContent>
               </Card>
