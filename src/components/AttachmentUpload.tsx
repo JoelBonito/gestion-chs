@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Paperclip, Upload } from 'lucide-react';
 import { useSupabaseStorage } from '@/hooks/useSupabaseStorage';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useIsCollaborator } from '@/hooks/useIsCollaborator';
 
 interface AttachmentUploadProps {
   entityType?: string;
@@ -26,9 +27,10 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading, uploadProgress } = useSupabaseStorage();
   const { hasRole } = useUserRole();
+  const isCollaborator = useIsCollaborator();
   
   // Check if user can upload files
-  const canUpload = hasRole('admin') || hasRole('ops');
+  const canUpload = hasRole('admin') || hasRole('ops') || hasRole('factory') || hasRole('finance') || isCollaborator;
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
