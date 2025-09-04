@@ -13,13 +13,15 @@ import { RoleGuard } from "@/components/RoleGuard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 
 // Mock data para movimentações
 const movimentacoes: any[] = [];
 
 export default function Financeiro() {
   const { hasRole } = useUserRole();
-  const [activeTab, setActiveTab] = useState(hasRole('factory') ? "a-pagar" : "resumo");
+  const isCollaborator = useIsCollaborator();
+  const [activeTab, setActiveTab] = useState((hasRole('factory') || isCollaborator) ? "a-pagar" : "resumo");
   const [encomendas, setEncomendas] = useState<any[]>([]);
   const [showCompleted, setShowCompleted] = useState(false);
   const { toast } = useToast();
@@ -105,8 +107,8 @@ export default function Financeiro() {
           </div>
         </div>
 
-        {/* Financial Stats - KPIs baseados apenas em produtos - Hide for factory users */}
-        {!hasRole('factory') && (
+        {/* Financial Stats - KPIs baseados apenas em produtos - Hide for factory users and collaborators */}
+        {!hasRole('factory') && !isCollaborator && (
           <div className="grid gap-6 md:grid-cols-3">
             <StatCard
               title="A Pagar"
@@ -136,7 +138,7 @@ export default function Financeiro() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          {hasRole('factory') ? (
+          {(hasRole('factory') || isCollaborator) ? (
             <TabsList className="grid w-full grid-cols-1">
               <TabsTrigger value="a-pagar">A Pagar</TabsTrigger>
             </TabsList>
@@ -162,7 +164,7 @@ export default function Financeiro() {
             </div>
           )}
 
-          {!hasRole('factory') && (
+          {!hasRole('factory') && !isCollaborator && (
             <TabsContent value="resumo" className="space-y-6">
               <div className="grid gap-6 lg:grid-cols-2">
                 {/* Recent Movements */}
@@ -210,7 +212,7 @@ export default function Financeiro() {
             </TabsContent>
           )}
 
-          {!hasRole('factory') && (
+          {!hasRole('factory') && !isCollaborator && (
             <TabsContent value="encomendas">
               <EncomendasFinanceiro 
                 onRefreshNeeded={handleFinancialDataRefresh} 
@@ -219,14 +221,14 @@ export default function Financeiro() {
             </TabsContent>
           )}
 
-          <TabsContent value={hasRole('factory') ? "a-pagar" : "pagar"}>
+          <TabsContent value={(hasRole('factory') || isCollaborator) ? "a-pagar" : "pagar"}>
             <ContasPagar 
               onRefreshNeeded={handleFinancialDataRefresh}
               showCompleted={showCompleted}
             />
           </TabsContent>
 
-          {!hasRole('factory') && (
+          {!hasRole('factory') && !isCollaborator && (
             <TabsContent value="faturas">
               <Invoices />
             </TabsContent>

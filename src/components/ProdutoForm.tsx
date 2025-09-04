@@ -10,6 +10,7 @@ import { AttachmentManager } from "@/components/AttachmentManager";
 import { useToast } from "@/hooks/use-toast";
 import { Save, X } from "lucide-react";
 import { FornecedorFormDialog } from "@/components/FornecedorFormDialog";
+import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 
 interface Fornecedor {
   id: string;
@@ -43,6 +44,7 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const isCollaborator = useIsCollaborator();
 
   const [formData, setFormData] = useState<ProdutoFormData>({
     nome: produto?.nome || "",
@@ -364,19 +366,21 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="preco_venda">Preço de Venda (€) *</Label>
-            <Input
-              id="preco_venda"
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.preco_venda || ""}
-              onChange={(e) => handleInputChange("preco_venda", e.target.value ? parseFloat(e.target.value) : undefined)}
-              placeholder="0,00"
-              required
-            />
-          </div>
+          {!isCollaborator && (
+            <div className="space-y-2">
+              <Label htmlFor="preco_venda">Preço de Venda (€) *</Label>
+              <Input
+                id="preco_venda"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.preco_venda || ""}
+                onChange={(e) => handleInputChange("preco_venda", e.target.value ? parseFloat(e.target.value) : undefined)}
+                placeholder="0,00"
+                required
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

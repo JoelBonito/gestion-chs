@@ -4,6 +4,7 @@ import StatCard from "@/components/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { RoleBasedGuard } from "@/components/RoleBasedGuard";
 
 export default function Dashboard() {
   // Encomendas Ativas (não entregues)
@@ -201,7 +202,8 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-8">
+    <RoleBasedGuard blockCollaborator={true} redirectTo="/produtos">
+      <div className="space-y-8">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
         <p className="text-muted-foreground">
@@ -351,6 +353,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-    </div>
+      </div>
+    </RoleBasedGuard>
   );
 }

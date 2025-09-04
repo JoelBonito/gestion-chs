@@ -12,6 +12,7 @@ import { FornecedorForm } from "@/components/FornecedorForm";
 import { FornecedorActions } from "@/components/FornecedorActions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { RoleBasedGuard } from "@/components/RoleBasedGuard";
 
 interface Fornecedor {
   id: string;
@@ -84,7 +85,8 @@ export default function Fornecedores() {
   });
 
   return (
-    <div className="space-y-6">
+    <RoleBasedGuard blockCollaborator={true} redirectTo="/produtos">
+      <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Fornecedores</h1>
@@ -225,5 +227,6 @@ export default function Fornecedores() {
         </Card>
       )}
     </div>
+    </RoleBasedGuard>
   );
 }

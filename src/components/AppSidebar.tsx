@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useLocation } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 
 const items = [
   {
@@ -53,9 +54,17 @@ const items = [
 export function AppSidebar() {
   const location = useLocation();
   const { hasRole } = useUserRole();
+  const isCollaborator = useIsCollaborator();
 
   // Filter items based on user role
   const getFilteredItems = () => {
+    if (isCollaborator) {
+      return items.filter(item => 
+        item.url === '/produtos' || 
+        item.url === '/encomendas' || 
+        item.url === '/financeiro'
+      );
+    }
     if (hasRole('factory')) {
       return items.filter(item => 
         item.url === '/produtos' || 
