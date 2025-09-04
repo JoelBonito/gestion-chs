@@ -19,7 +19,7 @@ import { EncomendaActions } from "@/components/EncomendaActions";
 import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
 import { EncomendaStatusFilter } from "@/components/EncomendaStatusFilter";
 import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
-import { EncomendaObservations } from "@/components/EncomendaObservations";
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 

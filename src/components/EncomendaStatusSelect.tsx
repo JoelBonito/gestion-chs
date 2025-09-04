@@ -4,6 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useIsCollaborator } from "@/hooks/useIsCollaborator";
+import { useUserRole } from "@/hooks/useUserRole";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 
@@ -40,18 +42,28 @@ export function EncomendaStatusSelect({
   onStatusChange 
 }: EncomendaStatusSelectProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const isCollaborator = useIsCollaborator();
+  const { canEdit } = useUserRole();
+  
+  // Allow collaborators and admins to change status
+  const canChangeStatus = canEdit() || isCollaborator;
 
   const handleStatusChange = async (newStatus: StatusEncomenda) => {
     if (newStatus === currentStatus) return;
 
     setIsUpdating(true);
     try {
+      console.log("Atualizando status:", { encomendaId, newStatus, userEmail: await supabase.auth.getUser() });
+      
       const { error } = await supabase
         .from("encomendas")
         .update({ status: newStatus })
         .eq("id", encomendaId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro na atualização do status:", error);
+        throw error;
+      }
 
       toast.success(`Status da encomenda ${numeroEncomenda} atualizado para ${newStatus}`);
       onStatusChange();
@@ -67,10 +79,10 @@ export function EncomendaStatusSelect({
     <Select 
       value={currentStatus} 
       onValueChange={handleStatusChange}
-      disabled={isUpdating}
+      disabled={isUpdating || !canChangeStatus}
     >
       <SelectTrigger className="w-auto border-none p-0 h-auto">
-        <Badge className={`${getStatusColor(currentStatus)} text-white hover:opacity-80 cursor-pointer`}>
+        <Badge className={`${getStatusColor(currentStatus)} text-white ${canChangeStatus ? 'hover:opacity-80 cursor-pointer' : 'opacity-60'}`}>
           {isUpdating ? "Atualizando..." : currentStatus}
         </Badge>
       </SelectTrigger>
