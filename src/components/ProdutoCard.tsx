@@ -28,6 +28,12 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
   const [produtoData, setProdutoData] = useState(produto);
   const { canEdit, hasRole } = useUserRole();
   const isCollaborator = useIsCollaborator();
+  
+  // Debug log
+  console.log('ProdutoCard - isCollaborator:', isCollaborator);
+  console.log('ProdutoCard - hasRole factory:', hasRole('factory'));
+  console.log('ProdutoCard - hasRole admin:', hasRole('admin'));
+  console.log('ProdutoCard - hasRole finance:', hasRole('finance'));
 
   const handleEditSuccess = async () => {
     console.log("=== PRODUTO EDITADO COM SUCESSO ===");
@@ -186,12 +192,20 @@ export default function ProdutoCard({ produto, onUpdate, onDelete }: ProdutoCard
 
           {/* Anexar - factory, admin, finance e colaboradores podem anexar */}
           {(hasRole('factory') || hasRole('admin') || hasRole('finance') || isCollaborator) && (
-            <FinancialAttachmentButton 
-              entityId={produtoData.id}
-              entityType="financeiro"
-              title="Anexar Arquivos do Produto"
-              onChanged={handleAttachmentRefresh}
-            />
+            <>
+              <FinancialAttachmentButton 
+                entityId={produtoData.id}
+                entityType="financeiro"
+                title="Anexar Arquivos do Produto"
+                onChanged={handleAttachmentRefresh}
+              />
+              {/* Backup button with simple icon for collaborator */}
+              {isCollaborator && (
+                <Button variant="outline" size="sm" title="Anexar (Backup)">
+                  <Paperclip className="w-4 h-4" />
+                </Button>
+              )}
+            </>
           )}
           
           {/* Editar e Excluir - apenas admins e ops */}
