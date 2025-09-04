@@ -212,8 +212,8 @@ export default function Encomendas() {
 
   const handleDateUpdate = async (encomendaId: string, field: string, value: string) => {
     // Check permissions for date editing
-    const canEditProduction = canEdit() || hasRole('factory');
-    const canEditDelivery = canEdit();
+    const canEditProduction = canEdit() || hasRole('factory') || isCollaborator;
+    const canEditDelivery = canEdit() || isCollaborator;
     
     if (field === 'data_producao_estimada' && !canEditProduction) {
       toast.error("Sem permissão para editar data de produção");
@@ -285,10 +285,10 @@ export default function Encomendas() {
 
   const canEditDate = (field: string) => {
     if (field === 'data_producao_estimada') {
-      return canEdit() || hasRole('factory');
+      return canEdit() || hasRole('factory') || isCollaborator;
     }
     if (field === 'data_envio_estimada') {
-      return canEdit();
+      return canEdit() || isCollaborator;
     }
     return false;
   };
@@ -616,17 +616,15 @@ export default function Encomendas() {
                       </div>
                     </div>
 
-                    {/* Third line: Observações (só aparece se isCollaborator for true) */}
-                    {isCollaborator && (
-                      <div className="pt-3 border-t border-border">
-                        <EncomendaObservations
-                          encomendaId={encomenda.id}
-                          observacoes={encomenda.observacoes}
-                          onUpdate={fetchEncomendas}
-                          canEdit={true}
-                        />
-                      </div>
-                    )}
+                    {/* Third line: Observações (aparece para todos os usuários) */}
+                    <div className="pt-3 border-t border-border">
+                      <EncomendaObservations
+                        encomendaId={encomenda.id}
+                        observacoes={encomenda.observacoes}
+                        onUpdate={fetchEncomendas}
+                        canEdit={isCollaborator}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>

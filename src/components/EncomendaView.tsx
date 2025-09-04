@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { OrderItemsView } from "@/components/OrderItemsView";
+import { EncomendaObservations } from "@/components/EncomendaObservations";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 
@@ -174,15 +175,13 @@ export function EncomendaView({ encomendaId }: EncomendaViewProps) {
             </>
           )}
 
-          {encomenda.observacoes && (
-            <>
-              <Separator />
-              <div>
-                <h4 className="font-semibold text-sm text-muted-foreground">Observações</h4>
-                <p className="mt-1">{encomenda.observacoes}</p>
-              </div>
-            </>
-          )}
+          <Separator />
+          <EncomendaObservations
+            encomendaId={encomendaId}
+            observacoes={encomenda.observacoes}
+            onUpdate={fetchEncomenda}
+            canEdit={isCollaborator}
+          />
         </CardContent>
       </Card>
 
