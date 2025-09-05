@@ -1,69 +1,121 @@
-// src/components/ListaProdutos.tsx
-import { forwardRef, useImperativeHandle, useEffect, useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Plus, ArrowUpAZ, ArrowDownAZ, Search } from "lucide-react";
+import { ProdutoForm } from "@/components/ProdutoForm";
+import { ListaProdutos } from "@/components/ListaProdutos";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-// ... seus imports de UI
 
-type Props = {
-  searchTerm?: string;                      // 🔎 texto de busca
-  sort?: "nameAsc" | "nameDesc";           // ↕️ ordenação
-};
+type ListaProdutosRef = { fetchProdutos: () => void };
 
-export const ListaProdutos = forwardRef(function ListaProdutos(
-  { searchTerm = "", sort = "nameAsc" }: Props,
-  ref
-) {
-  const [produtos, setProdutos] = useState<any[]>([]);
+export default function Produtos() {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const listaProdutosRef = useRef<ListaProdutosRef>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  async function fetchProdutos() {
-    // Busque somente o que precisa (ex.: nome, marca, tipo, preço, etc.)
-    const { data, error } = await supabase
-      .from("produtos")
-      .select("id,nome,marca,tipo,preco_venda,ativo")
-      .order("nome", { ascending: true }); // já vem A–Z do server
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-    setProdutos(data ?? []);
-  }
-
-  useImperativeHandle(ref, () => ({ fetchProdutos }));
+  // 🔍 filtros
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sort, setSort] = useState<"nameAsc" | "nameDesc">("nameAsc");
 
   useEffect(() => {
-    fetchProdutos();
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email?.toLowerCase() ?? null);
+    });
   }, []);
 
-  // 🔎 filtro client-side (nome, marca, tipo)
-  const filtered = produtos.filter((p) => {
-    if (!searchTerm) return true;
-    const q = searchTerm.toLowerCase();
-    return (
-      (p.nome ?? "").toLowerCase().includes(q) ||
-      (p.marca ?? "").toLowerCase().includes(q) ||
-      (p.tipo ?? "").toLowerCase().includes(q)
-    );
-  });
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-  // ↕️ ordenação alfabética (garante no client caso a busca mude a ordem)
-  filtered.sort((a, b) => {
-    const an = (a.nome ?? "").toLowerCase();
-    const bn = (b.nome ?? "").toLowerCase();
-    if (an < bn) return sort === "nameAsc" ? -1 : 1;
-    if (an > bn) return sort === "nameAsc" ? 1 : -1;
-    return 0;
-  });
+  const handleCreateSuccess = () => {
+    setIsDialogOpen(false);
+    listaProdutosRef.current?.fetchProdutos();
+    toast.success("Produto criado e lista atualizada!");
+  };
+
+  const isFelipe = userEmail === "felipe@colaborador.com";
+
+  const toggleSort = () => {
+    setSort((s) => (s === "nameAsc" ? "nameDesc" : "nameAsc"));
+  };
+
+  const sortIcon = sort === "nameAsc" ? <ArrowUpAZ className="h-4 w-4" /> : <ArrowDownAZ className="h-4 w-4" />;
+  const sortLabel = sort === "nameAsc" ? "A–Z" : "Z–A";
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {filtered.map((p) => (
-        // ... seu card de produto aqui
-        <div key={p.id} className="rounded-xl border p-4">
-          <div className="font-semibold">{p.nome}</div>
-          <div className="text-sm text-muted-foreground">{p.marca} • {p.tipo}</div>
-          {/* etc */}
+    <div className="space-y-8 p-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-4xl font-display font-medium text-primary-dark mb-2">Produtos</h1>
+          <p className="text-muted-foreground font-body font-light">
+            Gerencie o catálogo de produtos da sua loja
+          </p>
         </div>
-      ))}
+
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={toggleSort}>
+            {sortIcon}
+            <span className="ml-2">{sortLabel}</span>
+          </Button>
+
+          {!isFelipe && (
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-primary hover:shadow-hover transition-all duration-300 font-body font-medium px-6">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Cadastrar Produto
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto shadow-elegant">
+                <DialogHeader>
+                  <DialogTitle className="font-display text-primary-dark">Cadastrar Novo Produto</DialogTitle>
+                </DialogHeader>
+                <ProdutoForm onSuccess={handleCreateSuccess} />
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      </div>
+
+      <Card className="shadow-card border-primary/10">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="relative w-full md:max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por nome, marca ou tipo…"
+                className="pl-9"
+              />
+            </div>
+
+            <Button variant="outline" onClick={() => { setSearch(""); setDebouncedSearch(""); }}>
+              Limpar
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-card border-primary/10 bg-gradient-card">
+        <CardHeader className="bg-primary/3 border-b border-primary/10">
+          <CardTitle className="font-display text-primary-dark text-xl font-medium">
+            Lista de Produtos
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <ListaProdutos
+            ref={listaProdutosRef}
+            searchTerm={debouncedSearch}
+            sort={sort}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
-});
+}
