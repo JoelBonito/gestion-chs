@@ -345,9 +345,10 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         console.log("Payload encomenda para RPC:", payloadEncomenda);
         console.log("Itens para RPC:", itensParaSalvar);
 
-        // Chamar função RPC com nova assinatura
+        // Chamar função RPC com assinatura correta (3 parâmetros)
         const { data: resultado, error: updateError } = await supabase.rpc('salvar_edicao_encomenda', {
-          p_encomenda: payloadEncomenda,
+          p_encomenda_id: initialData.id,
+          p_dados: payloadEncomenda,
           p_itens: itensParaSalvar
         });
 
