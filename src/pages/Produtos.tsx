@@ -75,3 +75,7 @@ export default function Produtos() {
         ref={listaProdutosRef}
         searchTerm={debouncedSearch}
         sort={sort}
+      />
+    </div>
+  );
+}
