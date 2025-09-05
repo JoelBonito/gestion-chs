@@ -41,7 +41,7 @@ export default function Login() {
         description: "Bem-vindo de volta!",
       });
 
-      navigate("/dashboard");
+      navigate("/encomendas");
     } catch (error: any) {
       toast({
         title: "Erro no login",
