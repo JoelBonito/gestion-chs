@@ -16,7 +16,6 @@ export default function Produtos() {
   const listaProdutosRef = useRef<ListaProdutosRef>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // 🔍 filtros
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sort, setSort] = useState<"nameAsc" | "nameDesc">("nameAsc");
@@ -103,19 +102,4 @@ export default function Produtos() {
       </Card>
 
       <Card className="shadow-card border-primary/10 bg-gradient-card">
-        <CardHeader className="bg-primary/3 border-b border-primary/10">
-          <CardTitle className="font-display text-primary-dark text-xl font-medium">
-            Lista de Produtos
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <ListaProdutos
-            ref={listaProdutosRef}
-            searchTerm={debouncedSearch}
-            sort={sort}
-          />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+        <CardHeader cla
