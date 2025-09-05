@@ -102,4 +102,19 @@ export default function Produtos() {
       </Card>
 
       <Card className="shadow-card border-primary/10 bg-gradient-card">
-        <CardHeader cla
+        <CardHeader className="bg-primary/3 border-b border-primary/10">
+          <CardTitle className="font-display text-primary-dark text-xl font-medium">
+            Lista de Produtos
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <ListaProdutos
+            ref={listaProdutosRef}
+            searchTerm={debouncedSearch}
+            sort={sort}
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
