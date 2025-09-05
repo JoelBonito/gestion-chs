@@ -592,17 +592,19 @@ export default function Encomendas() {
                         />
                       </div>
 
-                      <div className="flex flex-col">
-                        <p className="text-sm text-muted-foreground mb-1">Comissão</p>
-                        <div className={cn(
-                          "px-3 py-2 rounded-md border font-bold text-sm",
-                          (encomenda.commission_amount || 0) >= 0 
-                            ? "bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400" 
-                            : "bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400"
-                        )}>
-                          <p>{formatCommission(encomenda.commission_amount || 0).formatted}</p>
+                      {!isCollaborator && (
+                        <div className="flex flex-col">
+                          <p className="text-sm text-muted-foreground mb-1">Comissão</p>
+                          <div className={cn(
+                            "px-3 py-2 rounded-md border font-bold text-sm",
+                            (encomenda.commission_amount || 0) >= 0 
+                              ? "bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400" 
+                              : "bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-400"
+                          )}>
+                            <p>{formatCommission(encomenda.commission_amount || 0).formatted}</p>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <div className="flex flex-col">
                         <p className="text-sm text-muted-foreground mb-1">
