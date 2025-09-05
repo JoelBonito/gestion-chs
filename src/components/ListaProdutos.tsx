@@ -136,3 +136,5 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
     );
   }
 );
+
+ListaProdutos.displayName = "ListaProdutos";
