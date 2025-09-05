@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, CalendarIcon } from "lucide-react";
+import { Plus, Search, CalendarIcon, Eye, Trash2, Edit, Printer } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -22,6 +22,7 @@ import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 type StatusFilter = StatusEncomenda | "TODOS";
@@ -195,6 +196,134 @@ export default function Encomendas() {
   const handleView = (encomenda: Encomenda) => {
     setSelectedEncomenda(encomenda);
     setViewDialogOpen(true);
+  };
+
+  const handlePrint = async (encomenda: Encomenda) => {
+    try {
+      console.log('[OrderPDF] Starting print for order:', encomenda.numero_encomenda);
+      
+      const printWindow = window.open('', '_blank', 'width=800,height=600');
+      if (!printWindow) {
+        toast.error("Erro ao abrir janela de impressão");
+        return;
+      }
+
+      // Create print-friendly HTML content
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Encomenda #${encomenda.numero_encomenda}</title>
+          <style>
+            @page { size: A4; margin: 12mm; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; color: #000; background: #fff; font-size: 12px; line-height: 1.4; }
+            .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .title { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+            .subtitle { font-size: 14px; color: #666; }
+            .section { margin-bottom: 15px; }
+            .section-title { font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #333; }
+            .grid { display: grid; gap: 10px; }
+            .grid-2 { grid-template-columns: 1fr 1fr; }
+            .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+            .field { }
+            .field-label { font-size: 10px; color: #666; margin-bottom: 2px; }
+            .field-value { font-weight: bold; }
+            .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; color: white; background: #666; }
+            .amount { font-size: 14px; font-weight: bold; }
+            .amount.positive { color: #059669; }
+            .amount.negative { color: #DC2626; }
+            thead { display: table-header-group; }
+            tbody { display: table-row-group; }
+            tr { break-inside: avoid; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="title">Encomenda #${encomenda.numero_encomenda}</div>
+            <div class="subtitle">Criada em ${formatDate(encomenda.data_criacao)}</div>
+          </div>
+
+          <div class="section">
+            <div class="grid grid-2">
+              <div class="field">
+                <div class="field-label">Cliente</div>
+                <div class="field-value">${encomenda.clientes?.nome || 'N/A'}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Fornecedor</div>
+                <div class="field-value">${encomenda.fornecedores?.nome || 'N/A'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="grid grid-3">
+              <div class="field">
+                <div class="field-label">Valor Total</div>
+                <div class="field-value amount">${formatCurrency(encomenda.valor_total)}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Valor Pago</div>
+                <div class="field-value amount positive">${formatCurrency(encomenda.valor_pago)}</div>
+              </div>
+              <div class="field">
+                <div class="field-label">Saldo Devedor</div>
+                <div class="field-value amount negative">${formatCurrency(encomenda.valor_total - encomenda.valor_pago)}</div>
+              </div>
+            </div>
+          </div>
+
+          ${encomenda.data_producao_estimada || encomenda.data_envio_estimada || encomenda.data_entrega ? `
+          <div class="section">
+            <div class="section-title">Datas</div>
+            <div class="grid grid-3">
+              ${encomenda.data_producao_estimada ? `
+                <div class="field">
+                  <div class="field-label">Produção Estimada</div>
+                  <div class="field-value">${formatDate(encomenda.data_producao_estimada)}</div>
+                </div>
+              ` : ''}
+              ${encomenda.data_envio_estimada ? `
+                <div class="field">
+                  <div class="field-label">Envio Estimado</div>
+                  <div class="field-value">${formatDate(encomenda.data_envio_estimada)}</div>
+                </div>
+              ` : ''}
+              ${encomenda.data_entrega ? `
+                <div class="field">
+                  <div class="field-label">Data de Entrega</div>
+                  <div class="field-value">${formatDate(encomenda.data_entrega)}</div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+          ` : ''}
+
+          ${encomenda.observacoes ? `
+          <div class="section">
+            <div class="section-title">Observações</div>
+            <div>${encomenda.observacoes}</div>
+          </div>
+          ` : ''}
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      printWindow.onload = () => {
+        printWindow.print();
+        printWindow.onafterprint = () => printWindow.close();
+      };
+
+      console.log('[OrderPDF] Print window opened successfully');
+      toast.success("Janela de impressão aberta!");
+    } catch (error) {
+      console.error('[OrderPDF] Error opening print window:', error);
+      toast.error("Erro ao abrir impressão");
+    }
   };
 
   const handleDelete = () => {
@@ -420,67 +549,77 @@ export default function Encomendas() {
               <Card key={encomenda.id} className="shadow-card hover:shadow-elevated transition-shadow">
                 <CardContent className="p-6">
                   <div className="space-y-3">
-                    {/* First line: PEDIDO, CLIENTE, FORNECEDOR, ACTION BUTTONS */}
-                    <div className="grid grid-cols-6 gap-4 items-center">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Pedido</p>
-                        <p className="font-bold text-lg">#{encomenda.numero_encomenda}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Cliente</p>
-                        <p className="font-semibold">{encomenda.clientes?.nome}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Fornecedor</p>
-                        <p className="font-semibold">{encomenda.fornecedores?.nome}</p>
-                      </div>
-                      <div className="flex justify-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleView(encomenda)}
-                          className="w-full"
-                        >
-                          Visualizar
-                        </Button>
-                      </div>
-                      <div className="flex justify-center">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(encomenda)}
-                          className="w-full"
-                          disabled={isCollaborator}
-                        >
-                          Editar
-                        </Button>
-                      </div>
-                      <div className="flex justify-center">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={async () => {
-                            try {
-                              const { data, error } = await supabase.rpc('delete_encomenda_safely', {
-                                p_encomenda_id: encomenda.id
-                              });
+                     {/* First line: PEDIDO, CLIENTE, FORNECEDOR, ACTION BUTTONS */}
+                     <div className="grid grid-cols-7 gap-4 items-center">
+                       <div>
+                         <p className="text-sm text-muted-foreground">Pedido</p>
+                         <p className="font-bold text-lg">#{encomenda.numero_encomenda}</p>
+                       </div>
+                       <div>
+                         <p className="text-sm text-muted-foreground">Cliente</p>
+                         <p className="font-semibold">{encomenda.clientes?.nome}</p>
+                       </div>
+                       <div>
+                         <p className="text-sm text-muted-foreground">Fornecedor</p>
+                         <p className="font-semibold">{encomenda.fornecedores?.nome}</p>
+                       </div>
+                       <div className="flex justify-center">
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => handleView(encomenda)}
+                           className="w-full"
+                         >
+                           <Eye className="h-4 w-4" />
+                         </Button>
+                       </div>
+                       <div className="flex justify-center">
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => handlePrint(encomenda)}
+                           className="w-full"
+                         >
+                           <Printer className="h-4 w-4" />
+                         </Button>
+                       </div>
+                       <div className="flex justify-center">
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => handleEdit(encomenda)}
+                           className="w-full"
+                           disabled={isCollaborator}
+                         >
+                           <Edit className="h-4 w-4" />
+                         </Button>
+                       </div>
+                       <div className="flex justify-center">
+                         <Button
+                           variant="destructive"
+                           size="sm"
+                           onClick={async () => {
+                             try {
+                               const { data, error } = await supabase.rpc('delete_encomenda_safely', {
+                                 p_encomenda_id: encomenda.id
+                               });
 
-                              if (error) throw error;
-                              
-                              toast.success("Encomenda excluída com sucesso!");
-                              handleDelete();
-                            } catch (error: any) {
-                              console.error("Erro ao excluir encomenda:", error);
-                              toast.error(error.message || "Erro ao excluir encomenda");
-                            }
-                          }}
-                          className="w-full"
-                          disabled={!canEdit() || isCollaborator}
-                        >
-                          Deletar
-                        </Button>
-                      </div>
-                    </div>
+                               if (error) throw error;
+                               
+                               toast.success("Encomenda excluída com sucesso!");
+                               handleDelete();
+                             } catch (error: any) {
+                               console.error("Erro ao excluir encomenda:", error);
+                               toast.error(error.message || "Erro ao excluir encomenda");
+                             }
+                           }}
+                           className="w-full"
+                           disabled={!canEdit() || isCollaborator}
+                         >
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                       </div>
+                     </div>
 
                     {/* Second line: DATA PRODUÇÃO, DATA ENTREGA, PESO BRUTO, VALOR FRETE, STATUS, COMISSÃO, VALOR TOTAL */}
                     <div className="grid grid-cols-7 gap-4 items-start pt-2 border-t border-border">
