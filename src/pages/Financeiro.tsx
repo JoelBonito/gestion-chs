@@ -16,19 +16,20 @@ import { useLocale } from "@/contexts/LocaleContext";
 
 const movimentacoes: any[] = [];
 
+type TabKey = "resumo" | "encomendas" | "pagar" | "faturas";
+
 export default function Financeiro() {
   const { hasRole } = useUserRole();
   const isCollaborator = useIsCollaborator();
   const { locale, isRestrictedFR } = useLocale();
   const { toast } = useToast();
 
-  // 🔽 controla a sub-aba ativa
-  const [activeTab, setActiveTab] = useState<"resumo" | "encomendas" | "pagar" | "faturas">("resumo");
+  const [activeTab, setActiveTab] = useState<TabKey>("resumo");
   const [encomendas, setEncomendas] = useState<any[]>([]);
   const [showCompleted, setShowCompleted] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // carrega encomendas (A Receber)
+  // ===== DATA =====
   const fetchEncomendas = async () => {
     try {
       const { data, error } = await supabase
@@ -39,17 +40,17 @@ export default function Financeiro() {
 
       if (error) throw error;
 
-      const encomendasFormatadas = data.map((encomenda: any) => ({
-        id: encomenda.id,
-        numero_encomenda: encomenda.numero_encomenda,
-        cliente_nome: encomenda.clientes.nome,
-        valor_total: parseFloat(encomenda.valor_total),
-        valor_pago: parseFloat(encomenda.valor_pago),
-        saldo_devedor: parseFloat(encomenda.saldo_devedor),
-        valor_frete: parseFloat(encomenda.valor_frete || 0),
+      const list = (data ?? []).map((e: any) => ({
+        id: e.id,
+        numero_encomenda: e.numero_encomenda,
+        cliente_nome: e.clientes.nome,
+        valor_total: parseFloat(e.valor_total),
+        valor_pago: parseFloat(e.valor_pago),
+        saldo_devedor: parseFloat(e.saldo_devedor),
+        valor_frete: parseFloat(e.valor_frete || 0),
       }));
 
-      setEncomendas(encomendasFormatadas);
+      setEncomendas(list);
     } catch (error: any) {
       console.error("Erro ao carregar encomendas financeiras:", error);
       toast({
@@ -60,7 +61,6 @@ export default function Financeiro() {
     }
   };
 
-  // total a pagar (fornecedores)
   const [totalPagar, setTotalPagar] = useState<number>(0);
   const fetchTotalPagar = async () => {
     try {
@@ -71,7 +71,7 @@ export default function Financeiro() {
 
       if (error) throw error;
 
-      const total = data.reduce(
+      const total = (data ?? []).reduce(
         (sum: number, e: any) => sum + parseFloat(e.saldo_devedor_fornecedor || 0),
         0
       );
@@ -81,7 +81,6 @@ export default function Financeiro() {
     }
   };
 
-  // dados iniciais + usuário
   useEffect(() => {
     fetchEncomendas();
     fetchTotalPagar();
@@ -91,28 +90,52 @@ export default function Financeiro() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // define sub-aba inicial por usuário
-  const isHam = userEmail === "ham@admin.com";
-  const isFelipe = userEmail === "felipe@colaboardor.com";
-
-  useEffect(() => {
-    if (isHam) {
-      setActiveTab("encomendas"); // A RECEBER
-    } else if (isFelipe) {
-      setActiveTab("pagar"); // A PAGAR
-    } else if (isRestrictedFR && activeTab === "resumo") {
-      setActiveTab("encomendas");
-    }
-    // não incluir activeTab nas deps para evitar loop de setState
-  }, [isHam, isFelipe, isRestrictedFR]);
-
-  const handleFinancialDataRefresh = () => {
-    fetchEncomendas();
-    fetchTotalPagar();
-  };
-
   const totalReceber = encomendas.reduce((sum, e) => sum + e.saldo_devedor, 0);
 
+  // ===== REGRAS DE EXIBIÇÃO POR USUÁRIO =====
+  const isHam = userEmail === "ham@admin.com";
+  const isFelipe = userEmail === "felipe@colaborador.com";
+
+  // Define aba inicial assim que souber o usuário (e aplica fallback para FR)
+  useEffect(() => {
+    if (isFelipe) {
+      setActiveTab("pagar");        // Felipe: A PAGAR
+    } else if (isHam) {
+      setActiveTab("encomendas");   // Ham: A RECEBER
+    } else if (isRestrictedFR && activeTab === "resumo") {
+      setActiveTab("encomendas");   // Inquilinos FR não têm "resumo" por padrão
+    }
+    // não inclua activeTab para evitar loop
+  }, [isHam, isFelipe, isRestrictedFR]);
+
+  // Quais abas mostrar?
+  let showResumo = false;
+  let showEncomendas = false;
+  let showPagar = false;
+  let showFaturas = false;
+
+  if (isFelipe) {
+    // Apenas A Pagar
+    showPagar = true;
+  } else if (isHam) {
+    // A Receber + Faturas
+    showEncomendas = true;
+    showFaturas = true;
+  } else {
+    // Demais usuários → regra anterior
+    showResumo = !isRestrictedFR;
+    showEncomendas = true;
+    showPagar = !isRestrictedFR;
+    showFaturas = true;
+  }
+
+  const visibleTabsCount = [showResumo, showEncomendas, showPagar, showFaturas].filter(Boolean).length;
+  const gridCols = `grid-cols-${Math.max(1, visibleTabsCount)}`;
+
+  // Cards de resumo visíveis só para quem não é Ham nem Felipe e não é factory/collaborator
+  const showSummaryCards = !isHam && !isFelipe && !hasRole("factory") && !isCollaborator;
+
+  // ===== RENDER =====
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -122,8 +145,7 @@ export default function Financeiro() {
         </div>
       </div>
 
-      {/* 🔒 Esconde os cards de resumo para ham@admin.com */}
-      {!isHam && !hasRole("factory") && !isCollaborator && (
+      {showSummaryCards && (
         <div className="grid gap-6 md:grid-cols-3">
           <StatCard
             title="A Pagar"
@@ -149,21 +171,24 @@ export default function Financeiro() {
         </div>
       )}
 
-      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="space-y-4">
-          <TabsList className={`grid w-full ${isRestrictedFR ? "grid-cols-2" : "grid-cols-4"}`}>
-            {/* 🔒 Não mostra a tab Resumo para ham@admin.com */}
-            {!isHam && !isRestrictedFR && <TabsTrigger value="resumo">Resumo</TabsTrigger>}
-            <TabsTrigger value="encomendas">
-              {locale === "fr-FR" ? "À recevoir" : "A Receber"}
-            </TabsTrigger>
-            {!isRestrictedFR && <TabsTrigger value="pagar">A Pagar</TabsTrigger>}
-            <TabsTrigger value="faturas">
-              {locale === "fr-FR" ? "Factures" : "Faturas"}
-            </TabsTrigger>
+          <TabsList className={`grid w-full ${gridCols}`}>
+            {showResumo && <TabsTrigger value="resumo">Resumo</TabsTrigger>}
+            {showEncomendas && (
+              <TabsTrigger value="encomendas">
+                {locale === "fr-FR" ? "À recevoir" : "A Receber"}
+              </TabsTrigger>
+            )}
+            {showPagar && <TabsTrigger value="pagar">A Pagar</TabsTrigger>}
+            {showFaturas && (
+              <TabsTrigger value="faturas">
+                {locale === "fr-FR" ? "Factures" : "Faturas"}
+              </TabsTrigger>
+            )}
           </TabsList>
 
+          {/* Filtro "Mostrar concluídos" continua disponível */}
           <div className="flex items-center justify-center">
             <div className="flex items-center space-x-2">
               <Switch
@@ -176,8 +201,7 @@ export default function Financeiro() {
           </div>
         </div>
 
-        {/* Conteúdos */}
-        {!isHam && !hasRole("factory") && !isCollaborator && !isRestrictedFR && (
+        {showResumo && (
           <TabsContent value="resumo" className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-2">
               <Card className="shadow-card">
@@ -193,8 +217,8 @@ export default function Financeiro() {
                           <p className="font-medium text-sm">{mov.descricao}</p>
                           <p className="text-xs text-muted-foreground">{mov.data} • {mov.categoria}</p>
                         </div>
-                        <div className={`font-bold text-sm ${mov.valor > 0 ? 'text-success' : 'text-destructive'}`}>
-                          {mov.valor > 0 ? '+' : ''}€{Math.abs(mov.valor).toFixed(2)}
+                        <div className={`font-bold text-sm ${mov.valor > 0 ? "text-success" : "text-destructive"}`}>
+                          {mov.valor > 0 ? "+" : ""}€{Math.abs(mov.valor).toFixed(2)}
                         </div>
                       </div>
                     ))}
@@ -223,25 +247,29 @@ export default function Financeiro() {
           </TabsContent>
         )}
 
-        <TabsContent value="encomendas">
-          <EncomendasFinanceiro
-            onRefreshNeeded={handleFinancialDataRefresh}
-            showCompleted={showCompleted}
-          />
-        </TabsContent>
-
-        {!isRestrictedFR && (
-          <TabsContent value="pagar">
-            <ContasPagar
-              onRefreshNeeded={handleFinancialDataRefresh}
+        {showEncomendas && (
+          <TabsContent value="encomendas">
+            <EncomendasFinanceiro
+              onRefreshNeeded={fetchEncomendas}
               showCompleted={showCompleted}
             />
           </TabsContent>
         )}
 
-        <TabsContent value="faturas">
-          <Invoices />
-        </TabsContent>
+        {showPagar && (
+          <TabsContent value="pagar">
+            <ContasPagar
+              onRefreshNeeded={fetchTotalPagar}
+              showCompleted={showCompleted}
+            />
+          </TabsContent>
+        )}
+
+        {showFaturas && (
+          <TabsContent value="faturas">
+            <Invoices />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
