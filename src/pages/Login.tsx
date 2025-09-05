@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -41,7 +40,15 @@ export default function Login() {
         description: "Bem-vindo de volta!",
       });
 
-      navigate("/encomendas");
+      // 🔽 regra de redirecionamento personalizada
+      const userEmail = email.trim().toLowerCase();
+
+      if (userEmail === "ham@admin.com") {
+        navigate("/encomendas");
+      } else {
+        navigate("/dashboard"); // rota padrão para os outros usuários
+      }
+
     } catch (error: any) {
       toast({
         title: "Erro no login",
