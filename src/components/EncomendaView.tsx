@@ -12,6 +12,7 @@ import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { OrderItemsView } from "@/components/OrderItemsView";
 import { EncomendaObservations } from "@/components/EncomendaObservations";
 import { generatePdfFromNode } from "@/lib/pdf/generateFromNode";
+import { useLocale } from "@/contexts/LocaleContext";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 
@@ -56,6 +57,7 @@ export function EncomendaView({ encomendaId }: EncomendaViewProps) {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const printAreaRef = useRef<HTMLDivElement>(null);
   const isCollaborator = useIsCollaborator();
+  const { isRestrictedFR } = useLocale();
 
   useEffect(() => {
     fetchEncomenda();

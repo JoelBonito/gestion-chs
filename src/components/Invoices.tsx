@@ -6,9 +6,11 @@ import { Plus } from 'lucide-react';
 import { InvoiceForm } from './InvoiceForm';
 import { InvoiceList } from './InvoiceList';
 import { useInvoices } from '@/hooks/useInvoices';
+import { useLocale } from '@/contexts/LocaleContext';
 
 export const Invoices: React.FC = () => {
   const [showNewInvoiceDialog, setShowNewInvoiceDialog] = useState(false);
+  const { locale, isRestrictedFR } = useLocale();
   
   const {
     invoices,
@@ -35,16 +37,22 @@ export const Invoices: React.FC = () => {
       {/* Header with New Invoice Button */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Faturas</h2>
-          <p className="text-muted-foreground">Gerencie suas faturas e documentos</p>
+          <h2 className="text-2xl font-bold">
+            {locale === 'fr-FR' ? 'Factures' : 'Faturas'}
+          </h2>
+          <p className="text-muted-foreground">
+            {locale === 'fr-FR' ? 'Gérer vos factures et documents' : 'Gerencie suas faturas e documentos'}
+          </p>
         </div>
-        <Button 
-          onClick={() => setShowNewInvoiceDialog(true)}
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Nova Fatura
-        </Button>
+        {!isRestrictedFR && (
+          <Button 
+            onClick={() => setShowNewInvoiceDialog(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            {locale === 'fr-FR' ? 'Nouvelle Facture' : 'Nova Fatura'}
+          </Button>
+        )}
       </div>
 
       {/* Invoice List */}

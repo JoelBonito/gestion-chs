@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthGuard } from "@/components/AuthGuard";
 import { FactoryGuard } from "@/components/FactoryGuard";
 import { HorizontalNav } from "@/components/HorizontalNav";
+import { LocaleProvider } from "@/contexts/LocaleContext";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -30,58 +31,60 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route
-              path="*"
-              element={
-                <AuthGuard>
-                  <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/20">
-                    <HorizontalNav />
-                    <main className="flex-1">
-                      <div className="container mx-auto p-6">
-                        <Routes>
-                          <Route path="/" element={
-                            <FactoryGuard>
-                              <Dashboard />
-                            </FactoryGuard>
-                          } />
-                          <Route path="/dashboard" element={
-                            <FactoryGuard>
-                              <Dashboard />
-                            </FactoryGuard>
-                          } />
-                          <Route path="/produtos" element={<Produtos />} />
-                          <Route path="/clientes" element={
-                            <FactoryGuard>
-                              <Clientes />
-                            </FactoryGuard>
-                          } />
-                          <Route path="/fornecedores" element={
-                            <FactoryGuard>
-                              <Fornecedores />
-                            </FactoryGuard>
-                          } />
-                          <Route path="/encomendas" element={<Encomendas />} />
-                          <Route path="/producao" element={
-                            <FactoryGuard>
-                              <Producao />
-                            </FactoryGuard>
-                          } />
-                          <Route path="/financeiro" element={<Financeiro />} />
-                          <Route path="/welcome" element={<Index />} />
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
-                      </div>
-                    </main>
-                  </div>
-                </AuthGuard>
-              }
-            />
-          </Routes>
-        </BrowserRouter>
+        <LocaleProvider>
+          <Toaster />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="*"
+                element={
+                  <AuthGuard>
+                    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/20">
+                      <HorizontalNav />
+                      <main className="flex-1">
+                        <div className="container mx-auto p-6">
+                          <Routes>
+                            <Route path="/" element={
+                              <FactoryGuard>
+                                <Dashboard />
+                              </FactoryGuard>
+                            } />
+                            <Route path="/dashboard" element={
+                              <FactoryGuard>
+                                <Dashboard />
+                              </FactoryGuard>
+                            } />
+                            <Route path="/produtos" element={<Produtos />} />
+                            <Route path="/clientes" element={
+                              <FactoryGuard>
+                                <Clientes />
+                              </FactoryGuard>
+                            } />
+                            <Route path="/fornecedores" element={
+                              <FactoryGuard>
+                                <Fornecedores />
+                              </FactoryGuard>
+                            } />
+                            <Route path="/encomendas" element={<Encomendas />} />
+                            <Route path="/producao" element={
+                              <FactoryGuard>
+                                <Producao />
+                              </FactoryGuard>
+                            } />
+                            <Route path="/financeiro" element={<Financeiro />} />
+                            <Route path="/welcome" element={<Index />} />
+                            <Route path="*" element={<NotFound />} />
+                          </Routes>
+                        </div>
+                      </main>
+                    </div>
+                  </AuthGuard>
+                }
+              />
+            </Routes>
+          </BrowserRouter>
+        </LocaleProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -12,6 +12,7 @@ import PagamentoForm from "@/components/PagamentoForm";
 import { FinancialAttachmentButton } from "@/components/FinancialAttachmentButton";
 import { AttachmentManager } from "@/components/AttachmentManager";
 import { OrderItemsView } from "@/components/OrderItemsView";
+import { useLocale } from "@/contexts/LocaleContext";
 
 interface EncomendaFinanceira {
   id: string;
@@ -38,6 +39,7 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
   const [showDetails, setShowDetails] = useState(false);
   const [localShowCompleted, setLocalShowCompleted] = useState(showCompleted);
   const { toast } = useToast();
+  const { isRestrictedFR } = useLocale();
 
   const fetchEncomendas = async () => {
     try {

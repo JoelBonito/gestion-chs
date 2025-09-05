@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
+import { useLocale } from "@/contexts/LocaleContext";
 
 // Mock data para movimentações
 const movimentacoes: any[] = [];
@@ -20,7 +21,11 @@ const movimentacoes: any[] = [];
 export default function Financeiro() {
   const { hasRole } = useUserRole();
   const isCollaborator = useIsCollaborator();
-  const [activeTab, setActiveTab] = useState((hasRole('factory') || isCollaborator) ? "a-pagar" : "resumo");
+  const { locale, isRestrictedFR } = useLocale();
+  const [activeTab, setActiveTab] = useState(
+    isRestrictedFR ? "encomendas" : 
+    (hasRole('factory') || isCollaborator) ? "a-pagar" : "resumo"
+  );
   const [encomendas, setEncomendas] = useState<any[]>([]);
   const [showCompleted, setShowCompleted] = useState(false);
   const { toast } = useToast();
@@ -142,11 +147,15 @@ export default function Financeiro() {
             </TabsList>
           ) : (
             <div className="space-y-4">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="resumo">Resumo</TabsTrigger>
-                <TabsTrigger value="encomendas">A Receber</TabsTrigger>
-                <TabsTrigger value="pagar">A Pagar</TabsTrigger>
-                <TabsTrigger value="faturas">Faturas</TabsTrigger>
+              <TabsList className={`grid w-full ${isRestrictedFR ? 'grid-cols-2' : 'grid-cols-4'}`}>
+                {!isRestrictedFR && <TabsTrigger value="resumo">Resumo</TabsTrigger>}
+                <TabsTrigger value="encomendas">
+                  {locale === 'fr-FR' ? 'À recevoir' : 'A Receber'}
+                </TabsTrigger>
+                {!isRestrictedFR && <TabsTrigger value="pagar">A Pagar</TabsTrigger>}
+                <TabsTrigger value="faturas">
+                  {locale === 'fr-FR' ? 'Factures' : 'Faturas'}
+                </TabsTrigger>
               </TabsList>
               
               <div className="flex items-center justify-center">
@@ -162,7 +171,7 @@ export default function Financeiro() {
             </div>
           )}
 
-          {!hasRole('factory') && !isCollaborator && (
+          {!hasRole('factory') && !isCollaborator && !isRestrictedFR && (
             <TabsContent value="resumo" className="space-y-6">
               <div className="grid gap-6 lg:grid-cols-2">
                 {/* Recent Movements */}
@@ -219,12 +228,14 @@ export default function Financeiro() {
             </TabsContent>
           )}
 
-          <TabsContent value={(hasRole('factory') || isCollaborator) ? "a-pagar" : "pagar"}>
-            <ContasPagar 
-              onRefreshNeeded={handleFinancialDataRefresh}
-              showCompleted={showCompleted}
-            />
-          </TabsContent>
+          {!isRestrictedFR && (
+            <TabsContent value={(hasRole('factory') || isCollaborator) ? "a-pagar" : "pagar"}>
+              <ContasPagar 
+                onRefreshNeeded={handleFinancialDataRefresh}
+                showCompleted={showCompleted}
+              />
+            </TabsContent>
+          )}
 
           {!hasRole('factory') && !isCollaborator && (
             <TabsContent value="faturas">

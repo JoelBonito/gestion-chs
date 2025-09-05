@@ -4,6 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
+import { useLocale } from "@/contexts/LocaleContext";
+import { useFormatters } from "@/hooks/useFormatters";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -51,6 +53,8 @@ export default function Encomendas() {
   const queryClient = useQueryClient();
   const { canEdit, hasRole } = useUserRole();
   const isCollaborator = useIsCollaborator();
+  const { locale, isRestrictedFR } = useLocale();
+  const { formatCurrency, formatDate } = useFormatters();
   const [searchTerm, setSearchTerm] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("TODOS");
@@ -387,17 +391,6 @@ export default function Encomendas() {
     return matchesSearch && matchesCompletedFilter && matchesStatusFilter;
   });
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-PT', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(value);
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('pt-PT');
-  };
 
   const calcularValorFrete = (pesoBruto: number) => {
     return pesoBruto * 4.50;
@@ -731,7 +724,7 @@ export default function Encomendas() {
                         />
                       </div>
 
-                      {!isCollaborator && (
+                      {!isCollaborator && !isRestrictedFR && (
                         <div className="flex flex-col">
                           <p className="text-sm text-muted-foreground mb-1">Comissão</p>
                           <div className={cn(
