@@ -1,120 +1,77 @@
-import { useState, useRef, useEffect } from "react";
+import { useRef, useState } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Plus, ArrowUpAZ, ArrowDownAZ, Search } from "lucide-react";
-import { ProdutoForm } from "@/components/ProdutoForm";
-import { ListaProdutos } from "@/components/ListaProdutos";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-
-type ListaProdutosRef = { fetchProdutos: () => void };
+import { PlusIcon, RefreshCwIcon, SortAscIcon, SortDescIcon } from "lucide-react";
+import { useSession } from "@/hooks/useSession";
+import { ListaProdutos, ListaProdutosRef } from "@/components/ListaProdutos";
+import { useRouter } from "next/router";
 
 export default function Produtos() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const listaProdutosRef = useRef<ListaProdutosRef>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const { session } = useSession();
+  const router = useRouter();
 
+  const listaProdutosRef = useRef<ListaProdutosRef>(null);
+
+  // 🔍 Busca
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+
+  // ↕️ Ordenação
   const [sort, setSort] = useState<"nameAsc" | "nameDesc">("nameAsc");
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUserEmail(data.user?.email?.toLowerCase() ?? null);
-    });
-  }, []);
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  const handleCreateSuccess = () => {
-    setIsDialogOpen(false);
+  const handleRefresh = () => {
     listaProdutosRef.current?.fetchProdutos();
-    toast.success("Produto criado e lista atualizada!");
   };
 
-  const isFelipe = userEmail === "felipe@colaborador.com";
-
-  const toggleSort = () => {
-    setSort((s) => (s === "nameAsc" ? "nameDesc" : "nameAsc"));
+  const handleCadastrarProduto = () => {
+    router.push("/produtos/novo");
   };
-
-  const sortIcon = sort === "nameAsc" ? <ArrowUpAZ className="h-4 w-4" /> : <ArrowDownAZ className="h-4 w-4" />;
-  const sortLabel = sort === "nameAsc" ? "A–Z" : "Z–A";
 
   return (
-    <div className="space-y-8 p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-4xl font-display font-medium text-primary-dark mb-2">Produtos</h1>
-          <p className="text-muted-foreground font-body font-light">
-            Gerencie o catálogo de produtos da sua loja
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={toggleSort}>
-            {sortIcon}
-            <span className="ml-2">{sortLabel}</span>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold tracking-tight">Produtos</h1>
+        {session?.user.email !== "barrocacolaborador.com" && (
+          <Button onClick={handleCadastrarProduto}>
+            <PlusIcon className="w-4 h-4 mr-2" />
+            Cadastrar produto
           </Button>
-
-          {!isFelipe && (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-gradient-primary hover:shadow-hover transition-all duration-300 font-body font-medium px-6">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Cadastrar Produto
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto shadow-elegant">
-                <DialogHeader>
-                  <DialogTitle className="font-display text-primary-dark">Cadastrar Novo Produto</DialogTitle>
-                </DialogHeader>
-                <ProdutoForm onSuccess={handleCreateSuccess} />
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
+        )}
       </div>
 
-      <Card className="shadow-card border-primary/10">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="relative w-full md:max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por nome, marca ou tipo…"
-                className="pl-9"
-              />
-            </div>
+      <div className="flex flex-col md:flex-row items-center gap-2">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Pesquisar por nome, marca ou tipo"
+          className="w-full md:w-1/3"
+        />
 
-            <Button variant="outline" onClick={() => { setSearch(""); setDebouncedSearch(""); }}>
-              Limpar
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <Button
+          variant="outline"
+          onClick={() => setSort((prev) => (prev === "nameAsc" ? "nameDesc" : "nameAsc"))}
+        >
+          {sort === "nameAsc" ? (
+            <>
+              <SortAscIcon className="w-4 h-4 mr-2" />
+              A–Z
+            </>
+          ) : (
+            <>
+              <SortDescIcon className="w-4 h-4 mr-2" />
+              Z–A
+            </>
+          )}
+        </Button>
 
-      <Card className="shadow-card border-primary/10 bg-gradient-card">
-        <CardHeader className="bg-primary/3 border-b border-primary/10">
-          <CardTitle className="font-display text-primary-dark text-xl font-medium">
-            Lista de Produtos
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <ListaProdutos
-            ref={listaProdutosRef}
-            searchTerm={debouncedSearch}
-            sort={sort}
-          />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+        <Button variant="outline" onClick={handleRefresh}>
+          <RefreshCwIcon className="w-4 h-4 mr-2" />
+          Atualizar
+        </Button>
+      </div>
+
+      <ListaProdutos
+        ref={listaProdutosRef}
+        searchTerm={debouncedSearch}
+        sort={sort}
