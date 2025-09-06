@@ -83,6 +83,7 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
 
     // Filtro local por nome, marca ou tipo
     const filtered = produtos.filter((p) => {
+      if (!searchTerm.trim()) return true;
       const q = searchTerm.toLowerCase();
       return (
         (p.nome ?? "").toLowerCase().includes(q) ||
