@@ -370,165 +370,203 @@ export default function Encomendas() {
       </Card>
 
       {/* Lista de encomendas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Encomendas ({filteredEncomendas.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredEncomendas.length === 0 ? (
-            <div className="text-center py-8">
+      <div className="space-y-4">
+        {filteredEncomendas.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-8">
               <p className="text-muted-foreground">Nenhuma encomenda encontrada</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Número</th>
-                    <th className="text-left p-2">Cliente</th>
-                    <th className="text-left p-2">Status</th>
-                    <th className="text-left p-2">Valor Total</th>
-                    <th className="text-left p-2">Comissão</th>
-                    <th className="text-left p-2">Data Produção</th>
-                    <th className="text-left p-2">Data Entrega</th>
-                    <th className="text-left p-2">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredEncomendas.map((encomenda) => (
-                    <tr key={encomenda.id} className="border-b hover:bg-muted/50">
-                      <td className="p-2">
-                        <div className="font-medium">{encomenda.numero_encomenda}</div>
-                        {encomenda.etiqueta && (
-                          <div className="text-xs text-muted-foreground">{encomenda.etiqueta}</div>
-                        )}
-                      </td>
-                      <td className="p-2">{encomenda.clientes?.nome || 'N/A'}</td>
-                      <td className="p-2">
-                        <EncomendaStatusSelect
+            </CardContent>
+          </Card>
+        ) : (
+          filteredEncomendas.map((encomenda) => (
+            <Card key={encomenda.id} className="shadow-card transition-all duration-300 hover:shadow-hover">
+              <CardContent className="p-4">
+                {/* Primeira linha: Pedido, Etiqueta, Cliente, Fornecedor, Ações */}
+                <div className="flex items-center justify-between w-full mb-4">
+                  <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <div className="font-semibold text-primary-dark">
+                      #{encomenda.numero_encomenda}
+                    </div>
+                    {encomenda.etiqueta && (
+                      <div className="text-sm text-muted-foreground px-2 py-1 bg-muted/50 rounded">
+                        {encomenda.etiqueta}
+                      </div>
+                    )}
+                    <div className="text-sm font-medium truncate">
+                      {encomenda.clientes?.nome || 'N/A'}
+                    </div>
+                    <div className="text-sm text-muted-foreground truncate">
+                      {encomenda.fornecedores?.nome || 'N/A'}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => {
+                        setSelectedEncomenda(encomenda);
+                        setViewDialogOpen(true);
+                      }}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={() => handlePrint(encomenda)}
+                    >
+                      <Printer className="h-4 w-4" />
+                    </Button>
+                    {canEdit() && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => {
+                            setSelectedEncomenda(encomenda);
+                            setEditDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <EncomendaActions
                           encomenda={encomenda}
-                          onStatusChange={handleStatusChange}
+                          onDelete={handleDelete}
+                          onTransport={() => handleTransport(encomenda)}
                         />
-                      </td>
-                      <td className="p-2">{formatCurrency(encomenda.valor_total)}</td>
-                      <td className="p-2">
-                        <span className={cn(
-                          "font-medium",
-                          (encomenda.commission_amount || 0) >= 0 ? "text-green-600" : "text-red-600"
-                        )}>
-                          {formatCurrency(encomenda.commission_amount || 0)}
-                        </span>
-                      </td>
-                      <td className="p-2">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              className={cn(
-                                "w-[140px] justify-start text-left font-normal",
-                                !encomenda.data_producao_estimada && "text-muted-foreground"
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {encomenda.data_producao_estimada ? (
-                                formatDate(encomenda.data_producao_estimada)
-                              ) : (
-                                <span>Selecionar data</span>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={encomenda.data_producao_estimada ? new Date(encomenda.data_producao_estimada) : undefined}
-                              onSelect={(date) => {
-                                const dateString = date ? format(date, 'yyyy-MM-dd') : '';
-                                handleDateUpdate(encomenda.id, 'data_producao_estimada', dateString);
-                              }}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </td>
-                      <td className="p-2">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              className={cn(
-                                "w-[140px] justify-start text-left font-normal",
-                                !encomenda.data_envio_estimada && "text-muted-foreground"
-                              )}
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {encomenda.data_envio_estimada ? (
-                                formatDate(encomenda.data_envio_estimada)
-                              ) : (
-                                <span>Selecionar data</span>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={encomenda.data_envio_estimada ? new Date(encomenda.data_envio_estimada) : undefined}
-                              onSelect={(date) => {
-                                const dateString = date ? format(date, 'yyyy-MM-dd') : '';
-                                handleDateUpdate(encomenda.id, 'data_envio_estimada', dateString);
-                              }}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </td>
-                      <td className="p-2">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedEncomenda(encomenda);
-                              setViewDialogOpen(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handlePrint(encomenda)}
-                          >
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                          {canEdit() && (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedEncomenda(encomenda);
-                                  setEditDialogOpen(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <EncomendaActions
-                                encomenda={encomenda}
-                                onDelete={handleDelete}
-                                onTransport={() => handleTransport(encomenda)}
-                              />
-                            </>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Segunda linha: Dados detalhados */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 items-center">
+                  {/* Data Produção */}
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground font-medium">Data Produção</div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className={cn(
+                            "w-full justify-start text-left font-normal h-8 px-2",
+                            !encomenda.data_producao_estimada && "text-muted-foreground"
                           )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                        >
+                          <CalendarIcon className="mr-1 h-3 w-3" />
+                          <span className="text-xs">
+                            {encomenda.data_producao_estimada ? (
+                              formatDate(encomenda.data_producao_estimada)
+                            ) : (
+                              "Selecionar"
+                            )}
+                          </span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={encomenda.data_producao_estimada ? new Date(encomenda.data_producao_estimada) : undefined}
+                          onSelect={(date) => {
+                            const dateString = date ? format(date, 'yyyy-MM-dd') : '';
+                            handleDateUpdate(encomenda.id, 'data_producao_estimada', dateString);
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Data Entrega */}
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground font-medium">Data Entrega</div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          className={cn(
+                            "w-full justify-start text-left font-normal h-8 px-2",
+                            !encomenda.data_envio_estimada && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-1 h-3 w-3" />
+                          <span className="text-xs">
+                            {encomenda.data_envio_estimada ? (
+                              formatDate(encomenda.data_envio_estimada)
+                            ) : (
+                              "Selecionar"
+                            )}
+                          </span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={encomenda.data_envio_estimada ? new Date(encomenda.data_envio_estimada) : undefined}
+                          onSelect={(date) => {
+                            const dateString = date ? format(date, 'yyyy-MM-dd') : '';
+                            handleDateUpdate(encomenda.id, 'data_envio_estimada', dateString);
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Peso Bruto */}
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground font-medium">Peso Bruto</div>
+                    <div className="text-sm font-medium bg-muted/30 px-2 py-1 rounded text-center">
+                      {pesoTransporte[encomenda.id]?.toFixed(2) || '0.00'} kg
+                    </div>
+                  </div>
+
+                  {/* Valor Frete */}
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground font-medium">Valor Frete</div>
+                    <div className="text-sm font-medium text-amber-600 bg-amber-50 px-2 py-1 rounded text-center">
+                      €{((pesoTransporte[encomenda.id] || 0) * 4.5).toFixed(2)}
+                    </div>
+                  </div>
+
+                  {/* Status */}
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground font-medium">Status</div>
+                    <EncomendaStatusSelect
+                      encomenda={encomenda}
+                      onStatusChange={handleStatusChange}
+                    />
+                  </div>
+
+                  {/* Comissão */}
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground font-medium">Comissão</div>
+                    <div className={cn(
+                      "text-sm font-medium px-2 py-1 rounded text-center",
+                      (encomenda.commission_amount || 0) >= 0 
+                        ? "text-green-600 bg-green-50" 
+                        : "text-red-600 bg-red-50"
+                    )}>
+                      {formatCurrency(encomenda.commission_amount || 0)}
+                    </div>
+                  </div>
+
+                  {/* Valor Total */}
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground font-medium">Valor Total</div>
+                    <div className="text-sm font-semibold text-primary-dark bg-primary/10 px-2 py-1 rounded text-center">
+                      {formatCurrency(encomenda.valor_total)}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
 
       {/* Dialogs */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
