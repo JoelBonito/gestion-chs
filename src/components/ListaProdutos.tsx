@@ -81,26 +81,25 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
       }
     };
 
-    // Filtro local por nome, marca ou tipo
-    const filtered = produtos.filter((p) => {
-      if (!searchTerm.trim()) return true;
-      const q = searchTerm.toLowerCase();
-      return (
-        (p.nome ?? "").toLowerCase().includes(q) ||
-        (p.marca ?? "").toLowerCase().includes(q) ||
-        (p.tipo ?? "").toLowerCase().includes(q)
-      );
-    });
+    // Filtro e ordenação dos produtos
+    const sortedAndFiltered = produtos
+      .filter((p) => {
+        if (!searchTerm.trim()) return true;
+        const q = searchTerm.toLowerCase();
+        return (
+          (p.nome ?? "").toLowerCase().includes(q) ||
+          (p.marca ?? "").toLowerCase().includes(q) ||
+          (p.tipo ?? "").toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => {
+        const nomeA = (a.nome ?? "").toLowerCase();
+        const nomeB = (b.nome ?? "").toLowerCase();
 
-    // Ordenação local por nome
-    filtered.sort((a, b) => {
-      const nomeA = (a.nome ?? "").toLowerCase();
-      const nomeB = (b.nome ?? "").toLowerCase();
-
-      if (nomeA < nomeB) return sort === "nameAsc" ? -1 : 1;
-      if (nomeA > nomeB) return sort === "nameAsc" ? 1 : -1;
-      return 0;
-    });
+        if (nomeA < nomeB) return sort === "nameAsc" ? -1 : 1;
+        if (nomeA > nomeB) return sort === "nameAsc" ? 1 : -1;
+        return 0;
+      });
 
     if (loading) {
       return (
@@ -110,7 +109,7 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
       );
     }
 
-    if (filtered.length === 0) {
+    if (sortedAndFiltered.length === 0) {
       return (
         <div className="text-center py-8">
           <p className="text-muted-foreground font-body">Nenhum produto encontrado.</p>
@@ -120,7 +119,7 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filtered.map((produto) => (
+        {sortedAndFiltered.map((produto) => (
           <ProdutoCard
             key={produto.id}
             produto={produto}
