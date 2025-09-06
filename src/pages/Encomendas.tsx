@@ -32,6 +32,7 @@ type StatusFilter = StatusEncomenda | "TODOS";
 interface Encomenda {
   id: string;
   numero_encomenda: string;
+  etiqueta?: string;
   status: StatusEncomenda;
   status_producao?: string;
   valor_total: number;
@@ -245,6 +246,7 @@ export default function Encomendas() {
         <body>
           <div class="header">
             <div class="title">Encomenda #${encomenda.numero_encomenda}</div>
+            ${encomenda.etiqueta ? `<div class="subtitle">Etiqueta: ${encomenda.etiqueta}</div>` : ''}
             <div class="subtitle">Criada em ${formatDate(encomenda.data_criacao)}</div>
           </div>
 
@@ -380,9 +382,12 @@ export default function Encomendas() {
   };
 
   const filteredEncomendas = encomendas.filter(encomenda => {
-    const matchesSearch = encomenda.numero_encomenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (encomenda.clientes?.nome && encomenda.clientes.nome.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (encomenda.fornecedores?.nome && encomenda.fornecedores.nome.toLowerCase().includes(searchTerm.toLowerCase()));
+    console.log('[Encomendas] filtro', { searchTerm, total: encomendas.length });
+    const q = searchTerm.toLowerCase();
+    const matchesSearch = encomenda.numero_encomenda.toLowerCase().includes(q) ||
+      (encomenda.clientes?.nome && encomenda.clientes.nome.toLowerCase().includes(q)) ||
+      (encomenda.fornecedores?.nome && encomenda.fornecedores.nome.toLowerCase().includes(q)) ||
+      (encomenda.etiqueta && encomenda.etiqueta.toLowerCase().includes(q));
     
     const matchesCompletedFilter = showCompleted ? encomenda.status === 'ENTREGUE' : encomenda.status !== 'ENTREGUE';
     
@@ -544,10 +549,17 @@ export default function Encomendas() {
                   <div className="space-y-3">
                      {/* First line: PEDIDO, CLIENTE, FORNECEDOR, ACTION BUTTONS */}
                      <div className="grid grid-cols-7 gap-4 items-center">
-                       <div>
-                         <p className="text-sm text-muted-foreground">Pedido</p>
-                         <p className="font-bold text-lg">#{encomenda.numero_encomenda}</p>
-                       </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Pedido</p>
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <p className="font-bold text-lg">#{encomenda.numero_encomenda}</p>
+                            {encomenda.etiqueta && (
+                              <span className="inline-block px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                                {encomenda.etiqueta}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                        <div>
                          <p className="text-sm text-muted-foreground">Cliente</p>
                          <p className="font-semibold">{encomenda.clientes?.nome}</p>
@@ -556,62 +568,62 @@ export default function Encomendas() {
                          <p className="text-sm text-muted-foreground">Fornecedor</p>
                          <p className="font-semibold">{encomenda.fornecedores?.nome}</p>
                        </div>
-                       <div className="flex justify-center">
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => handleView(encomenda)}
-                           className="w-full"
-                         >
-                           <Eye className="h-4 w-4" />
-                         </Button>
-                       </div>
-                       <div className="flex justify-center">
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => handlePrint(encomenda)}
-                           className="w-full"
-                         >
-                           <Printer className="h-4 w-4" />
-                         </Button>
-                       </div>
-                       <div className="flex justify-center">
-                         <Button
-                           variant="outline"
-                           size="sm"
-                           onClick={() => handleEdit(encomenda)}
-                           className="w-full"
-                           disabled={isCollaborator}
-                         >
-                           <Edit className="h-4 w-4" />
-                         </Button>
-                       </div>
-                       <div className="flex justify-center">
-                         <Button
-                           variant="destructive"
-                           size="sm"
-                           onClick={async () => {
-                             try {
-                               const { data, error } = await supabase.rpc('delete_encomenda_safely', {
-                                 p_encomenda_id: encomenda.id
-                               });
+                        <div className="flex justify-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleView(encomenda)}
+                            className="w-8 h-8 p-0"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="flex justify-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePrint(encomenda)}
+                            className="w-8 h-8 p-0"
+                          >
+                            <Printer className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="flex justify-center">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(encomenda)}
+                            className="w-8 h-8 p-0"
+                            disabled={isCollaborator}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="flex justify-center">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                const { data, error } = await supabase.rpc('delete_encomenda_safely', {
+                                  p_encomenda_id: encomenda.id
+                                });
 
-                               if (error) throw error;
-                               
-                               toast.success("Encomenda excluída com sucesso!");
-                               handleDelete();
-                             } catch (error: any) {
-                               console.error("Erro ao excluir encomenda:", error);
-                               toast.error(error.message || "Erro ao excluir encomenda");
-                             }
-                           }}
-                           className="w-full"
-                           disabled={!canEdit() || isCollaborator}
-                         >
-                           <Trash2 className="h-4 w-4" />
-                         </Button>
-                       </div>
+                                if (error) throw error;
+                                
+                                toast.success("Encomenda excluída com sucesso!");
+                                handleDelete();
+                              } catch (error: any) {
+                                console.error("Erro ao excluir encomenda:", error);
+                                toast.error(error.message || "Erro ao excluir encomenda");
+                              }
+                            }}
+                            className="w-8 h-8 p-0"
+                            disabled={!canEdit() || isCollaborator}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                      </div>
 
                     {/* Second line: DATA PRODUÇÃO, DATA ENTREGA, PESO BRUTO, VALOR FRETE, STATUS, COMISSÃO, VALOR TOTAL */}

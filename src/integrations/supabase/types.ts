@@ -135,6 +135,7 @@ export type Database = {
           data_entrega: string | null
           data_envio_estimada: string | null
           data_producao_estimada: string | null
+          etiqueta: string | null
           fornecedor_id: string
           fornecedor_nome: string | null
           frete_calculado: boolean | null
@@ -142,6 +143,8 @@ export type Database = {
           numero_encomenda: string
           observacoes: string | null
           peso_total: number | null
+          referencia: string | null
+          referencia_interna: string | null
           saldo_devedor: number | null
           saldo_devedor_fornecedor: number | null
           status: Database["public"]["Enums"]["status_encomenda"]
@@ -162,6 +165,7 @@ export type Database = {
           data_entrega?: string | null
           data_envio_estimada?: string | null
           data_producao_estimada?: string | null
+          etiqueta?: string | null
           fornecedor_id: string
           fornecedor_nome?: string | null
           frete_calculado?: boolean | null
@@ -169,6 +173,8 @@ export type Database = {
           numero_encomenda: string
           observacoes?: string | null
           peso_total?: number | null
+          referencia?: string | null
+          referencia_interna?: string | null
           saldo_devedor?: number | null
           saldo_devedor_fornecedor?: number | null
           status?: Database["public"]["Enums"]["status_encomenda"]
@@ -189,6 +195,7 @@ export type Database = {
           data_entrega?: string | null
           data_envio_estimada?: string | null
           data_producao_estimada?: string | null
+          etiqueta?: string | null
           fornecedor_id?: string
           fornecedor_nome?: string | null
           frete_calculado?: boolean | null
@@ -196,6 +203,8 @@ export type Database = {
           numero_encomenda?: string
           observacoes?: string | null
           peso_total?: number | null
+          referencia?: string | null
+          referencia_interna?: string | null
           saldo_devedor?: number | null
           saldo_devedor_fornecedor?: number | null
           status?: Database["public"]["Enums"]["status_encomenda"]

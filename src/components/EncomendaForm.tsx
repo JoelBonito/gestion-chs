@@ -16,6 +16,7 @@ import { handleEntityInactiveError } from "@/lib/soft-delete-actions";
 
 const encomendaSchema = z.object({
   numero_encomenda: z.string().min(1, "Número da encomenda é obrigatório"),
+  etiqueta: z.string().max(100).regex(/^[A-Za-z0-9\-_ ]*$/, "Apenas letras, números, espaços, hífen e underscore são permitidos").optional().transform(val => val?.trim() || undefined),
   cliente_id: z.string().min(1, "Cliente é obrigatório"),
   fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
   data_producao_estimada: z.string().optional(),
@@ -53,6 +54,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
     resolver: zodResolver(encomendaSchema),
     defaultValues: {
       numero_encomenda: "",
+      etiqueta: "",
       cliente_id: "",
       fornecedor_id: "",
       data_producao_estimada: "",
@@ -113,6 +115,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         // Preencher todos os campos do formulário
         form.reset({
           numero_encomenda: initialData.numero_encomenda || "",
+          etiqueta: initialData.etiqueta || "",
           cliente_id: initialData.cliente_id || "",
           fornecedor_id: initialData.fornecedor_id || "",
           data_producao_estimada: initialData.data_producao_estimada || "",
@@ -324,6 +327,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         const payloadEncomenda = {
           id: initialData.id, // ID da encomenda para edição
           numero_encomenda: data.numero_encomenda,
+          etiqueta: data.etiqueta || null,
           cliente_id: data.cliente_id,
           fornecedor_id: data.fornecedor_id,
           data_envio_estimada: data.data_envio_estimada || null,
@@ -378,6 +382,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
           .insert([
             {
               numero_encomenda: data.numero_encomenda,
+              etiqueta: data.etiqueta || null,
               cliente_id: data.cliente_id,
               fornecedor_id: data.fornecedor_id,
               cliente_nome: clienteData.nome,
@@ -480,6 +485,25 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
                 <FormField
                   control={form.control}
+                  name="etiqueta"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Etiqueta</FormLabel>
+                      <FormControl>
+                        <Input placeholder="ETQ-CLIENTE-001" maxLength={100} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div></div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <FormField
+                  control={form.control}
                   name="cliente_id"
                   render={({ field }) => (
                     <FormItem>
@@ -523,6 +547,20 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
                           ))}
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="etiqueta"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Etiqueta</FormLabel>
+                      <FormControl>
+                        <Input placeholder="ETQ-CLIENTE-001" maxLength={100} {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
