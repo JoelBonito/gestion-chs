@@ -281,6 +281,23 @@ export default function Encomendas() {
     }
   };
 
+  const getStatusColor = (status: StatusEncomenda) => {
+    switch (status) {
+      case "NOVO PEDIDO":
+        return "bg-blue-100 text-blue-800";
+      case "PRODUÇÃO":
+        return "bg-orange-100 text-orange-800";
+      case "EMBALAGEM":
+        return "bg-yellow-100 text-yellow-800";
+      case "TRANSPORTE":
+        return "bg-purple-100 text-purple-800";
+      case "ENTREGUE":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   const filteredEncomendas = encomendas.filter(encomenda => {
     const q = searchTerm.toLowerCase();
     const matchesSearch = encomenda.numero_encomenda.toLowerCase().includes(q) ||
@@ -548,13 +565,16 @@ export default function Encomendas() {
                     </div>
                   </div>
 
-                  {/* Status */  
-<div>
-  <div className="text-sm font-medium text-muted-foreground mb-2">Status</div>
-  <div className="text-sm font-semibold px-3 py-2 bg-gray-100 rounded-lg text-center">
-    {encomenda.status}
-  </div>
-</div>
+                  {/* Status */}
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground mb-2">Status</div>
+                    <div className={cn(
+                      "text-sm font-semibold px-3 py-2 rounded-lg text-center",
+                      getStatusColor(encomenda.status)
+                    )}>
+                      {encomenda.status}
+                    </div>
+                  </div>
 
                   {/* Comissão */}
                   <div>
