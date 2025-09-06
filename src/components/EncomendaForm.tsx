@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,17 +37,22 @@ interface Fornecedor {
 
 interface EncomendaFormProps {
   onSuccess: () => void;
+  encomenda?: any;
   initialData?: any;
   isEditing?: boolean;
 }
 
-export function EncomendaForm({ onSuccess, initialData, isEditing = false }: EncomendaFormProps) {
+export function EncomendaForm({ onSuccess, encomenda, initialData, isEditing = false }: EncomendaFormProps) {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [itens, setItens] = useState<ItemEncomenda[]>([]);
   const [valorTotal, setValorTotal] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pesoBruto, setPesoBruto] = useState(0);
+
+  // Determinar se está editando baseado na presença de dados
+  const editingData = encomenda || initialData;
+  const isEdit = isEditing || !!editingData;
 
   const form = useForm<EncomendaFormData>({
     resolver: zodResolver(encomendaSchema),
@@ -107,25 +111,25 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
   // Carregar dados para edição
   useEffect(() => {
-    if (initialData && isEditing) {
-      console.log("Carregando dados para edição:", initialData);
+    if (editingData && isEdit) {
+      console.log("Carregando dados para edição:", editingData);
       
       // Aguardar um pouco para garantir que clientes e fornecedores foram carregados
       setTimeout(() => {
         // Preencher todos os campos do formulário
         form.reset({
-          numero_encomenda: initialData.numero_encomenda || "",
-          etiqueta: initialData.etiqueta || "",
-          cliente_id: initialData.cliente_id || "",
-          fornecedor_id: initialData.fornecedor_id || "",
-          data_producao_estimada: initialData.data_producao_estimada || "",
-          data_envio_estimada: initialData.data_envio_estimada || "",
-          observacoes: initialData.observacoes || "",
+          numero_encomenda: editingData.numero_encomenda || "",
+          etiqueta: editingData.etiqueta || "",
+          cliente_id: editingData.cliente_id || "",
+          fornecedor_id: editingData.fornecedor_id || "",
+          data_producao_estimada: editingData.data_producao_estimada || "",
+          data_envio_estimada: editingData.data_envio_estimada || "",
+          observacoes: editingData.observacoes || "",
         });
 
         console.log("Formulário resetado com:", {
-          cliente_id: initialData.cliente_id,
-          fornecedor_id: initialData.fornecedor_id
+          cliente_id: editingData.cliente_id,
+          fornecedor_id: editingData.fornecedor_id
         });
       }, 100);
 
@@ -137,7 +141,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
             *,
             produtos(nome, marca, tipo, preco_custo, preco_venda, size_weight)
           `)
-          .eq("encomenda_id", initialData.id);
+          .eq("encomenda_id", editingData.id);
 
         if (error) {
           console.error("Erro ao carregar itens:", error);
@@ -165,7 +169,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
       fetchItens();
     }
-  }, [initialData, isEditing, form, clientes, fornecedores]);
+  }, [editingData, isEdit, form, clientes, fornecedores]);
 
   const generateOrderNumber = async () => {
     const now = new Date();
@@ -207,7 +211,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
   };
 
   const validateUniqueOrderNumber = async (orderNumber: string): Promise<boolean> => {
-    if (isEditing && initialData?.numero_encomenda === orderNumber) {
+    if (isEdit && editingData?.numero_encomenda === orderNumber) {
       // If editing and number hasn't changed, it's valid
       return true;
     }
@@ -285,7 +289,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
       }
 
       // 3. Verificar duplicação de número da encomenda e gerar novo se necessário
-      if (!isEditing) {
+      if (!isEdit) {
         const isUniqueNumber = await validateUniqueOrderNumber(data.numero_encomenda);
         if (!isUniqueNumber) {
           const newUniqueNumber = await generateUniqueOrderNumber();
@@ -318,14 +322,14 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
         return;
       }
 
-      if (isEditing && initialData?.id) {
-        console.log("Atualizando encomenda:", initialData.id);
+      if (isEdit && editingData?.id) {
+        console.log("Atualizando encomenda:", editingData.id);
         console.log("Dados do formulário:", data);
         console.log("Itens para salvar:", itens);
 
         // Preparar dados para a RPC (nova assinatura)
         const payloadEncomenda = {
-          id: initialData.id, // ID da encomenda para edição
+          id: editingData.id, // ID da encomenda para edição
           numero_encomenda: data.numero_encomenda,
           etiqueta: data.etiqueta || null,
           cliente_id: data.cliente_id,
@@ -351,7 +355,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
 
         // Chamar função RPC com assinatura correta (3 parâmetros)
         const { data: resultado, error: updateError } = await supabase.rpc('salvar_edicao_encomenda', {
-          p_encomenda_id: initialData.id,
+          p_encomenda_id: editingData.id,
           p_dados: payloadEncomenda,
           p_itens: itensParaSalvar
         });
@@ -466,7 +470,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
                       <FormControl>
                         <div className="flex gap-2">
                           <Input placeholder="Ex: ENC-2024-001" {...field} />
-                          {!isEditing && (
+                          {!isEdit && (
                             <Button 
                               type="button" 
                               variant="outline" 
@@ -501,7 +505,6 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
                 <FormField
                   control={form.control}
                   name="cliente_id"
@@ -551,20 +554,6 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
                     </FormItem>
                   )}
                 />
-
-                <FormField
-                  control={form.control}
-                  name="etiqueta"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Etiqueta</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ETQ-CLIENTE-001" maxLength={100} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -596,7 +585,6 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
                   )}
                 />
 
-                {/* Campo Peso Bruto */}
                 <div>
                   <label className="text-sm font-medium mb-2 block">Peso Bruto</label>
                   <div className="flex items-center h-10 px-3 py-2 border border-input bg-muted rounded-md">
@@ -646,7 +634,7 @@ export function EncomendaForm({ onSuccess, initialData, isEditing = false }: Enc
             className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Salvando..." : (isEditing ? "Atualizar Encomenda" : "Criar Encomenda")}
+            {isSubmitting ? "Salvando..." : (isEdit ? "Atualizar Encomenda" : "Criar Encomenda")}
           </Button>
         </form>
       </Form>
