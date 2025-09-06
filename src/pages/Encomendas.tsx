@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
-import { useLocale } from "@/contexts/LocaleContext";
 import { useFormatters } from "@/hooks/useFormatters";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,7 +27,7 @@ import { EncomendaView } from "@/components/EncomendaView";
 import { EncomendaActions } from "@/components/EncomendaActions";
 import { EncomendaStatusFilter } from "@/components/EncomendaStatusFilter";
 import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
-import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect"; // <- seletor da versão antiga
+import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -60,7 +59,7 @@ interface Encomenda {
 
 /** Componente principal */
 export default function Encomendas() {
-  const queryClient = useQueryClient(); // pode ser útil para invalidações futuras
+  const queryClient = useQueryClient();
   const { canEdit, hasRole } = useUserRole();
   const isCollaborator = useIsCollaborator();
   const { formatCurrency, formatDate } = useFormatters();
@@ -132,7 +131,7 @@ export default function Encomendas() {
 
         setEncomendas(encomendasWithComputed || []);
 
-        // calcular pesos por encomenda (assíncrono em série para evitar throttling)
+        // calcular pesos por encomenda
         const pesos: { [key: string]: number } = {};
         for (const enc of encomendasWithComputed) {
           const pesoCalculado = await calcularPesoTransporte(enc.id);
@@ -265,7 +264,11 @@ export default function Encomendas() {
   };
 
   /** Atualiza datas (produção/entrega) com regras de permissão */
-  const handleDateUpdate = async (encomendaId: string, field: "data_producao_estimada" | "data_envio_estimada", value: string) => {
+  const handleDateUpdate = async (
+    encomendaId: string,
+    field: "data_producao_estimada" | "data_envio_estimada",
+    value: string
+  ) => {
     const canEditProduction = canEdit() || hasRole("factory") || isCollaborator;
     const canEditDelivery = canEdit() || isCollaborator;
 
@@ -395,37 +398,54 @@ export default function Encomendas() {
           filteredEncomendas.map((encomenda) => (
             <Card key={encomenda.id} className="shadow-card transition-all duration-300 hover:shadow-hover">
               <CardContent className="p-6">
-                {/* Linha 1: dados principais e ações */}
-                <div className="flex items-center justify-between w-full mb-6">
-                  <div className="flex items-center flex-1 min-w-0">
-                    <div className="min-w-0 mr-6">
-                      <div className="text-sm font-medium text-muted-foreground mb-1">Pedido</div>
-                      <div className="font-bold text-lg text-primary-dark">#{encomenda.numero_encomenda}</div>
-                    </div>
-
-                    {encomenda.etiqueta && (
-                      <div className="min-w-0 mr-6">
-                        <div className="text-sm font-medium text-muted-foreground mb-1">Etiqueta</div>
-                        <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                          {encomenda.etiqueta}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex-1 min-w-0 mr-6">
-                      <div className="text-sm font-medium text-muted-foreground mb-1">Cliente</div>
-                      <div className="text-sm font-semibold truncate">{encomenda.clientes?.nome || "N/A"}</div>
-                    </div>
-
-                    <div className="flex-1 min-w-0 mr-8">
-                      <div className="text-sm font-medium text-muted-foreground mb-1">Fornecedor</div>
-                      <div className="text-sm font-medium text-muted-foreground truncate">
-                        {encomenda.fornecedores?.nome || "N/A"}
-                      </div>
+                {/* Linha 1 (harmonizada): Pedido / Etiqueta / Cliente / Fornecedor / Ações */}
+                <div className="grid grid-cols-12 gap-6 items-start mb-6">
+                  {/* Pedido */}
+                  <div className="col-span-12 sm:col-span-6 lg:col-span-2 min-w-0">
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Pedido</div>
+                    <div className="font-bold text-lg text-primary-dark truncate">
+                      #{encomenda.numero_encomenda}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  {/* Etiqueta */}
+                  {encomenda.etiqueta && (
+                    <div className="col-span-6 sm:col-span-6 lg:col-span-2 min-w-0">
+                      <div className="text-sm font-medium text-muted-foreground mb-1">Etiqueta</div>
+                      <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full w-fit truncate">
+                        {encomenda.etiqueta}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cliente */}
+                  <div
+                    className={`min-w-0 ${
+                      encomenda.etiqueta
+                        ? "col-span-12 sm:col-span-6 lg:col-span-3"
+                        : "col-span-12 sm:col-span-6 lg:col-span-4"
+                    }`}
+                  >
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Cliente</div>
+                    <div className="text-sm font-semibold truncate">{encomenda.clientes?.nome || "N/A"}</div>
+                  </div>
+
+                  {/* Fornecedor */}
+                  <div
+                    className={`min-w-0 ${
+                      encomenda.etiqueta
+                        ? "col-span-12 sm:col-span-6 lg:col-span-3"
+                        : "col-span-12 sm:col-span-6 lg:col-span-4"
+                    }`}
+                  >
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Fornecedor</div>
+                    <div className="text-sm font-medium text-muted-foreground truncate">
+                      {encomenda.fornecedores?.nome || "N/A"}
+                    </div>
+                  </div>
+
+                  {/* Ações */}
+                  <div className="col-span-12 lg:col-span-2 flex items-center justify-start lg:justify-end gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -437,7 +457,12 @@ export default function Encomendas() {
                     >
                       <Eye className="h-5 w-5" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-10 w-10 p-0" onClick={() => handlePrint(encomenda)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-10 w-10 p-0"
+                      onClick={() => handlePrint(encomenda)}
+                    >
                       <Printer className="h-5 w-5" />
                     </Button>
                     {canEdit() && (
@@ -479,7 +504,9 @@ export default function Encomendas() {
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           <span className="text-sm">
-                            {encomenda.data_producao_estimada ? formatDate(encomenda.data_producao_estimada) : "Selecionar"}
+                            {encomenda.data_producao_estimada
+                              ? formatDate(encomenda.data_producao_estimada)
+                              : "Selecionar"}
                           </span>
                         </Button>
                       </PopoverTrigger>
