@@ -616,13 +616,17 @@ export default function Encomendas() {
 
       {/* Dialog: visualizar */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Visualizar Encomenda #{selectedEncomenda?.numero_encomenda}</DialogTitle>
-          </DialogHeader>
-          {selectedEncomenda && <EncomendaView encomendaId={selectedEncomenda} />}
-        </DialogContent>
-      </Dialog>
+       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" key={selectedEncomenda?.id}>
+        <DialogHeader>
+        <DialogTitle>Visualizar Encomenda #{selectedEncomenda?.numero_encomenda}</DialogTitle>
+        <DialogDescription className="sr-only">Detalhes completos da encomenda selecionada.</DialogDescription>
+      </DialogHeader>
+
+    {selectedEncomenda && (
+      <EncomendaView encomendaId={selectedEncomenda.id} />  {/* <- SOMENTE O ID */}
+    )}
+  </DialogContent>
+</Dialog>
 
       {/* Dialog: editar */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
