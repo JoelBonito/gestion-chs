@@ -281,23 +281,6 @@ export default function Encomendas() {
     }
   };
 
-  const getStatusColor = (status: StatusEncomenda) => {
-    switch (status) {
-      case "NOVO PEDIDO":
-        return "bg-blue-100 text-blue-800";
-      case "PRODUÇÃO":
-        return "bg-orange-100 text-orange-800";
-      case "EMBALAGEM":
-        return "bg-yellow-100 text-yellow-800";
-      case "TRANSPORTE":
-        return "bg-purple-100 text-purple-800";
-      case "ENTREGUE":
-        return "bg-green-100 text-green-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
   const filteredEncomendas = encomendas.filter(encomenda => {
     const q = searchTerm.toLowerCase();
     const matchesSearch = encomenda.numero_encomenda.toLowerCase().includes(q) ||
@@ -400,8 +383,8 @@ export default function Encomendas() {
               <CardContent className="p-6">
                 {/* Primeira linha: Pedido, Etiqueta, Cliente, Fornecedor, Ações */}
                 <div className="flex items-center justify-between w-full mb-6">
-                  <div className="flex items-center gap-6 flex-1 min-w-0">
-                    <div>
+                  <div className="flex items-center flex-1 min-w-0">
+                    <div className="min-w-0 mr-4">
                       <div className="text-sm font-medium text-muted-foreground mb-1">Pedido</div>
                       <div className="font-bold text-lg text-primary-dark">
                         #{encomenda.numero_encomenda}
@@ -409,7 +392,7 @@ export default function Encomendas() {
                     </div>
                     
                     {encomenda.etiqueta && (
-                      <div>
+                      <div className="min-w-0 mr-4">
                         <div className="text-sm font-medium text-muted-foreground mb-1">Etiqueta</div>
                         <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
                           {encomenda.etiqueta}
@@ -417,14 +400,14 @@ export default function Encomendas() {
                       </div>
                     )}
                     
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 mr-4">
                       <div className="text-sm font-medium text-muted-foreground mb-1">Cliente</div>
                       <div className="text-sm font-semibold truncate">
                         {encomenda.clientes?.nome || 'N/A'}
                       </div>
                     </div>
                     
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 mr-6">
                       <div className="text-sm font-medium text-muted-foreground mb-1">Fornecedor</div>
                       <div className="text-sm font-medium text-muted-foreground truncate">
                         {encomenda.fornecedores?.nome || 'N/A'}
@@ -568,12 +551,10 @@ export default function Encomendas() {
                   {/* Status */}
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">Status</div>
-                    <div className={cn(
-                      "text-sm font-semibold px-3 py-2 rounded-lg text-center",
-                      getStatusColor(encomenda.status)
-                    )}>
-                      {encomenda.status}
-                    </div>
+                    <EncomendaStatusSelect
+                      encomenda={encomenda}
+                      onStatusChange={handleStatusChange}
+                    />
                   </div>
 
                   {/* Comissão */}
