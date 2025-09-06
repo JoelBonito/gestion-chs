@@ -246,7 +246,7 @@ export default function Encomendas() {
         <body>
           <div class="header">
             <div class="title">Encomenda #${encomenda.numero_encomenda}</div>
-            $${encomenda.etiqueta ? `<div class="subtitle">Etiqueta: $${encomenda.etiqueta}</div>` : ''}
+            ${encomenda.etiqueta ? `<div class="subtitle">Etiqueta: $${encomenda.etiqueta}</div>` : ''}
             <div class="subtitle">Criada em ${formatDate(encomenda.data_criacao)}</div>
           </div>
 
