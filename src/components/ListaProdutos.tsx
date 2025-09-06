@@ -100,7 +100,6 @@ const sortedAndFiltered = produtos
     return 0;
   });
 
-// 🐛 ADICIONE ESTES LOGS AQUI:
 console.log("🔍 Props:", { searchTerm, sort });
 console.log("📦 Total produtos:", produtos.length);
 console.log("🎯 Filtrados:", sortedAndFiltered.length);
