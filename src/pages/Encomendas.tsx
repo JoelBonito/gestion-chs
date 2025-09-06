@@ -548,16 +548,13 @@ export default function Encomendas() {
                     </div>
                   </div>
 
-                  {/* Status */}
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground mb-2">Status</div>
-                    <div className="bg-gray-100 rounded-lg p-2">
-                      <EncomendaStatusSelect
-                        encomenda={encomenda}
-                        onStatusChange={handleStatusChange}
-                      />
-                    </div>
-                  </div>
+                  {/* Status */  
+<div>
+  <div className="text-sm font-medium text-muted-foreground mb-2">Status</div>
+  <div className="text-sm font-semibold px-3 py-2 bg-gray-100 rounded-lg text-center">
+    {encomenda.status}
+  </div>
+</div>
 
                   {/* Comissão */}
                   <div>
