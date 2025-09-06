@@ -8,23 +8,32 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useFormatters } from "@/hooks/useFormatters";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+
 import { EncomendaForm } from "@/components/EncomendaForm";
 import { EncomendaView } from "@/components/EncomendaView";
 import { EncomendaActions } from "@/components/EncomendaActions";
 import { EncomendaStatusFilter } from "@/components/EncomendaStatusFilter";
 import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
-import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
+import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect"; // <- seletor da versão antiga
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+/** Tipos */
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 type StatusFilter = StatusEncomenda | "TODOS";
 
@@ -49,42 +58,49 @@ interface Encomenda {
   valor_total_custo?: number;
 }
 
+/** Componente principal */
 export default function Encomendas() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient(); // pode ser útil para invalidações futuras
   const { canEdit, hasRole } = useUserRole();
   const isCollaborator = useIsCollaborator();
-  const { locale, isRestrictedFR } = useLocale();
   const { formatCurrency, formatDate } = useFormatters();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("TODOS");
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [transportDialogOpen, setTransportDialogOpen] = useState(false);
+
   const [selectedEncomenda, setSelectedEncomenda] = useState<Encomenda | null>(null);
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
   const [loading, setLoading] = useState(true);
   const [pesoTransporte, setPesoTransporte] = useState<{ [key: string]: number }>({});
 
-  const statusOptions: StatusEncomenda[] = ["NOVO PEDIDO", "PRODUÇÃO", "EMBALAGEM", "TRANSPORTE", "ENTREGUE"];
-
+  /** Buscar encomendas + cálculos auxiliares */
   const fetchEncomendas = async () => {
     try {
+      setLoading(true);
+
       const { data, error } = await supabase
         .from("encomendas")
-        .select(`
+        .select(
+          `
           *,
           clientes(nome),
           fornecedores(nome)
-        `)
+        `
+        )
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      
+
       if (data) {
-        const encomendasWithCommission = await Promise.all(
-          data.map(async (encomenda) => {
+        const encomendasWithComputed = await Promise.all(
+          data.map(async (encomenda: any) => {
+            // calcular comissão e custo total a partir dos itens
             const { data: itens, error: itensError } = await supabase
               .from("itens_encomenda")
               .select(`quantidade, preco_unitario, preco_custo`)
@@ -92,44 +108,47 @@ export default function Encomendas() {
 
             let commission_amount = 0;
             let valor_total_custo = 0;
+
             if (!itensError && itens) {
-              commission_amount = itens.reduce((total, item: any) => {
+              commission_amount = itens.reduce((total: number, item: any) => {
                 const receita = Number(item.quantidade || 0) * Number(item.preco_unitario || 0);
                 const custo = Number(item.quantidade || 0) * Number(item.preco_custo || 0);
                 const lucro = receita - custo;
                 return total + lucro;
               }, 0);
-              
-              valor_total_custo = itens.reduce((total, item: any) => {
-                return total + (Number(item.quantidade || 0) * Number(item.preco_custo || 0));
+
+              valor_total_custo = itens.reduce((total: number, item: any) => {
+                return total + Number(item.quantidade || 0) * Number(item.preco_custo || 0);
               }, 0);
             }
 
             return {
               ...encomenda,
               commission_amount,
-              valor_total_custo
-            };
+              valor_total_custo,
+            } as Encomenda;
           })
         );
 
-        setEncomendas(encomendasWithCommission || []);
+        setEncomendas(encomendasWithComputed || []);
 
+        // calcular pesos por encomenda (assíncrono em série para evitar throttling)
         const pesos: { [key: string]: number } = {};
-        for (const encomenda of encomendasWithCommission) {
-          const pesoCalculado = await calcularPesoTransporte(encomenda.id);
-          pesos[encomenda.id] = pesoCalculado;
+        for (const enc of encomendasWithComputed) {
+          const pesoCalculado = await calcularPesoTransporte(enc.id);
+          pesos[enc.id] = pesoCalculado;
         }
         setPesoTransporte(pesos);
       }
-    } catch (error) {
-      console.error("Erro ao carregar encomendas:", error);
+    } catch (e) {
+      console.error("Erro ao carregar encomendas:", e);
       toast.error("Erro ao carregar encomendas");
     } finally {
       setLoading(false);
     }
   };
 
+  /** Peso de transporte (usa size_weight em gramas e aplica 30% de margem) */
   const calcularPesoTransporte = async (encomendaId: string): Promise<number> => {
     try {
       const { data: itens, error } = await supabase
@@ -139,35 +158,35 @@ export default function Encomendas() {
 
       if (error || !itens) return 0;
 
-      const pesoTotalGramas = itens.reduce((total, item: any) => {
+      const pesoTotalGramas = itens.reduce((total: number, item: any) => {
         const quantidade = Number(item.quantidade || 0);
         const sizeWeight = Number(item.produtos?.size_weight || 0);
-        return total + (quantidade * sizeWeight);
+        return total + quantidade * sizeWeight;
       }, 0);
 
-      const pesoBrutoKg = (pesoTotalGramas * 1.30) / 1000;
+      const pesoBrutoKg = (pesoTotalGramas * 1.3) / 1000;
       return pesoBrutoKg;
-    } catch (error) {
-      console.error("Erro ao calcular peso:", error);
+    } catch (e) {
+      console.error("Erro ao calcular peso:", e);
       return 0;
     }
   };
 
   useEffect(() => {
     fetchEncomendas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** Impressão rápida */
   const handlePrint = async (encomenda: Encomenda) => {
     try {
-      console.log('[OrderPDF] Starting print for order:', encomenda.numero_encomenda);
-      
-      const printWindow = window.open('', '_blank', 'width=800,height=600');
+      const printWindow = window.open("", "_blank", "width=800,height=600");
       if (!printWindow) {
         toast.error("Erro ao abrir janela de impressão");
         return;
       }
 
-      const printContent = `
+      const html = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -181,12 +200,9 @@ export default function Encomendas() {
             .subtitle { font-size: 14px; color: #666; }
             .content { margin: 20px 0; }
             .section { margin-bottom: 15px; }
-            .label { font-weight: bold; display: inline-block; width: 120px; }
+            .label { font-weight: bold; display: inline-block; width: 140px; }
             .value { display: inline-block; }
-            table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-            th { background-color: #f0f0f0; font-weight: bold; }
-            .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #666; }
+            .row { margin: 6px 0; }
           </style>
         </head>
         <body>
@@ -198,105 +214,102 @@ export default function Encomendas() {
 
           <div class="content">
             <div class="section">
-              <div><span class="label">Cliente:</span> <span class="value">${encomenda.clientes?.nome || 'N/A'}</span></div>
-              <div><span class="label">Fornecedor:</span> <span class="value">${encomenda.fornecedores?.nome || 'N/A'}</span></div>
-              <div><span class="label">Status:</span> <span class="value">${encomenda.status}</span></div>
-              <div><span class="label">Valor Total:</span> <span class="value">${formatCurrency(encomenda.valor_total)}</span></div>
-              <div><span class="label">Valor Pago:</span> <span class="value">${formatCurrency(encomenda.valor_pago)}</span></div>
+              <div class="row"><span class="label">Cliente:</span> <span class="value">${encomenda.clientes?.nome || "N/A"}</span></div>
+              <div class="row"><span class="label">Fornecedor:</span> <span class="value">${encomenda.fornecedores?.nome || "N/A"}</span></div>
+              <div class="row"><span class="label">Status:</span> <span class="value">${encomenda.status}</span></div>
+              <div class="row"><span class="label">Valor Total:</span> <span class="value">${formatCurrency(encomenda.valor_total)}</span></div>
+              <div class="row"><span class="label">Valor Pago:</span> <span class="value">${formatCurrency(encomenda.valor_pago)}</span></div>
             </div>
 
-            ${encomenda.observacoes ? `
-              <div class="section">
-                <div class="label">Observações:</div>
-                <div>${encomenda.observacoes}</div>
-              </div>
-            ` : ''}
+            ${
+              encomenda.observacoes
+                ? `<div class="section"><div class="label">Observações:</div><div>${encomenda.observacoes}</div></div>`
+                : ""
+            }
           </div>
 
-          <div class="footer">
+          <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666;">
             Documento gerado em ${formatDate(new Date().toISOString())}
           </div>
         </body>
         </html>
       `;
 
-      printWindow.document.write(printContent);
+      printWindow.document.write(html);
       printWindow.document.close();
-      
       (printWindow as any).onload = () => {
         (printWindow as any).print();
         (printWindow as any).onafterprint = () => (printWindow as any).close();
       };
-
-      console.log('[OrderPDF] Print window opened successfully');
-      toast.success("Janela de impressão aberta!");
-    } catch (error) {
-      console.error('[OrderPDF] Error opening print window:', error);
+      toast.success("Janela de impressão aberta");
+    } catch (e) {
+      console.error("Erro ao imprimir:", e);
       toast.error("Erro ao abrir impressão");
     }
   };
 
+  /** Recarrega após exclusão */
   const handleDelete = () => {
     fetchEncomendas();
   };
 
+  /** Abre diálogo de transporte */
   const handleTransport = (encomenda: Encomenda) => {
     setSelectedEncomenda(encomenda);
     setTransportDialogOpen(true);
   };
 
-  // Mantido para o EncomendaStatusSelect notificar e recarregar
+  /** Chamado pelo EncomendaStatusSelect ao salvar */
   const handleStatusChange = async () => {
-    fetchEncomendas();
+    await fetchEncomendas();
   };
 
-  const handleDateUpdate = async (encomendaId: string, field: string, value: string) => {
-    const canEditProduction = canEdit() || hasRole('factory') || isCollaborator;
+  /** Atualiza datas (produção/entrega) com regras de permissão */
+  const handleDateUpdate = async (encomendaId: string, field: "data_producao_estimada" | "data_envio_estimada", value: string) => {
+    const canEditProduction = canEdit() || hasRole("factory") || isCollaborator;
     const canEditDelivery = canEdit() || isCollaborator;
 
-    if (field === 'data_producao_estimada' && !canEditProduction) {
+    if (field === "data_producao_estimada" && !canEditProduction) {
       toast.error("Sem permissão para editar data de produção");
       return;
     }
-
-    if (field === 'data_envio_estimada' && !canEditDelivery) {
+    if (field === "data_envio_estimada" && !canEditDelivery) {
       toast.error("Sem permissão para editar data de entrega");
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from('encomendas')
-        .update({ [field]: value || null })
-        .eq('id', encomendaId);
-
+      const { error } = await supabase.from("encomendas").update({ [field]: value || null }).eq("id", encomendaId);
       if (error) throw error;
 
-      setEncomendas(prev => prev.map(enc =>
-        enc.id === encomendaId ? { ...enc, [field]: value } : enc
-      ));
+      setEncomendas((prev) =>
+        prev.map((enc) => (enc.id === encomendaId ? { ...enc, [field]: value || undefined } : enc))
+      );
 
-      const fieldName = field === 'data_producao_estimada' ? 'produção' : 'entrega';
-      toast.success(`Data de ${fieldName} atualizada com sucesso!`);
-    } catch (error) {
-      console.error("Erro ao atualizar data:", error);
+      const fieldName = field === "data_producao_estimada" ? "produção" : "entrega";
+      toast.success(`Data de ${fieldName} atualizada com sucesso`);
+    } catch (e) {
+      console.error("Erro ao atualizar data:", e);
       toast.error("Erro ao atualizar data");
     }
   };
 
-  const filteredEncomendas = encomendas.filter(encomenda => {
-    const q = searchTerm.toLowerCase();
-    const matchesSearch = encomenda.numero_encomenda.toLowerCase().includes(q) ||
+  /** Filtro de busca e status */
+  const filteredEncomendas = encomendas.filter((encomenda) => {
+    const q = searchTerm.toLowerCase().trim();
+    const matchesSearch =
+      encomenda.numero_encomenda.toLowerCase().includes(q) ||
       (encomenda.clientes?.nome && encomenda.clientes.nome.toLowerCase().includes(q)) ||
       (encomenda.fornecedores?.nome && encomenda.fornecedores.nome.toLowerCase().includes(q)) ||
       (encomenda.etiqueta && encomenda.etiqueta.toLowerCase().includes(q));
 
-    const matchesCompletedFilter = showCompleted ? encomenda.status === 'ENTREGUE' : encomenda.status !== 'ENTREGUE';
-    const matchesStatusFilter = selectedStatus === 'TODOS' || encomenda.status === selectedStatus;
+    const matchesCompletedFilter = showCompleted ? encomenda.status === "ENTREGUE" : encomenda.status !== "ENTREGUE";
+    const matchesStatusFilter = selectedStatus === "TODOS" || encomenda.status === selectedStatus;
 
     return matchesSearch && matchesCompletedFilter && matchesStatusFilter;
   });
 
+  /** Loader */
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -308,13 +321,16 @@ export default function Encomendas() {
     );
   }
 
+  /** Render */
   return (
     <div className="space-y-6">
+      {/* Cabeçalho */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Encomendas</h1>
           <p className="text-muted-foreground">Gerencie suas encomendas</p>
         </div>
+
         {canEdit() && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -326,26 +342,26 @@ export default function Encomendas() {
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Nova Encomenda</DialogTitle>
-                <DialogDescription>
-                  Crie uma nova encomenda preenchendo os dados abaixo.
-                </DialogDescription>
+                <DialogDescription>Crie uma nova encomenda preenchendo os dados abaixo.</DialogDescription>
               </DialogHeader>
-              <EncomendaForm onSuccess={() => {
-                setDialogOpen(false);
-                fetchEncomendas();
-              }} />
+              <EncomendaForm
+                onSuccess={() => {
+                  setDialogOpen(false);
+                  fetchEncomendas();
+                }}
+              />
             </DialogContent>
           </Dialog>
         )}
       </div>
 
-      {/* Filtros e pesquisa */}
+      {/* Filtros */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 gap-4">
               <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Buscar por número, cliente, fornecedor ou etiqueta..."
                   value={searchTerm}
@@ -353,18 +369,13 @@ export default function Encomendas() {
                   className="pl-10"
                 />
               </div>
-              <EncomendaStatusFilter
-                selectedStatus={selectedStatus}
-                onStatusChange={setSelectedStatus}
-              />
+
+              <EncomendaStatusFilter selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} />
             </div>
+
             <div className="flex items-center gap-4">
               <div className="flex items-center space-x-2">
-                <Switch
-                  id="show-completed"
-                  checked={showCompleted}
-                  onCheckedChange={setShowCompleted}
-                />
+                <Switch id="show-completed" checked={showCompleted} onCheckedChange={setShowCompleted} />
                 <Label htmlFor="show-completed">Mostrar entregues</Label>
               </div>
             </div>
@@ -372,7 +383,7 @@ export default function Encomendas() {
         </CardContent>
       </Card>
 
-      {/* Lista de encomendas */}
+      {/* Lista */}
       <div className="space-y-4">
         {filteredEncomendas.length === 0 ? (
           <Card>
@@ -384,16 +395,14 @@ export default function Encomendas() {
           filteredEncomendas.map((encomenda) => (
             <Card key={encomenda.id} className="shadow-card transition-all duration-300 hover:shadow-hover">
               <CardContent className="p-6">
-                {/* Primeira linha: Pedido, Etiqueta, Cliente, Fornecedor, Ações */}
+                {/* Linha 1: dados principais e ações */}
                 <div className="flex items-center justify-between w-full mb-6">
                   <div className="flex items-center flex-1 min-w-0">
                     <div className="min-w-0 mr-6">
                       <div className="text-sm font-medium text-muted-foreground mb-1">Pedido</div>
-                      <div className="font-bold text-lg text-primary-dark">
-                        #{encomenda.numero_encomenda}
-                      </div>
+                      <div className="font-bold text-lg text-primary-dark">#{encomenda.numero_encomenda}</div>
                     </div>
-                    
+
                     {encomenda.etiqueta && (
                       <div className="min-w-0 mr-6">
                         <div className="text-sm font-medium text-muted-foreground mb-1">Etiqueta</div>
@@ -402,22 +411,20 @@ export default function Encomendas() {
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="flex-1 min-w-0 mr-6">
                       <div className="text-sm font-medium text-muted-foreground mb-1">Cliente</div>
-                      <div className="text-sm font-semibold truncate">
-                        {encomenda.clientes?.nome || 'N/A'}
-                      </div>
+                      <div className="text-sm font-semibold truncate">{encomenda.clientes?.nome || "N/A"}</div>
                     </div>
-                    
+
                     <div className="flex-1 min-w-0 mr-8">
                       <div className="text-sm font-medium text-muted-foreground mb-1">Fornecedor</div>
                       <div className="text-sm font-medium text-muted-foreground truncate">
-                        {encomenda.fornecedores?.nome || 'N/A'}
+                        {encomenda.fornecedores?.nome || "N/A"}
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 shrink-0">
                     <Button
                       variant="ghost"
@@ -430,12 +437,7 @@ export default function Encomendas() {
                     >
                       <Eye className="h-5 w-5" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-10 w-10 p-0"
-                      onClick={() => handlePrint(encomenda)}
-                    >
+                    <Button variant="ghost" size="sm" className="h-10 w-10 p-0" onClick={() => handlePrint(encomenda)}>
                       <Printer className="h-5 w-5" />
                     </Button>
                     {canEdit() && (
@@ -461,7 +463,7 @@ export default function Encomendas() {
                   </div>
                 </div>
 
-                {/* Segunda linha: Dados detalhados com labels */}
+                {/* Linha 2: detalhes com labels */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6 items-start">
                   {/* Data Produção */}
                   <div>
@@ -477,21 +479,19 @@ export default function Encomendas() {
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           <span className="text-sm">
-                            {encomenda.data_producao_estimada ? (
-                              formatDate(encomenda.data_producao_estimada)
-                            ) : (
-                              "Selecionar"
-                            )}
+                            {encomenda.data_producao_estimada ? formatDate(encomenda.data_producao_estimada) : "Selecionar"}
                           </span>
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
                         <Calendar
                           mode="single"
-                          selected={encomenda.data_producao_estimada ? new Date(encomenda.data_producao_estimada) : undefined}
+                          selected={
+                            encomenda.data_producao_estimada ? new Date(encomenda.data_producao_estimada) : undefined
+                          }
                           onSelect={(date) => {
-                            const dateString = date ? format(date, 'yyyy-MM-dd') : '';
-                            handleDateUpdate(encomenda.id, 'data_producao_estimada', dateString);
+                            const dateString = date ? format(date, "yyyy-MM-dd") : "";
+                            handleDateUpdate(encomenda.id, "data_producao_estimada", dateString);
                           }}
                           initialFocus
                         />
@@ -513,21 +513,19 @@ export default function Encomendas() {
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           <span className="text-sm">
-                            {encomenda.data_envio_estimada ? (
-                              formatDate(encomenda.data_envio_estimada)
-                            ) : (
-                              "Selecionar"
-                            )}
+                            {encomenda.data_envio_estimada ? formatDate(encomenda.data_envio_estimada) : "Selecionar"}
                           </span>
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
                         <Calendar
                           mode="single"
-                          selected={encomenda.data_envio_estimada ? new Date(encomenda.data_envio_estimada) : undefined}
+                          selected={
+                            encomenda.data_envio_estimada ? new Date(encomenda.data_envio_estimada) : undefined
+                          }
                           onSelect={(date) => {
-                            const dateString = date ? format(date, 'yyyy-MM-dd') : '';
-                            handleDateUpdate(encomenda.id, 'data_envio_estimada', dateString);
+                            const dateString = date ? format(date, "yyyy-MM-dd") : "";
+                            handleDateUpdate(encomenda.id, "data_envio_estimada", dateString);
                           }}
                           initialFocus
                         />
@@ -539,11 +537,11 @@ export default function Encomendas() {
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">Peso Bruto</div>
                     <div className="text-lg font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-lg text-center">
-                      {pesoTransporte[encomenda.id]?.toFixed(2) || '0.00'} kg
+                      {pesoTransporte[encomenda.id]?.toFixed(2) || "0.00"} kg
                     </div>
                   </div>
 
-                  {/* Valor Frete */}
+                  {/* Valor Frete (estimado) */}
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">Valor Frete</div>
                     <div className="text-lg font-bold text-amber-600 bg-amber-50 px-3 py-2 rounded-lg text-center">
@@ -551,7 +549,7 @@ export default function Encomendas() {
                     </div>
                   </div>
 
-                  {/* Status (restaurado com o componente da versão antiga) */}
+                  {/* Status (multiopção restaurado) */}
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">Status</div>
                     <EncomendaStatusSelect
@@ -565,12 +563,12 @@ export default function Encomendas() {
                   {/* Comissão */}
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">Comissão</div>
-                    <div className={cn(
-                      "text-lg font-bold px-3 py-2 rounded-lg text-center",
-                      (encomenda.commission_amount || 0) >= 0 
-                        ? "text-green-600 bg-green-50" 
-                        : "text-red-600 bg-red-50"
-                    )}>
+                    <div
+                      className={cn(
+                        "text-lg font-bold px-3 py-2 rounded-lg text-center",
+                        (encomenda.commission_amount || 0) >= 0 ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"
+                      )}
+                    >
                       {formatCurrency(encomenda.commission_amount || 0)}
                     </div>
                   </div>
@@ -589,26 +587,21 @@ export default function Encomendas() {
         )}
       </div>
 
-      {/* Dialogs */}
+      {/* Dialog: visualizar */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Visualizar Encomenda #{selectedEncomenda?.numero_encomenda}
-            </DialogTitle>
+            <DialogTitle>Visualizar Encomenda #{selectedEncomenda?.numero_encomenda}</DialogTitle>
           </DialogHeader>
-          {selectedEncomenda && (
-            <EncomendaView encomenda={selectedEncomenda} />
-          )}
+          {selectedEncomenda && <EncomendaView encomenda={selectedEncomenda} />}
         </DialogContent>
       </Dialog>
 
+      {/* Dialog: editar */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Editar Encomenda #{selectedEncomenda?.numero_encomenda}
-            </DialogTitle>
+            <DialogTitle>Editar Encomenda #{selectedEncomenda?.numero_encomenda}</DialogTitle>
           </DialogHeader>
           {selectedEncomenda && (
             <EncomendaForm
@@ -622,12 +615,11 @@ export default function Encomendas() {
         </DialogContent>
       </Dialog>
 
+      {/* Dialog: transporte */}
       <Dialog open={transportDialogOpen} onOpenChange={setTransportDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>
-              Configurar Transporte - #{selectedEncomenda?.numero_encomenda}
-            </DialogTitle>
+            <DialogTitle>Configurar Transporte - #{selectedEncomenda?.numero_encomenda}</DialogTitle>
           </DialogHeader>
           {selectedEncomenda && (
             <EncomendaTransportForm
@@ -642,5 +634,5 @@ export default function Encomendas() {
         </DialogContent>
       </Dialog>
     </div>
- );
+  );
 }
