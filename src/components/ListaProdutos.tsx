@@ -80,7 +80,32 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
         toast.error("Erro ao alterar status do produto");
       }
     };
+    
+const sortedAndFiltered = produtos
+  .filter((p) => {
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase();
+    return (
+      (p.nome ?? "").toLowerCase().includes(q) ||
+      (p.marca ?? "").toLowerCase().includes(q) ||
+      (p.tipo ?? "").toLowerCase().includes(q)
+    );
+  })
+  .sort((a, b) => {
+    const nomeA = (a.nome ?? "").toLowerCase();
+    const nomeB = (b.nome ?? "").toLowerCase();
 
+    if (nomeA < nomeB) return sort === "nameAsc" ? -1 : 1;
+    if (nomeA > nomeB) return sort === "nameAsc" ? 1 : -1;
+    return 0;
+  });
+
+// 🐛 ADICIONE ESTES LOGS AQUI:
+console.log("🔍 Props:", { searchTerm, sort });
+console.log("📦 Total produtos:", produtos.length);
+console.log("🎯 Filtrados:", sortedAndFiltered.length);
+console.log("📊 Primeiros produtos:", sortedAndFiltered.slice(0, 3).map(p => p.nome));
+    
     // Filtro e ordenação dos produtos
     const sortedAndFiltered = produtos
       .filter((p) => {
