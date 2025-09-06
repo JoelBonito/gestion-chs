@@ -620,7 +620,7 @@ export default function Encomendas() {
           <DialogHeader>
             <DialogTitle>Visualizar Encomenda #{selectedEncomenda?.numero_encomenda}</DialogTitle>
           </DialogHeader>
-          {selectedEncomenda && <EncomendaView encomenda={selectedEncomenda} />}
+          {selectedEncomenda && <EncomendaView encomendaId={selectedEncomenda} />}
         </DialogContent>
       </Dialog>
 
