@@ -1,15 +1,15 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PlusIcon, RefreshCwIcon, SortAscIcon, SortDescIcon } from "lucide-react";
-import { useSession } from "@/hooks/useSession";
 import { ListaProdutos, ListaProdutosRef } from "@/components/ListaProdutos";
-import { useRouter } from "next/router";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Produtos() {
-  const { session } = useSession();
-  const router = useRouter();
+  const [email, setEmail] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const listaProdutosRef = useRef<ListaProdutosRef>(null);
 
@@ -20,19 +20,30 @@ export default function Produtos() {
   // ↕️ Ordenação
   const [sort, setSort] = useState<"nameAsc" | "nameDesc">("nameAsc");
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setEmail(user?.email ?? null);
+    };
+
+    fetchUser();
+  }, []);
+
   const handleRefresh = () => {
     listaProdutosRef.current?.fetchProdutos();
   };
 
   const handleCadastrarProduto = () => {
-    router.push("/produtos/novo");
+    navigate("/produtos/novo");
   };
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight">Produtos</h1>
-        {session?.user.email !== "barrocacolaborador.com" && (
+        {email !== "barrocacolaborador.com" && (
           <Button onClick={handleCadastrarProduto}>
             <PlusIcon className="w-4 h-4 mr-2" />
             Cadastrar produto
