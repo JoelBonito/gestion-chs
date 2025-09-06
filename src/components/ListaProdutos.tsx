@@ -22,10 +22,7 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
     const fetchProdutos = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from("produtos")
-          .select("*"); // você pode ajustar os campos se quiser
-
+        const { data, error } = await supabase.from("produtos").select("*");
         if (error) throw error;
         setProdutos(data || []);
       } catch (error) {
@@ -86,12 +83,11 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
 
     // Filtro local por nome, marca ou tipo
     const filtered = produtos.filter((p) => {
-      if (!searchTerm) return true;
       const q = searchTerm.toLowerCase();
       return (
-        p.nome?.toLowerCase().includes(q) ||
-        p.marca?.toLowerCase().includes(q) ||
-        p.tipo?.toLowerCase().includes(q)
+        (p.nome ?? "").toLowerCase().includes(q) ||
+        (p.marca ?? "").toLowerCase().includes(q) ||
+        (p.tipo ?? "").toLowerCase().includes(q)
       );
     });
 
