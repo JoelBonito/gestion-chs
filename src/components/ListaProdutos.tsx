@@ -80,32 +80,8 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
         toast.error("Erro ao alterar status do produto");
       }
     };
-    
-const sortedAndFiltered = produtos
-  .filter((p) => {
-    if (!searchTerm.trim()) return true;
-    const q = searchTerm.toLowerCase();
-    return (
-      (p.nome ?? "").toLowerCase().includes(q) ||
-      (p.marca ?? "").toLowerCase().includes(q) ||
-      (p.tipo ?? "").toLowerCase().includes(q)
-    );
-  })
-  .sort((a, b) => {
-    const nomeA = (a.nome ?? "").toLowerCase();
-    const nomeB = (b.nome ?? "").toLowerCase();
 
-    if (nomeA < nomeB) return sort === "nameAsc" ? -1 : 1;
-    if (nomeA > nomeB) return sort === "nameAsc" ? 1 : -1;
-    return 0;
-  });
-
-console.log("🔍 Props:", { searchTerm, sort });
-console.log("📦 Total produtos:", produtos.length);
-console.log("🎯 Filtrados:", sortedAndFiltered.length);
-console.log("📊 Primeiros produtos:", sortedAndFiltered.slice(0, 3).map(p => p.nome));
-    
-    // Filtro e ordenação dos produtos
+    // Filtro e ordenacao dos produtos
     const sortedAndFiltered = produtos
       .filter((p) => {
         if (!searchTerm.trim()) return true;
@@ -124,6 +100,11 @@ console.log("📊 Primeiros produtos:", sortedAndFiltered.slice(0, 3).map(p => p
         if (nomeA > nomeB) return sort === "nameAsc" ? 1 : -1;
         return 0;
       });
+
+    // DEBUG: Logs temporarios para debugar
+    console.log("Props recebidas:", { searchTerm, sort });
+    console.log("Total produtos:", produtos.length);
+    console.log("Produtos filtrados:", sortedAndFiltered.length);
 
     if (loading) {
       return (
