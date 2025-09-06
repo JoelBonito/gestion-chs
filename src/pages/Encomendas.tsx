@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Search, CalendarIcon, Eye, Trash2, Edit, Printer } from "lucide-react";
+import { Plus, Search, CalendarIcon, Eye, Trash2, Edit, Printer, ChevronDown } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -13,12 +13,12 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { EncomendaForm } from "@/components/EncomendaForm";
 import { EncomendaView } from "@/components/EncomendaView";
 import { EncomendaActions } from "@/components/EncomendaActions";
-import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
 import { EncomendaStatusFilter } from "@/components/EncomendaStatusFilter";
 import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
 
@@ -66,6 +66,8 @@ export default function Encomendas() {
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
   const [loading, setLoading] = useState(true);
   const [pesoTransporte, setPesoTransporte] = useState<{ [key: string]: number }>({});
+
+  const statusOptions: StatusEncomenda[] = ["NOVO PEDIDO", "PRODUÇÃO", "EMBALAGEM", "TRANSPORTE", "ENTREGUE"];
 
   const fetchEncomendas = async () => {
     try {
@@ -148,6 +150,43 @@ export default function Encomendas() {
     } catch (error) {
       console.error("Erro ao calcular peso:", error);
       return 0;
+    }
+  };
+
+  const handleStatusUpdate = async (encomendaId: string, newStatus: StatusEncomenda) => {
+    try {
+      const { error } = await supabase
+        .from('encomendas')
+        .update({ status: newStatus })
+        .eq('id', encomendaId);
+
+      if (error) throw error;
+
+      setEncomendas(prev => prev.map(enc =>
+        enc.id === encomendaId ? { ...enc, status: newStatus } : enc
+      ));
+
+      toast.success(`Status alterado para ${newStatus}`);
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+      toast.error("Erro ao atualizar status");
+    }
+  };
+
+  const getStatusColor = (status: StatusEncomenda) => {
+    switch (status) {
+      case "NOVO PEDIDO":
+        return "bg-blue-100 text-blue-800";
+      case "PRODUÇÃO":
+        return "bg-orange-100 text-orange-800";
+      case "EMBALAGEM":
+        return "bg-yellow-100 text-yellow-800";
+      case "TRANSPORTE":
+        return "bg-purple-100 text-purple-800";
+      case "ENTREGUE":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -384,7 +423,7 @@ export default function Encomendas() {
                 {/* Primeira linha: Pedido, Etiqueta, Cliente, Fornecedor, Ações */}
                 <div className="flex items-center justify-between w-full mb-6">
                   <div className="flex items-center flex-1 min-w-0">
-                    <div className="min-w-0 mr-4">
+                    <div className="min-w-0 mr-6">
                       <div className="text-sm font-medium text-muted-foreground mb-1">Pedido</div>
                       <div className="font-bold text-lg text-primary-dark">
                         #{encomenda.numero_encomenda}
@@ -392,7 +431,7 @@ export default function Encomendas() {
                     </div>
                     
                     {encomenda.etiqueta && (
-                      <div className="min-w-0 mr-4">
+                      <div className="min-w-0 mr-6">
                         <div className="text-sm font-medium text-muted-foreground mb-1">Etiqueta</div>
                         <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
                           {encomenda.etiqueta}
@@ -400,14 +439,14 @@ export default function Encomendas() {
                       </div>
                     )}
                     
-                    <div className="flex-1 min-w-0 mr-4">
+                    <div className="flex-1 min-w-0 mr-6">
                       <div className="text-sm font-medium text-muted-foreground mb-1">Cliente</div>
                       <div className="text-sm font-semibold truncate">
                         {encomenda.clientes?.nome || 'N/A'}
                       </div>
                     </div>
                     
-                    <div className="flex-1 min-w-0 mr-6">
+                    <div className="flex-1 min-w-0 mr-8">
                       <div className="text-sm font-medium text-muted-foreground mb-1">Fornecedor</div>
                       <div className="text-sm font-medium text-muted-foreground truncate">
                         {encomenda.fornecedores?.nome || 'N/A'}
@@ -551,10 +590,32 @@ export default function Encomendas() {
                   {/* Status */}
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">Status</div>
-                    <EncomendaStatusSelect
-                      encomenda={encomenda}
-                      onStatusChange={handleStatusChange}
-                    />
+                    <Select
+                      value={encomenda.status}
+                      onValueChange={(value: StatusEncomenda) => handleStatusUpdate(encomenda.id, value)}
+                      disabled={!canEdit() && !hasRole('factory')}
+                    >
+                      <SelectTrigger className={cn(
+                        "w-full text-sm font-semibold",
+                        getStatusColor(encomenda.status)
+                      )}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusOptions.map((status) => (
+                          <SelectItem 
+                            key={status} 
+                            value={status}
+                            className={cn(
+                              "font-semibold",
+                              getStatusColor(status)
+                            )}
+                          >
+                            {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   {/* Comissão */}
@@ -637,5 +698,6 @@ export default function Encomendas() {
         </DialogContent>
       </Dialog>
     </div>
-  );
+    </div>
+ );
 }
