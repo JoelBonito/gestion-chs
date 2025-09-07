@@ -3,8 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { TrendingDown, Plus, Eye, Download, Paperclip } from "lucide-react";
+import { TrendingDown, Plus, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import PagamentoForm from "@/components/PagamentoForm";
@@ -40,12 +39,12 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
   const { toast } = useToast();
   const { isRestrictedFR } = useLocale();
 
-  // --- i18n helper (mínimas mudanças) ---
+  // --- i18n helper (PT/FR) ---
   type Lang = "pt" | "fr";
   const lang: Lang = isRestrictedFR ? "fr" : "pt";
   const dict: Record<string, { pt: string; fr: string }> = {
     // Títulos / descrições
-    "Contas a Receber - Clientes": { pt: "Contas a Receber - Clientes", fr: "Comptes à Recevoir - Clients" },
+    "Vendas - Clientes": { pt: "Vendas - Clientes", fr: "Ventes - Clients" },
     "Encomendas com saldo devedor de clientes": {
       pt: "Encomendas com saldo devedor de clientes",
       fr: "Commandes avec solde débiteur des clients"
@@ -56,9 +55,9 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
     "Nº Encomenda": { pt: "Nº Encomenda", fr: "N° de commande" },
     "Cliente": { pt: "Cliente", fr: "Client" },
     "Data Produção": { pt: "Data Produção", fr: "Date de production" },
-    "Total a Receber": { pt: "Total a Receber", fr: "Total à recevoir" },
+    "Total": { pt: "Total", fr: "Total" },
     "Recebido": { pt: "Recebido", fr: "Reçu" },
-    "Saldo a Receber": { pt: "Saldo a Receber", fr: "Solde à recevoir" },
+    "Saldo": { pt: "Saldo", fr: "Solde" },
     "Pagamentos": { pt: "Pagamentos", fr: "Paiements" },
     "Ações": { pt: "Ações", fr: "Actions" },
 
@@ -84,9 +83,9 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
     "Data Produção:": { pt: "Data Produção:", fr: "Date de production :" },
     "Valor Produtos:": { pt: "Valor Produtos:", fr: "Montant des produits :" },
     "Valor Frete:": { pt: "Valor Frete:", fr: "Frais de port :" },
-    "Total a Receber:": { pt: "Total a Receber:", fr: "Total à recevoir :" },
+    "Total:": { pt: "Total:", fr: "Total :" },
     "Valor Recebido:": { pt: "Valor Recebido:", fr: "Montant reçu :" },
-    "Saldo a Receber:": { pt: "Saldo a Receber:", fr: "Solde à recevoir :" },
+    "Saldo:": { pt: "Saldo:", fr: "Solde :" },
     "Quantidade de Pagamentos:": { pt: "Quantidade de Pagamentos:", fr: "Nombre de paiements :" },
 
     // Anexos
@@ -117,25 +116,24 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
 
       if (error) throw error;
 
-      const encomendasFormatadas = data.map((encomenda: any) => {
+      const encomendasFormatadas = (data || []).map((encomenda: any) => {
         const totalPagamentos = encomenda.pagamentos?.length || 0;
-
         return {
           id: encomenda.id,
           numero_encomenda: encomenda.numero_encomenda,
-          cliente_nome: encomenda.clientes.nome,
+          cliente_nome: encomenda.clientes?.nome ?? "",
           valor_total: parseFloat(encomenda.valor_total || 0),
           valor_pago: parseFloat(encomenda.valor_pago || 0),
           saldo_devedor: parseFloat(encomenda.saldo_devedor || 0),
           valor_frete: parseFloat(encomenda.valor_frete || 0),
           total_pagamentos: totalPagamentos,
           data_producao_estimada: encomenda.data_producao_estimada,
-        };
+        } as EncomendaFinanceira;
       });
 
       setEncomendas(encomendasFormatadas);
     } catch (error: any) {
-      console.error('Erro ao carregar encomendas financeiras:', error);
+      console.error("Erro ao carregar encomendas financeiras:", error);
       toast({
         title: "Erro ao carregar encomendas",
         description: error.message,
@@ -148,6 +146,7 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
 
   useEffect(() => {
     fetchEncomendas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localShowCompleted]);
 
   const handlePagamentoSuccess = () => {
@@ -190,7 +189,7 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
             <div>
               <CardTitle className="flex items-center gap-2">
                 <TrendingDown className="h-5 w-5 text-warning" />
-                {tr("Contas a Receber - Clientes")}
+                {tr("Vendas - Clientes")}
               </CardTitle>
               <CardDescription>
                 {tr("Encomendas com saldo devedor de clientes")}
@@ -218,74 +217,70 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
                   <TableHead>{tr("Nº Encomenda")}</TableHead>
                   <TableHead>{tr("Cliente")}</TableHead>
                   <TableHead>{tr("Data Produção")}</TableHead>
-                  <TableHead>{tr("Total a Receber")}</TableHead>
+                  <TableHead>{tr("Total")}</TableHead>
                   <TableHead>{tr("Recebido")}</TableHead>
-                  <TableHead>{tr("Saldo a Receber")}</TableHead>
+                  <TableHead>{tr("Saldo")}</TableHead>
                   <TableHead>{tr("Pagamentos")}</TableHead>
                   <TableHead>{tr("Ações")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {encomendas.map((encomenda) => {
-                  const valorProdutos = encomenda.valor_total - encomenda.valor_frete;
-
-                  return (
-                    <TableRow key={encomenda.id}>
-                      <TableCell className="font-medium">
-                        {encomenda.numero_encomenda}
-                      </TableCell>
-                      <TableCell>{encomenda.cliente_nome}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(encomenda.data_producao_estimada)}
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        €{encomenda.valor_total.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-success">
-                        €{encomenda.valor_pago.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="font-semibold text-warning">
-                        €{encomenda.saldo_devedor.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {encomenda.total_pagamentos > 0
-                          ? `${encomenda.total_pagamentos} ${tr("pag.")}`
-                          : tr("Nenhum")}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewDetails(encomenda)}
-                            title={tr("Visualizar detalhes")}
-                            type="button"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedEncomenda(encomenda);
-                              setShowPagamentoForm(true);
-                            }}
-                            title={tr("Registrar pagamento")}
-                            type="button"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                          <FinancialAttachmentButton
-                            entityType="receivable"
-                            entityId={encomenda.id}
-                            title={tr("Anexar Comprovante")}
-                            onChanged={handleAttachmentChange}
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {encomendas.map((encomenda) => (
+                  <TableRow key={encomenda.id}>
+                    <TableCell className="font-medium">
+                      {encomenda.numero_encomenda}
+                    </TableCell>
+                    <TableCell>{encomenda.cliente_nome}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(encomenda.data_producao_estimada)}
+                    </TableCell>
+                    <TableCell className="font-semibold">
+                      €{encomenda.valor_total.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-success">
+                      €{encomenda.valor_pago.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="font-semibold text-warning">
+                      €{encomenda.saldo_devedor.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {encomenda.total_pagamentos > 0
+                        ? `${encomenda.total_pagamentos} ${tr("pag.")}`
+                        : tr("Nenhum")}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetails(encomenda)}
+                          title={tr("Visualizar detalhes")}
+                          type="button"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedEncomenda(encomenda);
+                            setShowPagamentoForm(true);
+                          }}
+                          title={tr("Registrar pagamento")}
+                          type="button"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                        <FinancialAttachmentButton
+                          entityType="receivable"
+                          entityId={encomenda.id}
+                          title={tr("Anexar Comprovante")}
+                          onChanged={handleAttachmentChange}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
                 {encomendas.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
@@ -299,7 +294,7 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
         </CardContent>
       </Card>
 
-      {/* Payment Form Dialog */}
+      {/* Dialog: Registrar Pagamento */}
       {selectedEncomenda && (
         <Dialog open={showPagamentoForm} onOpenChange={setShowPagamentoForm}>
           <DialogContent className="max-w-2xl">
@@ -314,7 +309,7 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
         </Dialog>
       )}
 
-      {/* Details Dialog with Attachments */}
+      {/* Dialog: Detalhes + Anexos */}
       {selectedEncomenda && (
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -322,7 +317,7 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
               <DialogTitle>{tr("Detalhes da Conta a Receber")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-6">
-              {/* Order Details Section */}
+              {/* Detalhes da encomenda */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">{tr("Encomenda:")}</label>
@@ -338,14 +333,16 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
                 </div>
                 <div>
                   <label className="text-sm font-medium">{tr("Valor Produtos:")}</label>
-                  <p className="text-sm text-muted-foreground">€{(selectedEncomenda.valor_total - selectedEncomenda.valor_frete).toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    €{(selectedEncomenda.valor_total - selectedEncomenda.valor_frete).toFixed(2)}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">{tr("Valor Frete:")}</label>
                   <p className="text-sm text-muted-foreground">€{selectedEncomenda.valor_frete.toFixed(2)}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">{tr("Total a Receber:")}</label>
+                  <label className="text-sm font-medium">{tr("Total:")}</label>
                   <p className="text-sm font-semibold">€{selectedEncomenda.valor_total.toFixed(2)}</p>
                 </div>
                 <div>
@@ -353,7 +350,7 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
                   <p className="text-sm text-success">€{selectedEncomenda.valor_pago.toFixed(2)}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">{tr("Saldo a Receber:")}</label>
+                  <label className="text-sm font-medium">{tr("Saldo:")}</label>
                   <p className="text-sm font-semibold text-warning">€{selectedEncomenda.saldo_devedor.toFixed(2)}</p>
                 </div>
                 <div>
@@ -362,10 +359,10 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
                 </div>
               </div>
 
-              {/* Order Items Section */}
+              {/* Itens da encomenda */}
               <OrderItemsView encomendaId={selectedEncomenda.id} />
 
-              {/* Attachments Section */}
+              {/* Anexos */}
               <div className="border-t pt-6">
                 <h3 className="text-lg font-medium mb-4">{tr("Comprovantes e Anexos")}</h3>
                 <AttachmentManager
