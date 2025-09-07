@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+import { formatCurrencyEUR } from "@/lib/utils/currency";
+
 export interface ItemEncomenda {
   id?: string;
   produto_id: string;
@@ -191,7 +193,7 @@ export function ItensEncomendaManager({
                           <div className="flex items-center gap-2">
                             <Input
                               type="text"
-                              value={`€${(item.subtotal || 0).toFixed(2)}`}
+                              value={formatCurrencyEUR(item.subtotal || 0)}
                               readOnly
                               className="bg-blue-100 font-semibold"
                             />
@@ -288,7 +290,7 @@ export function ItensEncomendaManager({
                             <div className="flex items-center gap-2">
                               <Input
                                 type="text"
-                                value={`€${(item.subtotal || 0).toFixed(2)}`}
+                                value={formatCurrencyEUR(item.subtotal || 0)}
                                 readOnly
                                 className="bg-muted font-semibold"
                               />
@@ -320,7 +322,7 @@ export function ItensEncomendaManager({
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Valor Total:</p>
               <p className="text-2xl font-bold text-primary">
-                €{itens.reduce((total, item) => total + (item.subtotal || 0), 0).toFixed(2)}
+                {formatCurrencyEUR(itens.reduce((total, item) => total + (item.subtotal || 0), 0))}
               </p>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
+import { formatCurrencyEUR } from "@/lib/utils/currency";
 
 interface OrderItem {
   id: string;
@@ -116,13 +117,12 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
                   </TableCell>
                   <TableCell>{item.quantidade}</TableCell>
                   <TableCell>
-                    €{shouldShowCostPrices ? (item.preco_custo || 0).toFixed(2) : item.preco_unitario.toFixed(2)}
+                    {formatCurrencyEUR(shouldShowCostPrices ? (item.preco_custo || 0) : item.preco_unitario)}
                   </TableCell>
                   <TableCell className="font-semibold">
-                    €{shouldShowCostPrices 
-                      ? (item.quantidade * (item.preco_custo || 0)).toFixed(2)
-                      : item.subtotal.toFixed(2)
-                    }
+                    {formatCurrencyEUR(shouldShowCostPrices 
+                      ? (item.quantidade * (item.preco_custo || 0))
+                      : item.subtotal)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -135,10 +135,9 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Total dos Itens:</p>
               <p className="text-lg font-semibold">
-                €{shouldShowCostPrices 
-                  ? items.reduce((sum, item) => sum + (item.quantidade * (item.preco_custo || 0)), 0).toFixed(2)
-                  : items.reduce((sum, item) => sum + item.subtotal, 0).toFixed(2)
-                }
+                {formatCurrencyEUR(shouldShowCostPrices 
+                  ? items.reduce((sum, item) => sum + (item.quantidade * (item.preco_custo || 0)), 0)
+                  : items.reduce((sum, item) => sum + item.subtotal, 0))}
               </p>
             </div>
           </div>

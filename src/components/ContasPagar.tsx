@@ -13,6 +13,7 @@ import { OrderItemsView } from "@/components/OrderItemsView";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { Badge } from "@/components/ui/badge";
 import { useLocale } from "@/contexts/LocaleContext";
+import { formatCurrencyEUR } from "@/lib/utils/currency";
 
 interface ContaPagar {
   encomenda_id: string;
@@ -264,15 +265,15 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                     </TableCell>
 
                     <TableCell className="font-semibold">
-                      €{conta.valor_total_custo.toFixed(2)}
+                      {formatCurrencyEUR(conta.valor_total_custo)}
                     </TableCell>
 
                     <TableCell className="text-success">
-                      €{conta.valor_pago_fornecedor.toFixed(2)}
+                      {formatCurrencyEUR(conta.valor_pago_fornecedor)}
                     </TableCell>
 
                     <TableCell className="font-semibold text-warning">
-                      €{conta.saldo_devedor_fornecedor.toFixed(2)}
+                      {formatCurrencyEUR(conta.saldo_devedor_fornecedor)}
                     </TableCell>
 
                     <TableCell className="text-sm text-muted-foreground">
@@ -378,23 +379,23 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                 </div>
                 <div>
                   <label className="text-sm font-medium">{t("Valor Produtos:")}</label>
-                  <p className="text-sm text-muted-foreground">€{selectedConta.valor_produtos.toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground">{formatCurrencyEUR(selectedConta.valor_produtos)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">{t("Valor Frete:")}</label>
-                  <p className="text-sm text-muted-foreground">€{selectedConta.valor_frete.toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground">{formatCurrencyEUR(selectedConta.valor_frete)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">{t("Total")}:</label>
-                  <p className="text-sm font-semibold">€{selectedConta.valor_total_custo.toFixed(2)}</p>
+                  <p className="text-sm font-semibold">{formatCurrencyEUR(selectedConta.valor_total_custo)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">{t("Valor Pago:")}</label>
-                  <p className="text-sm text-success">€{selectedConta.valor_pago_fornecedor.toFixed(2)}</p>
+                  <p className="text-sm text-success">{formatCurrencyEUR(selectedConta.valor_pago_fornecedor)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">{t("Saldo")}:</label>
-                  <p className="text-sm font-semibold text-warning">€{selectedConta.saldo_devedor_fornecedor.toFixed(2)}</p>
+                  <p className="text-sm font-semibold text-warning">{formatCurrencyEUR(selectedConta.saldo_devedor_fornecedor)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">{t("Quantidade de Pagamentos:")}</label>

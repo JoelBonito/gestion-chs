@@ -7,6 +7,7 @@ export type FormatEuroOptions = {
 const EUR_NUMBER = new Intl.NumberFormat('de-DE', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
+  useGrouping: true, // Garantir separador de milhar
 });
 
 export function formatCurrencyEUR(

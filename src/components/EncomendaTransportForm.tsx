@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ItensEncomendaManager, type ItemEncomenda } from "./ItensEncomendaManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrencyEUR } from "@/lib/utils/currency";
 
 const transportSchema = z.object({
   numero_encomenda: z.string(),
@@ -257,7 +258,7 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">Valor Total:</p>
                   <p className="text-2xl font-bold text-primary">
-                    €{valorTotal.toFixed(2)}
+                    {formatCurrencyEUR(valorTotal)}
                   </p>
                 </div>
               </div>

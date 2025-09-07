@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { ItensEncomendaManager, type ItemEncomenda } from "./ItensEncomendaManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { handleEntityInactiveError } from "@/lib/soft-delete-actions";
+import { formatCurrencyEUR } from "@/lib/utils/currency";
 
 const encomendaSchema = z.object({
   numero_encomenda: z.string().min(1, "Número da encomenda é obrigatório"),
@@ -624,7 +625,7 @@ export function EncomendaForm({ onSuccess, encomenda, initialData, isEditing = f
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Valor Total:</p>
               <p className="text-2xl font-bold text-primary">
-                €{valorTotal.toFixed(2)}
+                {formatCurrencyEUR(valorTotal)}
               </p>
             </div>
           </div>

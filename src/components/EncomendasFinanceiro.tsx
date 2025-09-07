@@ -12,6 +12,7 @@ import { FinancialAttachmentButton } from "@/components/FinancialAttachmentButto
 import { AttachmentManager } from "@/components/AttachmentManager";
 import { OrderItemsView } from "@/components/OrderItemsView";
 import { useLocale } from "@/contexts/LocaleContext";
+import { formatCurrencyEUR } from "@/lib/utils/currency";
 
 interface EncomendaFinanceira {
   id: string;
@@ -255,15 +256,15 @@ export default function EncomendasFinanceiro({
                     </TableCell>
 
                     <TableCell className="font-semibold">
-                      €{encomenda.valor_total.toFixed(2)}
+                      {formatCurrencyEUR(encomenda.valor_total)}
                     </TableCell>
 
                     <TableCell className="text-success">
-                      €{encomenda.valor_pago.toFixed(2)}
+                      {formatCurrencyEUR(encomenda.valor_pago)}
                     </TableCell>
 
                     <TableCell className="font-semibold text-warning">
-                      €{encomenda.saldo_devedor.toFixed(2)}
+                      {formatCurrencyEUR(encomenda.saldo_devedor)}
                     </TableCell>
 
                     <TableCell className="text-sm text-muted-foreground">
@@ -373,31 +374,31 @@ export default function EncomendasFinanceiro({
                   <label className="text-sm font-medium">{tr("Valor Produtos:")}</label>
                   <p className="text-sm text-muted-foreground">
                     €
-                    {(selectedEncomenda.valor_total - selectedEncomenda.valor_frete).toFixed(2)}
+                    {formatCurrencyEUR(selectedEncomenda.valor_total - selectedEncomenda.valor_frete)}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">{tr("Valor Frete:")}</label>
                   <p className="text-sm text-muted-foreground">
-                    €{selectedEncomenda.valor_frete.toFixed(2)}
+                    {formatCurrencyEUR(selectedEncomenda.valor_frete)}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">{tr("Total:")}</label>
                   <p className="text-sm font-semibold">
-                    €{selectedEncomenda.valor_total.toFixed(2)}
+                    {formatCurrencyEUR(selectedEncomenda.valor_total)}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">{tr("Valor Recebido:")}</label>
                   <p className="text-sm text-success">
-                    €{selectedEncomenda.valor_pago.toFixed(2)}
+                    {formatCurrencyEUR(selectedEncomenda.valor_pago)}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">{tr("Saldo:")}</label>
                   <p className="text-sm font-semibold text-warning">
-                    €{selectedEncomenda.saldo_devedor.toFixed(2)}
+                    {formatCurrencyEUR(selectedEncomenda.saldo_devedor)}
                   </p>
                 </div>
                 <div>
