@@ -29,13 +29,14 @@ type ItemEncomenda = {
 };
 
 type Props = {
+  /** Aceita string ou objeto { id } por engano — normalizamos para string. */
   encomendaId: string | { id?: string | number } | null | undefined;
 };
 
-export function EncomendaView({ encomendaId }: Props) {
+export default function EncomendaView({ encomendaId }: Props) {
   const { formatCurrency, formatDate } = useFormatters();
 
-  // Normaliza id (evita eq.[object Object])
+  // Normaliza id (evita id=eq.[object Object])
   const id = useMemo(() => {
     if (!encomendaId) return "";
     if (typeof encomendaId === "string") return encomendaId;
@@ -49,11 +50,74 @@ export function EncomendaView({ encomendaId }: Props) {
   const [loadingItens, setLoadingItens] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // Descobre usuário (regra especial p/ felipe@colaborador.com)
+  // Descobre o usuário (regras especiais Felipe/Ham)
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
   }, []);
-  const isFelipe = (userEmail || "").toLowerCase() === "felipe@colaborador.com";
+  const email = (userEmail || "").toLowerCase();
+  const isFelipe = email === "felipe@colaborador.com";
+  const isHam = email === "ham@admin.com";
+
+  // Dicionário (FR para Ham, PT para demais)
+  const t = isHam
+    ? {
+        order: "Commande",
+        label: "Étiquette",
+        status: "Statut",
+        createdOn: "Créée le",
+        client: "Client",
+        supplier: "Fournisseur",
+        productionDate: "Date de production (estimée)",
+        deliveryDate: "Date de livraison (estimée)",
+        subtotalItems: "Sous-total (articles)",
+        totalCost: "Total (coût)",
+        paid: "Montant payé",
+        estProfit: "Bénéfice estimé",
+        notes: "Observations",
+        items: "Articles de la commande",
+        product: "Produit",
+        qty: "Qté",
+        unitPrice: "Prix unitaire",
+        unitCost: "Coût unitaire",
+        total: "Total",
+        totalCostFooter: "Total (coût)",
+        subtotalFooter: "Sous-total",
+        loading: "Chargement…",
+        notFound: "Commande introuvable",
+        loadingItems: "Chargement des articles…",
+        noItems: "Aucun article ajouté",
+        toastOrderNotFound: "Commande introuvable",
+        toastItemsError: "Impossible de charger les articles",
+      }
+    : {
+        order: "Pedido",
+        label: "Etiqueta",
+        status: "Status",
+        createdOn: "Criada em",
+        client: "Cliente",
+        supplier: "Fornecedor",
+        productionDate: "Data Produção (estimada)",
+        deliveryDate: "Data Entrega (estimada)",
+        subtotalItems: "Subtotal (itens)",
+        totalCost: "Total (custo)",
+        paid: "Valor Pago",
+        estProfit: "Lucro estimado",
+        notes: "Observações",
+        items: "Itens da encomenda",
+        product: "Produto",
+        qty: "Qtd",
+        unitPrice: "Preço Unit.",
+        unitCost: "Custo Unit.",
+        total: "Total",
+        totalCostFooter: "Total (custo)",
+        subtotalFooter: "Subtotal",
+        loading: "Carregando…",
+        notFound: "Encomenda não encontrada",
+        loadingItems: "Carregando itens…",
+        noItems: "Nenhum item adicionado",
+        toastOrderNotFound: "Encomenda não encontrada",
+        toastItemsError: "Não foi possível carregar os itens",
+      };
 
   // Carrega encomenda + itens
   useEffect(() => {
@@ -76,7 +140,7 @@ export function EncomendaView({ encomendaId }: Props) {
         if (mounted) setEncomenda(data as Encomenda);
       } catch (e) {
         console.error("Erro ao carregar encomenda:", e);
-        toast.error("Encomenda não encontrada");
+        toast.error(t.toastOrderNotFound);
         if (mounted) setEncomenda(null);
       } finally {
         if (mounted) setLoading(false);
@@ -106,7 +170,7 @@ export function EncomendaView({ encomendaId }: Props) {
         if (mounted) setItens((data as ItemEncomenda[]) || []);
       } catch (e) {
         console.error("Erro ao carregar itens da encomenda:", e);
-        toast.error("Não foi possível carregar os itens");
+        toast.error(t.toastItemsError);
         if (mounted) setItens([]);
       } finally {
         if (mounted) setLoadingItens(false);
@@ -115,8 +179,10 @@ export function EncomendaView({ encomendaId }: Props) {
 
     loadEncomenda();
     loadItens();
-    return () => { mounted = false; };
-  }, [id]);
+    return () => {
+      mounted = false;
+    };
+  }, [id]); // t não entra nas deps para evitar loops de toasts
 
   const subtotalVenda = useMemo(
     () => itens.reduce((acc, it) => acc + Number(it.quantidade || 0) * Number(it.preco_unitario || 0), 0),
@@ -127,8 +193,8 @@ export function EncomendaView({ encomendaId }: Props) {
     [itens]
   );
 
-  if (loading) return <div className="py-8 text-center text-muted-foreground">Carregando…</div>;
-  if (!encomenda) return <div className="py-8 text-center text-muted-foreground">Encomenda não encontrada</div>;
+  if (loading) return <div className="py-8 text-center text-muted-foreground">{t.loading}</div>;
+  if (!encomenda) return <div className="py-8 text-center text-muted-foreground">{t.notFound}</div>;
 
   return (
     <div className="space-y-8">
@@ -136,50 +202,69 @@ export function EncomendaView({ encomendaId }: Props) {
       <section className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <div className="text-sm text-muted-foreground">Pedido</div>
+            <div className="text-sm text-muted-foreground">{t.order}</div>
             <div className="font-semibold">#{encomenda.numero_encomenda}</div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground">Status</div>
+            <div className="text-sm text-muted-foreground">{t.status}</div>
             <div className="font-semibold">{encomenda.status}</div>
           </div>
           {encomenda.etiqueta ? (
             <div className="sm:col-span-2">
-              <div className="text-sm text-muted-foreground">Etiqueta</div>
+              <div className="text-sm text-muted-foreground">{t.label}</div>
               <div className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
                 {encomenda.etiqueta}
               </div>
             </div>
           ) : null}
           <div>
-            <div className="text-sm text-muted-foreground">Criada em</div>
+            <div className="text-sm text-muted-foreground">{t.createdOn}</div>
             <div className="font-semibold">{encomenda.data_criacao ? formatDate(encomenda.data_criacao) : "—"}</div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground">Cliente</div>
+            <div className="text-sm text-muted-foreground">{t.client}</div>
             <div className="font-semibold">{encomenda.clientes?.nome ?? "—"}</div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground">Fornecedor</div>
+            <div className="text-sm text-muted-foreground">{t.supplier}</div>
             <div className="font-semibold">{encomenda.fornecedores?.nome ?? "—"}</div>
           </div>
         </div>
 
-        {/* Totais (sem lucro para Felipe) */}
+        {/* Datas */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <div className="text-sm text-muted-foreground">{t.productionDate}</div>
+            <div className="font-semibold">
+              {encomenda.data_producao_estimada ? formatDate(encomenda.data_producao_estimada) : "—"}
+            </div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground">{t.deliveryDate}</div>
+            <div className="font-semibold">
+              {encomenda.data_envio_estimada ? formatDate(encomenda.data_envio_estimada) : "—"}
+            </div>
+          </div>
+        </div>
+
+        {/* Totais (sem lucro para Felipe e Ham) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <div className="text-sm text-muted-foreground">{isFelipe ? "Total (custo)" : "Subtotal (itens)"}</div>
+            <div className="text-sm text-muted-foreground">
+              {isFelipe ? t.totalCost : t.subtotalItems}
+            </div>
             <div className="font-semibold">
               {formatCurrency(isFelipe ? subtotalCusto : subtotalVenda)}
             </div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground">Valor Pago</div>
+            <div className="text-sm text-muted-foreground">{t.paid}</div>
             <div className="font-semibold">{formatCurrency(encomenda.valor_pago ?? 0)}</div>
           </div>
-          {!isFelipe && (
+          {/* Lucro estimado — oculto para Felipe e Ham */}
+          {!(isFelipe || isHam) && (
             <div>
-              <div className="text-sm text-muted-foreground">Lucro estimado</div>
+              <div className="text-sm text-muted-foreground">{t.estProfit}</div>
               <div
                 className={cn(
                   "font-semibold",
@@ -194,7 +279,7 @@ export function EncomendaView({ encomendaId }: Props) {
 
         {encomenda.observacoes ? (
           <div>
-            <div className="text-sm text-muted-foreground mb-1">Observações</div>
+            <div className="text-sm text-muted-foreground mb-1">{t.notes}</div>
             <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">{encomenda.observacoes}</div>
           </div>
         ) : null}
@@ -202,22 +287,22 @@ export function EncomendaView({ encomendaId }: Props) {
 
       {/* Itens */}
       <section>
-        <h3 className="text-base font-semibold mb-3">Itens da encomenda</h3>
+        <h3 className="text-base font-semibold mb-3">{t.items}</h3>
 
         {loadingItens ? (
-          <div className="py-6 text-center text-muted-foreground">Carregando itens…</div>
+          <div className="py-6 text-center text-muted-foreground">{t.loadingItems}</div>
         ) : itens.length === 0 ? (
-          <div className="py-6 text-center text-muted-foreground">Nenhum item adicionado</div>
+          <div className="py-6 text-center text-muted-foreground">{t.noItems}</div>
         ) : (
           <div className="overflow-x-auto rounded-md border">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="bg-muted/50">
-                  <th className="px-3 py-2 text-left font-medium">Produto</th>
-                  <th className="px-3 py-2 text-right font-medium">Qtd</th>
-                  {!isFelipe && <th className="px-3 py-2 text-right font-medium">Preço Unit.</th>}
-                  <th className="px-3 py-2 text-right font-medium">Custo Unit.</th>
-                  <th className="px-3 py-2 text-right font-medium">{isFelipe ? "Total (custo)" : "Total"}</th>
+                  <th className="px-3 py-2 text-left font-medium">{t.product}</th>
+                  <th className="px-3 py-2 text-right font-medium">{t.qty}</th>
+                  {!isFelipe && <th className="px-3 py-2 text-right font-medium">{t.unitPrice}</th>}
+                  <th className="px-3 py-2 text-right font-medium">{t.unitCost}</th>
+                  <th className="px-3 py-2 text-right font-medium">{isFelipe ? t.totalCostFooter : t.total}</th>
                 </tr>
               </thead>
               <tbody>
@@ -241,17 +326,19 @@ export function EncomendaView({ encomendaId }: Props) {
               <tfoot>
                 <tr className="border-t bg-muted/30">
                   <td className="px-3 py-2 font-medium text-right" colSpan={isFelipe ? 4 : 5}>
-                    {isFelipe ? "Total (custo)" : "Subtotal"}
+                    {isFelipe ? t.totalCostFooter : t.subtotalFooter}
                   </td>
                   <td className="px-3 py-2 text-right font-semibold">
                     {formatCurrency(isFelipe ? subtotalCusto : subtotalVenda)}
                   </td>
                 </tr>
+                {/* Para usuários normais e Ham, mostramos também o custo total; para Felipe, já mostramos total (custo) acima */}
                 {!isFelipe && (
                   <tr className="border-t">
-                    <td className="px-3 py-2 text-right" colSpan={5}>
-                      Custo total: {formatCurrency(subtotalCusto)}
+                    <td className="px-3 py-2 text-right" colSpan={isFelipe ? 4 : 5}>
+                      {t.totalCostFooter}
                     </td>
+                    <td className="px-3 py-2 text-right">{formatCurrency(subtotalCusto)}</td>
                   </tr>
                 )}
               </tfoot>
@@ -262,5 +349,3 @@ export function EncomendaView({ encomendaId }: Props) {
     </div>
   );
 }
-
-export default EncomendaView;
