@@ -1,199 +1,69 @@
-// src/pages/Financeiro.tsx
-import { useEffect, useState, useMemo } from "react";
+import { useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import EncomendasFinanceiro from "@/components/EncomendasFinanceiro";
-import ContasPagar from "@/components/ContasPagar";
-import Invoices from "@/components/Invoices";
+import { useLocale } from "@/contexts/LocaleContext";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { Eye } from "lucide-react";
-import { useUserRole } from "@/hooks/useUserRole";
-import { useNavigate } from "react-router-dom";
+// Sub-abas/components
+import EncomendasFinanceiro from "@/components/EncomendasFinanceiro"; // (Vendas - Clientes)
+import Invoices from "@/components/Invoices";                         // (Faturas)
+// Se sua sub-aba de fornecedores (Compras) tiver outro nome, ajuste o import abaixo:
+import FornecedoresFinanceiro from "@/components/FornecedoresFinanceiro"; // (Compras - Fornecedores)
 
-type TabKey = "resumo" | "encomendas" | "pagar" | "faturas";
+type Lang = "pt" | "fr";
 
 export default function Financeiro() {
-  const [activeTab, setActiveTab] = useState<TabKey>("resumo");
-  const [resumo, setResumo] = useState<any>(null);
-  const [loadingResumo, setLoadingResumo] = useState(false);
-  const [showInactive, setShowInactive] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const { hasRole } = useUserRole();
-  const navigate = useNavigate();
+  const { isRestrictedFR } = useLocale();
+  const lang: Lang = isRestrictedFR ? "fr" : "pt";
 
-  const isHam = useMemo(() => (userEmail || "").toLowerCase() === "ham@admin.com", [userEmail]);
-  const isFelipe = useMemo(() => (userEmail || "").toLowerCase() === "felipe@colaborador.com", [userEmail]);
-
-  // Dicionário PT/FR (somente rótulos visíveis nesta página)
-  const t = isHam
-    ? {
-        resumo: "Résumé",
-        aReceber: "À recevoir",
-        aPagar: "À payer",
-        faturas: "Factures",
-        carregandoResumo: "Chargement du résumé...",
-        totalReceber: "Total à recevoir",
-        totalPagar: "Total à payer",
-        saldoAtual: "Solde actuel",
-        mostrarInativos: "Afficher inactifs",
-        erroUsuario: "Erreur lors de la récupération de l’utilisateur",
-        erroResumo: "Erreur lors du chargement du résumé",
-      }
-    : {
-        resumo: "Resumo",
-        aReceber: "A Receber",
-        aPagar: "A Pagar",
-        faturas: "Faturas",
-        carregandoResumo: "Carregando resumo...",
-        totalReceber: "Total a Receber",
-        totalPagar: "Total a Pagar",
-        saldoAtual: "Saldo Atual",
-        mostrarInativos: "Mostrar inativos",
-        erroUsuario: "Erro ao buscar usuário",
-        erroResumo: "Erro ao carregar resumo",
-      };
-
+  // Dica: se você já controlava defaultValue externamente, pode remover esse efeito.
+  // Mantemos a navegação padrão: ham entra direto em "receber" (agora rotulado como VENDAS).
   useEffect(() => {
-    const fetchUser = async () => {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
+    // Nada a fazer aqui se o Tabs já usa defaultValue="receber".
+  }, []);
 
-      if (error) {
-        toast.error(t.erroUsuario);
-        return;
-      }
-
-      const email = user?.email || null;
-      setUserEmail(email);
-
-      // Redirecionamentos automáticos por usuário
-      if (email === "ham@admin.com") {
-        setActiveTab("encomendas"); // entra direto em A Receber
-      }
-      if (email === "felipe@colaborador.com") {
-        setActiveTab("pagar");
-      }
+  // Helper simples para rótulos da UI (sem mexer nos values internos)
+  const t = (k: string): string => {
+    const d: Record<string, { pt: string; fr: string }> = {
+      Vendas: { pt: "Vendas", fr: "Ventes" },
+      Compras: { pt: "Compras", fr: "Achats" },
+      Faturas: { pt: "Faturas", fr: "Factures" },
     };
-
-    fetchUser();
-  }, [t.erroUsuario]);
-
-  useEffect(() => {
-    if (activeTab === "resumo" && !isHam) {
-      fetchResumo();
-    }
-  }, [activeTab, isHam]);
-
-  const fetchResumo = async () => {
-    try {
-      setLoadingResumo(true);
-      // Mock data para resumo financeiro
-      const data = {
-        a_receber: 0,
-        a_pagar: 0,
-        saldo: 0
-      };
-      setResumo(data);
-    } catch (error) {
-      toast.error(t.erroResumo);
-    } finally {
-      setLoadingResumo(false);
-    }
+    return d[k]?.[lang] ?? k;
   };
 
-  // Regras de visibilidade por usuário (mínima alteração do original):
-  // - ham: mostrar SOMENTE "encomendas" (A Receber) e "faturas"
-  // - felipe: já havia regras para esconder Resumo/A Receber/Faturas
-  const hideResumoCards = isFelipe || isHam;
-  const hideFaturas = isFelipe ? true : false;     // ham vê Faturas
-  const hideAPagar = isHam ? true : false;         // ham não vê A Pagar
+  // Regras de visibilidade já existentes para ham: mostrar Vendas e Faturas.
+  const showOnlySalesAndInvoices = isRestrictedFR;
 
   return (
-    <div className="px-4 md:px-8">
-      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as TabKey)}>
-        <TabsList className="mb-4">
-          {!hideResumoCards && <TabsTrigger value="resumo">{t.resumo}</TabsTrigger>}
-          <TabsTrigger value="encomendas">{t.aReceber}</TabsTrigger>
-          {!hideAPagar && <TabsTrigger value="pagar">{t.aPagar}</TabsTrigger>}
-          {!hideFaturas && <TabsTrigger value="faturas">{t.faturas}</TabsTrigger>}
+    <div className="space-y-6">
+      <Tabs defaultValue="receber" className="w-full">
+        <TabsList>
+          <TabsTrigger value="receber">{t("Vendas")}</TabsTrigger>
+
+          {!showOnlySalesAndInvoices && (
+            <TabsTrigger value="pagar">{t("Compras")}</TabsTrigger>
+          )}
+
+          <TabsTrigger value="faturas">{t("Faturas")}</TabsTrigger>
         </TabsList>
 
-        {!hideResumoCards && (
-          <TabsContent value="resumo">
-            {loadingResumo ? (
-              <p className="text-muted-foreground">{t.carregandoResumo}</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                <Card className="hover:shadow-md transition">
-                  <CardHeader>
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {t.totalReceber}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-2xl font-bold">
-                    € {resumo?.a_receber?.toFixed(2) ?? "0.00"}
-                  </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-md transition">
-                  <CardHeader>
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {t.totalPagar}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-2xl font-bold">
-                    € {resumo?.a_pagar?.toFixed(2) ?? "0.00"}
-                  </CardContent>
-                </Card>
-
-                <Card className="hover:shadow-md transition">
-                  <CardHeader>
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {t.saldoAtual}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-2xl font-bold">
-                    € {resumo?.saldo ?? "0.00"}
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-          </TabsContent>
-        )}
-
-        {/* A Receber (sempre mostrado, inclusive para ham) */}
-        <TabsContent value="encomendas">
-          <div className="flex items-center space-x-2 mb-4">
-            <Switch
-              id="showInactive"
-              checked={showInactive}
-              onCheckedChange={() => setShowInactive(!showInactive)}
-            />
-            <Label htmlFor="showInactive">{t.mostrarInativos}</Label>
-          </div>
-          <EncomendasFinanceiro showCompleted={showInactive} />
+        {/* VENDAS (ex A Receber) */}
+        <TabsContent value="receber" className="mt-4">
+          {/* O componente já cuida de PT/FR via useLocale() */}
+          <EncomendasFinanceiro />
         </TabsContent>
 
-        {/* A Pagar (oculto para ham) */}
-        {!hideAPagar && (
-          <TabsContent value="pagar">
-            <ContasPagar />
+        {/* COMPRAS (ex A Pagar) — oculto para ham */}
+        {!showOnlySalesAndInvoices && (
+          <TabsContent value="pagar" className="mt-4">
+            <FornecedoresFinanceiro />
           </TabsContent>
         )}
 
-        {/* Faturas (ham vê) */}
-        {!hideFaturas && (
-          <TabsContent value="faturas">
-            <Invoices />
-          </TabsContent>
-        )}
+        {/* FATURAS */}
+        <TabsContent value="faturas" className="mt-4">
+          {/* Se o seu <Invoices /> aceitar prop lang, pode passar: lang={lang} */}
+          <Invoices />
+        </TabsContent>
       </Tabs>
     </div>
   );
