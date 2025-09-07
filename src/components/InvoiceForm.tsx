@@ -110,7 +110,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="amount">Valor da Fatura (€)</Label>
+            <Label htmlFor="amount">Valor da Fatura</Label>
             <Input
               id="amount"
               type="number"

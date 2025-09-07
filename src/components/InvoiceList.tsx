@@ -12,6 +12,7 @@ import { Invoice } from '@/types/invoice';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { InvoiceAttachmentManager } from './InvoiceAttachmentManager';
+import { formatCurrencyEUR } from '@/lib/utils/currency';
 
 interface InvoiceListProps {
   invoices: Invoice[];
@@ -149,7 +150,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                       {new Date(invoice.invoice_date).toLocaleDateString('pt-BR')}
                     </TableCell>
                     <TableCell className="font-semibold">
-                      €{invoice.amount.toFixed(2)}
+                      {formatCurrencyEUR(invoice.amount)}
                     </TableCell>
                     <TableCell>
                       {invoice.description || '-'}
@@ -249,7 +250,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
             <div className="mt-4 pt-4 border-t">
               <div className="flex justify-end">
                 <div className="text-lg font-semibold">
-                  Total: €{totalAmount.toFixed(2)}
+                  Total: {formatCurrencyEUR(totalAmount)}
                 </div>
               </div>
             </div>
@@ -278,7 +279,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit_amount">Valor (€)</Label>
+                <Label htmlFor="edit_amount">Valor</Label>
                 <Input
                   id="edit_amount"
                   type="number"
@@ -330,7 +331,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                 </div>
                 <div>
                   <Label>Valor</Label>
-                  <p className="text-sm font-semibold">€{viewingInvoice.amount.toFixed(2)}</p>
+                  <p className="text-sm font-semibold">{formatCurrencyEUR(viewingInvoice.amount)}</p>
                 </div>
               </div>
               

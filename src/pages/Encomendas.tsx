@@ -483,7 +483,7 @@ export default function Encomendas() {
                         >
                           <Edit className="h-5 w-5" />
                         </Button>
-                        <EncomendaActions encomenda={e} onDelete={handleDelete} onTransport={() => handleTransport(e)} />
+                        <EncomendaActions encomenda={e as any} onDelete={handleDelete} onTransport={() => handleTransport(e)} />
                       </>
                     )}
                   </div>
@@ -709,8 +709,7 @@ export default function Encomendas() {
           </DialogHeader>
           {selectedEncomenda && (
             <EncomendaTransportForm
-              encomenda={selectedEncomenda}
-              peso={pesoTransporte[selectedEncomenda.id] || 0}
+              encomendaId={selectedEncomenda.id}
               onSuccess={() => {
                 setTransportDialogOpen(false);
                 fetchEncomendas();

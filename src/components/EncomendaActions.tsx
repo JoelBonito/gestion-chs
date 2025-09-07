@@ -28,6 +28,7 @@ interface EncomendaActionsProps {
   onView?: () => void;
   onEdit?: (data: any) => void;
   onDelete?: () => void;
+  onTransport?: () => void;
   onDuplicate?: (id: string) => void;
 }
 
