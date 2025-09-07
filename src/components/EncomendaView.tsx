@@ -81,21 +81,18 @@ export default function EncomendaView({ encomendaId }: Props) {
         totalCostFooter: "Total (coût)",
         subtotalFooter: "Sous-total",
         loading: "Chargement…",
-        notFound: "Commande introuvable",
+        noItems: "Aucun article",
         loadingItems: "Chargement des articles…",
-        noItems: "Aucun article ajouté",
-        toastOrderNotFound: "Commande introuvable",
-        toastItemsError: "Impossible de charger les articles",
       }
     : {
-        order: "Pedido",
+        order: "Encomenda",
         label: "Etiqueta",
         status: "Status",
         createdOn: "Criada em",
         client: "Cliente",
         supplier: "Fornecedor",
-        productionDate: "Data Produção (estimada)",
-        deliveryDate: "Data Entrega (estimada)",
+        productionDate: "Data de produção (estimada)",
+        deliveryDate: "Data de entrega (estimada)",
         subtotalItems: "Subtotal (itens)",
         totalCost: "Total (custo)",
         paid: "Valor Pago",
@@ -104,117 +101,93 @@ export default function EncomendaView({ encomendaId }: Props) {
         items: "Itens da encomenda",
         product: "Produto",
         qty: "Qtd",
-        unitPrice: "Preço Unit.",
-        unitCost: "Custo Unit.",
+        unitPrice: "Preço unit.",
+        unitCost: "Custo unit.",
         total: "Total",
         totalCostFooter: "Total (custo)",
         subtotalFooter: "Subtotal",
         loading: "Carregando…",
-        notFound: "Encomenda não encontrada",
+        noItems: "Nenhum item",
         loadingItems: "Carregando itens…",
-        noItems: "Nenhum item adicionado",
-        toastOrderNotFound: "Encomenda não encontrada",
-        toastItemsError: "Não foi possível carregar os itens",
       };
 
-  // Se não veio id, não renderiza nada (evita "não encontrada" sem contexto)
-  if (!id) {
-    console.warn("[EncomendaView] Renderizado sem encomendaId. Nada será exibido.");
-    return null;
+  useEffect(() => {
+    if (!id) return;
+    fetchEncomenda();
+    fetchItens();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  const fetchEncomenda = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("encomendas")
+        .select(`*, clientes(nome), fornecedores(nome)`)
+        .eq("id", id)
+        .single();
+      if (error) throw error;
+      setEncomenda(data as Encomenda);
+    } catch (e) {
+      console.error(e);
+      toast.error(isHam ? "Erreur lors du chargement" : "Erro ao carregar encomenda");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchItens = async () => {
+    try {
+      setLoadingItens(true);
+      const { data, error } = await supabase
+        .from("itens_encomenda")
+        .select(`id, quantidade, preco_unitario, preco_custo, produtos(nome)`)
+        .eq("encomenda_id", id);
+      if (error) throw error;
+      setItens((data || []) as ItemEncomenda[]);
+    } catch (e) {
+      console.error(e);
+      toast.error(isHam ? "Erreur lors du chargement des articles" : "Erro ao carregar itens");
+    } finally {
+      setLoadingItens(false);
+    }
+  };
+
+  // Subtotais (conforme perfil)
+  const subtotalVenda = (itens || []).reduce((acc, it) => {
+    const q = Number(it.quantidade ?? 0) || 0;
+    const pu = Number(it.preco_unitario ?? 0) || 0;
+    return acc + q * pu;
+  }, 0);
+
+  const subtotalCusto = (itens || []).reduce((acc, it) => {
+    const q = Number(it.quantidade ?? 0) || 0;
+    const pc = Number(it.preco_custo ?? 0) || 0;
+    return acc + q * pc;
+  }, 0);
+
+  if (loading || !encomenda) {
+    return <div className="py-6 text-center text-muted-foreground">{t.loading}</div>;
   }
 
-  // Carrega encomenda + itens
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadEncomenda() {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from("encomendas")
-          .select(`*, clientes(nome), fornecedores(nome)`)
-          .eq("id", id)
-          .single();
-        if (error) throw error;
-        if (mounted) setEncomenda(data as Encomenda);
-      } catch (e) {
-        console.error("Erro ao carregar encomenda:", e);
-        toast.error(t.toastOrderNotFound);
-        if (mounted) setEncomenda(null);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-
-    async function loadItens() {
-      setLoadingItens(true);
-      try {
-        const { data, error } = await supabase
-          .from("itens_encomenda")
-          .select(`
-            id,
-            quantidade,
-            preco_unitario,
-            preco_custo,
-            produtos(nome)
-          `)
-          .eq("encomenda_id", id)
-          .order("id", { ascending: true });
-        if (error) throw error;
-        if (mounted) setItens((data as ItemEncomenda[]) || []);
-      } catch (e) {
-        console.error("Erro ao carregar itens da encomenda:", e);
-        toast.error(t.toastItemsError);
-        if (mounted) setItens([]);
-      } finally {
-        if (mounted) setLoadingItens(false);
-      }
-    }
-
-    loadEncomenda();
-    loadItens();
-    return () => {
-      mounted = false;
-    };
-  }, [id]); // não recarrega por causa do idioma
-
-  const subtotalVenda = useMemo(
-    () => itens.reduce((acc, it) => acc + Number(it.quantidade || 0) * Number(it.preco_unitario || 0), 0),
-    [itens]
-  );
-  const subtotalCusto = useMemo(
-    () => itens.reduce((acc, it) => acc + Number(it.quantidade || 0) * Number(it.preco_custo || 0), 0),
-    [itens]
-  );
-
-  if (loading) return <div className="py-8 text-center text-muted-foreground">{t.loading}</div>;
-  if (!encomenda) return <div className="py-8 text-center text-muted-foreground">{t.notFound}</div>;
-
   return (
-    <div className="space-y-8">
-      {/* Resumo */}
-      <section className="space-y-6">
+    <div className="space-y-6">
+      {/* Cabeçalho */}
+      <section className="space-y-2">
+        <div className="text-xl font-semibold">
+          {t.order} #{encomenda.numero_encomenda}
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {t.createdOn} {encomenda.data_criacao ? formatDate(encomenda.data_criacao) : "—"}
+        </div>
+        {encomenda.etiqueta ? (
+          <div className="inline-block rounded bg-muted px-2 py-0.5 text-xs">{t.label}: {encomenda.etiqueta}</div>
+        ) : null}
+      </section>
+
+      {/* Meta */}
+      <section className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <div className="text-sm text-muted-foreground">{t.order}</div>
-            <div className="font-semibold">#{encomenda.numero_encomenda}</div>
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">{t.status}</div>
-            <div className="font-semibold">{encomenda.status}</div>
-          </div>
-          {encomenda.etiqueta ? (
-            <div className="sm:col-span-2">
-              <div className="text-sm text-muted-foreground">{t.label}</div>
-              <div className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
-                {encomenda.etiqueta}
-              </div>
-            </div>
-          ) : null}
-          <div>
-            <div className="text-sm text-muted-foreground">{t.createdOn}</div>
-            <div className="font-semibold">{encomenda.data_criacao ? formatDate(encomenda.data_criacao) : "—"}</div>
-          </div>
           <div>
             <div className="text-sm text-muted-foreground">{t.client}</div>
             <div className="font-semibold">{encomenda.clientes?.nome ?? "—"}</div>
@@ -241,7 +214,7 @@ export default function EncomendaView({ encomendaId }: Props) {
           </div>
         </div>
 
-        {/* Totais (sem lucro para Felipe e Ham) */}
+        {/* Totais (oculta "Valor Pago" para Felipe; oculta lucro para Felipe e Ham) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <div className="text-sm text-muted-foreground">
@@ -251,10 +224,15 @@ export default function EncomendaView({ encomendaId }: Props) {
               {formatCurrency(isFelipe ? subtotalCusto : subtotalVenda)}
             </div>
           </div>
-          <div>
-            <div className="text-sm text-muted-foreground">{t.paid}</div>
-            <div className="font-semibold">{formatCurrency(encomenda.valor_pago ?? 0)}</div>
-          </div>
+
+          {/* Pago — NÃO mostrar para Felipe */}
+          {!isFelipe && (
+            <div>
+              <div className="text-sm text-muted-foreground">{t.paid}</div>
+              <div className="font-semibold">{formatCurrency(encomenda.valor_pago ?? 0)}</div>
+            </div>
+          )}
+
           {/* Lucro estimado — oculto para Felipe e Ham */}
           {!(isFelipe || isHam) && (
             <div>
@@ -271,6 +249,7 @@ export default function EncomendaView({ encomendaId }: Props) {
           )}
         </div>
 
+        {/* Observações */}
         {encomenda.observacoes ? (
           <div>
             <div className="text-sm text-muted-foreground mb-1">{t.notes}</div>
@@ -327,21 +306,25 @@ export default function EncomendaView({ encomendaId }: Props) {
               </tbody>
               <tfoot>
                 <tr className="border-t bg-muted/30">
-                  <td className="px-3 py-2 font-medium text-right" colSpan={
-                    // cabeçalho tem: produto (1) + qtd(1) + preço venda(cond) + custo(cond)
-                    // Felipe: sem preço venda (+ custo) => 1+1+0+1 = 3
-                    // Ham: com preço venda (+ sem custo) => 1+1+1+0 = 3
-                    // Outros: com ambos => 1+1+1+1 = 4
-                    isFelipe ? 3 : isHam ? 3 : 4
-                  }>
+                  <td
+                    className="px-3 py-2 font-medium text-right"
+                    colSpan={
+                      // cabeçalho tem: produto (1) + qtd(1) + preço venda(cond) + custo(cond)
+                      // Felipe: sem preço venda (+ custo) => 1+1+0+1 = 3
+                      // Ham: com preço venda (+ sem custo) => 1+1+1+0 = 3
+                      // Outros: com ambos => 1+1+1+1 = 4
+                      isFelipe ? 3 : isHam ? 3 : 4
+                    }
+                  >
                     {isFelipe ? t.totalCostFooter : t.subtotalFooter}
                   </td>
                   <td className="px-3 py-2 text-right font-semibold">
                     {formatCurrency(isFelipe ? subtotalCusto : subtotalVenda)}
                   </td>
                 </tr>
-                {/* Linha "Total (custo)" — mostrar para usuários normais; esconder para Felipe (já mostrado acima) e para Ham (pedido do cliente) */}
-                {(!isFelipe && !isHam) && (
+
+                {/* Linha “Total (custo)” — mostrar para usuários normais; esconder para Felipe (já mostrado acima) e para Ham */}
+                {!isFelipe && !isHam && (
                   <tr className="border-t">
                     <td className="px-3 py-2 text-right" colSpan={4}>
                       {t.totalCostFooter}
