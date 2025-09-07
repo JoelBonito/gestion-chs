@@ -17,7 +17,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 interface ContaPagar {
   encomenda_id: string;
   numero_encomenda: string;
-  etiqueta?: string | null; // NOVO
+  etiqueta?: string | null;
   fornecedor_nome: string;
   valor_produtos: number;
   valor_frete: number;
@@ -25,7 +25,7 @@ interface ContaPagar {
   valor_pago_fornecedor: number;
   saldo_devedor_fornecedor: number;
   total_pagamentos: number;
-  data_producao_estimada?: string;
+  data_producao_estimada?: string | null;
 }
 
 interface ContasPagarProps {
@@ -65,13 +65,14 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
       "Pagamentos": { pt: "Pagamentos", fr: "Paiements" },
       "Ações": { pt: "Ações", fr: "Actions" },
 
-      // Estados/mensagens
+      // Controles/estados
+      "Mostrar Concluídos": { pt: "Mostrar Concluídos", fr: "Afficher terminés" },
       "Carregando contas a pagar...": { pt: "Carregando contas a pagar...", fr: "Chargement des comptes à payer..." },
       "Nenhuma conta a pagar encontrada": { pt: "Nenhuma conta a pagar encontrada", fr: "Aucun compte à payer trouvé" },
       "pag.": { pt: "pag.", fr: "paiem." },
       "Nenhum": { pt: "Nenhum", fr: "Aucun" },
 
-      // Botões / títulos de diálogos
+      // Botões / diálogos
       "Visualizar detalhes": { pt: "Visualizar detalhes", fr: "Voir les détails" },
       "Registrar pagamento": { pt: "Registrar pagamento", fr: "Enregistrer un paiement" },
       "Anexar Comprovante": { pt: "Anexar Comprovante", fr: "Joindre un justificatif" },
@@ -81,7 +82,6 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
       // Labels detalhes
       "Encomenda:": { pt: "Encomenda:", fr: "Commande :" },
       "Fornecedor:": { pt: "Fornecedor:", fr: "Fournisseur :" },
-      "Data Produção:": { pt: "Data Produção:", fr: "Date de production :" },
       "Valor Produtos:": { pt: "Valor Produtos:", fr: "Montant des produits :" },
       "Valor Frete:": { pt: "Valor Frete:", fr: "Frais de port :" },
       "Valor Pago:": { pt: "Valor Pago:", fr: "Montant payé :" },
@@ -94,18 +94,19 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
     try {
       setIsLoading(true);
 
-      const { data, error } = await supabase
+      // Monta a query base (LEFT JOIN em fornecedores)
+      let query = supabase
         .from("encomendas")
         .select(`
           id,
           numero_encomenda,
-          etiqueta,                  -- NOVO
+          etiqueta,
           valor_total_custo,
           valor_pago_fornecedor,
           saldo_devedor_fornecedor,
           valor_frete,
           data_producao_estimada,
-          fornecedores!inner(nome),
+          fornecedores(nome),
           itens_encomenda(
             quantidade,
             preco_unitario,
@@ -115,33 +116,44 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
             valor_pagamento
           )
         `)
-        .gte("saldo_devedor_fornecedor", localShowCompleted ? 0 : 0.01)
         .order("created_at", { ascending: false });
 
+      // Filtro de saldo:
+      // - quando "Mostrar Concluídos" = true, inclui >= 0 e também NULL
+      // - quando false, apenas > 0
+      if (localShowCompleted) {
+        query = query.or("saldo_devedor_fornecedor.gte.0,saldo_devedor_fornecedor.is.null");
+      } else {
+        query = query.gt("saldo_devedor_fornecedor", 0);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
 
-      const contasFormatadas = (data || []).map((encomenda: any) => {
-        const valorProdutos = parseFloat(encomenda.valor_total_custo || 0);
-        return {
-          encomenda_id: encomenda.id,
-          numero_encomenda: encomenda.numero_encomenda,
-          etiqueta: encomenda.etiqueta ?? null, // NOVO
-          fornecedor_nome: encomenda.fornecedores?.nome ?? "",
-          valor_produtos: valorProdutos,
-          valor_frete: parseFloat(encomenda.valor_frete || 0),
-          valor_total_custo: parseFloat(encomenda.valor_total_custo || 0),
-          valor_pago_fornecedor: parseFloat(encomenda.valor_pago_fornecedor || 0),
-          saldo_devedor_fornecedor: parseFloat(encomenda.saldo_devedor_fornecedor || 0),
-          total_pagamentos: Array.isArray(encomenda.pagamentos_fornecedor) ? encomenda.pagamentos_fornecedor.length : 0,
-          data_producao_estimada: encomenda.data_producao_estimada,
-        } as ContaPagar;
-      });
+      const contasFormatadas: ContaPagar[] = (data || []).map((encomenda: any) => ({
+        encomenda_id: encomenda.id,
+        numero_encomenda: encomenda.numero_encomenda,
+        etiqueta: encomenda.etiqueta ?? null,
+        fornecedor_nome:
+          (typeof encomenda.fornecedores === "object" && encomenda.fornecedores?.nome)
+            ? encomenda.fornecedores.nome
+            : "",
+        valor_produtos: Number(encomenda.valor_total_custo || 0),
+        valor_frete: Number(encomenda.valor_frete || 0),
+        valor_total_custo: Number(encomenda.valor_total_custo || 0),
+        valor_pago_fornecedor: Number(encomenda.valor_pago_fornecedor || 0),
+        saldo_devedor_fornecedor: Number(encomenda.saldo_devedor_fornecedor || 0),
+        total_pagamentos: Array.isArray(encomenda.pagamentos_fornecedor)
+          ? encomenda.pagamentos_fornecedor.length
+          : 0,
+        data_producao_estimada: encomenda.data_producao_estimada ?? null,
+      }));
 
       setContas(contasFormatadas);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar contas a pagar",
-        description: error.message,
+        description: error.message ?? "Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -171,7 +183,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
     onRefreshNeeded?.();
   };
 
-  const formatDate = (dateString?: string) => {
+  const formatDate = (dateString?: string | null) => {
     if (!dateString) return "-";
     return new Date(dateString).toLocaleDateString(isRestrictedFR ? "fr-FR" : "pt-PT");
   };
@@ -214,6 +226,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
             </div>
           </div>
         </CardHeader>
+
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
@@ -229,6 +242,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                   <TableHead>{t("Ações")}</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
                 {contas.map((conta) => (
                   <TableRow key={conta.encomenda_id}>
@@ -242,22 +256,31 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                         )}
                       </div>
                     </TableCell>
+
                     <TableCell>{conta.fornecedor_nome}</TableCell>
+
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(conta.data_producao_estimada)}
                     </TableCell>
+
                     <TableCell className="font-semibold">
                       €{conta.valor_total_custo.toFixed(2)}
                     </TableCell>
+
                     <TableCell className="text-success">
                       €{conta.valor_pago_fornecedor.toFixed(2)}
                     </TableCell>
+
                     <TableCell className="font-semibold text-warning">
                       €{conta.saldo_devedor_fornecedor.toFixed(2)}
                     </TableCell>
+
                     <TableCell className="text-sm text-muted-foreground">
-                      {conta.total_pagamentos > 0 ? `${conta.total_pagamentos} ${t("pag.")}` : t("Nenhum")}
+                      {conta.total_pagamentos > 0
+                        ? `${conta.total_pagamentos} ${t("pag.")}`
+                        : t("Nenhum")}
                     </TableCell>
+
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button
@@ -269,6 +292,8 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
+
+                        {/* Colaborador não registra pagamento ao fornecedor */}
                         {!isCollaborator && (
                           <>
                             <Button
@@ -295,6 +320,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                     </TableCell>
                   </TableRow>
                 ))}
+
                 {contas.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
@@ -308,7 +334,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
         </CardContent>
       </Card>
 
-      {/* Payment Form Dialog */}
+      {/* Dialog: registrar pagamento ao fornecedor */}
       {selectedConta && (
         <Dialog open={showPagamentoForm} onOpenChange={setShowPagamentoForm}>
           <DialogContent className="max-w-2xl">
@@ -320,7 +346,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
         </Dialog>
       )}
 
-      {/* Details Dialog with Attachments */}
+      {/* Dialog: detalhes + anexos */}
       {selectedConta && (
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -328,7 +354,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
               <DialogTitle>{t("Detalhes da Conta a Pagar")}</DialogTitle>
             </DialogHeader>
             <div className="space-y-6">
-              {/* Order Details Section */}
+              {/* Detalhes da encomenda */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">{t("Encomenda:")}</label>
@@ -376,16 +402,16 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
                 </div>
               </div>
 
-              {/* Order Items Section */}
+              {/* Itens da encomenda (com custos) */}
               <OrderItemsView encomendaId={selectedConta.encomenda_id} showCostPrices={true} />
 
-              {/* Attachments Section */}
+              {/* Anexos */}
               <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">{t("Comprovantes e Anexos")}</h3>
+                <h3 className="text-lg font-medium mb-4">Comprovantes e Anexos</h3>
                 <AttachmentManager
                   entityType="payable"
                   entityId={selectedConta.encomenda_id}
-                  title={t("Comprovantes de Pagamento")}
+                  title="Comprovantes de Pagamento"
                   onChanged={handleAttachmentChange}
                 />
               </div>
