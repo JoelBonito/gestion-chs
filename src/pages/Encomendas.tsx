@@ -47,6 +47,8 @@ interface Encomenda {
   data_producao_estimada?: string | null;
   data_envio_estimada?: string | null;
   observacoes?: string | null;
+  cliente_id?: string;
+  fornecedor_id?: string;
   clientes?: { nome: string | null } | null;
   fornecedores?: { nome: string | null } | null;
   // calculados no front:
@@ -146,7 +148,7 @@ export default function Encomendas() {
   const [loading, setLoading] = useState(true);
   const [pesoTransporte, setPesoTransporte] = useState<Record<string, number>>({});
 
-  // flags de edição de datas na UI (Ham não edita)
+  // flags de edição de datas na UI (Ham não edita; visual normal)
   const canEditProductionUI = (canEdit() || hasRole("factory") || isCollaborator) && !isHam;
   const canEditDeliveryUI = (canEdit() || isCollaborator) && !isHam;
 
@@ -221,7 +223,7 @@ export default function Encomendas() {
     field: "data_producao_estimada" | "data_envio_estimada",
     value: string
   ) => {
-    // Proteção adicional — botões já ficam desabilitados para Ham
+    // Proteção adicional — (para Ham, UI já fica não-interativa)
     if ((field === "data_producao_estimada" && !canEditProductionUI) || (field === "data_envio_estimada" && !canEditDeliveryUI)) {
       return;
     }
@@ -492,71 +494,100 @@ export default function Encomendas() {
                   {/* Data Produção */}
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">{t.productionDate}</div>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          disabled={!canEditProductionUI}
-                          className={cn(
-                            "w-full justify-start text-left font-normal h-10",
-                            !e.data_producao_estimada && "text-muted-foreground",
-                            !canEditProductionUI && "opacity-70 cursor-not-allowed"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          <span className="text-sm">
-                            {e.data_producao_estimada ? formatDate(e.data_producao_estimada) : t.select}
-                          </span>
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={e.data_producao_estimada ? new Date(e.data_producao_estimada) : undefined}
-                          onSelect={(date) => {
-                            if (!canEditProductionUI) return;
-                            const v = date ? format(date, "yyyy-MM-dd") : "";
-                            handleDateUpdate(e.id, "data_producao_estimada", v);
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+
+                    {canEditProductionUI ? (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal h-10",
+                              !e.data_producao_estimada && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            <span className="text-sm">
+                              {e.data_producao_estimada ? formatDate(e.data_producao_estimada) : t.select}
+                            </span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={e.data_producao_estimada ? new Date(e.data_producao_estimada) : undefined}
+                            onSelect={(date) => {
+                              const v = date ? format(date, "yyyy-MM-dd") : "";
+                              handleDateUpdate(e.id, "data_producao_estimada", v);
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    ) : (
+                      // “Fake button” (mesmo visual do outline), mas não clicável
+                      <div
+                        aria-disabled
+                        className={cn(
+                          "w-full h-10 inline-flex items-center justify-start rounded-md border bg-background",
+                          "px-3 py-2 text-sm font-normal text-left"
+                        )}
+                        title={t.productionDate}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <span className="text-sm">
+                          {e.data_producao_estimada ? formatDate(e.data_producao_estimada) : t.select}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Data Entrega */}
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">{t.deliveryDate}</div>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          disabled={!canEditDeliveryUI}
-                          className={cn(
-                            "w-full justify-start text-left font-normal h-10",
-                            !e.data_envio_estimada && "text-muted-foreground",
-                            !canEditDeliveryUI && "opacity-70 cursor-not-allowed"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          <span className="text-sm">
-                            {e.data_envio_estimada ? formatDate(e.data_envio_estimada) : t.select}
-                          </span>
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={e.data_envio_estimada ? new Date(e.data_envio_estimada) : undefined}
-                          onSelect={(date) => {
-                            if (!canEditDeliveryUI) return;
-                            const v = date ? format(date, "yyyy-MM-dd") : "";
-                            handleDateUpdate(e.id, "data_envio_estimada", v);
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+
+                    {canEditDeliveryUI ? (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal h-10",
+                              !e.data_envio_estimada && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            <span className="text-sm">
+                              {e.data_envio_estimada ? formatDate(e.data_envio_estimada) : t.select}
+                            </span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={e.data_envio_estimada ? new Date(e.data_envio_estimada) : undefined}
+                            onSelect={(date) => {
+                              const v = date ? format(date, "yyyy-MM-dd") : "";
+                              handleDateUpdate(e.id, "data_envio_estimada", v);
+                            }}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    ) : (
+                      <div
+                        aria-disabled
+                        className={cn(
+                          "w-full h-10 inline-flex items-center justify-start rounded-md border bg-background",
+                          "px-3 py-2 text-sm font-normal text-left"
+                        )}
+                        title={t.deliveryDate}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <span className="text-sm">
+                          {e.data_envio_estimada ? formatDate(e.data_envio_estimada) : t.select}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Peso Bruto */}
@@ -578,12 +609,20 @@ export default function Encomendas() {
                   {/* Status */}
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">{t.status}</div>
-                    <EncomendaStatusSelect
-                      encomendaId={e.id}
-                      currentStatus={e.status}
-                      numeroEncomenda={e.numero_encomenda}
-                      onStatusChange={handleStatusChange}
-                    />
+
+                    {isHam ? (
+                      // Pill estático (não clicável) com o status atual
+                      <div className="inline-flex items-center px-3 h-10 rounded-md border bg-background text-sm font-medium">
+                        {e.status}
+                      </div>
+                    ) : (
+                      <EncomendaStatusSelect
+                        encomendaId={e.id}
+                        currentStatus={e.status}
+                        numeroEncomenda={e.numero_encomenda}
+                        onStatusChange={handleStatusChange}
+                      />
+                    )}
                   </div>
 
                   {/* Comissão — oculta para Felipe e Ham */}
