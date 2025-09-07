@@ -1,6 +1,6 @@
+// src/pages/Encomendas.tsx
 import { useState, useEffect } from "react";
 import { Plus, Search, CalendarIcon, Eye, Edit, Printer } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
@@ -57,9 +57,7 @@ interface Encomenda {
   valor_total_custo?: number;
 }
 
-/** Componente principal */
 export default function Encomendas() {
-  const queryClient = useQueryClient();
   const { canEdit, hasRole } = useUserRole();
   const isCollaborator = useIsCollaborator();
   const { formatCurrency, formatDate } = useFormatters();
@@ -85,13 +83,11 @@ export default function Encomendas() {
 
       const { data, error } = await supabase
         .from("encomendas")
-        .select(
-          `
+        .select(`
           *,
           clientes(nome),
           fornecedores(nome)
-        `
-        )
+        `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -99,7 +95,6 @@ export default function Encomendas() {
       if (data) {
         const encomendasWithComputed = await Promise.all(
           data.map(async (encomenda: any) => {
-            // calcular comissão e custo total a partir dos itens
             const { data: itens, error: itensError } = await supabase
               .from("itens_encomenda")
               .select(`quantidade, preco_unitario, preco_custo`)
@@ -112,8 +107,7 @@ export default function Encomendas() {
               commission_amount = itens.reduce((total: number, item: any) => {
                 const receita = Number(item.quantidade || 0) * Number(item.preco_unitario || 0);
                 const custo = Number(item.quantidade || 0) * Number(item.preco_custo || 0);
-                const lucro = receita - custo;
-                return total + lucro;
+                return total + (receita - custo);
               }, 0);
 
               valor_total_custo = itens.reduce((total: number, item: any) => {
@@ -131,7 +125,6 @@ export default function Encomendas() {
 
         setEncomendas(encomendasWithComputed || []);
 
-        // calcular pesos por encomenda
         const pesos: { [key: string]: number } = {};
         for (const enc of encomendasWithComputed) {
           const pesoCalculado = await calcularPesoTransporte(enc.id);
@@ -147,7 +140,7 @@ export default function Encomendas() {
     }
   };
 
-  /** Peso de transporte (usa size_weight em gramas e aplica 30% de margem) */
+  /** Peso de transporte (size_weight em gramas + 30% margem) */
   const calcularPesoTransporte = async (encomendaId: string): Promise<number> => {
     try {
       const { data: itens, error } = await supabase
@@ -163,8 +156,7 @@ export default function Encomendas() {
         return total + quantidade * sizeWeight;
       }, 0);
 
-      const pesoBrutoKg = (pesoTotalGramas * 1.3) / 1000;
-      return pesoBrutoKg;
+      return (pesoTotalGramas * 1.3) / 1000; // kg
     } catch (e) {
       console.error("Erro ao calcular peso:", e);
       return 0;
@@ -179,8 +171,8 @@ export default function Encomendas() {
   /** Impressão rápida */
   const handlePrint = async (encomenda: Encomenda) => {
     try {
-      const printWindow = window.open("", "_blank", "width=800,height=600");
-      if (!printWindow) {
+      const win = window.open("", "_blank", "width=800,height=600");
+      if (!win) {
         toast.error("Erro ao abrir janela de impressão");
         return;
       }
@@ -220,11 +212,7 @@ export default function Encomendas() {
               <div class="row"><span class="label">Valor Pago:</span> <span class="value">${formatCurrency(encomenda.valor_pago)}</span></div>
             </div>
 
-            ${
-              encomenda.observacoes
-                ? `<div class="section"><div class="label">Observações:</div><div>${encomenda.observacoes}</div></div>`
-                : ""
-            }
+            ${encomenda.observacoes ? `<div class="section"><div class="label">Observações:</div><div>${encomenda.observacoes}</div></div>` : ""}
           </div>
 
           <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666;">
@@ -234,11 +222,11 @@ export default function Encomendas() {
         </html>
       `;
 
-      printWindow.document.write(html);
-      printWindow.document.close();
-      (printWindow as any).onload = () => {
-        (printWindow as any).print();
-        (printWindow as any).onafterprint = () => (printWindow as any).close();
+      win.document.write(html);
+      win.document.close();
+      (win as any).onload = () => {
+        (win as any).print();
+        (win as any).onafterprint = () => (win as any).close();
       };
       toast.success("Janela de impressão aberta");
     } catch (e) {
@@ -247,12 +235,8 @@ export default function Encomendas() {
     }
   };
 
-  /** Recarrega após exclusão */
-  const handleDelete = () => {
-    fetchEncomendas();
-  };
+  const handleDelete = () => fetchEncomendas();
 
-  /** Abre diálogo de transporte */
   const handleTransport = (encomenda: Encomenda) => {
     setSelectedEncomenda(encomenda);
     setTransportDialogOpen(true);
@@ -312,7 +296,6 @@ export default function Encomendas() {
     return matchesSearch && matchesCompletedFilter && matchesStatusFilter;
   });
 
-  /** Loader */
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -324,7 +307,6 @@ export default function Encomendas() {
     );
   }
 
-  /** Render */
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
@@ -398,7 +380,7 @@ export default function Encomendas() {
           filteredEncomendas.map((encomenda) => (
             <Card key={encomenda.id} className="shadow-card transition-all duration-300 hover:shadow-hover">
               <CardContent className="p-6">
-                {/* Linha 1 (harmonizada): Pedido / Etiqueta / Cliente / Fornecedor / Ações */}
+                {/* Linha 1 (grid 12 colunas): Pedido / Etiqueta / Cliente / Fornecedor / Ações */}
                 <div className="grid grid-cols-12 gap-6 items-start mb-6">
                   {/* Pedido */}
                   <div className="col-span-12 sm:col-span-6 lg:col-span-2 min-w-0">
@@ -547,9 +529,7 @@ export default function Encomendas() {
                       <PopoverContent className="w-auto p-0">
                         <Calendar
                           mode="single"
-                          selected={
-                            encomenda.data_envio_estimada ? new Date(encomenda.data_envio_estimada) : undefined
-                          }
+                          selected={encomenda.data_envio_estimada ? new Date(encomenda.data_envio_estimada) : undefined}
                           onSelect={(date) => {
                             const dateString = date ? format(date, "yyyy-MM-dd") : "";
                             handleDateUpdate(encomenda.id, "data_envio_estimada", dateString);
@@ -614,25 +594,27 @@ export default function Encomendas() {
         )}
       </div>
 
-      {/* Dialog: visualizar */}
-       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" key={selectedEncomenda?.id}>
-           <DialogHeader>
-         <DialogTitle>Visualizar Encomenda #{selectedEncomenda?.numero_encomenda}</DialogTitle>
-       <DialogDescription className="sr-only">Detalhes completos da encomenda selecionada.</DialogDescription>
-      </DialogHeader>
-
-    {selectedEncomenda && (
-      <EncomendaView encomendaId={selectedEncomenda.id} />  {/* <- SOMENTE O ID */}
-    )}
-  </DialogContent>
-</Dialog>
+      {/* Dialog: visualizar (passa só o ID + description para acessibilidade) */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" key={selectedEncomenda?.id}>
+          <DialogHeader>
+            <DialogTitle>Visualizar Encomenda #{selectedEncomenda?.numero_encomenda}</DialogTitle>
+            <DialogDescription className="sr-only">
+              Detalhes completos da encomenda selecionada.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEncomenda && <EncomendaView encomendaId={selectedEncomenda.id} />}
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog: editar */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Encomenda #{selectedEncomenda?.numero_encomenda}</DialogTitle>
+            <DialogDescription className="sr-only">
+              Formulário para editar os dados da encomenda selecionada.
+            </DialogDescription>
           </DialogHeader>
           {selectedEncomenda && (
             <EncomendaForm
@@ -651,6 +633,9 @@ export default function Encomendas() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Configurar Transporte - #{selectedEncomenda?.numero_encomenda}</DialogTitle>
+            <DialogDescription className="sr-only">
+              Configurações e custos de transporte da encomenda selecionada.
+            </DialogDescription>
           </DialogHeader>
           {selectedEncomenda && (
             <EncomendaTransportForm
