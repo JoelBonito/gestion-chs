@@ -23,7 +23,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
 import { EncomendaForm } from "@/components/EncomendaForm";
-import { EncomendaView } from "@/components/EncomendaView";
+import  EncomendaView  from "@/components/EncomendaView";
 import { EncomendaActions } from "@/components/EncomendaActions";
 import { EncomendaStatusFilter } from "@/components/EncomendaStatusFilter";
 import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
