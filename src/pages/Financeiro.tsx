@@ -18,7 +18,7 @@ export default function Financeiro() {
   const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
   const isFelipe = (userEmail?.toLowerCase() ?? "") === "felipe@colaborador.com";
 
-  // i18n básico só para rótulos desta página
+  // i18n básico para rótulos desta página
   const lang: "pt" | "fr" = isHam ? "fr" : "pt";
   const t = (k: string) => {
     const d: Record<string, { pt: string; fr: string }> = {
@@ -35,11 +35,10 @@ export default function Financeiro() {
     return d[k]?.[lang] ?? k;
   };
 
-  // pega usuário e define tab padrão por perfil
+  // pega usuário e define tab padrão
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase.auth.getUser();
-      // sem toast pra evitar dependência aqui; se der erro só segue fluxo padrão
+      const { data } = await supabase.auth.getUser();
       const email = data?.user?.email ?? null;
       setUserEmail(email);
 
@@ -53,26 +52,23 @@ export default function Financeiro() {
     })();
   }, []);
 
-  // regras de visibilidade atuais
-  // ham: sem Resumo, sem Compras
-  // felipe: sem Resumo, sem Vendas
-  // outros: tudo
+  // regras de visibilidade
   const hideResumo = isHam || isFelipe;
   const hideVendas = isFelipe;
   const hideCompras = isHam;
-  const hideFaturas = false; // por pedido atual, Felipe pode ver Faturas
+  const hideFaturas = isFelipe; // agora felipe não vê Faturas
 
-  // se o usuário cair numa aba oculta (ex: por URL), encaminha para a permitida
+  // se o usuário cair em aba oculta (via URL), corrige
   useEffect(() => {
     if (isHam && (activeTab === "resumo" || activeTab === "pagar")) {
       setActiveTab("encomendas");
     }
-    if (isFelipe && (activeTab === "resumo" || activeTab === "encomendas")) {
+    if (isFelipe && (activeTab === "resumo" || activeTab === "encomendas" || activeTab === "faturas")) {
       setActiveTab("pagar");
     }
   }, [isHam, isFelipe, activeTab]);
 
-  // mock de resumo simples (mantido leve)
+  // mock resumo
   const resumo = { a_receber: 0, a_pagar: 0, saldo: 0 };
   const loadingResumo = false;
 
@@ -93,37 +89,23 @@ export default function Financeiro() {
               <p className="text-muted-foreground">{t("Carregando resumo...")}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                <Card className="hover:shadow-md transition">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {t("Total a Receber")}
-                    </CardTitle>
+                    <CardTitle className="text-sm text-muted-foreground">{t("Total a Receber")}</CardTitle>
                   </CardHeader>
-                  <CardContent className="text-2xl font-bold">
-                    € {resumo.a_receber.toFixed(2)}
-                  </CardContent>
+                  <CardContent className="text-2xl font-bold">€ {resumo.a_receber.toFixed(2)}</CardContent>
                 </Card>
-
-                <Card className="hover:shadow-md transition">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {t("Total a Pagar")}
-                    </CardTitle>
+                    <CardTitle className="text-sm text-muted-foreground">{t("Total a Pagar")}</CardTitle>
                   </CardHeader>
-                  <CardContent className="text-2xl font-bold">
-                    € {resumo.a_pagar.toFixed(2)}
-                  </CardContent>
+                  <CardContent className="text-2xl font-bold">€ {resumo.a_pagar.toFixed(2)}</CardContent>
                 </Card>
-
-                <Card className="hover:shadow-md transition">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      {t("Saldo Atual")}
-                    </CardTitle>
+                    <CardTitle className="text-sm text-muted-foreground">{t("Saldo Atual")}</CardTitle>
                   </CardHeader>
-                  <CardContent className="text-2xl font-bold">
-                    € {resumo.saldo.toFixed(2)}
-                  </CardContent>
+                  <CardContent className="text-2xl font-bold">€ {resumo.saldo.toFixed(2)}</CardContent>
                 </Card>
               </div>
             )}
