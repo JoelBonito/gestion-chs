@@ -1,3 +1,4 @@
+// src/components/EncomendaView.tsx
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -98,4 +99,90 @@ export function EncomendaView({ encomendaId }: Props) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <div className="text-sm text-muted-foreground">Pedido</div>
-          <div className="font-semibold">#{encomenda.numero_e_
+          <div className="font-semibold">#{encomenda.numero_encomenda}</div>
+        </div>
+
+        <div>
+          <div className="text-sm text-muted-foreground">Status</div>
+          <div className="font-semibold">{encomenda.status}</div>
+        </div>
+
+        {encomenda.etiqueta ? (
+          <div>
+            <div className="text-sm text-muted-foreground">Etiqueta</div>
+            <div className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+              {encomenda.etiqueta}
+            </div>
+          </div>
+        ) : null}
+
+        <div>
+          <div className="text-sm text-muted-foreground">Criada em</div>
+          <div className="font-semibold">
+            {encomenda.data_criacao ? formatDate(encomenda.data_criacao) : "—"}
+          </div>
+        </div>
+
+        <div>
+          <div className="text-sm text-muted-foreground">Cliente</div>
+          <div className="font-semibold">{encomenda.clientes?.nome ?? "—"}</div>
+        </div>
+
+        <div>
+          <div className="text-sm text-muted-foreground">Fornecedor</div>
+          <div className="font-semibold">{encomenda.fornecedores?.nome ?? "—"}</div>
+        </div>
+      </div>
+
+      {/* Datas estimadas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <div className="text-sm text-muted-foreground">Data Produção (estimada)</div>
+          <div className="font-semibold">
+            {encomenda.data_producao_estimada ? formatDate(encomenda.data_producao_estimada) : "—"}
+          </div>
+        </div>
+        <div>
+          <div className="text-sm text-muted-foreground">Data Entrega (estimada)</div>
+          <div className="font-semibold">
+            {encomenda.data_envio_estimada ? formatDate(encomenda.data_envio_estimada) : "—"}
+          </div>
+        </div>
+      </div>
+
+      {/* Valores */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div>
+          <div className="text-sm text-muted-foreground">Valor Total</div>
+          <div className="font-semibold">
+            {formatCurrency(encomenda.valor_total ?? 0)}
+          </div>
+        </div>
+        <div>
+          <div className="text-sm text-muted-foreground">Valor Pago</div>
+          <div className="font-semibold">
+            {formatCurrency(encomenda.valor_pago ?? 0)}
+          </div>
+        </div>
+        <div>
+          <div className="text-sm text-muted-foreground">Comissão</div>
+          <div className="font-semibold">
+            {formatCurrency(encomenda.commission_amount ?? 0)}
+          </div>
+        </div>
+      </div>
+
+      {/* Observações */}
+      {encomenda.observacoes ? (
+        <div>
+          <div className="text-sm text-muted-foreground mb-1">Observações</div>
+          <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
+            {encomenda.observacoes}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export default EncomendaView;
