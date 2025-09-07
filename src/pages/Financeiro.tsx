@@ -9,8 +9,6 @@ import ContasPagar from "@/components/ContasPagar";
 import Invoices from "@/components/Invoices";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { Eye } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 
@@ -25,22 +23,16 @@ export default function Financeiro() {
   const { hasRole } = useUserRole();
   const navigate = useNavigate();
 
-  // i18n simples aqui na página (PT para todos; FR para ham@admin.com)
   const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
   const lang: "pt" | "fr" = isHam ? "fr" : "pt";
   const t = (k: string) => {
     const d: Record<string, { pt: string; fr: string }> = {
-      // Abas
       "Resumo": { pt: "Resumo", fr: "Résumé" },
-      "Vendas": { pt: "Vendas", fr: "Ventes" },              // (ex "A Receber")
-      "Compras": { pt: "Compras", fr: "Achats" },            // (ex "A Pagar")
+      "Vendas": { pt: "Vendas", fr: "Ventes" },
+      "Compras": { pt: "Compras", fr: "Achats" },
       "Faturas": { pt: "Faturas", fr: "Factures" },
-
-      // Controles
       "Mostrar inativos": { pt: "Mostrar inativos", fr: "Afficher inactifs" },
       "Carregando resumo...": { pt: "Carregando resumo...", fr: "Chargement du résumé..." },
-
-      // Cards do resumo
       "Total a Receber": { pt: "Total a Receber", fr: "Total à recevoir" },
       "Total a Pagar": { pt: "Total a Pagar", fr: "Total à payer" },
       "Saldo Atual": { pt: "Saldo Atual", fr: "Solde actuel" },
@@ -63,22 +55,22 @@ export default function Financeiro() {
       const email = user?.email || null;
       setUserEmail(email);
 
-      // Redirecionamentos automáticos por usuário (mantidos do original)
+      // Entradas padrão por usuário
       if (email === "ham@admin.com") {
-        setActiveTab("encomendas"); // agora rotulada como "Vendas"
-      }
-
-      if (email === "felipe@colaborador.com") {
-        setActiveTab("pagar"); // agora rotulada como "Compras"
+        setActiveTab("encomendas"); // Vendas
+      } else if (email === "felipe@colaborador.com") {
+        setActiveTab("pagar"); // Compras
+      } else {
+        setActiveTab("resumo");
       }
     };
 
     fetchUser();
   }, []);
 
-  // Garante que, se "Compras" estiver oculta para o ham, não ficaremos na tab "pagar".
+  // Se o ham cair em Resumo ou Compras, manda para Vendas
   useEffect(() => {
-    if (isHam && activeTab === "pagar") {
+    if (isHam && (activeTab === "resumo" || activeTab === "pagar")) {
       setActiveTab("encomendas");
     }
   }, [isHam, activeTab]);
@@ -92,12 +84,7 @@ export default function Financeiro() {
   const fetchResumo = async () => {
     try {
       setLoadingResumo(true);
-      // Mock data para resumo financeiro (mantido do original)
-      const data = {
-        a_receber: 0,
-        a_pagar: 0,
-        saldo: 0
-      };
+      const data = { a_receber: 0, a_pagar: 0, saldo: 0 };
       setResumo(data);
     } catch (error) {
       toast.error("Erro ao carregar resumo");
@@ -106,20 +93,22 @@ export default function Financeiro() {
     }
   };
 
-  // Regras do original + ajustes
   const isFelipe = (userEmail?.toLowerCase() ?? "") === "felipe@colaborador.com";
-  const hideResumoCards = isFelipe;     // do original
-  const hideFaturas = isFelipe;         // do original
-  const hideCompras = isHam;            // NOVO: ham não vê "Compras" (ex "A Pagar")
+
+  // Regras de visibilidade:
+  // - ham: sem Resumo, sem Compras
+  // - felipe: sem Resumo (cards), sem Faturas (mantido do seu original)
+  const hideResumoForHam = isHam;
+  const hideResumoCards = isFelipe || hideResumoForHam;
+  const hideFaturas = isFelipe;
+  const hideCompras = isHam;
 
   return (
     <div className="px-4 md:px-8">
       <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as TabKey)}>
         <TabsList className="mb-4">
-          {!hideResumoCards && <TabsTrigger value="resumo">{t("Resumo")}</TabsTrigger>}
-          {/* value permanece "encomendas" para não quebrar rotas/estado */}
+          {!hideResumoForHam && <TabsTrigger value="resumo">{t("Resumo")}</TabsTrigger>}
           <TabsTrigger value="encomendas">{t("Vendas")}</TabsTrigger>
-          {/* value permanece "pagar"; apenas oculta para o ham */}
           {!hideCompras && <TabsTrigger value="pagar">{t("Compras")}</TabsTrigger>}
           {!hideFaturas && <TabsTrigger value="faturas">{t("Faturas")}</TabsTrigger>}
         </TabsList>
@@ -176,13 +165,11 @@ export default function Financeiro() {
             />
             <Label htmlFor="showInactive">{t("Mostrar inativos")}</Label>
           </div>
-          {/* Esta sub-aba (Vendas) continua usando o componente existente */}
           <EncomendasFinanceiro showCompleted={showInactive} />
         </TabsContent>
 
         {!hideCompras && (
           <TabsContent value="pagar">
-            {/* Sub-aba (Compras) continua usando o componente existente */}
             <ContasPagar />
           </TabsContent>
         )}
