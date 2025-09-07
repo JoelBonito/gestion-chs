@@ -1,12 +1,22 @@
 // src/pages/Encomendas.tsx
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Search, CalendarIcon, Eye, Edit, Printer } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { format } from "date-fns";
+import { toast } from "sonner";
+
+import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useFormatters } from "@/hooks/useFormatters";
+
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -15,44 +25,31 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 
 import { EncomendaForm } from "@/components/EncomendaForm";
-import  EncomendaView  from "@/components/EncomendaView";
+import EncomendaView from "@/components/EncomendaView"; // IMPORT DEFAULT (correto)
 import { EncomendaActions } from "@/components/EncomendaActions";
 import { EncomendaStatusFilter } from "@/components/EncomendaStatusFilter";
 import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
 import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
 
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-
-/** Tipos */
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 type StatusFilter = StatusEncomenda | "TODOS";
 
 interface Encomenda {
   id: string;
   numero_encomenda: string;
-  etiqueta?: string;
+  etiqueta?: string | null;
   status: StatusEncomenda;
-  status_producao?: string;
   valor_total: number;
   valor_pago: number;
   data_criacao: string;
-  data_entrega?: string;
-  data_producao_estimada?: string;
-  data_envio_estimada?: string;
-  observacoes?: string;
-  cliente_id: string;
-  fornecedor_id: string;
-  clientes?: { nome: string };
-  fornecedores?: { nome: string };
+  data_producao_estimada?: string | null;
+  data_envio_estimada?: string | null;
+  observacoes?: string | null;
+  clientes?: { nome: string | null } | null;
+  fornecedores?: { nome: string | null } | null;
+  // calculados no front:
   commission_amount?: number;
   valor_total_custo?: number;
 }
@@ -62,22 +59,7 @@ export default function Encomendas() {
   const isCollaborator = useIsCollaborator();
   const { formatCurrency, formatDate } = useFormatters();
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showCompleted, setShowCompleted] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("TODOS");
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [transportDialogOpen, setTransportDialogOpen] = useState(false);
-
-  const [selectedEncomenda, setSelectedEncomenda] = useState<Encomenda | null>(null);
-  const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [pesoTransporte, setPesoTransporte] = useState<{ [key: string]: number }>({});
   const [userEmail, setUserEmail] = useState<string | null>(null);
-
-  // Descobre o usuário logado (regras para Felipe/Ham + idioma)
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
   }, []);
@@ -114,6 +96,7 @@ export default function Encomendas() {
         select: "Sélectionner",
         loadingOrders: "Chargement des commandes...",
         createdOn: "Créée le",
+        errLoad: "Erreur lors du chargement des commandes",
         printOpened: "Fenêtre d’impression ouverte",
         printError: "Erreur lors de l’ouverture de l’impression",
       }
@@ -144,94 +127,87 @@ export default function Encomendas() {
         select: "Selecionar",
         loadingOrders: "Carregando encomendas...",
         createdOn: "Criada em",
+        errLoad: "Erro ao carregar encomendas",
         printOpened: "Janela de impressão aberta",
         printError: "Erro ao abrir impressão",
       };
 
-  /** Buscar encomendas + cálculos auxiliares */
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("TODOS");
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [transportDialogOpen, setTransportDialogOpen] = useState(false);
+
+  const [selectedEncomenda, setSelectedEncomenda] = useState<Encomenda | null>(null);
+  const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [pesoTransporte, setPesoTransporte] = useState<Record<string, number>>({});
+
+  // flags de edição de datas na UI (Ham não edita)
+  const canEditProductionUI = (canEdit() || hasRole("factory") || isCollaborator) && !isHam;
+  const canEditDeliveryUI = (canEdit() || isCollaborator) && !isHam;
+
+  // Busca encomendas e computa comissão/custo total
   const fetchEncomendas = async () => {
     try {
       setLoading(true);
 
       const { data, error } = await supabase
         .from("encomendas")
-        .select(`
-          *,
-          clientes(nome),
-          fornecedores(nome)
-        `)
+        .select(`*, clientes(nome), fornecedores(nome)`)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      if (data) {
-        const encomendasWithComputed = await Promise.all(
-          (data as any[]).map(async (encomenda) => {
-            const { data: itens, error: itensError } = await supabase
-              .from("itens_encomenda")
-              .select(`quantidade, preco_unitario, preco_custo`)
-              .eq("encomenda_id", encomenda.id);
+      const computed = await Promise.all(
+        (data || []).map(async (enc: any) => {
+          const { data: itens } = await supabase
+            .from("itens_encomenda")
+            .select(`quantidade, preco_unitario, preco_custo`)
+            .eq("encomenda_id", enc.id);
 
-            let commission_amount = 0;
-            let valor_total_custo = 0;
+          let commission_amount = 0;
+          let valor_total_custo = 0;
 
-            if (!itensError && itens) {
-              commission_amount = itens.reduce((total: number, item: any) => {
-                const receita = Number(item.quantidade || 0) * Number(item.preco_unitario || 0);
-                const custo = Number(item.quantidade || 0) * Number(item.preco_custo || 0);
-                return total + (receita - custo);
-              }, 0);
+          (itens || []).forEach((it: any) => {
+            const q = Number(it.quantidade || 0);
+            const pv = Number(it.preco_unitario || 0);
+            const pc = Number(it.preco_custo || 0);
+            commission_amount += q * pv - q * pc;
+            valor_total_custo += q * pc;
+          });
 
-              valor_total_custo = itens.reduce((total: number, item: any) => {
-                return total + Number(item.quantidade || 0) * Number(item.preco_custo || 0);
-              }, 0);
-            }
+          return { ...enc, commission_amount, valor_total_custo } as Encomenda;
+        })
+      );
 
-            return {
-              ...encomenda,
-              commission_amount,
-              valor_total_custo,
-            } as Encomenda;
-          })
-        );
+      setEncomendas(computed);
 
-        setEncomendas(encomendasWithComputed || []);
+      // peso bruto estimado (size_weight*1.3 em kg)
+      const pesos: Record<string, number> = {};
+      for (const enc of computed) {
+        const { data: itens } = await supabase
+          .from("itens_encomenda")
+          .select(`quantidade, produtos(size_weight)`)
+          .eq("encomenda_id", enc.id);
 
-        const pesos: { [key: string]: number } = {};
-        for (const enc of encomendasWithComputed) {
-          const pesoCalculado = await calcularPesoTransporte(enc.id);
-          pesos[enc.id] = pesoCalculado;
-        }
-        setPesoTransporte(pesos);
+        const totalGramas = (itens || []).reduce((acc: number, it: any) => {
+          const q = Number(it.quantidade || 0);
+          const sw = Number(it.produtos?.size_weight || 0);
+          return acc + q * sw;
+        }, 0);
+
+        pesos[enc.id] = (totalGramas * 1.3) / 1000; // kg
       }
+      setPesoTransporte(pesos);
     } catch (e) {
-      console.error("Erro ao carregar encomendas:", e);
-      toast.error(isHam ? "Erreur lors du chargement des commandes" : "Erro ao carregar encomendas");
+      console.error(e);
+      toast.error(t.errLoad);
     } finally {
       setLoading(false);
-    }
-  };
-
-  /** Peso de transporte (size_weight em gramas + 30% margem) */
-  const calcularPesoTransporte = async (encomendaId: string): Promise<number> => {
-    try {
-      const { data: itens, error } = await supabase
-        .from("itens_encomenda")
-        .select(`quantidade, produtos(size_weight)`)
-        .eq("encomenda_id", encomendaId);
-
-      if (error || !itens) return 0;
-
-      const pesoTotalGramas = itens.reduce((total: number, item: any) => {
-        const quantidade = Number(item.quantidade || 0);
-        const sizeWeight = Number(item.produtos?.size_weight || 0);
-        return total + quantidade * sizeWeight;
-      }, 0);
-
-      return (pesoTotalGramas * 1.3) / 1000; // kg
-    } catch (e) {
-      console.error("Erro ao calcular peso:", e);
-      return 0;
     }
   };
 
@@ -240,146 +216,115 @@ export default function Encomendas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Impressão rápida */
-  const handlePrint = async (encomenda: Encomenda) => {
+  const handleDateUpdate = async (
+    encomendaId: string,
+    field: "data_producao_estimada" | "data_envio_estimada",
+    value: string
+  ) => {
+    // Proteção adicional — botões já ficam desabilitados para Ham
+    if ((field === "data_producao_estimada" && !canEditProductionUI) || (field === "data_envio_estimada" && !canEditDeliveryUI)) {
+      return;
+    }
+    try {
+      const { error } = await supabase.from("encomendas").update({ [field]: value || null }).eq("id", encomendaId);
+      if (error) throw error;
+
+      setEncomendas((prev) =>
+        prev.map((enc) => (enc.id === encomendaId ? { ...enc, [field]: value || null } : enc))
+      );
+
+      const fieldName = isHam
+        ? field === "data_producao_estimada"
+          ? "production"
+          : "livraison"
+        : field === "data_producao_estimada"
+        ? "produção"
+        : "entrega";
+      toast.success(isHam ? `Date de ${fieldName} mise à jour` : `Data de ${fieldName} atualizada`);
+    } catch (e) {
+      console.error(e);
+      toast.error(isHam ? "Erreur lors de la mise à jour" : "Erro ao atualizar data");
+    }
+  };
+
+  const handleStatusChange = async () => {
+    await fetchEncomendas();
+  };
+
+  const handlePrint = async (enc: Encomenda) => {
     try {
       const win = window.open("", "_blank", "width=800,height=600");
-      if (!win) {
-        toast.error(isHam ? "Impossible d’ouvrir la fenêtre d’impression" : t.printError);
-        return;
-      }
+      if (!win) return toast.error(t.printError);
 
       const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>${t.order} #${encomenda.numero_encomenda}</title>
+        <!doctype html><html><head>
+          <meta charset="utf-8" />
+          <title>${t.order} #${enc.numero_encomenda}</title>
           <style>
             @page { size: A4; margin: 12mm; }
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; color: #000; background: #fff; font-size: 12px; line-height: 1.4; }
-            .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-            .title { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
-            .subtitle { font-size: 14px; color: #666; }
-            .content { margin: 20px 0; }
-            .section { margin-bottom: 15px; }
-            .label { font-weight: bold; display: inline-block; width: 160px; }
-            .value { display: inline-block; }
+            body { font-family: Arial, sans-serif; color:#000; }
+            .title { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
+            .sub { color:#555; margin-bottom: 10px; }
             .row { margin: 6px 0; }
+            .label { width: 140px; display:inline-block; font-weight:600; }
           </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="title">${t.order} #${encomenda.numero_encomenda}</div>
-            ${encomenda.etiqueta ? `<div class="subtitle">${t.label}: ${encomenda.etiqueta}</div>` : ""}
-            <div class="subtitle">${t.createdOn} ${formatDate(encomenda.data_criacao)}</div>
-          </div>
-
-          <div class="content">
-            <div class="section">
-              <div class="row"><span class="label">${t.client}:</span> <span class="value">${encomenda.clientes?.nome || "N/A"}</span></div>
-              <div class="row"><span class="label">${t.supplier}:</span> <span class="value">${encomenda.fornecedores?.nome || "N/A"}</span></div>
-              <div class="row"><span class="label">${t.status}:</span> <span class="value">${encomenda.status}</span></div>
-              <div class="row"><span class="label">${isFelipe ? t.totalCost : t.total}:</span> <span class="value">${
-                formatCurrency(isFelipe ? (encomenda.valor_total_custo ?? 0) : encomenda.valor_total)
-              }</span></div>
-              <div class="row"><span class="label">${t.paid}:</span> <span class="value">${formatCurrency(encomenda.valor_pago)}</span></div>
-            </div>
-
-            ${encomenda.observacoes ? `<div class="section"><div class="label">${t.notes}:</div><div>${encomenda.observacoes}</div></div>` : ""}
-          </div>
-        </body>
-        </html>
+        </head><body>
+          <div class="title">${t.order} #${enc.numero_encomenda}</div>
+          <div class="sub">${t.createdOn} ${formatDate(enc.data_criacao)}</div>
+          ${enc.etiqueta ? `<div class="row"><span class="label">${t.label}:</span>${enc.etiqueta}</div>` : ""}
+          <div class="row"><span class="label">${t.client}:</span>${enc.clientes?.nome ?? "N/A"}</div>
+          <div class="row"><span class="label">${t.supplier}:</span>${enc.fornecedores?.nome ?? "N/A"}</div>
+          <div class="row"><span class="label">${t.status}:</span>${enc.status}</div>
+          <div class="row"><span class="label">${isFelipe ? t.totalCost : t.total}:</span>${
+            formatCurrency(isFelipe ? enc.valor_total_custo ?? 0 : enc.valor_total)
+          }</div>
+          <div class="row"><span class="label">${t.paid}:</span>${formatCurrency(enc.valor_pago)}</div>
+          ${enc.observacoes ? `<div class="row"><span class="label">${t.notes}:</span>${enc.observacoes}</div>` : ""}
+        </body></html>
       `;
-
       win.document.write(html);
       win.document.close();
       (win as any).onload = () => {
         (win as any).print();
         (win as any).onafterprint = () => (win as any).close();
       };
-      toast.success(isHam ? "Fenêtre d’impression ouverte" : t.printOpened);
-    } catch (e) {
-      console.error("Erro ao imprimir:", e);
-      toast.error(isHam ? "Erreur lors de l’ouverture de l’impression" : t.printError);
+      toast.success(t.printOpened);
+    } catch {
+      toast.error(t.printError);
     }
   };
 
   const handleDelete = () => fetchEncomendas();
-
-  const handleTransport = (encomenda: Encomenda) => {
-    setSelectedEncomenda(encomenda);
+  const handleTransport = (e: Encomenda) => {
+    setSelectedEncomenda(e);
     setTransportDialogOpen(true);
   };
 
-  /** Chamado pelo EncomendaStatusSelect ao salvar */
-  const handleStatusChange = async () => {
-    await fetchEncomendas();
-  };
+  // Filtros
+  const filteredEncomendas = encomendas.filter((e) => {
+    const q = searchTerm.trim().toLowerCase();
+    const byText =
+      e.numero_encomenda.toLowerCase().includes(q) ||
+      (e.etiqueta || "").toLowerCase().includes(q) ||
+      (e.clientes?.nome || "").toLowerCase().includes(q) ||
+      (e.fornecedores?.nome || "").toLowerCase().includes(q);
 
-  /** Atualiza datas (produção/entrega) com regras de permissão */
-  const handleDateUpdate = async (
-    encomendaId: string,
-    field: "data_producao_estimada" | "data_envio_estimada",
-    value: string
-  ) => {
-    const canEditProduction = canEdit() || hasRole("factory") || isCollaborator;
-    const canEditDelivery = canEdit() || isCollaborator;
+    const byDelivered = showCompleted ? e.status === "ENTREGUE" : e.status !== "ENTREGUE";
+    const byStatus = selectedStatus === "TODOS" || e.status === selectedStatus;
 
-    if (field === "data_producao_estimada" && !canEditProduction) {
-      toast.error(isHam ? "Sans permission pour modifier la date de production" : "Sem permissão para editar data de produção");
-      return;
-    }
-    if (field === "data_envio_estimada" && !canEditDelivery) {
-      toast.error(isHam ? "Sans permission pour modifier la date de livraison" : "Sem permissão para editar data de entrega");
-      return;
-    }
-
-    try {
-      const { error } = await supabase.from("encomendas").update({ [field]: value || null }).eq("id", encomendaId);
-      if (error) throw error;
-
-      setEncomendas((prev) =>
-        prev.map((enc) => (enc.id === encomendaId ? { ...enc, [field]: value || undefined } : enc))
-      );
-
-      const fieldName = field === "data_producao_estimada" ? (isHam ? "production" : "produção") : (isHam ? "livraison" : "entrega");
-      toast.success(isHam ? `Date de ${fieldName} mise à jour` : `Data de ${fieldName} atualizada com sucesso`);
-    } catch (e) {
-      console.error("Erro ao atualizar data:", e);
-      toast.error(isHam ? "Erreur lors de la mise à jour de la date" : "Erro ao atualizar data");
-    }
-  };
-
-  /** Filtro de busca e status */
-  const filteredEncomendas = encomendas.filter((encomenda) => {
-    const q = searchTerm.toLowerCase().trim();
-    const matchesSearch =
-      encomenda.numero_encomenda.toLowerCase().includes(q) ||
-      (encomenda.clientes?.nome && encomenda.clientes.nome.toLowerCase().includes(q)) ||
-      (encomenda.fornecedores?.nome && encomenda.fornecedores.nome.toLowerCase().includes(q)) ||
-      (encomenda.etiqueta && encomenda.etiqueta.toLowerCase().includes(q));
-
-    const matchesCompletedFilter = showCompleted ? encomenda.status === "ENTREGUE" : encomenda.status !== "ENTREGUE";
-    const matchesStatusFilter = selectedStatus === "TODOS" || encomenda.status === selectedStatus;
-
-    return matchesSearch && matchesCompletedFilter && matchesStatusFilter;
+    return byText && byDelivered && byStatus;
   });
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
           <p className="text-muted-foreground">{t.loadingOrders}</p>
         </div>
       </div>
     );
   }
-
-  // flags de edição de datas na UI (Ham não edita)
-  const canEditProductionUI = (canEdit() || hasRole("factory") || isCollaborator) && !isHam;
-  const canEditDeliveryUI = (canEdit() || isCollaborator) && !isHam;
 
   return (
     <div className="space-y-6">
@@ -402,7 +347,9 @@ export default function Encomendas() {
               <DialogHeader>
                 <DialogTitle>{t.newOrder}</DialogTitle>
                 <DialogDescription>
-                  {isHam ? "Créez une nouvelle commande en remplissant les champs ci-dessous." : "Crie uma nova encomenda preenchendo os dados abaixo."}
+                  {isHam
+                    ? "Créez une nouvelle commande en remplissant les champs ci-dessous."
+                    : "Crie uma nova encomenda preenchendo os dados abaixo."}
                 </DialogDescription>
               </DialogHeader>
               <EncomendaForm
@@ -453,25 +400,23 @@ export default function Encomendas() {
             </CardContent>
           </Card>
         ) : (
-          filteredEncomendas.map((encomenda) => (
-            <Card key={encomenda.id} className="shadow-card transition-all duration-300 hover:shadow-hover">
+          filteredEncomendas.map((e) => (
+            <Card key={e.id} className="shadow-card transition-all duration-300 hover:shadow-hover">
               <CardContent className="p-6">
-                {/* Linha 1 (grid 12 colunas): Pedido / Etiqueta / Cliente / Fornecedor / Ações */}
+                {/* Linha 1: Pedido / Etiqueta / Cliente / Fornecedor / Ações */}
                 <div className="grid grid-cols-12 gap-6 items-start mb-6">
                   {/* Pedido */}
                   <div className="col-span-12 sm:col-span-6 lg:col-span-2 min-w-0">
                     <div className="text-sm font-medium text-muted-foreground mb-1">{t.order}</div>
-                    <div className="font-bold text-lg text-primary-dark truncate">
-                      #{encomenda.numero_encomenda}
-                    </div>
+                    <div className="font-bold text-lg text-primary-dark truncate">#{e.numero_encomenda}</div>
                   </div>
 
                   {/* Etiqueta */}
-                  {encomenda.etiqueta && (
+                  {e.etiqueta && (
                     <div className="col-span-6 sm:col-span-6 lg:col-span-2 min-w-0">
                       <div className="text-sm font-medium text-muted-foreground mb-1">{t.label}</div>
                       <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full w-fit truncate">
-                        {encomenda.etiqueta}
+                        {e.etiqueta}
                       </div>
                     </div>
                   )}
@@ -479,27 +424,21 @@ export default function Encomendas() {
                   {/* Cliente */}
                   <div
                     className={`min-w-0 ${
-                      encomenda.etiqueta
-                        ? "col-span-12 sm:col-span-6 lg:col-span-3"
-                        : "col-span-12 sm:col-span-6 lg:col-span-4"
+                      e.etiqueta ? "col-span-12 sm:col-span-6 lg:col-span-3" : "col-span-12 sm:col-span-6 lg:col-span-4"
                     }`}
                   >
                     <div className="text-sm font-medium text-muted-foreground mb-1">{t.client}</div>
-                    <div className="text-sm font-semibold truncate">{encomenda.clientes?.nome || "N/A"}</div>
+                    <div className="text-sm font-semibold truncate">{e.clientes?.nome ?? "N/A"}</div>
                   </div>
 
                   {/* Fornecedor */}
                   <div
                     className={`min-w-0 ${
-                      encomenda.etiqueta
-                        ? "col-span-12 sm:col-span-6 lg:col-span-3"
-                        : "col-span-12 sm:col-span-6 lg:col-span-4"
+                      e.etiqueta ? "col-span-12 sm:col-span-6 lg:col-span-3" : "col-span-12 sm:col-span-6 lg:col-span-4"
                     }`}
                   >
                     <div className="text-sm font-medium text-muted-foreground mb-1">{t.supplier}</div>
-                    <div className="text-sm font-medium text-muted-foreground truncate">
-                      {encomenda.fornecedores?.nome || "N/A"}
-                    </div>
+                    <div className="text-sm font-medium text-muted-foreground truncate">{e.fornecedores?.nome ?? "N/A"}</div>
                   </div>
 
                   {/* Ações */}
@@ -509,7 +448,7 @@ export default function Encomendas() {
                       size="sm"
                       className="h-10 w-10 p-0"
                       onClick={() => {
-                        setSelectedEncomenda(encomenda);
+                        setSelectedEncomenda(e);
                         setViewDialogOpen(true);
                       }}
                       aria-label={t.viewOrder}
@@ -521,7 +460,7 @@ export default function Encomendas() {
                       variant="ghost"
                       size="sm"
                       className="h-10 w-10 p-0"
-                      onClick={() => handlePrint(encomenda)}
+                      onClick={() => handlePrint(e)}
                       aria-label="Imprimir"
                       title="Imprimir"
                     >
@@ -534,7 +473,7 @@ export default function Encomendas() {
                           size="sm"
                           className="h-10 w-10 p-0"
                           onClick={() => {
-                            setSelectedEncomenda(encomenda);
+                            setSelectedEncomenda(e);
                             setEditDialogOpen(true);
                           }}
                           aria-label={t.editOrder}
@@ -542,17 +481,13 @@ export default function Encomendas() {
                         >
                           <Edit className="h-5 w-5" />
                         </Button>
-                        <EncomendaActions
-                          encomenda={encomenda}
-                          onDelete={handleDelete}
-                          onTransport={() => handleTransport(encomenda)}
-                        />
+                        <EncomendaActions encomenda={e} onDelete={handleDelete} onTransport={() => handleTransport(e)} />
                       </>
                     )}
                   </div>
                 </div>
 
-                {/* Linha 2: detalhes com labels */}
+                {/* Linha 2: detalhes */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6 items-start">
                   {/* Data Produção */}
                   <div>
@@ -564,28 +499,24 @@ export default function Encomendas() {
                           disabled={!canEditProductionUI}
                           className={cn(
                             "w-full justify-start text-left font-normal h-10",
-                            !encomenda.data_producao_estimada && "text-muted-foreground",
+                            !e.data_producao_estimada && "text-muted-foreground",
                             !canEditProductionUI && "opacity-70 cursor-not-allowed"
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           <span className="text-sm">
-                            {encomenda.data_producao_estimada
-                              ? formatDate(encomenda.data_producao_estimada)
-                              : t.select}
+                            {e.data_producao_estimada ? formatDate(e.data_producao_estimada) : t.select}
                           </span>
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
                         <Calendar
                           mode="single"
-                          selected={
-                            encomenda.data_producao_estimada ? new Date(encomenda.data_producao_estimada) : undefined
-                          }
+                          selected={e.data_producao_estimada ? new Date(e.data_producao_estimada) : undefined}
                           onSelect={(date) => {
                             if (!canEditProductionUI) return;
-                            const dateString = date ? format(date, "yyyy-MM-dd") : "";
-                            handleDateUpdate(encomenda.id, "data_producao_estimada", dateString);
+                            const v = date ? format(date, "yyyy-MM-dd") : "";
+                            handleDateUpdate(e.id, "data_producao_estimada", v);
                           }}
                           initialFocus
                         />
@@ -603,24 +534,24 @@ export default function Encomendas() {
                           disabled={!canEditDeliveryUI}
                           className={cn(
                             "w-full justify-start text-left font-normal h-10",
-                            !encomenda.data_envio_estimada && "text-muted-foreground",
+                            !e.data_envio_estimada && "text-muted-foreground",
                             !canEditDeliveryUI && "opacity-70 cursor-not-allowed"
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           <span className="text-sm">
-                            {encomenda.data_envio_estimada ? formatDate(encomenda.data_envio_estimada) : t.select}
+                            {e.data_envio_estimada ? formatDate(e.data_envio_estimada) : t.select}
                           </span>
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
                         <Calendar
                           mode="single"
-                          selected={encomenda.data_envio_estimada ? new Date(encomenda.data_envio_estimada) : undefined}
+                          selected={e.data_envio_estimada ? new Date(e.data_envio_estimada) : undefined}
                           onSelect={(date) => {
                             if (!canEditDeliveryUI) return;
-                            const dateString = date ? format(date, "yyyy-MM-dd") : "";
-                            handleDateUpdate(encomenda.id, "data_envio_estimada", dateString);
+                            const v = date ? format(date, "yyyy-MM-dd") : "";
+                            handleDateUpdate(e.id, "data_envio_estimada", v);
                           }}
                           initialFocus
                         />
@@ -632,7 +563,7 @@ export default function Encomendas() {
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">{t.grossWeight}</div>
                     <div className="text-lg font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-lg text-center">
-                      {pesoTransporte[encomenda.id]?.toFixed(2) || "0.00"} kg
+                      {(pesoTransporte[e.id] ?? 0).toFixed(2)} kg
                     </div>
                   </div>
 
@@ -640,7 +571,7 @@ export default function Encomendas() {
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">{t.shippingValue}</div>
                     <div className="text-lg font-bold text-amber-600 bg-amber-50 px-3 py-2 rounded-lg text-center">
-                      €{((pesoTransporte[encomenda.id] || 0) * 4.5).toFixed(2)}
+                      €{(((pesoTransporte[e.id] ?? 0) * 4.5) || 0).toFixed(2)}
                     </div>
                   </div>
 
@@ -648,9 +579,9 @@ export default function Encomendas() {
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">{t.status}</div>
                     <EncomendaStatusSelect
-                      encomendaId={encomenda.id}
-                      currentStatus={encomenda.status}
-                      numeroEncomenda={encomenda.numero_encomenda}
+                      encomendaId={e.id}
+                      currentStatus={e.status}
+                      numeroEncomenda={e.numero_encomenda}
                       onStatusChange={handleStatusChange}
                     />
                   </div>
@@ -662,23 +593,21 @@ export default function Encomendas() {
                       <div
                         className={cn(
                           "text-lg font-bold px-3 py-2 rounded-lg text-center",
-                          (encomenda.commission_amount || 0) >= 0
-                            ? "text-green-600 bg-green-50"
-                            : "text-red-600 bg-red-50"
+                          (e.commission_amount || 0) >= 0 ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"
                         )}
                       >
-                        {formatCurrency(encomenda.commission_amount || 0)}
+                        {formatCurrency(e.commission_amount || 0)}
                       </div>
                     </div>
                   )}
 
-                  {/* Total: custo para Felipe; venda para demais (inclui Ham) */}
+                  {/* Total: custo p/ Felipe; venda p/ demais (inclui Ham) */}
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">
                       {isFelipe ? t.totalCost : t.total}
                     </div>
                     <div className="text-lg font-bold text-primary-dark bg-primary/10 px-3 py-2 rounded-lg text-center">
-                      {formatCurrency(isFelipe ? (encomenda.valor_total_custo || 0) : encomenda.valor_total)}
+                      {formatCurrency(isFelipe ? e.valor_total_custo || 0 : e.valor_total)}
                     </div>
                   </div>
                 </div>
@@ -688,7 +617,7 @@ export default function Encomendas() {
         )}
       </div>
 
-      {/* Dialog: visualizar */}
+      {/* Dialog: visualizar (PASSA SÓ O ID — evita eq.[object Object]) */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" key={selectedEncomenda?.id}>
           <DialogHeader>
@@ -711,7 +640,9 @@ export default function Encomendas() {
               {t.editOrder} #{selectedEncomenda?.numero_encomenda}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              {isHam ? "Formulaire de modification de la commande sélectionnée." : "Formulário para editar os dados da encomenda selecionada."}
+              {isHam
+                ? "Formulaire de modification de la commande sélectionnée."
+                : "Formulário para editar os dados da encomenda selecionada."}
             </DialogDescription>
           </DialogHeader>
           {selectedEncomenda && (
