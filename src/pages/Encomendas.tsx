@@ -75,6 +75,15 @@ export default function Encomendas() {
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
   const [loading, setLoading] = useState(true);
   const [pesoTransporte, setPesoTransporte] = useState<{ [key: string]: number }>({});
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Detecta usuário logado (para aplicar regras do Felipe)
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+    });
+  }, []);
+  const isFelipe = (userEmail || "").toLowerCase() === "felipe@colaborador.com";
 
   /** Buscar encomendas + cálculos auxiliares */
   const fetchEncomendas = async () => {
@@ -208,7 +217,9 @@ export default function Encomendas() {
               <div class="row"><span class="label">Cliente:</span> <span class="value">${encomenda.clientes?.nome || "N/A"}</span></div>
               <div class="row"><span class="label">Fornecedor:</span> <span class="value">${encomenda.fornecedores?.nome || "N/A"}</span></div>
               <div class="row"><span class="label">Status:</span> <span class="value">${encomenda.status}</span></div>
-              <div class="row"><span class="label">Valor Total:</span> <span class="value">${formatCurrency(encomenda.valor_total)}</span></div>
+              <div class="row"><span class="label">${isFelipe ? "Custo Total" : "Valor Total"}:</span> <span class="value">${
+                formatCurrency(isFelipe ? (encomenda.valor_total_custo ?? 0) : encomenda.valor_total)
+              }</span></div>
               <div class="row"><span class="label">Valor Pago:</span> <span class="value">${formatCurrency(encomenda.valor_pago)}</span></div>
             </div>
 
@@ -556,7 +567,7 @@ export default function Encomendas() {
                     </div>
                   </div>
 
-                  {/* Status (multiopção restaurado) */}
+                  {/* Status */}
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">Status</div>
                     <EncomendaStatusSelect
@@ -567,24 +578,30 @@ export default function Encomendas() {
                     />
                   </div>
 
-                  {/* Comissão */}
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground mb-2">Comissão</div>
-                    <div
-                      className={cn(
-                        "text-lg font-bold px-3 py-2 rounded-lg text-center",
-                        (encomenda.commission_amount || 0) >= 0 ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"
-                      )}
-                    >
-                      {formatCurrency(encomenda.commission_amount || 0)}
+                  {/* Comissão — oculta para o Felipe */}
+                  {!isFelipe && (
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-2">Comissão</div>
+                      <div
+                        className={cn(
+                          "text-lg font-bold px-3 py-2 rounded-lg text-center",
+                          (encomenda.commission_amount || 0) >= 0
+                            ? "text-green-600 bg-green-50"
+                            : "text-red-600 bg-red-50"
+                        )}
+                      >
+                        {formatCurrency(encomenda.commission_amount || 0)}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Valor Total */}
+                  {/* Total: custo para Felipe; venda para demais */}
                   <div>
-                    <div className="text-sm font-medium text-muted-foreground mb-2">Valor Total</div>
+                    <div className="text-sm font-medium text-muted-foreground mb-2">
+                      {isFelipe ? "Custo Total" : "Valor Total"}
+                    </div>
                     <div className="text-lg font-bold text-primary-dark bg-primary/10 px-3 py-2 rounded-lg text-center">
-                      {formatCurrency(encomenda.valor_total)}
+                      {formatCurrency(isFelipe ? (encomenda.valor_total_custo || 0) : encomenda.valor_total)}
                     </div>
                   </div>
                 </div>
@@ -594,7 +611,7 @@ export default function Encomendas() {
         )}
       </div>
 
-      {/* Dialog: visualizar (passa só o ID + description para acessibilidade) */}
+      {/* Dialog: visualizar */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" key={selectedEncomenda?.id}>
           <DialogHeader>
