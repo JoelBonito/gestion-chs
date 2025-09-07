@@ -195,3 +195,166 @@ export default function EncomendasFinanceiro({ onRefreshNeeded, showCompleted = 
                   <TableHead>{tr("Cliente")}</TableHead>
                   <TableHead>{tr("Data Produção")}</TableHead>
                   <TableHead>{tr("Total")}</TableHead>
+                  <TableHead>{tr("Recebido")}</TableHead>
+                  <TableHead>{tr("Saldo")}</TableHead>
+                  <TableHead>{tr("Pagamentos")}</TableHead>
+                  <TableHead>{tr("Ações")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {encomendas.map((encomenda) => (
+                  <TableRow key={encomenda.id}>
+                    <TableCell className="font-medium">
+                      {encomenda.numero_encomenda}
+                    </TableCell>
+                    <TableCell>{encomenda.cliente_nome}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDate(encomenda.data_producao_estimada)}
+                    </TableCell>
+                    <TableCell className="font-semibold">
+                      €{encomenda.valor_total.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-success">
+                      €{encomenda.valor_pago.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="font-semibold text-warning">
+                      €{encomenda.saldo_devedor.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {encomenda.total_pagamentos > 0
+                        ? `${encomenda.total_pagamentos} ${tr("pag.")}`
+                        : tr("Nenhum")}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetails(encomenda)}
+                          title={tr("Visualizar detalhes")}
+                          type="button"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+
+                        {/* REMOVIDO para ham: Registrar pagamento */}
+                        {!isHam && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedEncomenda(encomenda);
+                              setShowPagamentoForm(true);
+                            }}
+                            title={tr("Registrar pagamento")}
+                            type="button"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        )}
+
+                        <FinancialAttachmentButton
+                          entityType="receivable"
+                          entityId={encomenda.id}
+                          title={tr("Anexar Comprovante")}
+                          onChanged={handleAttachmentChange}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {encomendas.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      {tr("Nenhuma conta a receber encontrada")}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dialog: Registrar Pagamento — NÃO renderiza para ham */}
+      {!isHam && selectedEncomenda && (
+        <Dialog open={showPagamentoForm} onOpenChange={setShowPagamentoForm}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{tr("Registrar Pagamento")}</DialogTitle>
+            </DialogHeader>
+            <PagamentoForm
+              onSuccess={handlePagamentoSuccess}
+              encomendas={[selectedEncomenda]}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Dialog: Detalhes + Anexos */}
+      {selectedEncomenda && (
+        <Dialog open={showDetails} onOpenChange={setShowDetails}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{tr("Detalhes da Conta a Receber")}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">{tr("Encomenda:")}</label>
+                  <p className="text-sm text-muted-foreground">{selectedEncomenda.numero_encomenda}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">{tr("Cliente:")}</label>
+                  <p className="text-sm text-muted-foreground">{selectedEncomenda.cliente_nome}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">{tr("Data Produção:")}</label>
+                  <p className="text-sm text-muted-foreground">{formatDate(selectedEncomenda.data_producao_estimada)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">{tr("Valor Produtos:")}</label>
+                  <p className="text-sm text-muted-foreground">
+                    €{(selectedEncomenda.valor_total - selectedEncomenda.valor_frete).toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">{tr("Valor Frete:")}</label>
+                  <p className="text-sm text-muted-foreground">€{selectedEncomenda.valor_frete.toFixed(2)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">{tr("Total:")}</label>
+                  <p className="text-sm font-semibold">€{selectedEncomenda.valor_total.toFixed(2)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">{tr("Valor Recebido:")}</label>
+                  <p className="text-sm text-success">€{selectedEncomenda.valor_pago.toFixed(2)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">{tr("Saldo:")}</label>
+                  <p className="text-sm font-semibold text-warning">€{selectedEncomenda.saldo_devedor.toFixed(2)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">{tr("Quantidade de Pagamentos:")}</label>
+                  <p className="text-sm text-muted-foreground">{selectedEncomenda.total_pagamentos}</p>
+                </div>
+              </div>
+
+              <OrderItemsView encomendaId={selectedEncomenda.id} />
+
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-medium mb-4">{tr("Comprovantes e Anexos")}</h3>
+                <AttachmentManager
+                  entityType="receivable"
+                  entityId={selectedEncomenda.id}
+                  title={tr("Comprovantes de Recebimento")}
+                  onChanged={handleAttachmentChange}
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}
