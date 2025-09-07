@@ -18,8 +18,6 @@ type Encomenda = {
   observacoes?: string | null;
   clientes?: { nome?: string | null } | null;
   fornecedores?: { nome?: string | null } | null;
-  commission_amount?: number | null;
-  valor_total_custo?: number | null;
 };
 
 type ItemEncomenda = {
@@ -27,21 +25,17 @@ type ItemEncomenda = {
   quantidade: number | null;
   preco_unitario: number | null;
   preco_custo: number | null;
-  produtos?: {
-    nome?: string | null;
-    size_weight?: number | null;
-  } | null;
+  produtos?: { nome?: string | null } | null;
 };
 
 type Props = {
-  /** Aceita string (correto) ou objeto { id } por engano — e normaliza para string. */
   encomendaId: string | { id?: string | number } | null | undefined;
 };
 
 export function EncomendaView({ encomendaId }: Props) {
   const { formatCurrency, formatDate } = useFormatters();
 
-  // Normaliza o id para string (evita id=eq.[object Object])
+  // Normaliza id (evita eq.[object Object])
   const id = useMemo(() => {
     if (!encomendaId) return "";
     if (typeof encomendaId === "string") return encomendaId;
@@ -49,12 +43,19 @@ export function EncomendaView({ encomendaId }: Props) {
     return "";
   }, [encomendaId]);
 
-  const [loading, setLoading] = useState(true);
   const [encomenda, setEncomenda] = useState<Encomenda | null>(null);
-
-  const [loadingItens, setLoadingItens] = useState(true);
   const [itens, setItens] = useState<ItemEncomenda[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingItens, setLoadingItens] = useState(true);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
+  // Descobre usuário (regra especial p/ felipe@colaborador.com)
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
+  }, []);
+  const isFelipe = (userEmail || "").toLowerCase() === "felipe@colaborador.com";
+
+  // Carrega encomenda + itens
   useEffect(() => {
     let mounted = true;
 
@@ -68,16 +69,9 @@ export function EncomendaView({ encomendaId }: Props) {
       try {
         const { data, error } = await supabase
           .from("encomendas")
-          .select(
-            `
-            *,
-            clientes(nome),
-            fornecedores(nome)
-          `
-          )
+          .select(`*, clientes(nome), fornecedores(nome)`)
           .eq("id", id)
           .single();
-
         if (error) throw error;
         if (mounted) setEncomenda(data as Encomenda);
       } catch (e) {
@@ -104,14 +98,10 @@ export function EncomendaView({ encomendaId }: Props) {
             quantidade,
             preco_unitario,
             preco_custo,
-            produtos(
-              nome,
-              size_weight
-            )
+            produtos(nome)
           `)
           .eq("encomenda_id", id)
           .order("id", { ascending: true });
-
         if (error) throw error;
         if (mounted) setItens((data as ItemEncomenda[]) || []);
       } catch (e) {
@@ -125,52 +115,34 @@ export function EncomendaView({ encomendaId }: Props) {
 
     loadEncomenda();
     loadItens();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, [id]);
 
-  const subtotal = useMemo(() => {
-    return itens.reduce((acc, it) => {
-      const q = Number(it.quantidade || 0);
-      const pu = Number(it.preco_unitario || 0);
-      return acc + q * pu;
-    }, 0);
-  }, [itens]);
+  const subtotalVenda = useMemo(
+    () => itens.reduce((acc, it) => acc + Number(it.quantidade || 0) * Number(it.preco_unitario || 0), 0),
+    [itens]
+  );
+  const subtotalCusto = useMemo(
+    () => itens.reduce((acc, it) => acc + Number(it.quantidade || 0) * Number(it.preco_custo || 0), 0),
+    [itens]
+  );
 
-  const custoTotal = useMemo(() => {
-    return itens.reduce((acc, it) => {
-      const q = Number(it.quantidade || 0);
-      const pc = Number(it.preco_custo || 0);
-      return acc + q * pc;
-    }, 0);
-  }, [itens]);
-
-  const lucroEstimado = useMemo(() => subtotal - custoTotal, [subtotal, custoTotal]);
-
-  if (loading) {
-    return <div className="py-8 text-center text-muted-foreground">Carregando…</div>;
-  }
-
-  if (!encomenda) {
-    return <div className="py-8 text-center text-muted-foreground">Encomenda não encontrada</div>;
-  }
+  if (loading) return <div className="py-8 text-center text-muted-foreground">Carregando…</div>;
+  if (!encomenda) return <div className="py-8 text-center text-muted-foreground">Encomenda não encontrada</div>;
 
   return (
     <div className="space-y-8">
-      {/* Resumo principal */}
+      {/* Resumo */}
       <section className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <div className="text-sm text-muted-foreground">Pedido</div>
             <div className="font-semibold">#{encomenda.numero_encomenda}</div>
           </div>
-
           <div>
             <div className="text-sm text-muted-foreground">Status</div>
             <div className="font-semibold">{encomenda.status}</div>
           </div>
-
           {encomenda.etiqueta ? (
             <div className="sm:col-span-2">
               <div className="text-sm text-muted-foreground">Etiqueta</div>
@@ -179,76 +151,56 @@ export function EncomendaView({ encomendaId }: Props) {
               </div>
             </div>
           ) : null}
-
           <div>
             <div className="text-sm text-muted-foreground">Criada em</div>
-            <div className="font-semibold">
-              {encomenda.data_criacao ? formatDate(encomenda.data_criacao) : "—"}
-            </div>
+            <div className="font-semibold">{encomenda.data_criacao ? formatDate(encomenda.data_criacao) : "—"}</div>
           </div>
-
           <div>
             <div className="text-sm text-muted-foreground">Cliente</div>
             <div className="font-semibold">{encomenda.clientes?.nome ?? "—"}</div>
           </div>
-
           <div>
             <div className="text-sm text-muted-foreground">Fornecedor</div>
             <div className="font-semibold">{encomenda.fornecedores?.nome ?? "—"}</div>
           </div>
         </div>
 
-        {/* Datas estimadas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <div className="text-sm text-muted-foreground">Data Produção (estimada)</div>
-            <div className="font-semibold">
-              {encomenda.data_producao_estimada ? formatDate(encomenda.data_producao_estimada) : "—"}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Data Entrega (estimada)</div>
-            <div className="font-semibold">
-              {encomenda.data_envio_estimada ? formatDate(encomenda.data_envio_estimada) : "—"}
-            </div>
-          </div>
-        </div>
-
-        {/* Totais financeiros (com fallback aos valores da encomenda) */}
+        {/* Totais (sem lucro para Felipe) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <div className="text-sm text-muted-foreground">Subtotal (itens)</div>
-            <div className="font-semibold">{formatCurrency(subtotal)}</div>
+            <div className="text-sm text-muted-foreground">{isFelipe ? "Total (custo)" : "Subtotal (itens)"}</div>
+            <div className="font-semibold">
+              {formatCurrency(isFelipe ? subtotalCusto : subtotalVenda)}
+            </div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground">Valor Pago</div>
             <div className="font-semibold">{formatCurrency(encomenda.valor_pago ?? 0)}</div>
           </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Lucro estimado</div>
-            <div
-              className={cn(
-                "font-semibold",
-                lucroEstimado >= 0 ? "text-green-600" : "text-red-600"
-              )}
-            >
-              {formatCurrency(lucroEstimado)}
+          {!isFelipe && (
+            <div>
+              <div className="text-sm text-muted-foreground">Lucro estimado</div>
+              <div
+                className={cn(
+                  "font-semibold",
+                  subtotalVenda - subtotalCusto >= 0 ? "text-green-600" : "text-red-600"
+                )}
+              >
+                {formatCurrency(subtotalVenda - subtotalCusto)}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Observações */}
         {encomenda.observacoes ? (
           <div>
             <div className="text-sm text-muted-foreground mb-1">Observações</div>
-            <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
-              {encomenda.observacoes}
-            </div>
+            <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">{encomenda.observacoes}</div>
           </div>
         ) : null}
       </section>
 
-      {/* Itens da encomenda */}
+      {/* Itens */}
       <section>
         <h3 className="text-base font-semibold mb-3">Itens da encomenda</h3>
 
@@ -263,9 +215,9 @@ export function EncomendaView({ encomendaId }: Props) {
                 <tr className="bg-muted/50">
                   <th className="px-3 py-2 text-left font-medium">Produto</th>
                   <th className="px-3 py-2 text-right font-medium">Qtd</th>
-                  <th className="px-3 py-2 text-right font-medium">Preço Unit.</th>
+                  {!isFelipe && <th className="px-3 py-2 text-right font-medium">Preço Unit.</th>}
                   <th className="px-3 py-2 text-right font-medium">Custo Unit.</th>
-                  <th className="px-3 py-2 text-right font-medium">Total</th>
+                  <th className="px-3 py-2 text-right font-medium">{isFelipe ? "Total (custo)" : "Total"}</th>
                 </tr>
               </thead>
               <tbody>
@@ -273,15 +225,13 @@ export function EncomendaView({ encomendaId }: Props) {
                   const q = Number(it.quantidade || 0);
                   const pu = Number(it.preco_unitario || 0);
                   const pc = Number(it.preco_custo || 0);
-                  const total = q * pu;
+                  const total = isFelipe ? q * pc : q * pu;
 
                   return (
                     <tr key={it.id} className="border-t">
-                      <td className="px-3 py-2">
-                        {it.produtos?.nome ?? "—"}
-                      </td>
+                      <td className="px-3 py-2">{it.produtos?.nome ?? "—"}</td>
                       <td className="px-3 py-2 text-right">{q}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(pu)}</td>
+                      {!isFelipe && <td className="px-3 py-2 text-right">{formatCurrency(pu)}</td>}
                       <td className="px-3 py-2 text-right">{formatCurrency(pc)}</td>
                       <td className="px-3 py-2 text-right font-medium">{formatCurrency(total)}</td>
                     </tr>
@@ -290,34 +240,20 @@ export function EncomendaView({ encomendaId }: Props) {
               </tbody>
               <tfoot>
                 <tr className="border-t bg-muted/30">
-                  <td className="px-3 py-2 font-medium text-right" colSpan={4}>
-                    Subtotal
+                  <td className="px-3 py-2 font-medium text-right" colSpan={isFelipe ? 4 : 5}>
+                    {isFelipe ? "Total (custo)" : "Subtotal"}
                   </td>
                   <td className="px-3 py-2 text-right font-semibold">
-                    {formatCurrency(subtotal)}
+                    {formatCurrency(isFelipe ? subtotalCusto : subtotalVenda)}
                   </td>
                 </tr>
-                <tr className="border-t">
-                  <td className="px-3 py-2 text-right" colSpan={4}>
-                    Custo total
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {formatCurrency(custoTotal)}
-                  </td>
-                </tr>
-                <tr className="border-t">
-                  <td className="px-3 py-2 text-right" colSpan={4}>
-                    Lucro estimado
-                  </td>
-                  <td
-                    className={cn(
-                      "px-3 py-2 text-right font-semibold",
-                      lucroEstimado >= 0 ? "text-green-600" : "text-red-600"
-                    )}
-                  >
-                    {formatCurrency(lucroEstimado)}
-                  </td>
-                </tr>
+                {!isFelipe && (
+                  <tr className="border-t">
+                    <td className="px-3 py-2 text-right" colSpan={5}>
+                      Custo total: {formatCurrency(subtotalCusto)}
+                    </td>
+                  </tr>
+                )}
               </tfoot>
             </table>
           </div>
