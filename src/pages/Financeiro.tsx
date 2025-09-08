@@ -48,9 +48,14 @@ export default function Financeiro() {
       if (email?.toLowerCase() === "ham@admin.com") {
         setActiveTab("encomendas"); // Vendas
       } else if (email?.toLowerCase() === "felipe@colaborador.com") {
-        setActiveTab("pagar"); // Compras
+      setActiveTab("pagar");
+      setAllowedSupplierIds([
+        "f0920a27-752c-4483-ba02-e7f32beceef6",
+        "b8f995d2-47dc-4c8f-9779-ce21431f5244",
+      ]); // Compras
       } else {
       setActiveTab("resumo");
+      setAllowedSupplierIds(null);
       setAllowedSupplierIds(null);
       }
     })();
