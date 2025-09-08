@@ -9,7 +9,8 @@ interface Produto {
   nome: string;
   marca: string;
   tipo: string;
-  preco: number;
+  preco_custo: number;
+  preco_venda: number;
   estoque: number;
   ativo?: boolean;   // pode vir como "ativo"
   active?: boolean;  // ou pode vir como "active"
