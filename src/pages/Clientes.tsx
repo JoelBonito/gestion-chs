@@ -6,7 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { usePermissions } from "@/hooks/usePermissions"; // 🔥 Hook global que carrega permissões uma vez só
+import { useUserRole } from "@/hooks/useUserRole";
+
+const { canEdit } = useUserRole();
+
 
 interface Cliente {
   id: string;
