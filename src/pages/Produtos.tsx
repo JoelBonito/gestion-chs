@@ -63,7 +63,7 @@ export default function Produtos() {
         <h1 className="text-xl font-bold tracking-tight">Produtos</h1>
 
         {/* Mantive sua regra de visibilidade do botão */}
-        {email !== "barrocacolaborador.com" && (
+        {email !== "felipe@colaborador.com" && (
           <Button type="button" onClick={handleCadastrarProduto}>
             <PlusIcon className="w-4 h-4 mr-2" />
             Cadastrar produto
