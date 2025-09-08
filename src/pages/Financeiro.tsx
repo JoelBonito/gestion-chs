@@ -17,7 +17,6 @@ export default function Financeiro() {
 
   const [activeTab, setActiveTab] = useState<TabKey>("resumo");
   const [showInactive, setShowInactive] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
   const isFelipe = (userEmail?.toLowerCase() ?? "") === "felipe@colaborador.com";
@@ -51,7 +50,8 @@ export default function Financeiro() {
       } else if (email?.toLowerCase() === "felipe@colaborador.com") {
         setActiveTab("pagar"); // Compras
       } else {
-        setActiveTab("resumo");
+      setActiveTab("resumo");
+      setAllowedSupplierIds(null);
       }
     })();
   }, []);
