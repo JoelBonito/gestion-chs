@@ -30,6 +30,7 @@ interface ContaPagar {
 }
 
 interface ContasPagarProps {
+  allowedSupplierIds?: string[] | null;
   onRefreshNeeded?: () => void;
   showCompleted?: boolean;
 }
@@ -100,6 +101,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
         .from("encomendas")
         .select(`
           id,
+          fornecedor_id,
           numero_encomenda,
           etiqueta,
           valor_total_custo,
@@ -118,6 +120,11 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
           )
         `)
         .order("created_at", { ascending: false });
+
+      // Escopo Felipe: filtra por fornecedor no DB se necessário
+      if (allowedSupplierIds && allowedSupplierIds.length) {
+        query = query.in("fornecedor_id", allowedSupplierIds);
+      }
 
       // Filtro de saldo:
       // - quando "Mostrar Concluídos" = true, inclui >= 0 e também NULL
@@ -150,7 +157,10 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
         data_producao_estimada: encomenda.data_producao_estimada ?? null,
       }));
 
-      setContas(contasFormatadas);
+      const scoped = (allowedSupplierIds && allowedSupplierIds.length)
+        ? contasFormatadas.filter(c => (c as any).fornecedor_id && allowedSupplierIds!.includes((c as any).fornecedor_id as string))
+        : contasFormatadas;
+      setContas(scoped);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar contas a pagar",
@@ -165,7 +175,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
   useEffect(() => {
     fetchContas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localShowCompleted]);
+  }, [localShowCompleted, allowedSupplierIds]);
 
   const handlePagamentoSuccess = () => {
     fetchContas();
