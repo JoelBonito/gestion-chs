@@ -20,6 +20,7 @@ interface ContaPagar {
   numero_encomenda: string;
   etiqueta?: string | null;
   fornecedor_nome: string;
+  fornecedor_id: string; // Adicionado para filtro
   valor_produtos: number;
   valor_frete: number;
   valor_total_custo: number;
@@ -41,9 +42,29 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
   const [showPagamentoForm, setShowPagamentoForm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [localShowCompleted, setLocalShowCompleted] = useState(showCompleted);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const { toast } = useToast();
   const isCollaborator = useIsCollaborator();
   const { isRestrictedFR } = useLocale();
+
+  // Lógica de restrição para Felipe
+  const email = (userEmail || "").toLowerCase();
+  const isFelipe = email === "felipe@colaborador.com";
+
+  // Fornecedores permitidos para o Felipe (UUIDs)
+  const ALLOWED_SUPPLIERS_FOR_FELIPE = [
+    "f0920a27-752c-4483-ba02-e7f32beceef6",
+    "b8f995d2-47dc-4c8f-9779-ce21431f5244",
+  ];
+
+  // Buscar email do usuário
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserEmail(user?.email ?? null);
+    };
+    fetchUser();
+  }, []);
 
   type Lang = "pt" | "fr";
   const lang: Lang = isRestrictedFR ? "fr" : "pt";
@@ -57,7 +78,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
       },
 
       // Colunas
-      "Nº Encomenda": { pt: "Nº Encomenda", fr: "N° de commande" },
+      "Nº Encomenda": { pt: "Nº Encomenda", fr: "Nº de commande" },
       "Fornecedor": { pt: "Fornecedor", fr: "Fournisseur" },
       "Data Produção": { pt: "Data Produção", fr: "Date de production" },
       "Total": { pt: "Total", fr: "Total" },
@@ -107,6 +128,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
           saldo_devedor_fornecedor,
           valor_frete,
           data_producao_estimada,
+          fornecedor_id,
           fornecedores(nome),
           itens_encomenda(
             quantidade,
@@ -135,6 +157,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
         encomenda_id: encomenda.id,
         numero_encomenda: encomenda.numero_encomenda,
         etiqueta: encomenda.etiqueta ?? null,
+        fornecedor_id: encomenda.fornecedor_id || "",
         fornecedor_nome:
           (typeof encomenda.fornecedores === "object" && encomenda.fornecedores?.nome)
             ? encomenda.fornecedores.nome
@@ -150,7 +173,14 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
         data_producao_estimada: encomenda.data_producao_estimada ?? null,
       }));
 
-      setContas(contasFormatadas);
+      // Aplicar filtro de fornecedores para Felipe
+      const contasFiltradas = isFelipe
+        ? contasFormatadas.filter((conta) => 
+            ALLOWED_SUPPLIERS_FOR_FELIPE.includes(conta.fornecedor_id)
+          )
+        : contasFormatadas;
+
+      setContas(contasFiltradas);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar contas a pagar",
@@ -165,7 +195,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
   useEffect(() => {
     fetchContas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localShowCompleted]);
+  }, [localShowCompleted, userEmail]); // Adicionado userEmail para refetch quando user é carregado
 
   const handlePagamentoSuccess = () => {
     fetchContas();
@@ -208,6 +238,11 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-warning" />
                 {t("Compras - Fornecedores")}
+                {isFelipe && (
+                  <span className="text-sm text-muted-foreground font-normal">
+                    (Visualização limitada)
+                  </span>
+                )}
               </CardTitle>
               <CardDescription>
                 {t("Encomendas com saldo devedor para fornecedores")}
