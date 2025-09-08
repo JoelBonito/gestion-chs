@@ -14,21 +14,28 @@ type Props = {
   searchTerm?: string;
   sort?: "nameAsc" | "nameDesc";
   limit?: number;
+  allowedSupplierIds?: string[] | null;
 };
 
 export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
-  ({ searchTerm = "", sort = "nameAsc", limit = 50 }, ref) => {
+  ({ searchTerm = "", sort = "nameAsc", limit = 50, allowedSupplierIds = null }, ref) => {
     const [produtos, setProdutos] = useState<Produto[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchProdutos = useCallback(async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        let q = supabase
           .from("produtos")
           .select("*")
           .order("nome")
           .limit(limit);
+
+        if (allowedSupplierIds && allowedSupplierIds.length) {
+          q = q.in("fornecedor_id", allowedSupplierIds);
+        }
+
+        const { data, error } = await q;
         if (error) throw error;
         setProdutos(data || []);
       } catch (error) {
@@ -89,7 +96,12 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
 
     // Filtro e ordenacao dos produtos otimizado com useMemo
     const sortedAndFiltered = useMemo(() => {
-      return produtos
+      const baseProdutos = produtos;
+      const scopedProdutos = (allowedSupplierIds && allowedSupplierIds.length)
+        ? baseProdutos.filter(p => (p as any).fornecedor_id && allowedSupplierIds!.includes((p as any).fornecedor_id))
+        : baseProdutos;
+
+      return scopedProdutos
         .filter((p) => {
           if (!searchTerm.trim()) return true;
           const q = searchTerm.toLowerCase();
@@ -107,7 +119,7 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
           if (nomeA > nomeB) return sort === "nameAsc" ? 1 : -1;
           return 0;
         });
-    }, [produtos, searchTerm, sort]);
+    }, [produtos, searchTerm, sort, allowedSupplierIds]);
 
     if (loading) {
       return (
