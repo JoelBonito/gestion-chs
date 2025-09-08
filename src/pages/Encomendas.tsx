@@ -34,6 +34,8 @@ type StatusFilter = StatusEncomenda | "TODOS";
 interface Encomenda {
   id: string;
   numero_encomenda: string;
+  cliente_id: string;
+  fornecedor_id: string;
   etiqueta?: string | null;
   status: StatusEncomenda;
   valor_total: number;
