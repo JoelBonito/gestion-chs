@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -16,18 +16,10 @@ export default function Financeiro() {
   const [showInactive, setShowInactive] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // Totais dos cards
-  const [loadingTotals, setLoadingTotals] = useState<boolean>(true);
-  const [totalReceber, setTotalReceber] = useState<number>(0);
-  const [totalPagar, setTotalPagar] = useState<number>(0);
+  const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
+  const isFelipe = (userEmail?.toLowerCase() ?? "") === "felipe@colaborador.com";
 
-  const email = (userEmail ?? "").toLowerCase();
-
-  const isHam = email === "ham@admin.com";
-  const isFelipe = email === "felipe@colaborador.com";
-  const isAdminDash = email === "jbento1@admin.com" || email === "admin@admin.com";
-
-  // i18n básico para rótulos desta página (FR só para Ham, como antes)
+  // i18n básico para rótulos desta página
   const lang: "pt" | "fr" = isHam ? "fr" : "pt";
   const t = (k: string) => {
     const d: Record<string, { pt: string; fr: string }> = {
@@ -44,33 +36,30 @@ export default function Financeiro() {
     return d[k]?.[lang] ?? k;
   };
 
-  // pega usuário e define tab padrão por perfil
+  // pega usuário e define tab padrão
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getUser();
-      const mail = data?.user?.email ?? null;
-      setUserEmail(mail);
+      const email = data?.user?.email ?? null;
+      setUserEmail(email);
 
-      const m = (mail ?? "").toLowerCase();
-      if (m === "ham@admin.com") {
-        setActiveTab("encomendas");   // Vendas
-      } else if (m === "felipe@colaborador.com") {
-        setActiveTab("pagar");        // Compras
-      } else if (m === "jbento1@admin.com" || m === "admin@admin.com") {
-        setActiveTab("encomendas");   // Admins: sem "Resumo", abre em Vendas
+      if (email?.toLowerCase() === "ham@admin.com") {
+        setActiveTab("encomendas"); // Vendas
+      } else if (email?.toLowerCase() === "felipe@colaborador.com") {
+        setActiveTab("pagar"); // Compras
       } else {
         setActiveTab("resumo");
       }
     })();
   }, []);
 
-  // regras de visibilidade (inalteradas para Ham/Felipe; Admins veem tudo, sem Resumo)
-  const hideResumo = isHam || isFelipe || isAdminDash;
-  const hideVendas = isFelipe; // Felipe não vê Vendas
-  const hideCompras = isHam;   // Ham não vê Compras
-  const hideFaturas = isFelipe; // Felipe não vê Faturas (mantido)
+  // regras de visibilidade
+  const hideResumo = isHam || isFelipe;
+  const hideVendas = isFelipe;
+  const hideCompras = isHam;
+  const hideFaturas = isFelipe; // agora felipe não vê Faturas
 
-  // corrigir caso usuário caia por URL em aba oculta
+  // se o usuário cair em aba oculta (via URL), corrige
   useEffect(() => {
     if (isHam && (activeTab === "resumo" || activeTab === "pagar")) {
       setActiveTab("encomendas");
@@ -78,88 +67,14 @@ export default function Financeiro() {
     if (isFelipe && (activeTab === "resumo" || activeTab === "encomendas" || activeTab === "faturas")) {
       setActiveTab("pagar");
     }
-    if (isAdminDash && activeTab === "resumo") {
-      setActiveTab("encomendas");
-    }
-  }, [isHam, isFelipe, isAdminDash, activeTab]);
+  }, [isHam, isFelipe, activeTab]);
 
-  // Carrega os totais dos cards (sempre que soubermos o usuário)
-  useEffect(() => {
-    if (!userEmail) return;
-    fetchTotals();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userEmail]);
-
-  const fetchTotals = async () => {
-    try {
-      setLoadingTotals(true);
-
-      // Total a Receber: soma dos saldos de clientes (saldo_devedor > 0)
-      const { data: recData, error: recErr } = await supabase
-        .from("encomendas")
-        .select("saldo_devedor")
-        .gt("saldo_devedor", 0);
-      if (recErr) throw recErr;
-      const receber = (recData ?? []).reduce((acc: number, r: any) => acc + Number(r.saldo_devedor || 0), 0);
-
-      // Total a Pagar: soma dos saldos de fornecedores (saldo_devedor_fornecedor > 0)
-      const { data: payData, error: payErr } = await supabase
-        .from("encomendas")
-        .select("saldo_devedor_fornecedor")
-        .gt("saldo_devedor_fornecedor", 0);
-      if (payErr) throw payErr;
-      const pagar = (payData ?? []).reduce((acc: number, r: any) => acc + Number(r.saldo_devedor_fornecedor || 0), 0);
-
-      setTotalReceber(receber);
-      setTotalPagar(pagar);
-    } catch (e) {
-      // silencioso para não poluir UI; se quiser, adicionar toast aqui
-      setTotalReceber(0);
-      setTotalPagar(0);
-    } finally {
-      setLoadingTotals(false);
-    }
-  };
-
-  const saldoAtual = useMemo(() => totalReceber - totalPagar, [totalReceber, totalPagar]);
-
-  // Render dos cards (reutilizado)
-  const CardsResumo = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm text-muted-foreground">{t("Total a Receber")}</CardTitle>
-        </CardHeader>
-        <CardContent className="text-2xl font-bold">
-          {loadingTotals ? "—" : formatCurrencyEUR(totalReceber)}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm text-muted-foreground">{t("Total a Pagar")}</CardTitle>
-        </CardHeader>
-        <CardContent className="text-2xl font-bold">
-          {loadingTotals ? "—" : formatCurrencyEUR(totalPagar)}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm text-muted-foreground">{t("Saldo Atual")}</CardTitle>
-        </CardHeader>
-        <CardContent className="text-2xl font-bold">
-          {loadingTotals ? "—" : formatCurrencyEUR(saldoAtual)}
-        </CardContent>
-      </Card>
-    </div>
-  );
+  // mock resumo
+  const resumo = { a_receber: 0, a_pagar: 0, saldo: 0 };
+  const loadingResumo = false;
 
   return (
     <div className="px-4 md:px-8">
-      {/* Para os admins (jbento1/admin), os cards aparecem SEMPRE no topo */}
-      {isAdminDash && <CardsResumo />}
-
       <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as TabKey)}>
         <TabsList className="mb-4">
           {!hideResumo && <TabsTrigger value="resumo">{t("Resumo")}</TabsTrigger>}
@@ -168,18 +83,39 @@ export default function Financeiro() {
           {!hideFaturas && <TabsTrigger value="faturas">{t("Faturas")}</TabsTrigger>}
         </TabsList>
 
-        {/* Resumo (somente para quem não é Ham/Felipe/Admin) */}
+        {/* Resumo */}
         {!hideResumo && (
           <TabsContent value="resumo">
-            {/* Aqui ficam os cards para perfis "comuns" */}
-            <CardsResumo />
+            {loadingResumo ? (
+              <p className="text-muted-foreground">{t("Carregando resumo...")}</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm text-muted-foreground">{t("Total a Receber")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.a_receber)}</CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm text-muted-foreground">{t("Total a Pagar")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.a_pagar)}</CardContent>
+                </Card>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm text-muted-foreground">{t("Saldo Atual")}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.saldo)}</CardContent>
+                </Card>
+              </div>
+            )}
           </TabsContent>
         )}
 
         {/* Vendas */}
         {!hideVendas && (
           <TabsContent value="encomendas">
-            {/* Para admins, já exibimos os cards no topo; abaixo vem o conteúdo de Vendas */}
             <div className="flex items-center space-x-2 mb-4">
               <Switch
                 id="showInactive"
