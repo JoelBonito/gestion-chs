@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,15 @@ export default function Produtos() {
   const handleCadastrarProduto = () => {
     setAbrirNovo(true);
   };
+
+  const isFelipe = (email ?? "").toLowerCase() === "felipe@colaborador.com";
+  const allowedSupplierIds = useMemo(
+    () => (isFelipe ? [
+      "f0920a27-752c-4483-ba02-e7f32beceef6",
+      "b8f995d2-47dc-4c8f-9779-ce21431f5244",
+    ] : null),
+    [isFelipe]
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -99,6 +108,7 @@ export default function Produtos() {
         ref={listaProdutosRef}
         searchTerm={debouncedSearch}
         sort={sort}
+        allowedSupplierIds={allowedSupplierIds}
       />
 
       {/* Modal: Novo produto */}
