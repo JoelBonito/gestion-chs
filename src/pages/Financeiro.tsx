@@ -12,11 +12,9 @@ import Invoices from "@/components/Invoices";                       // Faturas
 type TabKey = "resumo" | "encomendas" | "pagar" | "faturas";
 
 export default function Financeiro() {
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [allowedSupplierIds, setAllowedSupplierIds] = useState<string[] | null>(null);
-
   const [activeTab, setActiveTab] = useState<TabKey>("resumo");
   const [showInactive, setShowInactive] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
   const isFelipe = (userEmail?.toLowerCase() ?? "") === "felipe@colaborador.com";
@@ -48,20 +46,9 @@ export default function Financeiro() {
       if (email?.toLowerCase() === "ham@admin.com") {
         setActiveTab("encomendas"); // Vendas
       } else if (email?.toLowerCase() === "felipe@colaborador.com") {
-      setActiveTab("pagar");
-      setAllowedSupplierIds([
-        "f0920a27-752c-4483-ba02-e7f32beceef6",
-        "b8f995d2-47dc-4c8f-9779-ce21431f5244",
-      ]);
-      setAllowedSupplierIds([
-        "f0920a27-752c-4483-ba02-e7f32beceef6",
-        "b8f995d2-47dc-4c8f-9779-ce21431f5244",
-      ]); // Compras
+        setActiveTab("pagar"); // Compras
       } else {
-      setActiveTab("resumo");
-      setAllowedSupplierIds(null);
-      setAllowedSupplierIds(null);
-      setAllowedSupplierIds(null);
+        setActiveTab("resumo");
       }
     })();
   }, []);
@@ -144,7 +131,7 @@ export default function Financeiro() {
         {/* Compras */}
         {!hideCompras && (
           <TabsContent value="pagar">
-            <ContasPagar allowedSupplierIds={allowedSupplierIds} />
+            <ContasPagar />
           </TabsContent>
         )}
 
