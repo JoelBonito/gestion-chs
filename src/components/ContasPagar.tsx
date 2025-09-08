@@ -16,7 +16,6 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 
 interface ContaPagar {
-  fornecedor_id?: string;
   encomenda_id: string;
   numero_encomenda: string;
   etiqueta?: string | null;
@@ -38,20 +37,12 @@ interface ContasPagarProps {
 export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: ContasPagarProps) {
   const [contas, setContas] = useState<ContaPagar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
+  const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
   const [showPagamentoForm, setShowPagamentoForm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [localShowCompleted, setLocalShowCompleted] = useState(showCompleted);
   const { toast } = useToast();
   const isCollaborator = useIsCollaborator();
-  const isFelipe = (userEmail?.toLowerCase() ?? "") === "felipe@colaborador.com";
-  const ALLOWED_SUPPLIERS_FOR_FELIPE = [
-    "f0920a27-752c-4483-ba02-e7f32beceef6",
-    "b8f995d2-47dc-4c8f-9779-ce21431f5244",
-  ];
-
   const { isRestrictedFR } = useLocale();
 
   type Lang = "pt" | "fr";
@@ -109,7 +100,6 @@ const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
         .from("encomendas")
         .select(`
           id,
-          fornecedor_id,
           numero_encomenda,
           etiqueta,
           valor_total_custo,
@@ -141,8 +131,7 @@ const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
       const { data, error } = await query;
       if (error) throw error;
 
-      const contasFormatadasRaw = (data || []).map((encomenda: any) => ({
-        fornecedor_id: encomenda.fornecedor_id,
+      const contasFormatadas: ContaPagar[] = (data || []).map((encomenda: any) => ({
         encomenda_id: encomenda.id,
         numero_encomenda: encomenda.numero_encomenda,
         etiqueta: encomenda.etiqueta ?? null,
@@ -161,13 +150,7 @@ const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
         data_producao_estimada: encomenda.data_producao_estimada ?? null,
       }));
 
-      const contasFormatadas: ContaPagar[] = contasFormatadasRaw as ContaPagar[];
-
-      const scoped = isFelipe
-        ? contasFormatadas.filter(c => c.fornecedor_id && ALLOWED_SUPPLIERS_FOR_FELIPE.includes(c.fornecedor_id))
-        : contasFormatadas;
-
-      setContas(scoped);
+      setContas(contasFormatadas);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar contas a pagar",
@@ -179,14 +162,7 @@ const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
     }
   };
 
-  
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getUser();
-      setUserEmail(data?.user?.email ?? null);
-    })();
-  }, []);
-useEffect(() => {
     fetchContas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localShowCompleted]);
