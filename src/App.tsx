@@ -1,93 +1,85 @@
-
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthGuard } from "@/components/AuthGuard";
-import { FactoryGuard } from "@/components/FactoryGuard";
-import { HorizontalNav } from "@/components/HorizontalNav";
-import { LocaleProvider } from "@/contexts/LocaleContext";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
+import { useState, useEffect } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import HorizontalNav from "./components/HorizontalNav";
 import Dashboard from "./pages/Dashboard";
 import Produtos from "./pages/Produtos";
 import Clientes from "./pages/Clientes";
-import Fornecedores from "./pages/Fornecedores";
 import Encomendas from "./pages/Encomendas";
-import Producao from "./pages/Producao";
 import Financeiro from "./pages/Financeiro";
-import NotFound from "./pages/NotFound";
+import Configuracoes from "./pages/Configuracoes";
+import AuthGuard from "./components/AuthGuard";
+import FactoryGuard from "./components/FactoryGuard";
+import { supabase } from "./integrations/supabase/client";
+import Login from "./pages/Login";
 
-// Create QueryClient instance outside component to avoid recreating on re-renders
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-    },
-  },
-});
+// ✅ Import da página de novo produto
+import ProdutoNovo from "./pages/ProdutoNovo";
 
-const App = () => {
+function App() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const session = supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null);
+      setLoading(false);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  if (loading) {
+    return <div>Carregando…</div>;
+  }
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <LocaleProvider>
-          <Toaster />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route
-                path="*"
-                element={
-                  <AuthGuard>
-                    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/20">
-                      <HorizontalNav />
-                      <main className="flex-1">
-                        <div className="container mx-auto p-6">
-                          <Routes>
-                            <Route path="/" element={
-                              <FactoryGuard>
-                                <Dashboard />
-                              </FactoryGuard>
-                            } />
-                            <Route path="/dashboard" element={
-                              <FactoryGuard>
-                                <Dashboard />
-                              </FactoryGuard>
-                            } />
-                            <Route path="/produtos" element={<Produtos />} />
-                            <Route path="/clientes" element={
-                              <FactoryGuard>
-                                <Clientes />
-                              </FactoryGuard>
-                            } />
-                            <Route path="/fornecedores" element={
-                              <FactoryGuard>
-                                <Fornecedores />
-                              </FactoryGuard>
-                            } />
-                            <Route path="/encomendas" element={<Encomendas />} />
-                            <Route path="/producao" element={
-                              <FactoryGuard>
-                                <Producao />
-                              </FactoryGuard>
-                            } />
-                            <Route path="/financeiro" element={<Financeiro />} />
-                            <Route path="/welcome" element={<Index />} />
-                            <Route path="*" element={<NotFound />} />
-                          </Routes>
-                        </div>
-                      </main>
-                    </div>
-                  </AuthGuard>
-                }
-              />
-            </Routes>
-          </BrowserRouter>
-        </LocaleProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="*"
+        element={
+          <AuthGuard>
+            <HorizontalNav>
+              <Routes>
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route
+                  path="/produtos"
+                  element={
+                    <FactoryGuard>
+                      <Produtos />
+                    </FactoryGuard>
+                  }
+                />
+                {/* ✅ Rota adicionada */}
+                <Route
+                  path="/produtos/novo"
+                  element={
+                    <FactoryGuard>
+                      <ProdutoNovo />
+                    </FactoryGuard>
+                  }
+                />
+                <Route path="/clientes" element={<Clientes />} />
+                <Route path="/encomendas" element={<Encomendas />} />
+                <Route path="/financeiro" element={<Financeiro />} />
+                <Route path="/configuracoes" element={<Configuracoes />} />
+              </Routes>
+            </HorizontalNav>
+          </AuthGuard>
+        }
+      />
+    </Routes>
   );
-};
+}
 
 export default App;
