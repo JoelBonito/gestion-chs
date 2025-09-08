@@ -3,7 +3,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PlusIcon, RefreshCwIcon, SortAscIcon, SortDescIcon } from "lucide-react";
-import { ListaProdutos, ListaProdutosRef } from "@/components/ListaProdutos";
+import { ListaProdutos } from "@/components/ListaProdutos";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
