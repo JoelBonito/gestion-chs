@@ -251,7 +251,7 @@ export default function Encomendas() {
               <div className="col-span-2">{(pesoTransporte[e.id] ?? 0).toFixed(2)} kg</div>
               <div className="col-span-2">{formatCurrency(0)}</div>
               <div className="col-span-2">
-                <EncomendaStatusSelect encomenda={e} onStatusChanged={handleStatusChange} />
+                <EncomendaStatusSelect encomenda={e.id} onStatusChanged={handleStatusChange} />
               </div>
               <div className="col-span-1">{formatCurrency(e.commission_amount ?? 0)}</div>
               <div className="col-span-1">{formatCurrency(isFelipe ? e.valor_total_custo ?? 0 : e.valor_total)}</div>
