@@ -15,7 +15,7 @@ export default function Produtos() {
 
   // 🔍 Busca
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 300);
+  const debouncedSearch = useDebounce(search, 150);
 
   // ↕️ Ordenação
   const [sort, setSort] = useState<"nameAsc" | "nameDesc">("nameAsc");

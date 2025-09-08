@@ -1,9 +1,10 @@
-import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ProdutoCard from "@/components/ProdutoCard";
 import { logActivity } from "@/utils/activityLogger";
 import { Produto } from "@/types/database";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface ListaProdutosRef {
   fetchProdutos: () => void;
@@ -12,17 +13,22 @@ export interface ListaProdutosRef {
 type Props = {
   searchTerm?: string;
   sort?: "nameAsc" | "nameDesc";
+  limit?: number;
 };
 
 export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
-  ({ searchTerm = "", sort = "nameAsc" }, ref) => {
+  ({ searchTerm = "", sort = "nameAsc", limit = 50 }, ref) => {
     const [produtos, setProdutos] = useState<Produto[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const fetchProdutos = async () => {
+    const fetchProdutos = useCallback(async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase.from("produtos").select("*");
+        const { data, error } = await supabase
+          .from("produtos")
+          .select("*")
+          .order("nome")
+          .limit(limit);
         if (error) throw error;
         setProdutos(data || []);
       } catch (error) {
@@ -31,7 +37,7 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
       } finally {
         setLoading(false);
       }
-    };
+    }, [limit]);
 
     useImperativeHandle(ref, () => ({
       fetchProdutos,
@@ -41,21 +47,21 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
       fetchProdutos();
     }, []);
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = useCallback(async (id: string) => {
       try {
         const { error } = await supabase.from("produtos").delete().eq("id", id);
         if (error) throw error;
 
         await logActivity({ entity: "produto", entity_id: id, action: "delete" });
-        setProdutos(produtos.filter((p) => p.id !== id));
+        setProdutos(prev => prev.filter((p) => p.id !== id));
         toast.success("Produto excluído com sucesso!");
       } catch (error) {
         console.error("Erro ao excluir produto:", error);
         toast.error("Erro ao excluir produto");
       }
-    };
+    }, []);
 
-    const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    const handleToggleActive = useCallback(async (id: string, currentStatus: boolean) => {
       try {
         const { error } = await supabase
           .from("produtos")
@@ -79,37 +85,40 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
         console.error("Erro ao alterar status:", error);
         toast.error("Erro ao alterar status do produto");
       }
-    };
+    }, []);
 
-    // Filtro e ordenacao dos produtos
-    const sortedAndFiltered = produtos
-      .filter((p) => {
-        if (!searchTerm.trim()) return true;
-        const q = searchTerm.toLowerCase();
-        return (
-          (p.nome ?? "").toLowerCase().includes(q) ||
-          (p.marca ?? "").toLowerCase().includes(q) ||
-          (p.tipo ?? "").toLowerCase().includes(q)
-        );
-      })
-      .sort((a, b) => {
-        const nomeA = (a.nome ?? "").toLowerCase();
-        const nomeB = (b.nome ?? "").toLowerCase();
+    // Filtro e ordenacao dos produtos otimizado com useMemo
+    const sortedAndFiltered = useMemo(() => {
+      return produtos
+        .filter((p) => {
+          if (!searchTerm.trim()) return true;
+          const q = searchTerm.toLowerCase();
+          return (
+            (p.nome ?? "").toLowerCase().includes(q) ||
+            (p.marca ?? "").toLowerCase().includes(q) ||
+            (p.tipo ?? "").toLowerCase().includes(q)
+          );
+        })
+        .sort((a, b) => {
+          const nomeA = (a.nome ?? "").toLowerCase();
+          const nomeB = (b.nome ?? "").toLowerCase();
 
-        if (nomeA < nomeB) return sort === "nameAsc" ? -1 : 1;
-        if (nomeA > nomeB) return sort === "nameAsc" ? 1 : -1;
-        return 0;
-      });
-
-    // DEBUG: Logs temporarios para debugar
-    console.log("Props recebidas:", { searchTerm, sort });
-    console.log("Total produtos:", produtos.length);
-    console.log("Produtos filtrados:", sortedAndFiltered.length);
+          if (nomeA < nomeB) return sort === "nameAsc" ? -1 : 1;
+          if (nomeA > nomeB) return sort === "nameAsc" ? 1 : -1;
+          return 0;
+        });
+    }, [produtos, searchTerm, sort]);
 
     if (loading) {
       return (
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-3">
+              <Skeleton className="h-[200px] w-full rounded-lg" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          ))}
         </div>
       );
     }
@@ -125,7 +134,7 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {sortedAndFiltered.map((produto) => (
-          <ProdutoCard
+          <MemoizedProdutoCard
             key={produto.id}
             produto={produto}
             onUpdate={fetchProdutos}
@@ -139,3 +148,7 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
 );
 
 ListaProdutos.displayName = "ListaProdutos";
+
+// Memoized ProdutoCard para evitar re-renders desnecessários
+import { memo } from "react";
+const MemoizedProdutoCard = memo(ProdutoCard);

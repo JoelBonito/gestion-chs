@@ -32,6 +32,7 @@ import { EncomendaActions } from "@/components/EncomendaActions";
 import { EncomendaStatusFilter } from "@/components/EncomendaStatusFilter";
 import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
 import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 type StatusFilter = StatusEncomenda | "TODOS";
@@ -62,9 +63,6 @@ export default function Encomendas() {
   const { formatCurrency, formatDate } = useFormatters();
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
-  }, []);
   const email = (userEmail || "").toLowerCase();
   const isFelipe = email === "felipe@colaborador.com";
   const isHam = email === "ham@admin.com";
@@ -152,58 +150,62 @@ export default function Encomendas() {
   const canEditProductionUI = (canEdit() || hasRole("factory") || isCollaborator) && !isHam;
   const canEditDeliveryUI = (canEdit() || isCollaborator) && !isHam;
 
-  // Busca encomendas e computa comissão/custo total
+  // Busca encomendas e computa comissão/custo total - OTIMIZADA
   const fetchEncomendas = async () => {
     try {
       setLoading(true);
 
+      // Query otimizada: buscar encomendas com dados calculados de uma vez
       const { data, error } = await supabase
         .from("encomendas")
-        .select(`*, clientes(nome), fornecedores(nome)`)
-        .order("created_at", { ascending: false });
+        .select(`
+          *,
+          clientes(nome),
+          fornecedores(nome),
+          itens_encomenda(
+            quantidade,
+            preco_unitario,
+            preco_custo,
+            produtos(size_weight)
+          )
+        `)
+        .order("created_at", { ascending: false })
+        .limit(100); // Limitar resultados iniciais
 
       if (error) throw error;
 
-      const computed = await Promise.all(
-        (data || []).map(async (enc: any) => {
-          const { data: itens } = await supabase
-            .from("itens_encomenda")
-            .select(`quantidade, preco_unitario, preco_custo`)
-            .eq("encomenda_id", enc.id);
+      // Processar dados em batch ao invés de queries individuais
+      const computed = (data || []).map((enc: any) => {
+        let commission_amount = 0;
+        let valor_total_custo = 0;
+        let totalGramas = 0;
 
-          let commission_amount = 0;
-          let valor_total_custo = 0;
+        (enc.itens_encomenda || []).forEach((it: any) => {
+          const q = Number(it.quantidade || 0);
+          const pv = Number(it.preco_unitario || 0);
+          const pc = Number(it.preco_custo || 0);
+          const sw = Number(it.produtos?.size_weight || 0);
+          
+          commission_amount += q * pv - q * pc;
+          valor_total_custo += q * pc;
+          totalGramas += q * sw;
+        });
 
-          (itens || []).forEach((it: any) => {
-            const q = Number(it.quantidade || 0);
-            const pv = Number(it.preco_unitario || 0);
-            const pc = Number(it.preco_custo || 0);
-            commission_amount += q * pv - q * pc;
-            valor_total_custo += q * pc;
-          });
-
-          return { ...enc, commission_amount, valor_total_custo } as Encomenda;
-        })
-      );
+        return {
+          ...enc,
+          commission_amount,
+          valor_total_custo,
+          peso_bruto: (totalGramas * 1.3) / 1000 // kg
+        } as Encomenda & { peso_bruto: number };
+      });
 
       setEncomendas(computed);
 
-      // peso bruto estimado (size_weight*1.3 em kg)
+      // Criar mapa de pesos sem queries adicionais
       const pesos: Record<string, number> = {};
-      for (const enc of computed) {
-        const { data: itens } = await supabase
-          .from("itens_encomenda")
-          .select(`quantidade, produtos(size_weight)`)
-          .eq("encomenda_id", enc.id);
-
-        const totalGramas = (itens || []).reduce((acc: number, it: any) => {
-          const q = Number(it.quantidade || 0);
-          const sw = Number(it.produtos?.size_weight || 0);
-          return acc + q * sw;
-        }, 0);
-
-        pesos[enc.id] = (totalGramas * 1.3) / 1000; // kg
-      }
+      computed.forEach((enc: any) => {
+        pesos[enc.id] = enc.peso_bruto || 0;
+      });
       setPesoTransporte(pesos);
     } catch (e) {
       console.error(e);
@@ -213,10 +215,19 @@ export default function Encomendas() {
     }
   };
 
+  // Cache do usuário para evitar múltiplas chamadas
+  const [userDataCached, setUserDataCached] = useState(false);
+  
   useEffect(() => {
+    if (!userDataCached) {
+      supabase.auth.getUser().then(({ data }) => {
+        setUserEmail(data.user?.email ?? null);
+        setUserDataCached(true);
+      });
+    }
     fetchEncomendas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [userDataCached]);
 
   const handleDateUpdate = async (
     encomendaId: string,
@@ -319,10 +330,82 @@ export default function Encomendas() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">{t.loadingOrders}</p>
+      <div className="space-y-6">
+        {/* Skeleton do cabeçalho */}
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+
+        {/* Skeleton dos filtros */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex gap-4">
+              <Skeleton className="h-10 flex-1 max-w-sm" />
+              <Skeleton className="h-10 w-32" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Skeleton das encomendas */}
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-12 gap-6">
+                    <div className="col-span-2">
+                      <Skeleton className="h-4 w-16 mb-2" />
+                      <Skeleton className="h-6 w-24" />
+                    </div>
+                    <div className="col-span-3">
+                      <Skeleton className="h-4 w-12 mb-2" />
+                      <Skeleton className="h-5 w-32" />
+                    </div>
+                    <div className="col-span-3">
+                      <Skeleton className="h-4 w-16 mb-2" />
+                      <Skeleton className="h-5 w-28" />
+                    </div>
+                    <div className="col-span-4 flex gap-2 justify-end">
+                      <Skeleton className="h-10 w-10" />
+                      <Skeleton className="h-10 w-10" />
+                      <Skeleton className="h-10 w-10" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-12 gap-6">
+                    <div className="col-span-2">
+                      <Skeleton className="h-4 w-12 mb-2" />
+                      <Skeleton className="h-8 w-20" />
+                    </div>
+                    <div className="col-span-2">
+                      <Skeleton className="h-4 w-16 mb-2" />
+                      <Skeleton className="h-8 w-24" />
+                    </div>
+                    <div className="col-span-2">
+                      <Skeleton className="h-4 w-16 mb-2" />
+                      <Skeleton className="h-8 w-24" />
+                    </div>
+                    <div className="col-span-2">
+                      <Skeleton className="h-4 w-12 mb-2" />
+                      <Skeleton className="h-5 w-16" />
+                    </div>
+                    <div className="col-span-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Skeleton className="h-4 w-16 mb-2" />
+                          <Skeleton className="h-5 w-20" />
+                        </div>
+                        <div>
+                          <Skeleton className="h-4 w-12 mb-2" />
+                          <Skeleton className="h-5 w-16" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
