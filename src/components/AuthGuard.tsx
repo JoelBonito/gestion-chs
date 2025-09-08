@@ -1,9 +1,7 @@
-
 import { ReactNode, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -16,7 +14,7 @@ export function AuthGuard({ children, redirectTo = '/login' }: AuthGuardProps) {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate(redirectTo);
+      navigate(redirectTo, { replace: true });
     }
   }, [user, loading, navigate, redirectTo]);
 
@@ -25,8 +23,7 @@ export function AuthGuard({ children, redirectTo = '/login' }: AuthGuardProps) {
       <div className="min-h-screen flex items-center justify-center">
         <Card>
           <CardContent className="p-8 text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Verificando autenticação...</p>
+            <p className="text-muted-foreground">Carregando autenticação…</p>
           </CardContent>
         </Card>
       </div>
@@ -38,7 +35,7 @@ export function AuthGuard({ children, redirectTo = '/login' }: AuthGuardProps) {
       <div className="min-h-screen flex items-center justify-center">
         <Card>
           <CardContent className="p-8 text-center">
-            <p className="text-muted-foreground">Redirecionando para login...</p>
+            <p className="text-muted-foreground">Redirecionando para login…</p>
           </CardContent>
         </Card>
       </div>
