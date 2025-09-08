@@ -16,7 +16,6 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 
 interface ContaPagar {
-  fornecedor_id?: string;
   encomenda_id: string;
   numero_encomenda: string;
   etiqueta?: string | null;
@@ -38,18 +37,12 @@ interface ContasPagarProps {
 export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: ContasPagarProps) {
   const [contas, setContas] = useState<ContaPagar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
   const [showPagamentoForm, setShowPagamentoForm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [localShowCompleted, setLocalShowCompleted] = useState(showCompleted);
   const { toast } = useToast();
   const isCollaborator = useIsCollaborator();
-  const isFelipe = (userEmail?.toLowerCase() ?? "") === "felipe@colaborador.com";
-  const ALLOWED_SUPPLIER_IDS = [
-    "f0920a27-752c-4483-ba02-e7f32beceef6",
-    "b8f995d2-47dc-4c8f-9779-ce21431f5244",
-  ];
   const { isRestrictedFR } = useLocale();
 
   type Lang = "pt" | "fr";
@@ -123,13 +116,8 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
           pagamentos_fornecedor(
             valor_pagamento
           )
-        `);
-
-      // Restrição de escopo (DB) para Felipe
-      if (isFelipe) {
-        query = query.in("fornecedor_id", ALLOWED_SUPPLIER_IDS);
-      }
-
+        `)
+        .order("created_at", { ascending: false });
 
       // Filtro de saldo:
       // - quando "Mostrar Concluídos" = true, inclui >= 0 e também NULL
@@ -140,11 +128,10 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
         query = query.gt("saldo_devedor_fornecedor", 0);
       }
 
-      const { data, error } = await query.order("created_at", { ascending: false });
+      const { data, error } = await query;
       if (error) throw error;
 
       const contasFormatadas: ContaPagar[] = (data || []).map((encomenda: any) => ({
-        fornecedor_id: encomenda.fornecedor_id,
         encomenda_id: encomenda.id,
         numero_encomenda: encomenda.numero_encomenda,
         etiqueta: encomenda.etiqueta ?? null,
@@ -163,10 +150,7 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
         data_producao_estimada: encomenda.data_producao_estimada ?? null,
       }));
 
-      const scoped = isFelipe
-        ? contasFormatadas.filter(c => c.fornecedor_id && ALLOWED_SUPPLIER_IDS.includes(c.fornecedor_id))
-        : contasFormatadas;
-      setContas(scoped);
+      setContas(contasFormatadas);
     } catch (error: any) {
       toast({
         title: "Erro ao carregar contas a pagar",
@@ -179,16 +163,9 @@ export default function ContasPagar({ onRefreshNeeded, showCompleted = false }: 
   };
 
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getUser();
-      setUserEmail(data?.user?.email ?? null);
-    })();
-  }, []);
-
-  useEffect(() => {
     fetchContas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localShowCompleted, userEmail]);
+  }, [localShowCompleted]);
 
   const handlePagamentoSuccess = () => {
     fetchContas();
