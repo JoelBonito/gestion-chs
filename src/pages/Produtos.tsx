@@ -4,12 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PlusIcon, RefreshCwIcon, SortAscIcon, SortDescIcon } from "lucide-react";
 import { ListaProdutos, ListaProdutosRef } from "@/components/ListaProdutos";
-import { useNavigate } from "react-router-dom";
+// ⬇️ removi useNavigate (não vamos navegar)
 import { supabase } from "@/integrations/supabase/client";
+
+// ⬇️ imports para o modal
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+// ⬇️ usamos o formulário diretamente no modal
+import { ProdutoForm } from "@/components/ProdutoForm";
 
 export default function Produtos() {
   const [email, setEmail] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   const listaProdutosRef = useRef<ListaProdutosRef>(null);
 
@@ -19,6 +23,9 @@ export default function Produtos() {
 
   // ↕️ Ordenação
   const [sort, setSort] = useState<"nameAsc" | "nameDesc">("nameAsc");
+
+  // ⬇️ controla a abertura do modal "Novo produto"
+  const [abrirNovo, setAbrirNovo] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -32,25 +39,30 @@ export default function Produtos() {
   }, []);
 
   const handleRefresh = () => {
-    listaProdutosRef.current?.fetchProdutos();
+    listaProdutosRef.current?.fetchProdutos?.();
   };
 
+  // ⬇️ agora só abre o modal
   const handleCadastrarProduto = () => {
-    navigate("/produtos/novo");
+    setAbrirNovo(true);
   };
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight">Produtos</h1>
+
+        {/* Mantive sua regra de visibilidade do botão */}
         {email !== "barrocacolaborador.com" && (
-          <Button onClick={handleCadastrarProduto}>
+          <Button type="button" onClick={handleCadastrarProduto}>
             <PlusIcon className="w-4 h-4 mr-2" />
             Cadastrar produto
           </Button>
         )}
       </div>
 
+      {/* Filtros e ações */}
       <div className="flex flex-col md:flex-row items-center gap-2">
         <Input
           value={search}
@@ -82,11 +94,30 @@ export default function Produtos() {
         </Button>
       </div>
 
+      {/* Lista */}
       <ListaProdutos
         ref={listaProdutosRef}
         searchTerm={debouncedSearch}
         sort={sort}
       />
+
+      {/* Modal: Novo produto */}
+      <Dialog open={abrirNovo} onOpenChange={setAbrirNovo}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Novo produto</DialogTitle>
+          </DialogHeader>
+
+          <ProdutoForm
+            isEditing={false}
+            onSuccess={() => {
+              setAbrirNovo(false);
+              // Após cadastrar, recarrega a lista
+              listaProdutosRef.current?.fetchProdutos?.();
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
