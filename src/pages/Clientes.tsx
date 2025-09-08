@@ -11,7 +11,7 @@ import { ClienteForm } from "@/components/ClienteForm";
 import { ClienteActions } from "@/components/ClienteActions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { RoleBasedGuard } from "@/components/RoleBasedGuard";
+import { OptimizedRoleGuard } from "@/components/OptimizedRoleGuard";
 import { useUserRole } from "@/hooks/useUserRole";
 
 interface Cliente {
@@ -83,7 +83,7 @@ export default function Clientes() {
   });
 
   return (
-    <RoleBasedGuard blockCollaborator={true} redirectTo="/produtos">
+    <OptimizedRoleGuard blockCollaborator={true} redirectTo="/produtos">
       <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
@@ -218,6 +218,6 @@ export default function Clientes() {
         </Card>
       )}
     </div>
-    </RoleBasedGuard>
+    </OptimizedRoleGuard>
   );
 }
