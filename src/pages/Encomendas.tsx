@@ -65,7 +65,14 @@ export default function Encomendas() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const email = (userEmail || "").toLowerCase();
   const isFelipe = email === "felipe@colaborador.com";
-  const isHam = email === "ham@admin.com";
+
+// Fornecedores permitidos para o Felipe (UUIDs)
+const ALLOWED_SUPPLIERS_FOR_FELIPE = [
+  "f0920a27-752c-4483-ba02-e7f32beceef6",
+  "b8f995d2-47dc-4c8f-9779-ce21431f5244",
+];
+
+const isHam = email === "ham@admin.com";
 
   // Dicionário (FR para Ham, PT para demais)
   const t = isHam
@@ -314,7 +321,12 @@ export default function Encomendas() {
   };
 
   // Filtros
-  const filteredEncomendas = encomendas.filter((e) => {
+  // Escopo de fornecedores (reforço em memória para Felipe)
+const scopedEncomendas = isFelipe
+  ? encomendas.filter((e) => ALLOWED_SUPPLIERS_FOR_FELIPE.includes(e.fornecedor_id ?? ""))
+  : encomendas;
+
+const filteredEncomendas = scopedEncomendas.filter((e) => {
     const q = searchTerm.trim().toLowerCase();
     const byText =
       e.numero_encomenda.toLowerCase().includes(q) ||
