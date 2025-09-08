@@ -1,38 +1,92 @@
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
+import { useRef, useState, useEffect } from "react";
+import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
-import ListaProdutos from "@/components/ListaProdutos"; // ✅ default export
+import { Input } from "@/components/ui/input";
+import { PlusIcon, RefreshCwIcon, SortAscIcon, SortDescIcon } from "lucide-react";
+import { ListaProdutos, ListaProdutosRef } from "@/components/ListaProdutos";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Produtos() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [email, setEmail] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  const listaProdutosRef = useRef<ListaProdutosRef>(null);
+
+  // 🔍 Busca
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 300);
+
+  // ↕️ Ordenação
   const [sort, setSort] = useState<"nameAsc" | "nameDesc">("nameAsc");
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setEmail(user?.email ?? null);
+    };
+
+    fetchUser();
+  }, []);
+
+  const handleRefresh = () => {
+    listaProdutosRef.current?.fetchProdutos();
+  };
+
+  const handleCadastrarProduto = () => {
+    navigate("/produtos/novo");
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Produtos</h1>
-        <Button onClick={() => setRefreshTrigger((prev) => prev + 1)}>Atualizar</Button>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold tracking-tight">Produtos</h1>
+        {email !== "barrocacolaborador.com" && (
+          <Button onClick={handleCadastrarProduto}>
+            <PlusIcon className="w-4 h-4 mr-2" />
+            Cadastrar produto
+          </Button>
+        )}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-col md:flex-row items-center gap-2">
         <Input
-          placeholder="Buscar produtos..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="max-w-sm"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Pesquisar por nome, marca ou tipo"
+          className="w-full md:w-1/3"
         />
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value as "nameAsc" | "nameDesc")}
-          className="border rounded px-2"
+
+        <Button
+          variant="outline"
+          onClick={() => setSort((prev) => (prev === "nameAsc" ? "nameDesc" : "nameAsc"))}
         >
-          <option value="nameAsc">Nome (A-Z)</option>
-          <option value="nameDesc">Nome (Z-A)</option>
-        </select>
+          {sort === "nameAsc" ? (
+            <>
+              <SortAscIcon className="w-4 h-4 mr-2" />
+              A–Z
+            </>
+          ) : (
+            <>
+              <SortDescIcon className="w-4 h-4 mr-2" />
+              Z–A
+            </>
+          )}
+        </Button>
+
+        <Button variant="outline" onClick={handleRefresh}>
+          <RefreshCwIcon className="w-4 h-4 mr-2" />
+          Atualizar
+        </Button>
       </div>
 
-      <ListaProdutos searchTerm={searchTerm} sort={sort} refreshTrigger={refreshTrigger} />
+      <ListaProdutos
+        ref={listaProdutosRef}
+        searchTerm={debouncedSearch}
+        sort={sort}
+      />
     </div>
   );
 }
