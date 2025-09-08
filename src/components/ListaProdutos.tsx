@@ -12,8 +12,7 @@ interface Produto {
   preco_custo: number;
   preco_venda: number;
   estoque: number;
-  ativo?: boolean;   // pode vir como "ativo"
-  active?: boolean;  // ou pode vir como "active"
+  ativo: boolean;
 }
 
 interface ListaProdutosProps {
@@ -21,6 +20,12 @@ interface ListaProdutosProps {
   sort: "nameAsc" | "nameDesc";
   refreshTrigger: number;
 }
+
+const formatCurrencyEUR = (value: number) =>
+  new Intl.NumberFormat("pt-PT", {
+    style: "currency",
+    currency: "EUR",
+  }).format(value);
 
 export default function ListaProdutos({ searchTerm, sort, refreshTrigger }: ListaProdutosProps) {
   const [produtos, setProdutos] = useState<Produto[]>([]);
@@ -30,10 +35,9 @@ export default function ListaProdutos({ searchTerm, sort, refreshTrigger }: List
     try {
       setLoading(true);
 
-      // 🔎 primeiro tenta com "ativo"
       let query = supabase
         .from("produtos")
-        .select("id, nome, marca, tipo, preco, estoque, ativo", { count: "exact" });
+        .select("id, nome, marca, tipo, preco_custo, preco_venda, estoque, ativo", { count: "exact" });
 
       if (searchTerm) {
         query = query.or(
@@ -47,41 +51,21 @@ export default function ListaProdutos({ searchTerm, sort, refreshTrigger }: List
         query = query.order("nome", { ascending: false });
       }
 
-      query = query.range(0, 49);
+      query = query.range(0, 49); // paginação (primeiros 50)
 
-      let { data, error } = await query;
+      const { data, error } = await query;
 
-      // 🔄 fallback: se der erro de coluna inexistente, tenta com "active"
-      if (error && error.message.includes("ativo")) {
-        console.warn("Coluna 'ativo' não existe, tentando com 'active'...");
-
-        let altQuery = supabase
-          .from("produtos")
-          .select("id, nome, marca, tipo, preco, estoque, active", { count: "exact" });
-
-        if (searchTerm) {
-          altQuery = altQuery.or(
-            `nome.ilike.%${searchTerm}%,marca.ilike.%${searchTerm}%,tipo.ilike.%${searchTerm}%`
-          );
-        }
-
-        if (sort === "nameAsc") {
-          altQuery = altQuery.order("nome", { ascending: true });
-        } else {
-          altQuery = altQuery.order("nome", { ascending: false });
-        }
-
-        altQuery = altQuery.range(0, 49);
-        const altRes = await altQuery;
-        data = altRes.data;
-        error = altRes.error;
+      if (error) {
+        console.error(error);
+        toast.error("Erro ao carregar produtos");
+        setProdutos([]);
+        return;
       }
 
-      if (error) throw error;
       setProdutos(data || []);
     } catch (error) {
-      console.error("Erro ao carregar produtos:", error);
-      toast.error("Erro ao carregar produtos");
+      console.error("Erro inesperado ao carregar produtos:", error);
+      toast.error("Erro inesperado ao carregar produtos");
     } finally {
       setLoading(false);
     }
@@ -110,25 +94,27 @@ export default function ListaProdutos({ searchTerm, sort, refreshTrigger }: List
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {produtos.map((produto) => {
-        const status = produto.ativo ?? produto.active ?? false;
-        return (
-          <Card key={produto.id} className="shadow-md hover:shadow-lg transition-shadow">
-            <CardContent className="p-4">
-              <h3 className="text-lg font-bold">{produto.nome}</h3>
-              <p className="text-sm text-muted-foreground">
-                {produto.marca} - {produto.tipo}
-              </p>
-              <p className="mt-2 text-sm">Preço: {produto.preco.toFixed(2)}€</p>
-              <p className="text-sm">Estoque: {produto.estoque}</p>
-              <p className="text-sm">
-                Status: {status ? "Ativo ✅" : "Inativo ❌"}
-              </p>
-              <Button className="mt-3 w-full">Detalhes</Button>
-            </CardContent>
-          </Card>
-        );
-      })}
+      {produtos.map((produto) => (
+        <Card key={produto.id} className="shadow-md hover:shadow-lg transition-shadow">
+          <CardContent className="p-4">
+            <h3 className="text-lg font-bold">{produto.nome}</h3>
+            <p className="text-sm text-muted-foreground">
+              {produto.marca} - {produto.tipo}
+            </p>
+            <p className="mt-2 text-sm">
+              Preço de venda: {formatCurrencyEUR(produto.preco_venda)}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Custo: {formatCurrencyEUR(produto.preco_custo)}
+            </p>
+            <p className="text-sm">Estoque: {produto.estoque}</p>
+            <p className="text-sm">
+              Status: {produto.ativo ? "Ativo ✅" : "Inativo ❌"}
+            </p>
+            <Button className="mt-3 w-full">Detalhes</Button>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   );
 }
