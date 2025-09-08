@@ -11,7 +11,7 @@ interface Produto {
   tipo: string;
   preco: number;
   estoque: number;
-  ativo: boolean;
+  ativo: boolean; // ✅ mantém igual ao banco
 }
 
 interface ListaProdutosProps {
@@ -44,7 +44,7 @@ export default function ListaProdutos({ searchTerm, sort, refreshTrigger }: List
         query = query.order("nome", { ascending: false });
       }
 
-      query = query.range(0, 49); // paginação (primeiros 50 itens)
+      query = query.range(0, 49); // paginação (primeiros 50)
 
       const { data, error } = await query;
 
@@ -85,7 +85,9 @@ export default function ListaProdutos({ searchTerm, sort, refreshTrigger }: List
         <Card key={produto.id} className="shadow-md hover:shadow-lg transition-shadow">
           <CardContent className="p-4">
             <h3 className="text-lg font-bold">{produto.nome}</h3>
-            <p className="text-sm text-muted-foreground">{produto.marca} - {produto.tipo}</p>
+            <p className="text-sm text-muted-foreground">
+              {produto.marca} - {produto.tipo}
+            </p>
             <p className="mt-2 text-sm">Preço: {produto.preco.toFixed(2)}€</p>
             <p className="text-sm">Estoque: {produto.estoque}</p>
             <p className="text-sm">
