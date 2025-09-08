@@ -12,6 +12,9 @@ import Invoices from "@/components/Invoices";                       // Faturas
 type TabKey = "resumo" | "encomendas" | "pagar" | "faturas";
 
 export default function Financeiro() {
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [allowedSupplierIds, setAllowedSupplierIds] = useState<string[] | null>(null);
+
   const [activeTab, setActiveTab] = useState<TabKey>("resumo");
   const [showInactive, setShowInactive] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -131,7 +134,7 @@ export default function Financeiro() {
         {/* Compras */}
         {!hideCompras && (
           <TabsContent value="pagar">
-            <ContasPagar />
+            <ContasPagar allowedSupplierIds={allowedSupplierIds} />
           </TabsContent>
         )}
 
