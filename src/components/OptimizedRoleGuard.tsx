@@ -8,13 +8,15 @@ interface OptimizedRoleGuardProps {
   blockCollaborator?: boolean;
   redirectTo?: string;
   showMessage?: boolean;
+  allowedEmails?: string[];
 }
 
 export function OptimizedRoleGuard({ 
   children, 
   blockCollaborator = false, 
   redirectTo = '/produtos',
-  showMessage = true 
+  showMessage = true,
+  allowedEmails
 }: OptimizedRoleGuardProps) {
   const { user, loading } = useAuth();
 
@@ -30,6 +32,28 @@ export function OptimizedRoleGuard({
         </CardContent>
       </Card>
     );
+  }
+
+  // If allowedEmails is specified, check against those specific emails
+  if (allowedEmails) {
+    const hasAccess = user?.email && allowedEmails.includes(user.email);
+    if (!hasAccess) {
+      if (showMessage) {
+        return (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <AlertCircle className="h-12 w-12 text-warning mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Acesso Negado</h3>
+              <p className="text-muted-foreground">
+                Você não tem permissão para acessar esta seção.
+              </p>
+            </CardContent>
+          </Card>
+        );
+      }
+      return null;
+    }
+    return <>{children}</>;
   }
 
   // If user is hardcoded admin, always allow access immediately

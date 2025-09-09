@@ -17,7 +17,8 @@ import {
   ShoppingCart, 
   CreditCard,
   LogOut,
-  User
+  User,
+  Folder
 } from "lucide-react";
 
 export function HorizontalNav() {
@@ -48,6 +49,7 @@ export function HorizontalNav() {
     { name: "Clientes", href: "/clientes", icon: Users },
     { name: "Fornecedores", href: "/fornecedores", icon: Factory },
     { name: locale === 'fr-FR' ? "Commandes" : "Encomendas", href: "/encomendas", icon: ShoppingCart },
+    { name: locale === 'fr-FR' ? "Projets" : "Projetos", href: "/projetos", icon: Folder },
     { name: locale === 'fr-FR' ? "Finance" : "Financeiro", href: "/financeiro", icon: CreditCard },
   ];
 
@@ -67,7 +69,17 @@ export function HorizontalNav() {
         item.href === '/financeiro'
       );
     }
-    return navigation;
+    
+    // Filter projetos tab for specific users only
+    const userEmail = user?.email;
+    const allowedProjectsEmails = ['jbento1@gmail.com', 'admin@admin.com', 'ham@admin.com'];
+    
+    return navigation.filter(item => {
+      if (item.href === '/projetos') {
+        return userEmail && allowedProjectsEmails.includes(userEmail);
+      }
+      return true;
+    });
   };
 
   const filteredNavigation = getFilteredNavigation();

@@ -14,6 +14,7 @@ import Produtos from "./pages/Produtos";
 import Clientes from "./pages/Clientes";
 import Fornecedores from "./pages/Fornecedores";
 import Encomendas from "./pages/Encomendas";
+import { default as Projetos } from "./pages/Projetos";
 import Producao from "./pages/Producao";
 import Financeiro from "./pages/Financeiro";
 import NotFound from "./pages/NotFound";
@@ -67,6 +68,7 @@ const App = () => {
                               </FactoryGuard>
                             } />
                             <Route path="/encomendas" element={<Encomendas />} />
+                            <Route path="/projetos" element={<Projetos />} />
                             <Route path="/producao" element={
                               <FactoryGuard>
                                 <Producao />
