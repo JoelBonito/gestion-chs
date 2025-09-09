@@ -176,7 +176,7 @@ export function ProjetoView({ projeto, onEdit, onSuccess, onClose }: ProjetoView
           </CardHeader>
           <CardContent>
             <AttachmentManager
-              entityType="projeto"
+              entityType="financeiro"
               entityId={projeto.id}
               title={t("Anexos")}
             />
