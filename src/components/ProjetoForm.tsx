@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AttachmentManager } from '@/components/AttachmentManager';
 import { useLocale } from '@/contexts/LocaleContext';
+import { Save, X } from 'lucide-react';
 
 interface Projeto {
   id: string;
@@ -39,6 +41,7 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
       "Observações": { pt: "Observações", fr: "Observations" },
       "Digite as observações do projeto": { pt: "Digite as observações do projeto", fr: "Entrez les observations du projet" },
       "Anexos": { pt: "Anexos", fr: "Pièces jointes" },
+      "Salve o projeto primeiro para adicionar anexos": { pt: "Salve o projeto primeiro para adicionar anexos", fr: "Enregistrez d'abord le projet pour ajouter des pièces jointes" },
       "Cancelar": { pt: "Cancelar", fr: "Annuler" },
       "Finalizar": { pt: "Finalizar", fr: "Terminer" },
       "Salvar": { pt: "Salvar", fr: "Enregistrer" },
@@ -120,41 +123,59 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="nome">{t("Nome do Projeto")}</Label>
-          <Input
-            id="nome"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            placeholder={t("Digite o nome do projeto")}
-            required
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="observacoes">{t("Observações")}</Label>
-          <Textarea
-            id="observacoes"
-            value={observacoes}
-            onChange={(e) => setObservacoes(e.target.value)}
-            placeholder={t("Digite as observações do projeto")}
-            rows={4}
-          />
-        </div>
-
-        {(projeto || projetoId) && (
+      {/* Informações do Projeto */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Informações do Projeto</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div>
-            <Label>{t("Anexos")}</Label>
+            <Label htmlFor="nome">{t("Nome do Projeto")}</Label>
+            <Input
+              id="nome"
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder={t("Digite o nome do projeto")}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="observacoes">{t("Observações")}</Label>
+            <Textarea
+              id="observacoes"
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              placeholder={t("Digite as observações do projeto")}
+              rows={4}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Anexos */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("Anexos")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {(projeto || projetoId) ? (
             <AttachmentManager
               entityType="projeto"
               entityId={projeto?.id || projetoId || ''}
-              title={t("Anexos")}
+              onChanged={() => {
+                console.log("ProjetoForm - Attachment changed");
+              }}
             />
-          </div>
-        )}
-      </div>
+          ) : (
+            <p className="text-sm text-gray-500">
+              {t("Salve o projeto primeiro para adicionar anexos")}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
+      {/* Botões */}
       <div className="flex justify-end gap-2">
         <Button 
           type="button" 
@@ -162,10 +183,12 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
           onClick={onSuccess}
           disabled={loading}
         >
+          <X className="w-4 h-4 mr-2" />
           {projetoId && !projeto ? t("Finalizar") : t("Cancelar")}
         </Button>
         {!projetoId && (
           <Button type="submit" disabled={loading}>
+            <Save className="w-4 h-4 mr-2" />
             {loading 
               ? (projeto ? t("Atualizando...") : t("Criando..."))
               : t("Salvar")
