@@ -27,6 +27,7 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
   const [nome, setNome] = useState(projeto?.nome || '');
   const [observacoes, setObservacoes] = useState(projeto?.observacoes || '');
   const [loading, setLoading] = useState(false);
+  const [projetoId, setProjetoId] = useState(projeto?.id || null);
   const { toast } = useToast();
   const { isRestrictedFR } = useLocale();
 
@@ -39,6 +40,7 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
       "Digite as observações do projeto": { pt: "Digite as observações do projeto", fr: "Entrez les observations du projet" },
       "Anexos": { pt: "Anexos", fr: "Pièces jointes" },
       "Cancelar": { pt: "Cancelar", fr: "Annuler" },
+      "Finalizar": { pt: "Finalizar", fr: "Terminer" },
       "Salvar": { pt: "Salvar", fr: "Enregistrer" },
       "Atualizando...": { pt: "Atualizando...", fr: "Mise à jour..." },
       "Criando...": { pt: "Criando...", fr: "Création..." },
@@ -82,21 +84,29 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
         });
       } else {
         // Create new project
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('projetos')
           .insert({
             nome: nome.trim(),
             observacoes: observacoes.trim() || null,
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Set the project ID for attachments
+        setProjetoId(data.id);
 
         toast({
           title: t("Projeto criado com sucesso"),
         });
       }
-
-      onSuccess();
+      
+      // Don't close form immediately if new project was created (allow adding attachments)
+      if (projeto) {
+        onSuccess(); // Close form for existing projects
+      }
     } catch (error: any) {
       toast({
         title: projeto ? t("Erro ao atualizar projeto") : t("Erro ao criar projeto"),
@@ -133,12 +143,12 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
           />
         </div>
 
-        {projeto && (
+        {(projeto || projetoId) && (
           <div>
             <Label>{t("Anexos")}</Label>
             <AttachmentManager
               entityType="projeto"
-              entityId={projeto.id}
+              entityId={projeto?.id || projetoId || ''}
               title={t("Anexos")}
             />
           </div>
@@ -152,14 +162,16 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
           onClick={onSuccess}
           disabled={loading}
         >
-          {t("Cancelar")}
+          {projetoId && !projeto ? t("Finalizar") : t("Cancelar")}
         </Button>
-        <Button type="submit" disabled={loading}>
-          {loading 
-            ? (projeto ? t("Atualizando...") : t("Criando..."))
-            : t("Salvar")
-          }
-        </Button>
+        {!projetoId && (
+          <Button type="submit" disabled={loading}>
+            {loading 
+              ? (projeto ? t("Atualizando...") : t("Criando..."))
+              : t("Salvar")
+            }
+          </Button>
+        )}
       </div>
     </form>
   );

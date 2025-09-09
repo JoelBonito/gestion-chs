@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Folder, FileText, Calendar } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Plus, Folder, FileText, Calendar, Edit, Trash2, Paperclip } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -82,6 +83,39 @@ export default function Projetos() {
     setShowForm(true);
   };
 
+  const handleDelete = async (projeto: Projeto) => {
+    try {
+      // Delete attachments first
+      const { error: attachmentError } = await supabase
+        .from('attachments')
+        .delete()
+        .eq('entity_type', 'projeto')
+        .eq('entity_id', projeto.id);
+
+      if (attachmentError) throw attachmentError;
+
+      // Delete project
+      const { error } = await supabase
+        .from('projetos')
+        .delete()
+        .eq('id', projeto.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Projeto deletado com sucesso",
+      });
+
+      fetchProjetos();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao deletar projeto",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleView = (projeto: Projeto) => {
     setSelectedProjeto(projeto);
     setShowView(true);
@@ -148,8 +182,7 @@ export default function Projetos() {
                 {projetos.map((projeto) => (
                   <Card 
                     key={projeto.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => handleView(projeto)}
+                    className="hover:shadow-md transition-shadow"
                   >
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base flex items-center gap-2">
@@ -158,7 +191,7 @@ export default function Projetos() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {projeto.observacoes && (
                           <p className="text-sm text-muted-foreground line-clamp-2">
                             {projeto.observacoes}
@@ -167,6 +200,65 @@ export default function Projetos() {
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Calendar className="h-3 w-3" />
                           {t("Criado em")}: {new Date(projeto.created_at).toLocaleDateString()}
+                        </div>
+                        
+                        {/* Action buttons */}
+                        <div className="flex gap-1 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleView(projeto);
+                            }}
+                            className="flex-1"
+                          >
+                            <FileText className="h-3 w-3 mr-1" />
+                            Ver
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEdit(projeto);
+                            }}
+                            className="flex-1"
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            Editar
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => e.stopPropagation()}
+                                className="px-2"
+                              >
+                                <Trash2 className="h-3 w-3 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja deletar o projeto "{projeto.nome}"?
+                                  <br />
+                                  Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(projeto)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Deletar Projeto
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
                     </CardContent>
