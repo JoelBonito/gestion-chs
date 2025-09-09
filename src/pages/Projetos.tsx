@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useLocale } from '@/contexts/LocaleContext';
 import { ProjetoForm } from '@/components/ProjetoForm';
 import { ProjetoView } from '@/components/ProjetoView';
+import { AttachmentManager } from '@/components/AttachmentManager';
 import { OptimizedRoleGuard } from '@/components/OptimizedRoleGuard';
 
 interface Projeto {
@@ -27,6 +28,7 @@ export default function Projetos() {
   const [showForm, setShowForm] = useState(false);
   const [selectedProjeto, setSelectedProjeto] = useState<Projeto | null>(null);
   const [showView, setShowView] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const { isRestrictedFR } = useLocale();
@@ -40,7 +42,11 @@ export default function Projetos() {
       "Nenhum projeto encontrado": { pt: "Nenhum projeto encontrado", fr: "Aucun projet trouvé" },
       "Adicione o primeiro projeto": { pt: "Adicione o primeiro projeto", fr: "Ajoutez le premier projet" },
       "Erro ao carregar projetos": { pt: "Erro ao carregar projetos", fr: "Erreur lors du chargement des projets" },
-      "Criado em": { pt: "Criado em", fr: "Créé le" }
+      "Criado em": { pt: "Criado em", fr: "Créé le" },
+      "Ver": { pt: "Ver", fr: "Voir" },
+      "Editar": { pt: "Editar", fr: "Modifier" },
+      "Anexar": { pt: "Anexar", fr: "Joindre" },
+      "Anexos": { pt: "Anexos", fr: "Pièces jointes" }
     };
     return translations[key]?.[lang] || key;
   };
@@ -81,6 +87,11 @@ export default function Projetos() {
   const handleEdit = (projeto: Projeto) => {
     setSelectedProjeto(projeto);
     setShowForm(true);
+  };
+
+  const handleAnexar = (projeto: Projeto) => {
+    setSelectedProjeto(projeto);
+    setShowAttachments(true);
   };
 
   const handleDelete = async (projeto: Projeto) => {
@@ -145,7 +156,7 @@ export default function Projetos() {
                     {t("Novo Projeto")}
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-3xl">
                   <DialogHeader>
                     <DialogTitle>
                       {selectedProjeto ? 'Editar Projeto' : t("Novo Projeto")}
@@ -214,7 +225,7 @@ export default function Projetos() {
                             className="flex-1"
                           >
                             <FileText className="h-3 w-3 mr-1" />
-                            Ver
+                            {t("Ver")}
                           </Button>
                           <Button
                             variant="outline"
@@ -226,7 +237,19 @@ export default function Projetos() {
                             className="flex-1"
                           >
                             <Edit className="h-3 w-3 mr-1" />
-                            Editar
+                            {t("Editar")}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAnexar(projeto);
+                            }}
+                            className="flex-1"
+                          >
+                            <Paperclip className="h-3 w-3 mr-1" />
+                            {t("Anexar")}
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -269,6 +292,7 @@ export default function Projetos() {
           </CardContent>
         </Card>
 
+        {/* Modal de Visualização */}
         <Dialog open={showView} onOpenChange={setShowView}>
           <DialogContent className="max-w-4xl">
             <DialogHeader>
@@ -281,6 +305,30 @@ export default function Projetos() {
                 onSuccess={handleSuccess}
                 onClose={() => setShowView(false)}
               />
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Anexos */}
+        <Dialog open={showAttachments} onOpenChange={setShowAttachments}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Paperclip className="h-5 w-5" />
+                {t("Anexos")} - {selectedProjeto?.nome}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedProjeto && (
+              <div className="mt-4">
+                <AttachmentManager
+                  entityType="projeto"
+                  entityId={selectedProjeto.id}
+                  title={t("Anexos")}
+                  onChanged={() => {
+                    console.log("Anexos do projeto atualizados");
+                  }}
+                />
+              </div>
             )}
           </DialogContent>
         </Dialog>
