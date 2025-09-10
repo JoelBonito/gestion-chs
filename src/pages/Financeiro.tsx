@@ -59,14 +59,14 @@ export default function Financeiro() {
       setLoadingResumo(true);
       try {
         // total a receber
-        const { data: a_receber } = await supabase
+        const { data: pagamentos } = await supabase
           .from("encomendas")
           .select("valor_total, pago")
           .eq("pago", false);
         const totalReceber = (vendas ?? []).reduce((sum, v) => sum + (v.valor_total || 0), 0);
 
         // total a pagar
-        const { data: a_pagar } = await supabase
+        const { data: pagamentos_fornecedores } = await supabase
           .from("compras")
           .select("valor_total, pago")
           .eq("pago", false);
