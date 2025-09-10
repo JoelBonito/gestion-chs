@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, Calendar, User, FileText } from 'lucide-react';
+import { Edit, Trash2, Calendar, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { AttachmentManager } from '@/components/AttachmentManager';
 import { useLocale } from '@/contexts/LocaleContext';
+import { ProjetoAttachmentManager } from '@/components/ProjetoAttachmentManager';
 
 interface Projeto {
   id: string;
@@ -55,7 +54,6 @@ export function ProjetoView({ projeto, onEdit, onSuccess, onClose }: ProjetoView
   const handleDelete = async () => {
     setLoading(true);
     try {
-      // Delete attachments first
       const { error: attachmentError } = await supabase
         .from('attachments')
         .delete()
@@ -64,7 +62,6 @@ export function ProjetoView({ projeto, onEdit, onSuccess, onClose }: ProjetoView
 
       if (attachmentError) throw attachmentError;
 
-      // Delete project
       const { error } = await supabase
         .from('projetos')
         .delete()
@@ -72,10 +69,7 @@ export function ProjetoView({ projeto, onEdit, onSuccess, onClose }: ProjetoView
 
       if (error) throw error;
 
-      toast({
-        title: t("Projeto deletado com sucesso"),
-      });
-
+      toast({ title: t("Projeto deletado com sucesso") });
       onSuccess();
       onClose();
     } catch (error: any) {
@@ -91,7 +85,6 @@ export function ProjetoView({ projeto, onEdit, onSuccess, onClose }: ProjetoView
 
   return (
     <div className="space-y-6">
-      {/* Header with actions */}
       <div className="flex justify-between items-start">
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -105,17 +98,13 @@ export function ProjetoView({ projeto, onEdit, onSuccess, onClose }: ProjetoView
             </div>
           )}
         </div>
-        
+
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onEdit(projeto)}
-          >
+          <Button variant="outline" size="sm" onClick={() => onEdit(projeto)}>
             <Edit className="h-4 w-4 mr-2" />
             {t("Editar")}
           </Button>
-          
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm" disabled={loading}>
@@ -146,9 +135,7 @@ export function ProjetoView({ projeto, onEdit, onSuccess, onClose }: ProjetoView
         </div>
       </div>
 
-      {/* Project details */}
       <div className="space-y-6">
-        {/* Observations */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -158,28 +145,19 @@ export function ProjetoView({ projeto, onEdit, onSuccess, onClose }: ProjetoView
           </CardHeader>
           <CardContent>
             {projeto.observacoes ? (
-              <div className="whitespace-pre-wrap text-sm">
-                {projeto.observacoes}
-              </div>
+              <div className="whitespace-pre-wrap text-sm">{projeto.observacoes}</div>
             ) : (
-              <p className="text-muted-foreground italic">
-                {t("Nenhuma observação")}
-              </p>
+              <p className="text-muted-foreground italic">{t("Nenhuma observação")}</p>
             )}
           </CardContent>
         </Card>
 
-        {/* Attachments */}
         <Card>
           <CardHeader>
             <CardTitle>{t("Anexos")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <AttachmentManager
-              entityType="projeto"
-              entityId={projeto.id}
-              title={t("Anexos")}
-            />
+            <ProjetoAttachmentManager projetoId={projeto.id} />
           </CardContent>
         </Card>
       </div>
