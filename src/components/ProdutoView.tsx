@@ -84,7 +84,7 @@ export const ProdutoView = ({ produto }: ProdutoViewProps) => {
           </CardHeader>
           <CardContent>
             <AttachmentManager 
-              entityType="financeiro"
+              entityType="projeto"
               entityId={produto.id}
               title="Anexos do Produto"
             />
