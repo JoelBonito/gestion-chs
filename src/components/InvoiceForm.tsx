@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar, Upload, Save } from 'lucide-react';
 import { InvoiceFormData } from '@/types/invoice';
 import { useUserRole } from '@/hooks/useUserRole';
+import { supabase } from '@/integrations/supabase/client';
 
 interface InvoiceFormProps {
   onSubmit: (data: InvoiceFormData) => Promise<void>;
@@ -23,8 +24,21 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { hasRole } = useUserRole();
-  
-  const canCreate = hasRole('admin') || hasRole('finance');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      setUserEmail(data?.user?.email ?? null);
+    })();
+  }, []);
+
+  // Permissão: admin role OU finance role OU e-mails autorizados
+  const canCreate =
+    hasRole('admin') ||
+    hasRole('finance') ||
+    userEmail?.toLowerCase() === "admin@admin.com" ||
+    userEmail?.toLowerCase() === "jbento1@gmail.com";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
