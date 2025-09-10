@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,7 +28,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!canCreate) return;
 
     const today = new Date().toISOString().split('T')[0];
@@ -37,19 +35,15 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       alert('A data da fatura não pode ser futura.');
       return;
     }
-
     if (formData.amount <= 0) {
       alert('O valor deve ser maior que zero.');
       return;
     }
-
     try {
       await onSubmit({
         ...formData,
-        file: selectedFile || undefined // Arquivo é opcional agora
+        file: selectedFile || undefined
       });
-
-      // Reset form only after successful submission
       setFormData({
         invoice_date: new Date().toISOString().split('T')[0],
         amount: 0,
@@ -57,7 +51,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       });
       setSelectedFile(null);
     } catch (error) {
-      // Error is handled by the parent component/hook
       console.error('Erro ao submeter fatura:', error);
     }
   };
@@ -65,24 +58,21 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (file.type !== 'application/pdf') {
       alert('Apenas arquivos PDF são permitidos.');
       return;
     }
-
-    if (file.size > 10 * 1024 * 1024) { // 10MB
+    if (file.size > 10 * 1024 * 1024) {
       alert('Arquivo muito grande. Máximo permitido: 10MB');
       return;
     }
-
     setSelectedFile(file);
   };
 
   if (!canCreate) {
     return (
       <div className="p-6 text-center">
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground" id="no-permission">
           Você não tem permissão para criar faturas.
         </p>
       </div>
@@ -91,7 +81,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
   return (
     <div className="p-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" aria-describedby="invoice-form-description">
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="invoice_date">Data da Fatura</Label>
@@ -105,8 +95,12 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 className="pl-10"
                 required
                 max={new Date().toISOString().split('T')[0]}
+                aria-describedby="invoice-date-help"
               />
             </div>
+            <p id="invoice-date-help" className="text-xs text-muted-foreground">
+              A data não pode ser futura.
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -120,7 +114,11 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
               placeholder="0.00"
               required
+              aria-describedby="amount-help"
             />
+            <p id="amount-help" className="text-xs text-muted-foreground">
+              Informe o valor total da fatura em euros.
+            </p>
           </div>
         </div>
 
@@ -144,6 +142,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               accept=".pdf"
               onChange={handleFileChange}
               className="flex-1"
+              aria-describedby="file-help"
             />
             {selectedFile && (
               <div className="flex items-center gap-1 text-sm text-success">
@@ -152,7 +151,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               </div>
             )}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p id="file-help" className="text-xs text-muted-foreground">
             Anexe um arquivo PDF até 10MB. Você pode adicionar o anexo depois se preferir.
           </p>
         </div>
@@ -161,6 +160,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
           type="submit" 
           disabled={isSubmitting}
           className="w-full"
+          aria-label="Salvar fatura"
         >
           {isSubmitting ? (
             <>
