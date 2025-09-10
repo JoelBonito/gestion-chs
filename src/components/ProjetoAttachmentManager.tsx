@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 
 interface ProjetoAttachmentManagerProps {
   projetoId: string;
+  onUpdate?: () => void; // ← Callback adicionado
 }
 
 interface Attachment {
@@ -23,11 +24,15 @@ interface Attachment {
   file_size: number;
 }
 
-export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> = ({ projetoId }) => {
+export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> = ({ 
+  projetoId, 
+  onUpdate 
+}) => {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewModal, setPreviewModal] = useState<{ url: string; fileName: string } | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
   const { uploadFile, isUploading } = useSupabaseStorage();
   const { hasRole } = useUserRole();
@@ -35,20 +40,33 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
   const canManage = hasRole('admin');
 
   const fetchAttachments = async () => {
-    const { data, error } = await supabase
-      .from('attachments')
-      .select('*')
-      .eq('entity_type', 'projeto')
-      .eq('entity_id', projetoId)
-      .order('created_at', { ascending: false });
+    if (!projetoId) return;
+    
+    setIsLoading(true);
+    try {
+      console.log('ProjetoAttachmentManager - Carregando anexos para projeto:', projetoId);
+      
+      const { data, error } = await supabase
+        .from('attachments')
+        .select('*')
+        .eq('entity_type', 'projeto')
+        .eq('entity_id', projetoId)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error("Erro ao carregar anexos:", error);
-      toast.error("Erro ao carregar anexos");
-      return;
+      if (error) {
+        console.error("Erro ao carregar anexos:", error);
+        toast.error("Erro ao carregar anexos");
+        return;
+      }
+
+      console.log('ProjetoAttachmentManager - Anexos carregados:', data?.length || 0);
+      setAttachments(data || []);
+    } catch (error) {
+      console.error("Erro inesperado ao carregar anexos:", error);
+      toast.error("Erro inesperado ao carregar anexos");
+    } finally {
+      setIsLoading(false);
     }
-
-    setAttachments(data || []);
   };
 
   useEffect(() => {
@@ -83,6 +101,8 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
     if (!selectedFile) return;
 
     try {
+      console.log('ProjetoAttachmentManager - Iniciando upload para projeto:', projetoId);
+      
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
         throw new Error("Usuário não autenticado");
@@ -98,7 +118,10 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
         throw new Error("Erro no upload do arquivo");
       }
 
-      const { error: attachmentError } = await supabase
+      console.log('ProjetoAttachmentManager - Upload concluído, criando anexo');
+
+      // Criar registro na tabela attachments
+      const { data: attachment, error: attachmentError } = await supabase
         .from('attachments')
         .insert([{
           entity_type: 'projeto',
@@ -109,14 +132,29 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
           storage_url: result.publicUrl,
           file_size: result.size,
           uploaded_by: user.id
-        }]);
+        }])
+        .select()
+        .single();
 
-      if (attachmentError) throw attachmentError;
+      if (attachmentError) {
+        console.error("Erro ao criar attachment:", attachmentError);
+        throw attachmentError;
+      }
+
+      console.log('ProjetoAttachmentManager - Anexo criado com sucesso:', attachment);
 
       toast.success('Anexo adicionado ao projeto!');
       setSelectedFile(null);
       setIsUploadOpen(false);
-      fetchAttachments();
+      
+      // Refetch local dos anexos
+      await fetchAttachments();
+      
+      // Chamar callback para atualizar componente pai
+      if (onUpdate) {
+        console.log('ProjetoAttachmentManager - Executando callback onUpdate');
+        onUpdate();
+      }
 
     } catch (error: any) {
       console.error('Erro no upload:', error);
@@ -132,6 +170,9 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
     }
 
     try {
+      console.log('ProjetoAttachmentManager - Removendo anexo:', attachment.id);
+
+      // Remover da storage
       const { error: storageError } = await supabase.storage
         .from('attachments')
         .remove([attachment.storage_path]);
@@ -140,15 +181,26 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
         console.error("Erro ao remover da storage:", storageError);
       }
 
+      // Remover da tabela attachments
       const { error: deleteError } = await supabase
         .from('attachments')
         .delete()
         .eq('id', attachment.id);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        throw deleteError;
+      }
 
       toast.success('Anexo removido com sucesso!');
-      fetchAttachments();
+      
+      // Refetch local dos anexos
+      await fetchAttachments();
+      
+      // Chamar callback para atualizar componente pai
+      if (onUpdate) {
+        console.log('ProjetoAttachmentManager - Executando callback onUpdate após remoção');
+        onUpdate();
+      }
 
     } catch (error: any) {
       console.error('Erro ao remover anexo:', error);
@@ -185,6 +237,11 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
     }
   };
 
+  if (!projetoId) {
+    console.log('ProjetoAttachmentManager - ProjetoId não fornecido');
+    return null;
+  }
+
   return (
     <>
       <Card className="mt-4">
@@ -195,7 +252,11 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {attachments.length > 0 ? (
+          {isLoading ? (
+            <div className="text-center py-6">
+              <p className="text-muted-foreground">Carregando anexos...</p>
+            </div>
+          ) : attachments.length > 0 ? (
             <div className="space-y-3">
               {attachments.map((att) => (
                 <div key={att.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
@@ -235,6 +296,71 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
                   </div>
                 </div>
               ))}
+              
+              {/* Botão para adicionar mais anexos quando já existem */}
+              {canManage && (
+                <div className="pt-3 border-t">
+                  <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Upload className="w-4 h-4 mr-2" />
+                        Adicionar Mais Anexos
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Adicionar Anexo ao Projeto</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="attachment_file">Arquivo PDF</Label>
+                          <Input
+                            id="attachment_file"
+                            type="file"
+                            accept=".pdf"
+                            onChange={handleFileChange}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Apenas arquivos PDF até 10MB são permitidos.
+                          </p>
+                        </div>
+                        
+                        {selectedFile && (
+                          <div className="p-3 bg-muted/30 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-red-500" />
+                              <span className="text-sm">{selectedFile.name}</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={handleUpload} 
+                            disabled={!selectedFile || isUploading}
+                            className="flex-1"
+                          >
+                            {isUploading ? (
+                              <>
+                                <Upload className="w-4 h-4 mr-2 animate-spin" />
+                                Enviando...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-4 h-4 mr-2" />
+                                Enviar Anexo
+                              </>
+                            )}
+                          </Button>
+                          <Button variant="outline" onClick={() => setIsUploadOpen(false)}>
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-6">
