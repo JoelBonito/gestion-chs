@@ -136,14 +136,6 @@ export default function Financeiro() {
 
         {!hideVendas && (
           <TabsContent value="encomendas">
-            <div className="flex items-center space-x-2 mb-4">
-              <Switch
-                id="showInactive"
-                checked={showInactive}
-                onCheckedChange={() => setShowInactive(!showInactive)}
-              />
-              <Label htmlFor="showInactive">{t("Mostrar inativos")}</Label>
-            </div>
             <EncomendasFinanceiro showCompleted={showInactive} />
           </TabsContent>
         )}
