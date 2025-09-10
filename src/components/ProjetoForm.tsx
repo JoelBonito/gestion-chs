@@ -184,9 +184,8 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
           disabled={loading}
         >
           <X className="w-4 h-4 mr-2" />
-          {projetoId && !projeto ? t("Finalizar") : t("Cancelar")}
+          {t("Cancelar")}
         </Button>
-        {!projetoId && (
           <Button type="submit" disabled={loading}>
             <Save className="w-4 h-4 mr-2" />
             {loading 
