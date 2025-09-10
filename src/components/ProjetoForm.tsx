@@ -1,5 +1,4 @@
-import React from 'react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,9 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { AttachmentManager } from '@/components/AttachmentManager';
 import { useLocale } from '@/contexts/LocaleContext';
 import { Save, X } from 'lucide-react';
+import { ProjetoAttachmentManager } from '@/components/ProjetoAttachmentManager';
 
 interface Projeto {
   id: string;
@@ -41,23 +40,23 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
       "Observações": { pt: "Observações", fr: "Observations" },
       "Digite as observações do projeto": { pt: "Digite as observações do projeto", fr: "Entrez les observations du projet" },
       "Anexos": { pt: "Anexos", fr: "Pièces jointes" },
-      "Salve o projeto primeiro para adicionar anexos": { pt: "Salve o projeto primeiro para adicionar anexos", fr: "Enregistrez d'abord le projet pour ajouter des pièces jointes" },
-      "Cancelar": { pt: "Cancelar", fr: "Annuler" },
       "Salvar": { pt: "Salvar", fr: "Enregistrer" },
+      "Cancelar": { pt: "Cancelar", fr: "Annuler" },
       "Atualizando...": { pt: "Atualizando...", fr: "Mise à jour..." },
       "Criando...": { pt: "Criando...", fr: "Création..." },
       "Projeto criado com sucesso": { pt: "Projeto criado com sucesso", fr: "Projet créé avec succès" },
       "Projeto atualizado com sucesso": { pt: "Projeto atualizado com sucesso", fr: "Projet mis à jour avec succès" },
       "Erro ao criar projeto": { pt: "Erro ao criar projeto", fr: "Erreur lors de la création du projet" },
       "Erro ao atualizar projeto": { pt: "Erro ao atualizar projeto", fr: "Erreur lors de la mise à jour du projet" },
-      "O nome do projeto é obrigatório": { pt: "O nome do projeto é obrigatório", fr: "Le nom du projet est obligatoire" }
+      "O nome do projeto é obrigatório": { pt: "O nome do projeto é obrigatório", fr: "Le nom du projet est obligatoire" },
+      "Salve o projeto primeiro para adicionar anexos": { pt: "Salve o projeto primeiro para adicionar anexos", fr: "Enregistrez d'abord le projet pour ajouter des pièces jointes" },
     };
     return translations[key]?.[lang] || key;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!nome.trim()) {
       toast({
         title: t("O nome do projeto é obrigatório"),
@@ -69,7 +68,6 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
     setLoading(true);
     try {
       if (projeto) {
-        // Update existing project
         const { error } = await supabase
           .from('projetos')
           .update({
@@ -80,12 +78,8 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
           .eq('id', projeto.id);
 
         if (error) throw error;
-
-        toast({
-          title: t("Projeto atualizado com sucesso"),
-        });
+        toast({ title: t("Projeto atualizado com sucesso") });
       } else {
-        // Create new project
         const { data, error } = await supabase
           .from('projetos')
           .insert({
@@ -96,15 +90,10 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
           .single();
 
         if (error) throw error;
-
-        // Set the project ID for attachments
         setProjetoId(data.id);
-
-        toast({
-          title: t("Projeto criado com sucesso"),
-        });
+        toast({ title: t("Projeto criado com sucesso") });
       }
-      
+
       onSuccess();
     } catch (error: any) {
       toast({
@@ -119,10 +108,9 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Informações do Projeto */}
       <Card>
         <CardHeader>
-          <CardTitle>Informações do Projeto</CardTitle>
+          <CardTitle>{t("Nome do Projeto")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -135,7 +123,6 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
               required
             />
           </div>
-
           <div>
             <Label htmlFor="observacoes">{t("Observações")}</Label>
             <Textarea
@@ -149,45 +136,27 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
         </CardContent>
       </Card>
 
-      {/* Anexos */}
       <Card>
         <CardHeader>
           <CardTitle>{t("Anexos")}</CardTitle>
         </CardHeader>
         <CardContent>
           {(projeto || projetoId) ? (
-            <AttachmentManager
-              entityType="projeto"
-              entityId={projeto?.id || projetoId || ''}
-              onChanged={() => {
-                console.log("ProjetoForm - Attachment changed");
-              }}
-            />
+            <ProjetoAttachmentManager projetoId={projeto?.id || projetoId || ''} />
           ) : (
-            <p className="text-sm text-gray-500">
-              {t("Salve o projeto primeiro para adicionar anexos")}
-            </p>
+            <p className="text-sm text-gray-500">{t("Salve o projeto primeiro para adicionar anexos")}</p>
           )}
         </CardContent>
       </Card>
 
-      {/* Botões */}
       <div className="flex justify-end gap-2">
-        <Button 
-          type="button" 
-          variant="outline" 
-          onClick={onSuccess}
-          disabled={loading}
-        >
+        <Button type="button" variant="outline" onClick={onSuccess} disabled={loading}>
           <X className="w-4 h-4 mr-2" />
           {t("Cancelar")}
         </Button>
         <Button type="submit" disabled={loading}>
           <Save className="w-4 h-4 mr-2" />
-          {loading 
-            ? (projeto ? t("Atualizando...") : t("Criando..."))
-            : t("Salvar")
-          }
+          {loading ? (projeto ? t("Atualizando...") : t("Criando...")) : t("Salvar")}
         </Button>
       </div>
     </form>
