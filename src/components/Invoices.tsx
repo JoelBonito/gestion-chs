@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Plus } from 'lucide-react';
 import { InvoiceForm } from './InvoiceForm';
 import { InvoiceList } from './InvoiceList';
@@ -27,14 +26,12 @@ export const Invoices: React.FC = () => {
       await createInvoice(data);
       setShowNewInvoiceDialog(false);
     } catch (error) {
-      // O erro já é tratado no hook useInvoices
       console.error('Erro ao criar fatura:', error);
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Header with New Invoice Button */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">
@@ -55,7 +52,6 @@ export const Invoices: React.FC = () => {
         )}
       </div>
 
-      {/* Invoice List */}
       <InvoiceList
         invoices={invoices}
         onUpdate={updateInvoice}
@@ -64,11 +60,13 @@ export const Invoices: React.FC = () => {
         isLoading={isLoading}
       />
 
-      {/* New Invoice Dialog */}
       <Dialog open={showNewInvoiceDialog} onOpenChange={setShowNewInvoiceDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Nova Fatura</DialogTitle>
+            <DialogTitle>{locale === 'fr-FR' ? 'Nouvelle Facture' : 'Nova Fatura'}</DialogTitle>
+            <DialogDescription>
+              {locale === 'fr-FR' ? 'Remplissez les informations pour créer une nouvelle facture.' : 'Preencha os dados para criar uma nova fatura.'}
+            </DialogDescription>
           </DialogHeader>
           <InvoiceForm 
             onSubmit={handleCreateInvoice}
