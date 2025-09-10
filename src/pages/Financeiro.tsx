@@ -53,30 +53,40 @@ export default function Financeiro() {
     })();
   }, []);
 
-  // resumo financeiro
+  // resumo financeiro baseado na Dashboard
   useEffect(() => {
     const fetchResumo = async () => {
       setLoadingResumo(true);
       try {
         // total a receber
-        const { data: pagamentos } = await supabase
+        const { data: receber, error: errReceber } = await supabase
           .from("encomendas")
-          .select("valor_total, pago")
-          .eq("pago", false);
-        const totalReceber = (vendas ?? []).reduce((sum, v) => sum + (v.valor_total || 0), 0);
+          .select("saldo_devedor")
+          .gt("saldo_devedor", 0);
+        if (errReceber) throw errReceber;
+        const totalReceber = (receber ?? []).reduce(
+          (sum, row) => sum + (parseFloat(String(row.saldo_devedor || 0)) || 0),
+          0
+        );
 
         // total a pagar
-        const { data: pagamentos_fornecedores } = await supabase
-          .from("compras")
-          .select("valor_total, pago")
-          .eq("pago", false);
-        const totalPagar = (compras ?? []).reduce((sum, v) => sum + (v.valor_total || 0), 0);
+        const { data: pagar, error: errPagar } = await supabase
+          .from("encomendas")
+          .select("saldo_devedor_fornecedor")
+          .gt("saldo_devedor_fornecedor", 0);
+        if (errPagar) throw errPagar;
+        const totalPagar = (pagar ?? []).reduce(
+          (sum, row) => sum + (parseFloat(String(row.saldo_devedor_fornecedor || 0)) || 0),
+          0
+        );
 
         setResumo({
           a_receber: totalReceber,
           a_pagar: totalPagar,
           saldo: totalReceber - totalPagar,
         });
+      } catch (e) {
+        console.error("Erro ao carregar resumo financeiro:", e);
       } finally {
         setLoadingResumo(false);
       }
