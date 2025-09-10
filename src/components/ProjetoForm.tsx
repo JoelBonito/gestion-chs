@@ -43,7 +43,6 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
       "Anexos": { pt: "Anexos", fr: "Pièces jointes" },
       "Salve o projeto primeiro para adicionar anexos": { pt: "Salve o projeto primeiro para adicionar anexos", fr: "Enregistrez d'abord le projet pour ajouter des pièces jointes" },
       "Cancelar": { pt: "Cancelar", fr: "Annuler" },
-      "Finalizar": { pt: "Finalizar", fr: "Terminer" },
       "Salvar": { pt: "Salvar", fr: "Enregistrer" },
       "Atualizando...": { pt: "Atualizando...", fr: "Mise à jour..." },
       "Criando...": { pt: "Criando...", fr: "Création..." },
@@ -106,10 +105,7 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
         });
       }
       
-      // Don't close form immediately if new project was created (allow adding attachments)
-      if (projeto) {
-        onSuccess(); // Close form for existing projects
-      }
+      onSuccess();
     } catch (error: any) {
       toast({
         title: projeto ? t("Erro ao atualizar projeto") : t("Erro ao criar projeto"),
@@ -186,14 +182,13 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
           <X className="w-4 h-4 mr-2" />
           {t("Cancelar")}
         </Button>
-          <Button type="submit" disabled={loading}>
-            <Save className="w-4 h-4 mr-2" />
-            {loading 
-              ? (projeto ? t("Atualizando...") : t("Criando..."))
-              : t("Salvar")
-            }
-          </Button>
-        )}
+        <Button type="submit" disabled={loading}>
+          <Save className="w-4 h-4 mr-2" />
+          {loading 
+            ? (projeto ? t("Atualizando...") : t("Criando..."))
+            : t("Salvar")
+          }
+        </Button>
       </div>
     </form>
   );
