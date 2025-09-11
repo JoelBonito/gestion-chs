@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 
@@ -16,13 +17,26 @@ interface EncomendaStatusSelectProps {
   onStatusChange: () => void;
 }
 
-const STATUS_OPTIONS: StatusEncomenda[] = [
+const getStatusOptions = (isHamAdmin: boolean): StatusEncomenda[] => [
   "NOVO PEDIDO",
   "PRODUÇÃO", 
   "EMBALAGEM",
   "TRANSPORTE",
   "ENTREGUE"
 ];
+
+const getStatusLabel = (status: StatusEncomenda, isHamAdmin: boolean): string => {
+  if (!isHamAdmin) return status;
+  
+  switch (status) {
+    case "NOVO PEDIDO": return "Nouvelle demande";
+    case "PRODUÇÃO": return "Production";
+    case "EMBALAGEM": return "Emballage";
+    case "TRANSPORTE": return "Transport";
+    case "ENTREGUE": return "Livré";
+    default: return status;
+  }
+};
 
 const getStatusColor = (status: StatusEncomenda) => {
   switch (status) {
@@ -44,6 +58,10 @@ export function EncomendaStatusSelect({
   const [isUpdating, setIsUpdating] = useState(false);
   const isCollaborator = useIsCollaborator();
   const { canEdit } = useUserRole();
+  const { user } = useAuth();
+  
+  const isHamAdmin = user?.email === 'ham@admin.com';
+  const STATUS_OPTIONS = getStatusOptions(isHamAdmin);
   
   // Allow collaborators and admins to change status
   const canChangeStatus = canEdit() || isCollaborator;
@@ -83,7 +101,7 @@ export function EncomendaStatusSelect({
     >
       <SelectTrigger className="w-auto border-none p-0 h-auto">
         <Badge className={`${getStatusColor(currentStatus)} text-white ${canChangeStatus ? 'hover:opacity-80 cursor-pointer' : 'opacity-60'}`}>
-          {isUpdating ? "Atualizando..." : currentStatus}
+          {isUpdating ? (isHamAdmin ? "Mise à jour..." : "Atualizando...") : getStatusLabel(currentStatus, isHamAdmin)}
         </Badge>
       </SelectTrigger>
       <SelectContent>
@@ -91,7 +109,7 @@ export function EncomendaStatusSelect({
           <SelectItem key={status} value={status}>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`} />
-              {status}
+              {getStatusLabel(status, isHamAdmin)}
             </div>
           </SelectItem>
         ))}

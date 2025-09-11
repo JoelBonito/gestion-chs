@@ -12,8 +12,9 @@ import {
 import { useLocation } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
+import { useAuth } from "@/hooks/useAuth";
 
-const items = [
+const getItems = (isHamAdmin: boolean) => [
   {
     title: "Dashboard",
     url: "/dashboard",
@@ -35,17 +36,22 @@ const items = [
     icon: Building2,
   },
   {
-    title: "Encomendas",
+    title: isHamAdmin ? "Commandes" : "Encomendas",
     url: "/encomendas",
     icon: ShoppingCart,
   },
   {
-    title: "Produção",
+    title: isHamAdmin ? "Projet" : "Projetos",
+    url: "/projetos",
+    icon: Factory,
+  },
+  {
+    title: isHamAdmin ? "Production" : "Produção",
     url: "/producao",
     icon: Factory,
   },
   {
-    title: "Financeiro",
+    title: isHamAdmin ? "Financier" : "Financeiro",
     url: "/financeiro",
     icon: Calculator,
   },
@@ -55,6 +61,10 @@ export function AppSidebar() {
   const location = useLocation();
   const { hasRole } = useUserRole();
   const isCollaborator = useIsCollaborator();
+  const { user } = useAuth();
+  
+  const isHamAdmin = user?.email === 'ham@admin.com';
+  const items = getItems(isHamAdmin);
 
   // Filter items based on user role
   const getFilteredItems = () => {

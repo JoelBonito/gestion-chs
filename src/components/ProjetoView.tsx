@@ -8,14 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocale } from '@/contexts/LocaleContext';
 import { ProjetoAttachmentManager } from '@/components/ProjetoAttachmentManager';
 
-interface Projeto {
-  id: string;
-  nome: string;
-  observacoes: string | null;
-  created_at: string;
-  updated_at: string;
-  created_by: string;
-}
+import { Projeto } from '@/types/projeto';
 
 interface ProjetoViewProps {
   projeto: Projeto;

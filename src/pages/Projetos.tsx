@@ -36,13 +36,13 @@ export default function Projetos() {
   const [editingProjeto, setEditingProjeto] = useState<Projeto | null>(null);
   const [viewingProjeto, setViewingProjeto] = useState<Projeto | null>(null);
 
-  const { projetos, isLoading, refetch } = useProjetos();
+  const { projetos, loading, fetchProjetos } = useProjetos();
 
   const handleSuccess = () => {
     setShowForm(false);
     setEditingProjeto(null);
     setViewingProjeto(null);
-    refetch();
+    fetchProjetos();
   };
 
   return (
@@ -66,7 +66,7 @@ export default function Projetos() {
           </Dialog>
         </div>
 
-        {isLoading ? (
+        {loading ? (
           <div className="flex justify-center py-10">
             <Loader2 className="h-6 w-6 animate-spin" />
             <span className="ml-2">{t("Carregando projetos...")}</span>
