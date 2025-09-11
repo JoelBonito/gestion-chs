@@ -49,6 +49,8 @@ export default function EncomendaView({ encomendaId }: Props) {
   const [loading, setLoading] = useState(true);
   const [loadingItens, setLoadingItens] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [editingObs, setEditingObs] = useState(false);
+  const [obsValue, setObsValue] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
@@ -129,6 +131,7 @@ export default function EncomendaView({ encomendaId }: Props) {
         .single();
       if (error) throw error;
       setEncomenda(data as Encomenda);
+      setObsValue(data.observacoes ?? "");
     } catch (e) {
       console.error(e);
       toast.error(isHam ? "Erreur lors du chargement" : "Erro ao carregar encomenda");
@@ -251,12 +254,64 @@ export default function EncomendaView({ encomendaId }: Props) {
         </div>
 
         {/* Observações */}
-        {encomenda.observacoes ? (
-          <div>
-            <div className="text-sm text-muted-foreground mb-1">{t.notes}</div>
-            <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">{encomenda.observacoes}</div>
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-sm text-muted-foreground">{t.notes}</div>
+            {isFelipe && !editingObs && (
+              <button
+                type="button"
+                onClick={() => setEditingObs(true)}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                ✏️ Editar
+              </button>
+            )}
           </div>
-        ) : null}
+
+          {isFelipe && editingObs ? (
+            <div className="space-y-2">
+              <textarea
+                className="w-full rounded-md border p-2 text-sm"
+                rows={3}
+                value={obsValue}
+                onChange={(e) => setObsValue(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from("encomendas")
+                      .update({ observacoes: obsValue })
+                      .eq("id", id);
+                    if (!error) {
+                      toast.success("Observações salvas!");
+                      setEncomenda((prev) => prev ? { ...prev, observacoes: obsValue } : prev);
+                      setEditingObs(false);
+                    } else {
+                      toast.error("Erro ao salvar observações");
+                    }
+                  }}
+                  className="px-3 py-1 text-sm bg-primary text-white rounded-md"
+                >
+                  Salvar
+                </button>
+                <button
+                  onClick={() => {
+                    setObsValue(encomenda?.observacoes ?? "");
+                    setEditingObs(false);
+                  }}
+                  className="px-3 py-1 text-sm bg-muted rounded-md"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
+              {encomenda.observacoes || "—"}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Itens */}
