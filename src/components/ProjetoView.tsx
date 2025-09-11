@@ -78,54 +78,17 @@ export function ProjetoView({ projeto, onEdit, onSuccess, onClose }: ProjetoView
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div className="space-y-2">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Calendar className="h-4 w-4" />
+          {t("Criado em")}: {new Date(projeto.created_at).toLocaleString()}
+        </div>
+        {projeto.updated_at !== projeto.created_at && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
-            {t("Criado em")}: {new Date(projeto.created_at).toLocaleString()}
+            {t("Atualizado em")}: {new Date(projeto.updated_at).toLocaleString()}
           </div>
-          {projeto.updated_at !== projeto.created_at && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              {t("Atualizado em")}: {new Date(projeto.updated_at).toLocaleString()}
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => onEdit(projeto)}>
-            <Edit className="h-4 w-4 mr-2" />
-            {t("Editar")}
-          </Button>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" disabled={loading}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                {loading ? t("Deletando...") : t("Deletar")}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t("Confirmar Exclusão")}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t("Tem certeza que deseja deletar este projeto?")} "{projeto.nome}"
-                  <br />
-                  {t("Esta ação não pode ser desfeita.")}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t("Cancelar")}</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {t("Deletar Projeto")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
+        )}
       </div>
 
       <div className="space-y-6">
