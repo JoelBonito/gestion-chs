@@ -209,7 +209,8 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="w-full max-h-[80vh] overflow-y-auto">
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl mx-auto p-4">
       {/* Informações do Produto */}
       <Card>
         <CardHeader>
@@ -428,5 +429,6 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
         </Button>
       </div>
     </form>
+    </div>
   );
 };
