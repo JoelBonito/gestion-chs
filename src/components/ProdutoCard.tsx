@@ -1,7 +1,7 @@
 import React from "react";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 
-export default function ProdutoCard({ produto }) {
+export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActive }) {
 
   return (
     <div className="border rounded p-3">

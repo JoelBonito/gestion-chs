@@ -13,7 +13,15 @@ import {
   DollarSign,
   FolderKanban,
 } from "lucide-react";
-import { Sidebar } from "@/components/ui/sidebar";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from "@/components/ui/sidebar";
 
 interface AppSidebarProps {
   className?: string;
@@ -32,7 +40,7 @@ export function AppSidebar({ className }: AppSidebarProps) {
     { title: "Encomendas", url: "/encomendas", icon: ClipboardList },
     { title: "Produção", url: "/producao", icon: Factory },
     { title: "Financeiro", url: "/financeiro", icon: DollarSign },
-    { title: "Projetos", url: "/projetos", icon: FolderKanban }, // Novo item
+    { title: "Projetos", url: "/projetos", icon: FolderKanban },
   ];
 
   const getFilteredItems = () => {
@@ -61,5 +69,28 @@ export function AppSidebar({ className }: AppSidebarProps) {
     return items;
   };
 
-  return <Sidebar className={cn(className)} items={getFilteredItems()} />;
+  const filteredItems = getFilteredItems();
+
+  return (
+    <Sidebar className={cn(className)}>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {filteredItems.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton asChild>
+                    <a href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
+  );
 }
