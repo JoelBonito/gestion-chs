@@ -44,7 +44,7 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const isCollaborator = useIsCollaborator();
+  const { isCollaborator } = useIsCollaborator();
 
   const [formData, setFormData] = useState<ProdutoFormData>({
     nome: produto?.nome || "",

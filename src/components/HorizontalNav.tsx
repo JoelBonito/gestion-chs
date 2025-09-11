@@ -26,7 +26,7 @@ export function HorizontalNav() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { roles } = useUserRole();
-  const isCollaborator = useIsCollaborator();
+  const { isCollaborator } = useIsCollaborator();
   const { toast } = useToast();
   const { locale, isRestrictedFR } = useLocale();
 
@@ -55,6 +55,14 @@ export function HorizontalNav() {
 
   // Filter navigation based on user role
   const getFilteredNavigation = () => {
+    const userEmail = user?.email;
+    const isHardcodedAdmin = userEmail === 'jbento1@gmail.com' || userEmail === 'admin@admin.com';
+    
+    // Hardcoded admins have full access
+    if (isHardcodedAdmin) {
+      return navigation;
+    }
+    
     if (isRestrictedFR) {
       console.log('[FR-Restricted] nav limited to orders/finance');
       return navigation.filter(item => 
@@ -63,6 +71,7 @@ export function HorizontalNav() {
         item.href === '/projetos'                       
       );
     }
+    
     if (isCollaborator) {
       return navigation.filter(item => 
         item.href === '/produtos' || 
@@ -72,7 +81,6 @@ export function HorizontalNav() {
     }
     
     // Filter projetos tab for specific users only
-    const userEmail = user?.email;
     const allowedProjectsEmails = ['jbento1@gmail.com', 'admin@admin.com', 'ham@admin.com'];
     
     return navigation.filter(item => {

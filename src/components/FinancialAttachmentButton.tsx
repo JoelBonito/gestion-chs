@@ -25,7 +25,7 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
   const [attachmentCount, setAttachmentCount] = useState(0);
   const [hasLoadedCount, setHasLoadedCount] = useState(false);
   const { hasRole, isHardcodedAdmin } = useUserRole();
-  const isCollaborator = useIsCollaborator();
+  const { isCollaborator } = useIsCollaborator();
   
   // Check if user can access financial attachments
   const canAccess = isHardcodedAdmin || hasRole('admin') || hasRole('finance') || hasRole('factory') || isCollaborator;

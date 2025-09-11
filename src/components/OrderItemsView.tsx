@@ -27,7 +27,7 @@ interface OrderItemsViewProps {
 export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderItemsViewProps) {
   const [items, setItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const isCollaborator = useIsCollaborator();
+  const { isCollaborator } = useIsCollaborator();
   
   // Se for colaborador, sempre mostrar preços de custo
   const shouldShowCostPrices = showCostPrices || isCollaborator;

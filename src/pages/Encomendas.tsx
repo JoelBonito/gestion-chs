@@ -59,7 +59,7 @@ interface Encomenda {
 
 export default function Encomendas() {
   const { canEdit, hasRole } = useUserRole();
-  const isCollaborator = useIsCollaborator();
+  const { isCollaborator } = useIsCollaborator();
   const { formatCurrency, formatDate } = useFormatters();
 
   const [userEmail, setUserEmail] = useState<string | null>(null);

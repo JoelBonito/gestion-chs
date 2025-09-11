@@ -34,7 +34,7 @@ interface EncomendaActionsProps {
 
 export function EncomendaActions({ encomenda, onView, onEdit, onDelete, onDuplicate }: EncomendaActionsProps) {
   const { hasRole, canEdit } = useUserRole();
-  const isCollaborator = useIsCollaborator();
+  const { isCollaborator } = useIsCollaborator();
   const handleDelete = async () => {
     try {
       const { data, error } = await supabase.rpc('delete_encomenda_safely', {

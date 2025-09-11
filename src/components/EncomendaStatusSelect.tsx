@@ -56,7 +56,7 @@ export function EncomendaStatusSelect({
   onStatusChange 
 }: EncomendaStatusSelectProps) {
   const [isUpdating, setIsUpdating] = useState(false);
-  const isCollaborator = useIsCollaborator();
+  const { isCollaborator } = useIsCollaborator();
   const { canEdit } = useUserRole();
   const { user } = useAuth();
   
