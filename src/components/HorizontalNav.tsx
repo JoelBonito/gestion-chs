@@ -59,7 +59,7 @@ export function HorizontalNav() {
       console.log('[FR-Restricted] nav limited to orders/finance');
       return navigation.filter(item => 
         item.href === '/encomendas' || 
-        item.href === '/financeiro'
+        item.href === '/financeiro' ||
         item.href === '/projetos'                       
       );
     }
