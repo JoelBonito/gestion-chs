@@ -309,7 +309,7 @@ export default function EncomendaView({ encomendaId }: Props) {
         <div>
           <div className="flex items-center justify-between mb-1">
             <div className="text-sm text-muted-foreground">{t.notes}</div>
-            {isFelipe && !editingObs && (
+            {!editingObs && (
               <button
                 type="button"
                 onClick={() => setEditingObs(true)}
@@ -320,7 +320,7 @@ export default function EncomendaView({ encomendaId }: Props) {
             )}
           </div>
 
-          {isFelipe && editingObs ? (
+          {editingObs ? (
             <div className="space-y-2">
               <textarea
                 className="w-full rounded-md border p-2 text-sm"
