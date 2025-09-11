@@ -1,10 +1,12 @@
 // src/components/EncomendaView.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { useFormatters } from "@/hooks/useFormatters";
 import { cn } from "@/lib/utils";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 type Encomenda = {
   id: string;
@@ -51,6 +53,7 @@ export default function EncomendaView({ encomendaId }: Props) {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [editingObs, setEditingObs] = useState(false);
   const [obsValue, setObsValue] = useState("");
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? null));
@@ -170,12 +173,57 @@ export default function EncomendaView({ encomendaId }: Props) {
     return acc + q * pc;
   }, 0);
 
+  const handleDownloadPDF = async () => {
+    if (!contentRef.current || !encomenda) return;
+    
+    try {
+      const canvas = await html2canvas(contentRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfHeight = (imgProps.height * pageWidth) / imgProps.width;
+      
+      // Se a imagem for muito alta, ajusta para caber na página
+      if (pdfHeight > pageHeight) {
+        const ratio = pageHeight / pdfHeight;
+        pdf.addImage(imgData, "PNG", 0, 0, pageWidth * ratio, pageHeight);
+      } else {
+        pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pdfHeight);
+      }
+      
+      pdf.save(`Encomenda-${encomenda.numero_encomenda}.pdf`);
+      toast.success("PDF baixado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      toast.error("Erro ao gerar PDF");
+    }
+  };
+
   if (loading || !encomenda) {
     return <div className="py-6 text-center text-muted-foreground">{t.loading}</div>;
   }
 
   return (
     <div className="space-y-6">
+      {/* Botão de Download PDF */}
+      {!isFelipe && (
+        <div className="flex justify-end">
+          <button
+            onClick={handleDownloadPDF}
+            className="px-3 py-1 mb-4 text-sm rounded-md bg-primary text-white hover:opacity-90"
+          >
+            📥 Baixar PDF
+          </button>
+        </div>
+      )}
+
+      <div ref={contentRef} className="space-y-6">
       {/* Cabeçalho */}
       <section className="space-y-2">
         <div className="text-xl font-semibold">
@@ -393,6 +441,7 @@ export default function EncomendaView({ encomendaId }: Props) {
           </div>
         )}
       </section>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 // src/pages/Encomendas.tsx
 import { useEffect, useState } from "react";
-import { Plus, Search, CalendarIcon, Eye, Edit, Printer } from "lucide-react";
+import { Plus, Search, CalendarIcon, Eye, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -34,7 +34,6 @@ import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
 import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TransportesTab } from "@/components/TransportesTab";
-import { PrintModal } from "@/components/PrintModal";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 type StatusFilter = StatusEncomenda | "TODOS";
@@ -164,8 +163,6 @@ const isHam = email === "ham@admin.com";
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [transportDialogOpen, setTransportDialogOpen] = useState(false);
-  const [printModalOpen, setPrintModalOpen] = useState(false);
-  const [printEncomendaId, setPrintEncomendaId] = useState<string | null>(null);
 
   const [selectedEncomenda, setSelectedEncomenda] = useState<Encomenda | null>(null);
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
@@ -290,10 +287,6 @@ const isHam = email === "ham@admin.com";
     await fetchEncomendas();
   };
 
-  const handlePrint = (enc: Encomenda) => {
-    setPrintEncomendaId(enc.id);
-    setPrintModalOpen(true);
-  };
 
   const handleDelete = () => fetchEncomendas();
   const handleTransport = (e: Encomenda) => {
@@ -560,16 +553,6 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                     >
                       <Eye className="h-5 w-5" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-10 w-10 p-0"
-                      onClick={() => handlePrint(e)}
-                      aria-label="Imprimir"
-                      title="Imprimir"
-                    >
-                      <Printer className="h-5 w-5" />
-                    </Button>
                     {canEdit() && (
                       <>
                         <Button
@@ -823,16 +806,6 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
       </Dialog>
         </>
       )}
-
-      {/* Modal de Impressão */}
-      <PrintModal
-        encomendaId={printEncomendaId}
-        isOpen={printModalOpen}
-        onClose={() => {
-          setPrintModalOpen(false);
-          setPrintEncomendaId(null);
-        }}
-      />
 
       {activeTab === "transportes" && (
         <TransportesTab />
