@@ -87,41 +87,46 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
   }, []);
 
   useEffect(() => {
-    if (editingData && isEdit) {
-      setTimeout(() => {
-        form.reset({
-          numero_encomenda: editingData.numero_encomenda || "",
-          etiqueta: editingData.etiqueta || "",
-          cliente_id: editingData.cliente_id || "",
-          fornecedor_id: editingData.fornecedor_id || "",
-          data_producao_estimada: editingData.data_producao_estimada || "",
-          data_envio_estimada: editingData.data_envio_estimada || "",
-          observacoes: editingData.observacoes || "",
-        });
-      }, 100);
+    // Preencher o formulário somente quando for edição E quando as listas de clientes/fornecedores já estiverem carregadas
+    if (!isEdit || !editingData) return;
 
-      const fetchItens = async () => {
-        const { data: itensData } = await supabase
-          .from("itens_encomenda")
-          .select(`*, produtos(nome, marca, tipo, preco_custo, preco_venda, size_weight)`)
-          .eq("encomenda_id", editingData.id);
-        if (itensData) {
-          const itensFormatados = itensData.map((item: any) => ({
-            id: item.id,
-            produto_id: item.produto_id,
-            produto_nome: item.produtos ? `${item.produtos.nome} - ${item.produtos.marca} - ${item.produtos.tipo}` : "Produto não encontrado",
-            quantidade: item.quantidade,
-            preco_custo: item.preco_custo || 0,
-            preco_venda: item.preco_unitario,
-            subtotal: item.subtotal || (item.quantidade * item.preco_unitario),
-            peso_produto: item.produtos?.size_weight || 0,
-          }));
-          setItens(itensFormatados);
-        }
-      };
-      fetchItens();
-    }
-  }, [editingData, isEdit, form]);
+    const canReset = clientes.length > 0 && fornecedores.length > 0;
+    if (!canReset) return;
+
+    // Preenche os campos principais
+    form.reset({
+      numero_encomenda: editingData.numero_encomenda || "",
+      etiqueta: editingData.etiqueta || "",
+      cliente_id: editingData.cliente_id || "",
+      fornecedor_id: editingData.fornecedor_id || "",
+      data_producao_estimada: editingData.data_producao_estimada || "",
+      data_envio_estimada: editingData.data_envio_estimada || "",
+      observacoes: editingData.observacoes || "",
+    });
+
+    // Carrega itens da encomenda
+    const fetchItens = async () => {
+      const { data: itensData } = await supabase
+        .from("itens_encomenda")
+        .select(`*, produtos(nome, marca, tipo, preco_custo, preco_venda, size_weight)`)
+        .eq("encomenda_id", editingData.id);
+      if (itensData) {
+        const itensFormatados = itensData.map((item: any) => ({
+          id: item.id,
+          produto_id: item.produto_id,
+          produto_nome: item.produtos ? `${item.produtos.nome} - ${item.produtos.marca} - ${item.produtos.tipo}` : "Produto não encontrado",
+          quantidade: item.quantidade,
+          preco_custo: item.preco_custo || 0,
+          preco_venda: item.preco_unitario,
+          subtotal: item.subtotal || (item.quantidade * item.preco_unitario),
+          peso_produto: item.produtos?.size_weight || 0,
+        }));
+        setItens(itensFormatados);
+      }
+    };
+
+    fetchItens();
+  }, [isEdit, editingData, clientes, fornecedores, form]);
 
   const onSubmit = async (data: EncomendaFormData) => {
     setIsSubmitting(true);
