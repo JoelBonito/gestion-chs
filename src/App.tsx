@@ -57,16 +57,8 @@ const App = () => {
                               </FactoryGuard>
                             } />
                             <Route path="/produtos" element={<Produtos />} />
-                            <Route path="/clientes" element={
-                              <FactoryGuard>
-                                <Clientes />
-                              </FactoryGuard>
-                            } />
-                            <Route path="/fornecedores" element={
-                              <FactoryGuard>
-                                <Fornecedores />
-                              </FactoryGuard>
-                            } />
+                            <Route path="/clientes" element={<Clientes />} />
+                            <Route path="/fornecedores" element={<Fornecedores />} />
                             <Route path="/encomendas" element={<Encomendas />} />
                             <Route path="/projetos" element={<Projetos />} />
                             <Route path="/producao" element={

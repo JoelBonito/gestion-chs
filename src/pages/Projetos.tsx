@@ -46,7 +46,7 @@ export default function Projetos() {
   };
 
   return (
-    <OptimizedRoleGuard allowedEmails={['jbento1@gmail.com', 'admin@admin.com', 'ham@admin.com']}>
+    <OptimizedRoleGuard>
       <div className="px-4 md:px-8 py-6 space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">{t("Projetos")}</h1>

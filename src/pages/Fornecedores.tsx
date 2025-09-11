@@ -85,7 +85,7 @@ export default function Fornecedores() {
   });
 
   return (
-    <OptimizedRoleGuard blockCollaborator={true} redirectTo="/produtos">
+    <OptimizedRoleGuard>
       <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
