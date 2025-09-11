@@ -29,6 +29,7 @@ export default function ContasPagar() {
   const [contas, setContas] = useState<ContaPagar[]>([]);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [showCompleted, setShowCompleted] = useState(false);
   const { toast } = useToast();
 
   const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
@@ -52,6 +53,9 @@ export default function ContasPagar() {
       "Anexar Comprovante": { pt: "Anexar Comprovante", fr: "Joindre justificatif" },
       "Carregando...": { pt: "Carregando...", fr: "Chargement..." },
       "Nenhuma conta a pagar encontrada": { pt: "Nenhuma conta a pagar encontrada", fr: "Aucun compte à payer trouvé" },
+      "Mostrar Concluídos": { pt: "Mostrar Concluídos", fr: "Afficher terminés" },
+      "Compras - Fornecedores": { pt: "Compras - Fornecedores", fr: "Achats - Fournisseurs" },
+      "Encomendas com saldo devedor para fornecedores": { pt: "Encomendas com saldo devedor para fornecedores", fr: "Commandes avec solde débiteur aux fournisseurs" },
     };
     return d[k]?.[lang] ?? k;
   };
@@ -80,7 +84,7 @@ export default function ContasPagar() {
           data_criacao,
           status
         `)
-        .gt("saldo_devedor_fornecedor", 0);
+        .gte("saldo_devedor_fornecedor", showCompleted ? 0 : 0.01);
 
       // Filtro para Felipe - apenas fornecedores específicos
       if (isFelipe) {
@@ -115,7 +119,7 @@ export default function ContasPagar() {
     if (userEmail) {
       fetchContas();
     }
-  }, [userEmail]);
+  }, [userEmail, showCompleted]);
 
   const handlePaymentSuccess = () => {
     fetchContas();
@@ -153,11 +157,23 @@ export default function ContasPagar() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-warning" />
-                {t("Contas a Pagar")}
+                {t("Compras - Fornecedores")}
               </CardTitle>
               <CardDescription>
-                Encomendas com saldo devedor para fornecedores
+                {t("Encomendas com saldo devedor para fornecedores")}
               </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="show-completed-payable"
+                checked={showCompleted}
+                onChange={(e) => setShowCompleted(e.target.checked)}
+                className="rounded"
+              />
+              <label htmlFor="show-completed-payable" className="text-sm">
+                {t("Mostrar Concluídos")}
+              </label>
             </div>
           </div>
         </CardHeader>
