@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -29,6 +31,7 @@ export function HorizontalNav() {
   const { isCollaborator } = useIsCollaborator();
   const { toast } = useToast();
   const { locale, isRestrictedFR } = useLocale();
+  const isMobile = useIsMobile();
 
   const handleLogout = async () => {
     try {
@@ -98,6 +101,10 @@ export function HorizontalNav() {
       <div className="container mx-auto">
         <div className="flex h-16 items-center justify-between px-6">
           <div className="flex items-center space-x-8">
+            {isMobile && (
+              <SidebarTrigger className="md:hidden" />
+            )}
+            
             <Link to={isRestrictedFR ? "/encomendas" : isCollaborator ? "/produtos" : "/dashboard"} className="flex items-center space-x-3">
               <img 
                 src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png" 
