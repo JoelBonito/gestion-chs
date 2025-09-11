@@ -18,7 +18,7 @@ type Props = {
 };
 
 export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
-  ({ searchTerm = "", sort = "nameAsc", limit = 50, allowedSupplierIds = null }, ref) => {
+  ({ searchTerm = "", sort = "nameAsc", limit = 1000, allowedSupplierIds = null }, ref) => {
     const [produtos, setProdutos] = useState<Produto[]>([]);
     const [loading, setLoading] = useState(true);
 
