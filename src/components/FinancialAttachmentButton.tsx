@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useIsCollaborator } from '@/hooks/useIsCollaborator';
 import { supabase } from '@/integrations/supabase/client';
+import { IconWithBadge } from '@/components/ui/icon-with-badge';
 
 interface FinancialAttachmentButtonProps {
   entityId: string;
@@ -89,12 +90,10 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
           type="button"
           onMouseEnter={() => !hasLoadedCount && loadAttachmentCount()}
         >
-          <Paperclip className="h-4 w-4" />
-          {hasLoadedCount && attachmentCount > 0 && (
-            <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
-              {attachmentCount}
-            </Badge>
-          )}
+          <IconWithBadge 
+            icon={<Paperclip className="h-4 w-4" />}
+            count={hasLoadedCount ? attachmentCount : 0}
+          />
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl">

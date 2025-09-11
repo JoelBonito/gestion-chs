@@ -9,12 +9,15 @@ import { ProdutoForm } from "@/components/ProdutoForm";
 import ProdutoView from "@/components/ProdutoView";
 import { AttachmentManager } from "@/components/AttachmentManager";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
+import { useAttachments } from "@/hooks/useAttachments";
+import { IconWithBadge } from "@/components/ui/icon-with-badge";
 
 export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActive }) {
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showAttachments, setShowAttachments] = useState(false);
   const { isCollaborator } = useIsCollaborator();
+  const { attachments } = useAttachments("produto", produto.id);
 
   const handleEdit = () => {
     setShowEdit(true);
@@ -67,7 +70,10 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
             onClick={handleAttachments}
             className="h-8 w-8"
           >
-            <Paperclip className="h-4 w-4" />
+            <IconWithBadge 
+              icon={<Paperclip className="h-4 w-4" />}
+              count={attachments?.length || 0}
+            />
           </Button>
           
           {!isCollaborator && (

@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import EncomendaView from "@/components/EncomendaView";
 import PagamentoFornecedorForm from "@/components/PagamentoFornecedorForm";
 import { AttachmentManager } from "@/components/AttachmentManager";
+import { IconWithBadge } from "@/components/ui/icon-with-badge";
 
 interface ContaPagar {
   id: string;
@@ -32,6 +33,7 @@ export default function ContasPagar() {
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [attachmentCounts, setAttachmentCounts] = useState<Record<string, number>>({});
   const { toast } = useToast();
 
   const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
@@ -140,7 +142,40 @@ export default function ContasPagar() {
 
   const handleAttachmentChange = () => {
     fetchContas();
+    loadAttachmentCounts();
   };
+
+  const loadAttachmentCounts = async () => {
+    if (contas.length === 0) return;
+    
+    try {
+      const counts: Record<string, number> = {};
+      
+      await Promise.all(
+        contas.map(async (conta) => {
+          const { count, error } = await supabase
+            .from('attachments')
+            .select('*', { count: 'exact', head: true })
+            .eq('entity_type', 'payable')
+            .eq('entity_id', conta.id);
+
+          if (!error) {
+            counts[conta.id] = count || 0;
+          }
+        })
+      );
+      
+      setAttachmentCounts(counts);
+    } catch (error) {
+      console.error('Error loading attachment counts:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (contas.length > 0) {
+      loadAttachmentCounts();
+    }
+  }, [contas]);
 
   if (loading) {
     return (
@@ -280,7 +315,10 @@ export default function ContasPagar() {
                               title={t("Anexar Comprovante")}
                               type="button"
                             >
-                              <Paperclip className="h-4 w-4" />
+                              <IconWithBadge 
+                                icon={<Paperclip className="h-4 w-4" />}
+                                count={attachmentCounts[conta.id] || 0}
+                              />
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl" aria-describedby="">
