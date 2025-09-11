@@ -6,7 +6,7 @@ interface StatCardProps {
   title: string;
   value: string | number;
   subtitle?: string | ReactNode;
-  icon: ReactNode;
+  icon?: ReactNode;
   trend?: {
     value: number;
     isPositive: boolean;
@@ -59,11 +59,13 @@ export default function StatCard({
                 )}></span>
                 {trend.isPositive ? "+" : ""}{trend.value}%
               </div>
-            )}
-          </div>
-          <div className={cn("p-3 rounded-lg bg-muted/50", iconStyles[variant])}>
-            {icon}
-          </div>
+             )}
+           </div>
+           {icon && (
+             <div className={cn("p-3 rounded-lg bg-muted/50", iconStyles[variant])}>
+               {icon}
+             </div>
+           )}
         </div>
       </CardContent>
     </Card>

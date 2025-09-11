@@ -130,6 +130,36 @@ export default function Dashboard() {
     }
   });
 
+  // Comissões por Mês de 2025
+  const { data: comissoesPorMes = [] } = useQuery({
+    queryKey: ['comissoes-2025'],
+    queryFn: async () => {
+      const { data: itens, error } = await supabase
+        .from("itens_encomenda")
+        .select(`
+          quantidade,
+          preco_unitario,
+          preco_custo,
+          encomendas!inner(data_producao_estimada)
+        `)
+        .gte('encomendas.data_producao_estimada', '2025-01-01')
+        .lt('encomendas.data_producao_estimada', '2026-01-01');
+
+      if (error || !itens) return [];
+
+      const meses = Array(12).fill(0);
+      itens.forEach(item => {
+        const dataProd = item.encomendas?.data_producao_estimada;
+        if (!dataProd) return;
+        const mes = new Date(dataProd).getMonth();
+        const lucro = (item.quantidade || 0) * ((item.preco_unitario || 0) - (item.preco_custo || 0));
+        meses[mes] += lucro;
+      });
+
+      return meses;
+    }
+  });
+
   // Encomendas em Progresso
   const { data: encomendasProgresso = [] } = useQuery({
     queryKey: ['encomendas-progresso'],
@@ -229,42 +259,37 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Cards de Estatísticas */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Encomendas Ativas"
-          value={encomendasAtivas.toString()}
-          subtitle="Encomendas não entregues"
-          icon={<div />}
-        />
-        <StatCard
-          title="A Receber"
-          value={formatCurrencyEUR(aReceber)}
-          subtitle="Valor pendente de clientes"
-          icon={<div />}
-        />
-        <StatCard
-          title="A Pagar"
-          value={formatCurrencyEUR(aPagar)}
-          subtitle="Valor pendente a fornecedores"
-          icon={<div />}
-        />
-        <StatCard
-          title="Comissões (Mês)"
-          value={formatCurrencyEUR(comissoesMensais)}
-          subtitle="Lucro do mês atual por data de produção"
-          icon={<div />}
-        />
+      {/* Primeira linha - 5 cards grandes */}
+      <div className="grid gap-4 lg:grid-cols-5">
+        <StatCard title="Encomendas Ativas" value={encomendasAtivas.toString()} subtitle="Encomendas não entregues" />
+        <StatCard title="A Receber" value={formatCurrencyEUR(aReceber)} subtitle="Valor pendente de clientes" />
+        <StatCard title="A Pagar" value={formatCurrencyEUR(aPagar)} subtitle="Valor pendente a fornecedores" />
+        <StatCard title="Comissões (Mês)" value={formatCurrencyEUR(comissoesMensais)} subtitle="Lucro do mês atual" />
+        <StatCard title="Comissões (Ano)" value={formatCurrencyEUR(comissoesAnuais)} subtitle="Lucro total em 2025" />
       </div>
 
-      {/* Segunda linha de cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-        <StatCard
-          title="Comissões (Ano)"
-          value={formatCurrencyEUR(comissoesAnuais)}
-          subtitle="Lucro total de todas as encomendas"
-          icon={<div />}
-        />
+      {/* Segunda linha: Jan-Jun */}
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mt-6">
+        {["Jan","Fev","Mar","Abr","Mai","Jun"].map((mes, i) => (
+          <StatCard
+            key={mes}
+            title={`${mes}/2025`}
+            value={formatCurrencyEUR(comissoesPorMes[i] || 0)}
+            subtitle="Comissões"
+          />
+        ))}
+      </div>
+
+      {/* Terceira linha: Jul-Dez */}
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mt-2">
+        {["Jul","Ago","Set","Out","Nov","Dez"].map((mes, i) => (
+          <StatCard
+            key={mes}
+            title={`${mes}/2025`}
+            value={formatCurrencyEUR(comissoesPorMes[i+6] || 0)}
+            subtitle="Comissões"
+          />
+        ))}
       </div>
 
       {/* Tabelas */}
