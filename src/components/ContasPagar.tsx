@@ -23,6 +23,7 @@ interface ContaPagar {
   saldo_devedor_fornecedor: number;
   data_criacao: string;
   status: string;
+  etiqueta: string;
   encomenda_id: string;
 }
 
@@ -88,7 +89,8 @@ export default function ContasPagar() {
           valor_pago_fornecedor,
           saldo_devedor_fornecedor,
           data_criacao,
-          status
+          status,
+          etiqueta
         `)
         .gte("saldo_devedor_fornecedor", showCompleted ? 0 : 0.01);
 
@@ -249,7 +251,7 @@ export default function ContasPagar() {
                       <div className="flex flex-col">
                         <span>{conta.numero_encomenda}</span>
                         <span className="mt-0.5">
-                          <Badge variant="secondary">{conta.status}</Badge>
+                          <Badge variant="secondary">{conta.etiqueta || "Nenhum"}</Badge>
                         </span>
                       </div>
                     </TableCell>
