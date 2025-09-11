@@ -160,11 +160,6 @@ export function TransportesTab() {
                   >
                     Tracking
                   </Button>
-                  <AttachmentManager 
-                    entityType="transporte" 
-                    entityId={transporte.id}
-                    compact={true}
-                  />
                   <Button 
                     variant="ghost" 
                     size="icon"
