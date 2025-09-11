@@ -35,6 +35,7 @@ export default function ContasPagar() {
   const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [attachmentCounts, setAttachmentCounts] = useState<Record<string, number>>({});
+  const [orderItems, setOrderItems] = useState<any[]>([]);
   const { toast } = useToast();
 
   const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
@@ -137,9 +138,10 @@ export default function ContasPagar() {
     });
   };
 
-  const handleViewDetails = (conta: ContaPagar) => {
+  const handleViewDetails = async (conta: ContaPagar) => {
     setSelectedConta(conta);
     setShowDetails(true);
+    await fetchOrderItems(conta.id);
   };
 
   const handleAttachmentChange = () => {
@@ -170,6 +172,27 @@ export default function ContasPagar() {
       setAttachmentCounts(counts);
     } catch (error) {
       console.error('Error loading attachment counts:', error);
+    }
+  };
+
+  const fetchOrderItems = async (encomendaId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('itens_encomenda')
+        .select(`
+          id,
+          quantidade,
+          preco_custo,
+          preco_unitario,
+          produtos ( nome, marca, tipo )
+        `)
+        .eq('encomenda_id', encomendaId);
+
+      if (error) throw error;
+      setOrderItems(data || []);
+    } catch (error) {
+      console.error('Error loading order items:', error);
+      setOrderItems([]);
     }
   };
 
@@ -402,6 +425,47 @@ export default function ContasPagar() {
                     {formatCurrencyEUR(selectedConta.saldo_devedor_fornecedor)}
                   </p>
                 </div>
+              </div>
+
+              {/* Itens da Encomenda */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-medium mb-4">Itens da Encomenda</h3>
+                {orderItems.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Produto</TableHead>
+                          <TableHead>Marca</TableHead>
+                          <TableHead>Tipo</TableHead>
+                          <TableHead className="text-right">Quantidade</TableHead>
+                          <TableHead className="text-right">Preço Custo</TableHead>
+                          <TableHead className="text-right">Subtotal Custo</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {orderItems.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-medium">
+                              {item.produtos?.nome || 'N/A'}
+                            </TableCell>
+                            <TableCell>{item.produtos?.marca || 'N/A'}</TableCell>
+                            <TableCell>{item.produtos?.tipo || 'N/A'}</TableCell>
+                            <TableCell className="text-right">{item.quantidade}</TableCell>
+                            <TableCell className="text-right font-semibold">
+                              {formatCurrencyEUR(item.preco_custo)}
+                            </TableCell>
+                            <TableCell className="text-right font-semibold">
+                              {formatCurrencyEUR(item.quantidade * item.preco_custo)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhum item encontrado</p>
+                )}
               </div>
 
               {/* Anexos */}
