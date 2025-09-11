@@ -4,7 +4,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { formatCurrencyEUR } from "@/lib/utils/currency";
+import { useFormatters } from "@/hooks/useFormatters";
+const { formatCurrency } = useFormatters();
 import EncomendasFinanceiro from "@/components/EncomendasFinanceiro"; // Vendas
 import ContasPagar from "@/components/ContasPagar";                 // Compras
 import Invoices from "@/components/Invoices";                       // Faturas
