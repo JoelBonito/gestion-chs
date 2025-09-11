@@ -101,30 +101,34 @@ export default function Financeiro() {
 
   return (
     <div className="px-4 md:px-8">
-      {/* Cards sempre visíveis */}
-      {loadingResumo ? (
-        <p className="text-muted-foreground mb-4">{t("Carregando resumo...")}</p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">{t("Total a Receber")}</CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.a_receber)}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">{t("Total a Pagar")}</CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.a_pagar)}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">{t("Saldo Atual")}</CardTitle>
-            </CardHeader>
-            <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.saldo)}</CardContent>
-          </Card>
-        </div>
+      {/* Cards de resumo - escondidos para ham@admin.com */}
+      {!isHam && (
+        <>
+          {loadingResumo ? (
+            <p className="text-muted-foreground mb-4">{t("Carregando resumo...")}</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm text-muted-foreground">{t("Total a Receber")}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.a_receber)}</CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm text-muted-foreground">{t("Total a Pagar")}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.a_pagar)}</CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm text-muted-foreground">{t("Saldo Atual")}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.saldo)}</CardContent>
+              </Card>
+            </div>
+          )}
+        </>
       )}
 
       <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as TabKey)}>
