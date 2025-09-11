@@ -36,6 +36,7 @@ export default function ContasPagar() {
   const [showDetails, setShowDetails] = useState(false);
   const [attachmentCounts, setAttachmentCounts] = useState<Record<string, number>>({});
   const [orderItems, setOrderItems] = useState<any[]>([]);
+  const [paymentCounts, setPaymentCounts] = useState<Record<string, number>>({});
   const { toast } = useToast();
 
   const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
@@ -147,6 +148,7 @@ export default function ContasPagar() {
   const handleAttachmentChange = () => {
     fetchContas();
     loadAttachmentCounts();
+    loadPaymentCounts();
   };
 
   const loadAttachmentCounts = async () => {
@@ -196,9 +198,35 @@ export default function ContasPagar() {
     }
   };
 
+  const loadPaymentCounts = async () => {
+    if (contas.length === 0) return;
+    
+    try {
+      const counts: Record<string, number> = {};
+      
+      await Promise.all(
+        contas.map(async (conta) => {
+          const { count, error } = await supabase
+            .from('pagamentos_fornecedor')
+            .select('*', { count: 'exact', head: true })
+            .eq('encomenda_id', conta.id);
+
+          if (!error) {
+            counts[conta.id] = count || 0;
+          }
+        })
+      );
+      
+      setPaymentCounts(counts);
+    } catch (error) {
+      console.error('Error loading payment counts:', error);
+    }
+  };
+
   useEffect(() => {
     if (contas.length > 0) {
       loadAttachmentCounts();
+      loadPaymentCounts();
     }
   }, [contas]);
 
@@ -298,7 +326,7 @@ export default function ContasPagar() {
                     </TableCell>
 
                     <TableCell className="text-sm text-muted-foreground">
-                      Nenhum
+                      {paymentCounts[conta.id] > 0 ? `${paymentCounts[conta.id]} pag.` : 'Nenhum'}
                     </TableCell>
 
                     <TableCell>
