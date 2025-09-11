@@ -179,34 +179,14 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                         </Button>
 
                         {invoice.attachment && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handlePreview(invoice)}
-                              title="Visualizar PDF"
-                            >
-                              <FileText className="w-4 h-4" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => window.open(getPublicUrl(invoice.attachment!.storage_path), '_blank')}
-                              title="Abrir em nova aba"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDownload(invoice)}
-                              title="Download"
-                            >
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          </>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownload(invoice)}
+                            title="Download"
+                          >
+                            <Download className="w-4 h-4" />
+                          </Button>
                         )}
 
                         {canEdit && (
