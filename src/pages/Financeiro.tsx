@@ -142,7 +142,7 @@ export default function Financeiro() {
 
         {!hideCompras && (
           <TabsContent value="pagar">
-            <ContasPagar contas={[]} />
+            <ContasPagar />
           </TabsContent>
         )}
 
