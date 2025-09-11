@@ -27,17 +27,30 @@ export function FactoryGuard({
   // Administradores têm acesso total sempre
   const isHardcodedAdmin = user?.email === 'jbento1@gmail.com' || user?.email === 'admin@admin.com';
   
+  useEffect(() => {
+    if (!isHardcodedAdmin && !loading && hasRole('factory')) {
+      navigate(redirectTo, { replace: true });
+    }
+  }, [loading, hasRole, navigate, redirectTo, isHardcodedAdmin]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card>
+          <CardContent className="p-8 text-center">
+            <p className="text-muted-foreground">Verificando permissões…</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Permitir acesso para admins
   if (isHardcodedAdmin) {
     return <>{children}</>;
   }
 
-  useEffect(() => {
-    if (!loading && hasRole('factory')) {
-      navigate(redirectTo, { replace: true });
-    }
-  }, [loading, hasRole, navigate, redirectTo]);
-
-  if (loading) {
+  if (hasRole('factory')) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card>
