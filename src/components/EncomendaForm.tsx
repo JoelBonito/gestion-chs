@@ -87,13 +87,10 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
   }, []);
 
   useEffect(() => {
-    // Preencher o formulário somente quando for edição E quando as listas de clientes/fornecedores já estiverem carregadas
     if (!isEdit || !editingData) return;
 
-    const canReset = clientes.length > 0 && fornecedores.length > 0;
-    if (!canReset) return;
+    if (clientes.length === 0 || fornecedores.length === 0) return;
 
-    // Preenche os campos principais
     form.reset({
       numero_encomenda: editingData.numero_encomenda || "",
       etiqueta: editingData.etiqueta || "",
@@ -126,7 +123,7 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
     };
 
     fetchItens();
-  }, [isEdit, editingData, clientes, fornecedores, form]);
+  }, [isEdit, editingData, clientes.length, fornecedores.length]);
 
   const onSubmit = async (data: EncomendaFormData) => {
     setIsSubmitting(true);
@@ -255,7 +252,7 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Cliente *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um cliente" />
@@ -280,7 +277,7 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Fornecedor *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione um fornecedor" />
