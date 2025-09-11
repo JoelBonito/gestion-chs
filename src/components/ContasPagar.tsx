@@ -16,8 +16,8 @@ import { IconWithBadge } from "@/components/ui/icon-with-badge";
 interface ContaPagar {
   id: string;
   numero_encomenda: string;
-  fornecedor_nome: string;
   fornecedor_id: string;
+  fornecedores: { nome: string } | null;
   valor_total_custo: number;
   valor_pago_fornecedor: number;
   saldo_devedor_fornecedor: number;
@@ -83,8 +83,8 @@ export default function ContasPagar() {
         .select(`
           id,
           numero_encomenda,
-          fornecedor_nome,
           fornecedor_id,
+          fornecedores ( nome ),
           valor_total_custo,
           valor_pago_fornecedor,
           saldo_devedor_fornecedor,
@@ -256,7 +256,7 @@ export default function ContasPagar() {
                       </div>
                     </TableCell>
 
-                    <TableCell>{conta.fornecedor_nome}</TableCell>
+                    <TableCell>{conta.fornecedores?.nome || 'N/A'}</TableCell>
 
                     <TableCell className="text-sm text-muted-foreground">
                       {new Date(conta.data_criacao).toLocaleDateString()}
@@ -370,7 +370,7 @@ export default function ContasPagar() {
                 </div>
                 <div>
                   <label className="text-sm font-medium">Fornecedor:</label>
-                  <p className="text-sm text-muted-foreground">{selectedConta.fornecedor_nome}</p>
+                  <p className="text-sm text-muted-foreground">{selectedConta.fornecedores?.nome || 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Data Criação:</label>

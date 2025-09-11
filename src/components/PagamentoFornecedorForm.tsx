@@ -30,7 +30,7 @@ type PagamentoFornecedorFormData = z.infer<typeof pagamentoFornecedorSchema>;
 interface ContaPagar {
   encomenda_id: string;
   numero_encomenda: string;
-  fornecedor_nome: string;
+  fornecedores?: { nome: string } | null;
   valor_total_custo: number;
   valor_pago_fornecedor: number;
   saldo_devedor_fornecedor: number;
@@ -105,7 +105,7 @@ export default function PagamentoFornecedorForm({ onSuccess, conta }: PagamentoF
         <div className="p-3 bg-muted/30 rounded-lg space-y-1 mb-4">
           <p className="text-sm font-medium">Detalhes da Encomenda:</p>
           <p className="text-sm text-muted-foreground">
-            Fornecedor: {conta.fornecedor_nome}
+            Fornecedor: {conta.fornecedores?.nome || 'N/A'}
           </p>
           <p className="text-sm text-muted-foreground">
             Valor Total (Custo): €{conta.valor_total_custo.toFixed(2)}
