@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { OptimizedRoleGuard } from '@/components/OptimizedRoleGuard';
 import { ProjetoForm } from '@/components/ProjetoForm';
 import { ProjetoView } from '@/components/ProjetoView';
+import { ProjetoActions } from '@/components/ProjetoActions';
 import { useProjetos } from '@/hooks/useProjetos';
 import { Projeto } from '@/types/projeto';
 import { useLocale } from '@/contexts/LocaleContext';
@@ -80,13 +81,15 @@ export default function Projetos() {
                 <CardHeader>
                   <CardTitle className="flex justify-between items-center">
                     {projeto.nome}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setViewingProjeto(projeto)}
-                    >
-                      {lang === 'fr' ? 'Voir' : 'Ver'}
-                    </Button>
+                    <ProjetoActions
+                      projeto={projeto}
+                      onView={setViewingProjeto}
+                      onEdit={(p) => {
+                        setEditingProjeto(p);
+                        setShowForm(true);
+                      }}
+                      onRefresh={fetchProjetos}
+                    />
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
