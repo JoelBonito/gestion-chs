@@ -68,20 +68,23 @@ export function AppSidebar() {
 
   // Filter items based on user role
   const getFilteredItems = () => {
+    // Check if user has access to Projects tab
+    const hasProjectsAccess = user?.email === 'jbento1@gmail.com' || 
+                              user?.email === 'admin@admin.com' || 
+                              user?.email === 'ham@admin.com';
+
     if (isCollaborator) {
-      return items.filter(item => 
-        item.url === '/produtos' || 
-        item.url === '/encomendas' || 
-        item.url === '/financeiro'
-      );
+      const allowedUrls = ['/produtos', '/encomendas', '/financeiro'];
+      if (hasProjectsAccess) allowedUrls.push('/projetos');
+      return items.filter(item => allowedUrls.includes(item.url));
     }
+    
     if (hasRole('factory')) {
-      return items.filter(item => 
-        item.url === '/produtos' || 
-        item.url === '/encomendas' || 
-        item.url === '/financeiro'
-      );
+      const allowedUrls = ['/produtos', '/encomendas', '/financeiro'];
+      if (hasProjectsAccess) allowedUrls.push('/projetos');
+      return items.filter(item => allowedUrls.includes(item.url));
     }
+    
     return items;
   };
 
