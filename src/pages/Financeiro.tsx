@@ -111,19 +111,19 @@ export default function Financeiro() {
             <CardHeader>
               <CardTitle className="text-sm text-muted-foreground">{t("Total a Receber")}</CardTitle>
             </CardHeader>
-            <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.a_receber)}</CardContent>
+            <CardContent className="text-2xl font-bold">{formatCurrency(resumo.a_receber)}</CardContent>
           </Card>
           <Card>
             <CardHeader>
               <CardTitle className="text-sm text-muted-foreground">{t("Total a Pagar")}</CardTitle>
             </CardHeader>
-            <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.a_pagar)}</CardContent>
+            <CardContent className="text-2xl font-bold">{formatCurrency(resumo.a_pagar)}</CardContent>
           </Card>
           <Card>
             <CardHeader>
               <CardTitle className="text-sm text-muted-foreground">{t("Saldo Atual")}</CardTitle>
             </CardHeader>
-            <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.saldo)}</CardContent>
+            <CardContent className="text-2xl font-bold">{formatCurrency(resumo.saldo)}</CardContent>
           </Card>
         </div>
       )}
