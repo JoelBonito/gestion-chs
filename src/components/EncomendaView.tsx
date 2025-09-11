@@ -184,17 +184,23 @@ export default function EncomendaView({ encomendaId }: Props) {
       });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
+      
+      // Definir margens de 20mm
+      const margin = 20;
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfHeight = (imgProps.height * pageWidth) / imgProps.width;
+      const usableWidth = pageWidth - (margin * 2);
+      const usableHeight = pageHeight - (margin * 2);
       
-      // Se a imagem for muito alta, ajusta para caber na página
-      if (pdfHeight > pageHeight) {
-        const ratio = pageHeight / pdfHeight;
-        pdf.addImage(imgData, "PNG", 0, 0, pageWidth * ratio, pageHeight);
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfHeight = (imgProps.height * usableWidth) / imgProps.width;
+      
+      // Se a imagem for muito alta, ajusta para caber na área útil
+      if (pdfHeight > usableHeight) {
+        const ratio = usableHeight / pdfHeight;
+        pdf.addImage(imgData, "PNG", margin, margin, usableWidth * ratio, usableHeight);
       } else {
-        pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pdfHeight);
+        pdf.addImage(imgData, "PNG", margin, margin, usableWidth, pdfHeight);
       }
       
       pdf.save(`Encomenda-${encomenda.numero_encomenda}.pdf`);
