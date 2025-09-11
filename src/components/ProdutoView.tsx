@@ -4,8 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Package, DollarSign, Paperclip } from "lucide-react";
 import { AttachmentManager } from "@/components/AttachmentManager";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function ProdutoView({ produto }) {
+  const { user } = useAuth();
+  const isFelipe = user?.email?.toLowerCase() === "felipe@colaborador.com";
+  
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-start">
@@ -78,7 +82,7 @@ export default function ProdutoView({ produto }) {
                 {formatCurrencyEUR(produto.preco_venda)}
               </div>
             </div>
-            {produto.preco_custo && (
+            {!isFelipe && produto.preco_custo && (
               <div>
                 <strong>Preço de Custo:</strong>
                 <div className="text-lg font-semibold">
@@ -86,7 +90,7 @@ export default function ProdutoView({ produto }) {
                 </div>
               </div>
             )}
-            {produto.preco_custo && produto.preco_venda && (
+            {!isFelipe && produto.preco_custo && produto.preco_venda && (
               <div>
                 <strong>Margem:</strong>
                 <div className="text-sm text-muted-foreground">
