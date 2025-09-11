@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,35 +14,32 @@ import {
   Package, 
   Users, 
   Factory, 
-  ShoppingCart,
-  Folder,
+  ShoppingCart, 
   CreditCard,
-  LogOut
+  LogOut,
+  User,
+  Folder
 } from "lucide-react";
 
-export default function HorizontalNav() {
+export function HorizontalNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { user } = useAuth();
-  const { hasRole } = useUserRole();
-  const { isCollaborator } = useIsCollaborator();
+  const { roles } = useUserRole();
+  const isCollaborator = useIsCollaborator();
+  const { toast } = useToast();
   const { locale, isRestrictedFR } = useLocale();
 
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   const handleLogout = async () => {
-    setIsLoggingOut(true);
-    const { error } = await supabase.auth.signOut();
-    setIsLoggingOut(false);
-    if (error) {
+    try {
+      await supabase.auth.signOut();
       toast({
-        title: "Erro ao sair",
-        description: error.message,
-        variant: "destructive"
+        title: "Logout realizado",
+        description: "Até a próxima!",
       });
-    } else {
       navigate("/login");
+    } catch (error) {
+      console.error("Erro no logout:", error);
     }
   };
 
@@ -58,15 +56,6 @@ export default function HorizontalNav() {
   // Filter navigation based on user role
   const getFilteredNavigation = () => {
     if (isRestrictedFR) {
-      const email = user?.email?.toLowerCase();
-      if (email === "ham@admin.com") {
-        console.log('[FR-Restricted] override for ham@admin.com: include projets');
-        return navigation.filter(item => 
-          item.href === '/encomendas' || 
-          item.href === '/financeiro' ||
-          item.href === '/projetos'
-        );
-      }
       console.log('[FR-Restricted] nav limited to orders/finance');
       return navigation.filter(item => 
         item.href === '/encomendas' || 
@@ -97,10 +86,15 @@ export default function HorizontalNav() {
 
   return (
     <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/50 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-14">
-          <div className="flex items-center space-x-4">
-            <Link to="/dashboard" className="flex items-center space-x-2">
+      <div className="container mx-auto">
+        <div className="flex h-16 items-center justify-between px-6">
+          <div className="flex items-center space-x-8">
+            <Link to={isRestrictedFR ? "/encomendas" : isCollaborator ? "/produtos" : "/dashboard"} className="flex items-center space-x-3">
+              <img 
+                src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png" 
+                alt="Gestion CHS Logo" 
+                className="h-8 w-auto"
+              />
               <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
                 Gestion CHS
               </span>
@@ -129,22 +123,23 @@ export default function HorizontalNav() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            {user && (
-              <div className="flex items-center space-x-3">
-                <Badge variant="outline">{user.email}</Badge>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleLogout}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sair
-                </Button>
+          {user && (
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <User className="h-4 w-4" />
+                <span className="text-sm font-medium">{user.email}</span>
               </div>
-            )}
-          </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sair
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </nav>
