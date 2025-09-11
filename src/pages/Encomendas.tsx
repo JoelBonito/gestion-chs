@@ -464,7 +464,10 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                 </DialogDescription>
               </DialogHeader>
               <EncomendaForm
-                valorTotal={0}
+                onSuccess={() => {
+                  setDialogOpen(false);
+                  fetchEncomendas();
+                }}
               />
             </DialogContent>
           </Dialog>
@@ -792,7 +795,12 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
           </DialogHeader>
           {selectedEncomenda && (
             <EncomendaForm
-              valorTotal={selectedEncomenda?.valor_total || 0}
+              encomenda={selectedEncomenda}
+              isEditing={true}
+              onSuccess={() => {
+                setEditDialogOpen(false);
+                fetchEncomendas();
+              }}
             />
           )}
         </DialogContent>

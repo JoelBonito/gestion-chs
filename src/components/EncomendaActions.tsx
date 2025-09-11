@@ -29,10 +29,9 @@ interface EncomendaActionsProps {
   onEdit?: (data: any) => void;
   onDelete?: () => void;
   onTransport?: () => void;
-  onDuplicate?: (id: string) => void;
 }
 
-export function EncomendaActions({ encomenda, onView, onEdit, onDelete, onDuplicate }: EncomendaActionsProps) {
+export function EncomendaActions({ encomenda, onView, onEdit, onDelete }: EncomendaActionsProps) {
   const { hasRole, canEdit } = useUserRole();
   const { isCollaborator } = useIsCollaborator();
   const handleDelete = async () => {
@@ -69,10 +68,6 @@ export function EncomendaActions({ encomenda, onView, onEdit, onDelete, onDuplic
             <DropdownMenuItem onClick={() => onEdit?.(encomenda)}>
               <Edit className="mr-2 h-4 w-4" />
               Editar
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDuplicate?.(encomenda.id)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Duplicar
             </DropdownMenuItem>
             <AlertDialog>
               <AlertDialogTrigger asChild>
