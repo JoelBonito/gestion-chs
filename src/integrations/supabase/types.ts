@@ -347,6 +347,39 @@ export type Database = {
         }
         Relationships: []
       }
+      invoices_backup: {
+        Row: {
+          amount: number | null
+          attachment_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string | null
+          invoice_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number | null
+          attachment_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string | null
+          invoice_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number | null
+          attachment_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string | null
+          invoice_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       itens_encomenda: {
         Row: {
           created_at: string | null
@@ -379,13 +412,6 @@ export type Database = {
           subtotal?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_itens_encomenda_produto_id"
-            columns: ["produto_id"]
-            isOneToOne: false
-            referencedRelation: "products_public"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "fk_itens_encomenda_produto_id"
             columns: ["produto_id"]
@@ -617,62 +643,7 @@ export type Database = {
       }
     }
     Views: {
-      products_public: {
-        Row: {
-          ativo: boolean | null
-          created_at: string | null
-          created_by: string | null
-          deactivated_at: string | null
-          deactivated_reason: string | null
-          fornecedor_id: string | null
-          id: string | null
-          marca: string | null
-          nome: string | null
-          preco_custo: number | null
-          size_weight: number | null
-          tipo: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          ativo?: boolean | null
-          created_at?: string | null
-          created_by?: string | null
-          deactivated_at?: string | null
-          deactivated_reason?: string | null
-          fornecedor_id?: string | null
-          id?: string | null
-          marca?: string | null
-          nome?: string | null
-          preco_custo?: number | null
-          size_weight?: number | null
-          tipo?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          ativo?: boolean | null
-          created_at?: string | null
-          created_by?: string | null
-          deactivated_at?: string | null
-          deactivated_reason?: string | null
-          fornecedor_id?: string | null
-          id?: string | null
-          marca?: string | null
-          nome?: string | null
-          preco_custo?: number | null
-          size_weight?: number | null
-          tipo?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "produtos_fornecedor_id_fkey"
-            columns: ["fornecedor_id"]
-            isOneToOne: false
-            referencedRelation: "fornecedores"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       can_edit: {
