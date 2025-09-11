@@ -71,22 +71,14 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
           </Button>
           
           {!isCollaborator && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleEdit}
-                className="h-8 w-8"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              
-              <ProdutoActions
-                produto={produto}
-                onEdit={handleEdit}
-                onRefresh={onUpdate}
-              />
-            </>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleEdit}
+              className="h-8 w-8"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
           )}
         </div>
       </div>

@@ -46,15 +46,22 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
        queryKey: ['financial-attachments'] 
      });
      
-     // Invalidar queries específicas para projetos
-     if (entityType === 'projeto') {
-       await queryClient.invalidateQueries({ 
-         queryKey: ['projeto-attachments'] 
-       });
-       await queryClient.invalidateQueries({ 
-         queryKey: ['projeto-attachments', entityId] 
-       });
-     }
+      // Invalidar queries específicas para produtos
+      if (entityType === 'produto') {
+        await queryClient.invalidateQueries({ 
+          queryKey: ['attachments', entityType, entityId] 
+        });
+      }
+      
+      // Invalidar queries específicas para projetos
+      if (entityType === 'projeto') {
+        await queryClient.invalidateQueries({ 
+          queryKey: ['projeto-attachments'] 
+        });
+        await queryClient.invalidateQueries({ 
+          queryKey: ['projeto-attachments', entityId] 
+        });
+      }
      
      // Wait a bit to ensure all queries are invalidated
      await new Promise(resolve => setTimeout(resolve, 100));
@@ -105,19 +112,26 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
      queryKey: ['financial-attachments'] 
    });
    
-   // Invalidar queries específicas para projetos
-   if (entityType === 'projeto') {
-     await queryClient.invalidateQueries({ 
-       queryKey: ['projeto-attachments'] 
-     });
-     await queryClient.invalidateQueries({ 
-       queryKey: ['projeto-attachments', entityId] 
-     });
-     
-     toast({
-       title: "Anexo removido do projeto",
-     });
-   }
+    // Invalidar queries específicas para produtos
+    if (entityType === 'produto') {
+      await queryClient.invalidateQueries({ 
+        queryKey: ['attachments', entityType, entityId] 
+      });
+    }
+    
+    // Invalidar queries específicas para projetos
+    if (entityType === 'projeto') {
+      await queryClient.invalidateQueries({ 
+        queryKey: ['projeto-attachments'] 
+      });
+      await queryClient.invalidateQueries({ 
+        queryKey: ['projeto-attachments', entityId] 
+      });
+      
+      toast({
+        title: "Anexo removido do projeto",
+      });
+    }
    
    await refetch();
    
