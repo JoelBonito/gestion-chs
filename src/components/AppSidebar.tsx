@@ -44,36 +44,41 @@ export function AppSidebar({ className }: AppSidebarProps) {
   ];
 
   const getFilteredItems = () => {
-    // Usuários admin têm acesso completo a todas as abas
-    const isFullAdmin = user?.email?.toLowerCase() === "jbento1@gmail.com" || 
-                       user?.email?.toLowerCase() === "admin@admin.com";
+    // PRIORITY 1: Usuários admin hardcoded têm acesso completo SEMPRE
+    const isHardcodedAdmin = user?.email?.toLowerCase() === "jbento1@gmail.com" || 
+                            user?.email?.toLowerCase() === "admin@admin.com";
     
-    if (isFullAdmin) {
-      return items; // Retorna todos os itens sem filtro
+    if (isHardcodedAdmin) {
+      console.log('Admin hardcoded detectado:', user?.email);
+      return items; // Retorna TODOS os itens sem qualquer filtro
     }
 
-    // Caso seja colaborador
-    if (isCollaborator) {
+    // PRIORITY 2: Caso seja colaborador específico (felipe@colaborador.com)
+    if (isCollaborator && user?.email?.toLowerCase() === "felipe@colaborador.com") {
+      console.log('Colaborador detectado:', user?.email);
       return items.filter(item =>
         ["/produtos", "/encomendas", "/financeiro", "/projetos"].includes(item.url)
       );
     }
 
-    // Caso seja factory
+    // PRIORITY 3: Caso seja factory
     if (hasRole("factory")) {
+      console.log('Role factory detectado:', user?.email);
       return items.filter(item =>
         ["/producao", "/encomendas", "/financeiro", "/projetos"].includes(item.url)
       );
     }
 
-    // Caso seja restricted_fr (como ham@admin.com)
+    // PRIORITY 4: Caso seja restricted_fr (como ham@admin.com)
     if (hasRole("restricted_fr") || user?.email?.toLowerCase() === "ham@admin.com") {
+      console.log('Role restricted_fr detectado:', user?.email);
       return items.filter(item =>
         ["/encomendas", "/financeiro", "/projetos"].includes(item.url)
       );
     }
 
-    // Default → retorna todos os itens
+    // Default → retorna todos os itens para outros utilizadores
+    console.log('Default access para:', user?.email);
     return items;
   };
 
