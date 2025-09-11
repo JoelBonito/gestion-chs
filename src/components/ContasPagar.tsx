@@ -288,24 +288,26 @@ export default function ContasPagar() {
                         <Eye className="h-4 w-4" />
                       </Button>
 
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              title={t("Registrar Pagamento")}
-                              type="button"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <PagamentoFornecedorForm
-                              conta={{...conta, encomenda_id: conta.id}}
-                              onSuccess={handlePaymentSuccess}
-                            />
-                          </DialogContent>
-                        </Dialog>
+                        {!isFelipe && (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                title={t("Registrar Pagamento")}
+                                type="button"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <PagamentoFornecedorForm
+                                conta={{...conta, encomenda_id: conta.id}}
+                                onSuccess={handlePaymentSuccess}
+                              />
+                            </DialogContent>
+                          </Dialog>
+                        )}
 
                         <Dialog>
                           <DialogTrigger asChild>
