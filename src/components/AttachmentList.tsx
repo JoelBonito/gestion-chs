@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Download, Trash2, FileText, Image, File, ExternalLink } from 'lucide-react';
+import { Eye, Download, Trash2, FileText, Image, File, ExternalLink, X } from 'lucide-react';
 import { useAttachments } from '@/hooks/useAttachments';
+import { useTransporteAttachments } from '@/hooks/useTransporteAttachments';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,129 +22,151 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
   onChanged,
   compact = false 
 }) => {
-  const { attachments, isLoading, deleteAttachment } = useAttachments(entityType, entityId);
-  const { hasRole } = useUserRole();
-  const [imagePreview, setImagePreview] = useState<{ url: string; fileName: string } | null>(null);
-  const [pdfPreview, setPdfPreview] = useState<{ url: string; fileName: string; useGoogleViewer: boolean } | null>(null);
+  const isTransporte = entityType === 'transporte';
+  const genericAttachments = useAttachments(entityType, entityId);
+  const transporteAttachments = useTransporteAttachments(isTransporte ? entityId : '');
   
-  const canDelete = hasRole('admin') || hasRole('ops');
+  // Use the appropriate hook based on entity type
+  const { attachments, isLoading, deleteAttachment } = isTransporte ? transporteAttachments : genericAttachments;
+  
+  const { hasRole, isHardcodedAdmin } = useUserRole();
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewType, setPreviewType] = useState<string>('');
+  const [previewTitle, setPreviewTitle] = useState<string>('');
 
-  // Função para obter URL pública usando Supabase SDK
-  const getPublicUrl = (storagePath: string) => {
-    const { data } = supabase.storage.from('attachments').getPublicUrl(storagePath);
-    console.log('AttachmentList - URL pública gerada pelo SDK:', data.publicUrl);
-    return data.publicUrl;
-  };
+  // Check if user can delete files
+  const canDelete = isHardcodedAdmin || hasRole('admin') || hasRole('ops') || hasRole('factory') || hasRole('finance');
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) {
+  const getFileIcon = (fileType: string) => {
+    if (fileType?.startsWith('image/')) {
       return <Image className="w-4 h-4" />;
-    }
-    if (mimeType === 'application/pdf') {
-      return <File className="w-4 h-4 text-red-500" />;
-    }
-    if (mimeType === 'text/plain') {
-      return <FileText className="w-4 h-4 text-blue-500" />;
-    }
-    return <FileText className="w-4 h-4" />;
-  };
-
-  const getFileTypeLabel = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return 'Imagem';
-    if (mimeType === 'application/pdf') return 'PDF';
-    if (mimeType === 'text/plain') return 'Texto';
-    return 'Arquivo';
-  };
-
-  const handlePreview = (attachment: any) => {
-    console.log("=== PREVIEW CLICKED ===");
-    console.log("AttachmentList - Visualizando anexo:", attachment);
-    
-    // Usar SDK do Supabase para gerar URL correta
-    const publicUrl = getPublicUrl(attachment.storage_path);
-    console.log("AttachmentList - URL pública:", publicUrl);
-    
-    if (attachment.file_type.startsWith('image/')) {
-      console.log("AttachmentList - Abrindo imagem em modal");
-      setImagePreview({
-        url: publicUrl,
-        fileName: attachment.file_name
-      });
-    } else if (attachment.file_type === 'application/pdf') {
-      console.log("AttachmentList - Abrindo PDF em modal");
-      setPdfPreview({
-        url: publicUrl,
-        fileName: attachment.file_name,
-        useGoogleViewer: false
-      });
+    } else if (fileType?.includes('pdf')) {
+      return <FileText className="w-4 h-4" />;
     } else {
-      console.log("AttachmentList - Abrindo arquivo em nova aba");
-      window.open(publicUrl, '_blank');
+      return <File className="w-4 h-4" />;
     }
   };
 
-  const handleOpenInNewTab = (storagePath: string) => {
-    const publicUrl = getPublicUrl(storagePath);
-    console.log("AttachmentList - Abrindo em nova aba com URL:", publicUrl);
-    window.open(publicUrl, '_blank');
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return 'Tamanho desconhecido';
+    
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const handleDownload = async (attachment: any) => {
-    console.log("AttachmentList - Fazendo download do anexo:", attachment);
-    
-    const publicUrl = getPublicUrl(attachment.storage_path);
-    console.log("AttachmentList - URL de download:", publicUrl);
+  const downloadFile = async (attachment: any) => {
+    try {
+      console.log("Downloading attachment:", attachment);
+      
+      let fileUrl: string;
+      if (isTransporte) {
+        fileUrl = attachment.url;
+      } else {
+        fileUrl = attachment.storage_url;
+      }
+      
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = isTransporte ? attachment.name : attachment.file_name;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+    }
+  };
+
+  const getPublicUrl = async (storagePath: string) => {
+    try {
+      const { data } = supabase.storage
+        .from('attachments')
+        .getPublicUrl(storagePath);
+      
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error getting public URL:', error);
+      return null;
+    }
+  };
+
+  const handlePreview = async (attachment: any) => {
+    console.log("Preview attachment:", attachment);
     
     try {
-      const response = await fetch(publicUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = attachment.file_name;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      console.log("AttachmentList - Download iniciado com sucesso");
+      let fileUrl: string;
+      let fileName: string;
+      let fileType: string;
+      
+      if (isTransporte) {
+        fileUrl = attachment.url;
+        fileName = attachment.name;
+        fileType = attachment.file_type;
+      } else {
+        fileUrl = attachment.storage_url;
+        fileName = attachment.file_name;
+        fileType = attachment.file_type;
+      }
+      
+      setPreviewUrl(fileUrl);
+      setPreviewType(fileType);
+      setPreviewTitle(fileName);
     } catch (error) {
-      console.error("AttachmentList - Erro ao fazer download:", error);
-      // Fallback: tentar abrir em nova aba
-      window.open(publicUrl, '_blank');
+      console.error('Error previewing file:', error);
     }
   };
 
   const handleDelete = async (attachment: any) => {
+    if (!window.confirm('Tem certeza que deseja excluir este anexo?')) {
+      return;
+    }
+
     try {
-      console.log("AttachmentList - Iniciando delete do anexo:", attachment);
       await deleteAttachment(attachment);
-      
-      // Chamar callback após delete bem-sucedido
-      if (onChanged) {
-        console.log("AttachmentList - Executando onChanged após delete");
-        onChanged();
-      }
+      if (onChanged) onChanged();
     } catch (error) {
-      console.error("AttachmentList - Erro ao deletar anexo:", error);
+      console.error('Error deleting attachment:', error);
     }
   };
 
-  const handleIframeError = () => {
-    console.log("AttachmentList - Iframe bloqueado, mudando para Google Viewer");
-    if (pdfPreview && !pdfPreview.useGoogleViewer) {
-      setPdfPreview({
-        ...pdfPreview,
-        useGoogleViewer: true
-      });
+  const renderPreviewContent = () => {
+    if (!previewUrl) return null;
+
+    if (previewType?.startsWith('image/')) {
+      return (
+        <div className="flex justify-center">
+          <img 
+            src={previewUrl} 
+            alt={previewTitle}
+            className="max-w-full max-h-96 object-contain"
+          />
+        </div>
+      );
+    } else if (previewType?.includes('pdf')) {
+      return (
+        <div className="w-full h-96">
+          <iframe
+            src={previewUrl}
+            className="w-full h-full border-0"
+            title={previewTitle}
+          />
+        </div>
+      );
+    } else {
+      return (
+        <div className="text-center p-8">
+          <File className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <p>Prévia não disponível para este tipo de arquivo.</p>
+          <Button 
+            onClick={() => downloadFile({ [isTransporte ? 'url' : 'storage_url']: previewUrl, [isTransporte ? 'name' : 'file_name']: previewTitle })}
+            className="mt-4"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Baixar Arquivo
+          </Button>
+        </div>
+      );
     }
   };
 
@@ -174,7 +196,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
             variant="ghost"
             size="icon"
             onClick={() => handlePreview(attachment)}
-            title={attachment.file_name}
+            title={isTransporte ? attachment.name : attachment.file_name}
             className="h-8 w-8"
           >
             {getFileIcon(attachment.file_type)}
@@ -185,202 +207,106 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
             +{attachments.length - 2}
           </Badge>
         )}
+        
+        {/* Preview Dialog */}
+        <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center justify-between">
+                <span>{previewTitle}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setPreviewUrl(null)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </DialogTitle>
+            </DialogHeader>
+            {renderPreviewContent()}
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="space-y-2">
-        {attachments.map((attachment) => (
-          <Card key={attachment.id} className="p-3">
-            <CardContent className="p-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  {getFileIcon(attachment.file_type)}
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {attachment.file_name}
-                    </p>
-                    <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                      <Badge variant="secondary" className="text-xs">
-                        {getFileTypeLabel(attachment.file_type)}
-                      </Badge>
-                      <span>{formatFileSize(attachment.file_size)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handlePreview(attachment)}
-                    title="Visualizar"
-                    type="button"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-
-                  {attachment.file_type === 'application/pdf' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleOpenInNewTab(attachment.storage_path)}
-                      title="Abrir em nova aba"
-                      type="button"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </Button>
-                  )}
-
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDownload(attachment)}
-                    title="Download"
-                    type="button"
-                  >
-                    <Download className="w-4 h-4" />
-                  </Button>
-
-                  {canDelete && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="text-destructive hover:text-destructive"
-                          type="button"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent aria-describedby={undefined}>
-                        <DialogHeader>
-                          <DialogTitle>Excluir anexo</DialogTitle>
-                          <DialogDescription>
-                            Tem certeza que deseja excluir o arquivo "{attachment.file_name}"? 
-                            Esta ação não pode ser desfeita.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <Button variant="outline" type="button">Cancelar</Button>
-                          <Button 
-                            variant="destructive"
-                            type="button"
-                            onClick={() => handleDelete(attachment)}
-                          >
-                            Excluir
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Image Preview Modal - Sem botão X duplicado */}
-      {imagePreview && (
-        <Dialog open={!!imagePreview} onOpenChange={() => setImagePreview(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] p-0" aria-describedby={undefined}>
-            <DialogHeader className="p-6 pb-0">
-              <DialogTitle className="text-lg font-medium truncate">
-                {imagePreview.fileName}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="p-6 pt-2">
-              <div className="flex items-center justify-center bg-muted rounded-lg p-4">
-                <img
-                  src={imagePreview.url}
-                  alt={imagePreview.fileName}
-                  className="max-w-full max-h-[60vh] object-contain rounded"
-                  onError={(e) => {
-                    console.error('AttachmentList - Erro ao carregar imagem:', imagePreview.url);
-                    e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIxIDEyQzIxIDEzLjEwNDYgMjAuMTA0NiAxNCA5IDEzSDdDNS44OTU0MyAxNCA1IDEzLjEwNDYgNSAxMlY3QzUgNS44OTU0MyA1Ljg5NTQzIDUgNyA1SDEyQzEzLjEwNDYgNSAxNCA1Ljg5NTQzIDE0IDdWMTJaIiBzdHJva2U9IiM5Q0EzQUYiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K';
-                  }}
-                />
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* PDF Preview Modal - Sem botão X duplicado */}
-      {pdfPreview && (
-        <Dialog open={!!pdfPreview} onOpenChange={() => setPdfPreview(null)}>
-          <DialogContent className="max-w-6xl max-h-[95vh] p-0" aria-describedby={undefined}>
-            <DialogHeader className="p-4 pb-0 border-b">
-              <div className="flex items-center justify-between">
-                <DialogTitle className="text-lg font-medium truncate">
-                  {pdfPreview.fileName}
-                </DialogTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const publicUrl = getPublicUrl(pdfPreview.url.includes('attachments/') 
-                      ? pdfPreview.url.split('/attachments/')[1] 
-                      : pdfPreview.url);
-                    window.open(publicUrl, '_blank');
-                  }}
-                  title="Abrir em nova aba"
-                  type="button"
-                >
-                  <ExternalLink className="w-4 h-4 mr-1" />
-                  Nova aba
-                </Button>
-              </div>
-            </DialogHeader>
-            <div className="p-4">
-              <div className="bg-muted rounded-lg overflow-hidden border">
-                {pdfPreview.useGoogleViewer ? (
-                  <iframe
-                    src={`https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(pdfPreview.url)}`}
-                    className="w-full h-[75vh]"
-                    title={pdfPreview.fileName}
-                    frameBorder="0"
-                    onLoad={() => {
-                      console.log('AttachmentList - PDF carregado com Google Viewer');
-                    }}
-                  />
-                ) : (
-                  <iframe
-                    src={pdfPreview.url}
-                    className="w-full h-[75vh]"
-                    title={pdfPreview.fileName}
-                    frameBorder="0"
-                    onLoad={() => {
-                      console.log('AttachmentList - PDF carregado diretamente');
-                    }}
-                    onError={handleIframeError}
-                  />
-                )}
-              </div>
-              <div className="mt-3 text-center">
-                <p className="text-sm text-muted-foreground">
-                  {pdfPreview.useGoogleViewer && "Visualização via Google Viewer. "}
-                  Problemas para visualizar? {' '}
-                  <Button
-                    variant="link"
-                    size="sm"
-                    onClick={() => window.open(pdfPreview.url, '_blank')}
-                    className="p-0 h-auto text-sm"
-                    type="button"
-                  >
-                    Clique aqui para abrir em nova aba
-                  </Button>
+    <div className="space-y-2">
+      <h3 className="text-sm font-medium text-gray-700">Anexos ({attachments.length})</h3>
+      
+      {attachments.map((attachment) => (
+        <Card key={attachment.id} className="p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
+              {getFileIcon(attachment.file_type)}
+              
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {isTransporte ? attachment.name : attachment.file_name}
                 </p>
+                <div className="flex items-center space-x-2 text-xs text-gray-500">
+                  <span>{formatFileSize(attachment.file_size)}</span>
+                  <span>•</span>
+                  <span>{new Date(attachment.created_at).toLocaleDateString('pt-BR')}</span>
+                </div>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </>
+            
+            <div className="flex items-center space-x-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handlePreview(attachment)}
+                title="Visualizar"
+                className="h-8 w-8"
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => downloadFile(attachment)}
+                title="Baixar"
+                className="h-8 w-8"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+              
+              {canDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDelete(attachment)}
+                  title="Excluir"
+                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </Card>
+      ))}
+
+      {/* Preview Dialog */}
+      <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{previewTitle}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setPreviewUrl(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          {renderPreviewContent()}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { AttachmentUpload } from './AttachmentUpload';
 import { AttachmentList } from './AttachmentList';
 import { useAttachments } from '@/hooks/useAttachments';
+import { useTransporteAttachments } from '@/hooks/useTransporteAttachments';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,7 +21,10 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
  onChanged,
  compact = false
 }) => {
- const { createAttachment, refetch } = useAttachments(entityType, entityId);
+ const isTransporte = entityType === 'transporte';
+ const genericAttachments = useAttachments(entityType, entityId);
+ const transporteAttachments = useTransporteAttachments(isTransporte ? entityId : '');
+ 
  const queryClient = useQueryClient();
  const { toast } = useToast();
 
@@ -35,7 +39,20 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
    console.log(`AttachmentManager - Criando anexo para ${entityType}:${entityId}`);
    
    try {
-     const result = await createAttachment(fileData);
+     let result;
+     if (isTransporte) {
+       // Usar hook específico de transportes
+       result = await transporteAttachments.createAttachment({
+         name: fileData.file_name,
+         file_type: fileData.file_type,
+         url: fileData.storage_url,
+         file_size: fileData.file_size
+       });
+     } else {
+       // Usar hook genérico
+       result = await genericAttachments.createAttachment(fileData);
+     }
+     
      console.log("AttachmentManager - Anexo criado:", result);
      
      // Invalidar TODAS as queries relacionadas com anexos
@@ -48,28 +65,42 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
        queryKey: ['financial-attachments'] 
      });
      
-      // Invalidar queries específicas para produtos
-      if (entityType === 'produto') {
-        await queryClient.invalidateQueries({ 
-          queryKey: ['attachments', entityType, entityId] 
-        });
-      }
-      
-      // Invalidar queries específicas para projetos
-      if (entityType === 'projeto') {
-        await queryClient.invalidateQueries({ 
-          queryKey: ['projeto-attachments'] 
-        });
-        await queryClient.invalidateQueries({ 
-          queryKey: ['projeto-attachments', entityId] 
-        });
-      }
+     // Invalidar queries específicas para produtos
+     if (entityType === 'produto') {
+       await queryClient.invalidateQueries({ 
+         queryKey: ['attachments', entityType, entityId] 
+       });
+     }
      
+     // Invalidar queries específicas para projetos
+     if (entityType === 'projeto') {
+       await queryClient.invalidateQueries({ 
+         queryKey: ['projeto-attachments'] 
+       });
+       await queryClient.invalidateQueries({ 
+         queryKey: ['projeto-attachments', entityId] 
+       });
+     }
+     
+     // Invalidar queries específicas para transportes
+     if (entityType === 'transporte') {
+       await queryClient.invalidateQueries({ 
+         queryKey: ['transporte-attachments'] 
+       });
+       await queryClient.invalidateQueries({ 
+         queryKey: ['transporte-attachments', entityId] 
+       });
+     }
+    
      // Wait a bit to ensure all queries are invalidated
      await new Promise(resolve => setTimeout(resolve, 100));
      
      // Force refetch of current data
-     await refetch();
+     if (isTransporte) {
+       await transporteAttachments.refetch();
+     } else {
+       await genericAttachments.refetch();
+     }
      
      // Toast de sucesso específico para projetos
      if (entityType === 'projeto') {
@@ -100,7 +131,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
      
      throw error;
    }
- }, [entityType, entityId, createAttachment, onChanged, queryClient, refetch, toast]);
+ }, [entityType, entityId, isTransporte, transporteAttachments, genericAttachments, onChanged, queryClient, toast]);
 
  const handleDeleteSuccess = async () => {
    console.log("AttachmentManager - Delete bem-sucedido, executando onChanged");
@@ -114,28 +145,42 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
      queryKey: ['financial-attachments'] 
    });
    
-    // Invalidar queries específicas para produtos
-    if (entityType === 'produto') {
-      await queryClient.invalidateQueries({ 
-        queryKey: ['attachments', entityType, entityId] 
-      });
-    }
-    
-    // Invalidar queries específicas para projetos
-    if (entityType === 'projeto') {
-      await queryClient.invalidateQueries({ 
-        queryKey: ['projeto-attachments'] 
-      });
-      await queryClient.invalidateQueries({ 
-        queryKey: ['projeto-attachments', entityId] 
-      });
-      
-      toast({
-        title: "Anexo removido do projeto",
-      });
-    }
+   // Invalidar queries específicas para produtos
+   if (entityType === 'produto') {
+     await queryClient.invalidateQueries({ 
+       queryKey: ['attachments', entityType, entityId] 
+     });
+   }
    
-   await refetch();
+   // Invalidar queries específicas para projetos
+   if (entityType === 'projeto') {
+     await queryClient.invalidateQueries({ 
+       queryKey: ['projeto-attachments'] 
+     });
+     await queryClient.invalidateQueries({ 
+       queryKey: ['projeto-attachments', entityId] 
+     });
+     
+     toast({
+       title: "Anexo removido do projeto",
+     });
+   }
+   
+   // Invalidar queries específicas para transportes
+   if (entityType === 'transporte') {
+     await queryClient.invalidateQueries({ 
+       queryKey: ['transporte-attachments'] 
+     });
+     await queryClient.invalidateQueries({ 
+       queryKey: ['transporte-attachments', entityId] 
+     });
+   }
+  
+   if (isTransporte) {
+     await transporteAttachments.refetch();
+   } else {
+     await genericAttachments.refetch();
+   }
    
    if (onChanged) {
      onChanged();

@@ -620,6 +620,47 @@ export type Database = {
         }
         Relationships: []
       }
+      transporte_attachments: {
+        Row: {
+          created_at: string | null
+          file_size: number | null
+          file_type: string
+          id: string
+          name: string
+          transporte_id: string
+          uploaded_by: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          name: string
+          transporte_id: string
+          uploaded_by?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          name?: string
+          transporte_id?: string
+          uploaded_by?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transporte_attachments_transporte_id_fkey"
+            columns: ["transporte_id"]
+            isOneToOne: false
+            referencedRelation: "transportes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transportes: {
         Row: {
           created_at: string
