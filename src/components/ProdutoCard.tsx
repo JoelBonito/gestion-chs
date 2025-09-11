@@ -3,15 +3,17 @@ import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Edit, Trash2 } from "lucide-react";
+import { Eye, Edit, Paperclip } from "lucide-react";
 import { ProdutoForm } from "@/components/ProdutoForm";
 import ProdutoView from "@/components/ProdutoView";
 import { ProdutoActions } from "@/components/ProdutoActions";
+import { AttachmentManager } from "@/components/AttachmentManager";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 
 export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActive }) {
   const [showView, setShowView] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(false);
   const { isCollaborator } = useIsCollaborator();
 
   const handleEdit = () => {
@@ -20,6 +22,10 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
 
   const handleView = () => {
     setShowView(true);
+  };
+
+  const handleAttachments = () => {
+    setShowAttachments(true);
   };
 
   return (
@@ -45,17 +51,27 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
           )}
         </div>
 
-        <div className="flex justify-between items-center pt-2">
-          <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleView}
-              className="h-8 w-8"
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            {!isCollaborator && (
+        <div className="flex justify-end items-center pt-2 gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleView}
+            className="h-8 w-8"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleAttachments}
+            className="h-8 w-8"
+          >
+            <Paperclip className="h-4 w-4" />
+          </Button>
+          
+          {!isCollaborator && (
+            <>
               <Button
                 variant="ghost"
                 size="icon"
@@ -64,22 +80,20 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
               >
                 <Edit className="h-4 w-4" />
               </Button>
-            )}
-          </div>
-          
-          {!isCollaborator && (
-            <ProdutoActions
-              produto={produto}
-              onEdit={handleEdit}
-              onRefresh={onUpdate}
-            />
+              
+              <ProdutoActions
+                produto={produto}
+                onEdit={handleEdit}
+                onRefresh={onUpdate}
+              />
+            </>
           )}
         </div>
       </div>
 
       {/* Modal de Visualização */}
       <Dialog open={showView} onOpenChange={setShowView}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Visualizar Produto</DialogTitle>
           </DialogHeader>
@@ -87,9 +101,25 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
         </DialogContent>
       </Dialog>
 
+      {/* Modal de Anexos */}
+      <Dialog open={showAttachments} onOpenChange={setShowAttachments}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Anexos do Produto</DialogTitle>
+          </DialogHeader>
+          <AttachmentManager
+            entityType="produto"
+            entityId={produto.id}
+            onChanged={() => {
+              // Opcional: recarregar dados se necessário
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
       {/* Modal de Edição */}
       <Dialog open={showEdit} onOpenChange={setShowEdit}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Editar Produto</DialogTitle>
           </DialogHeader>
