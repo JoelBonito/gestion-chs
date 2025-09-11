@@ -10,13 +10,15 @@ interface AttachmentManagerProps {
  entityId: string;
  title?: string;
  onChanged?: () => void;
+ compact?: boolean;
 }
 
 export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
  entityType,
  entityId,
  title = "Anexos",
- onChanged
+ onChanged,
+ compact = false
 }) => {
  const { createAttachment, refetch } = useAttachments(entityType, entityId);
  const queryClient = useQueryClient();
@@ -145,18 +147,29 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
    return null;
  }
 
- return (
-   <div className="space-y-6">
-     <AttachmentUpload 
-       entityType={entityType}
-       entityId={entityId}
-       onUploadSuccess={handleUploadSuccess} 
-     />
-     <AttachmentList 
-       entityType={entityType} 
-       entityId={entityId}
-       onChanged={handleDeleteSuccess}
-     />
-   </div>
- );
+  if (compact) {
+    return (
+      <AttachmentUpload 
+        entityType={entityType}
+        entityId={entityId}
+        onUploadSuccess={handleUploadSuccess}
+        compact={true}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <AttachmentUpload 
+        entityType={entityType}
+        entityId={entityId}
+        onUploadSuccess={handleUploadSuccess} 
+      />
+      <AttachmentList 
+        entityType={entityType} 
+        entityId={entityId}
+        onChanged={handleDeleteSuccess}
+      />
+    </div>
+  );
 };

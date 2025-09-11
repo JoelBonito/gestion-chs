@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 interface Transporte {
   id: string;
-  tracking_number: number;
+  tracking_number: string;
   referencia: string | null;
   created_at: string;
   created_by: string;
@@ -49,7 +49,7 @@ export function TransportesTab() {
     }
 
     const data = {
-      tracking_number: Number(novo.tracking_number),
+      tracking_number: novo.tracking_number,
       referencia: novo.referencia || null,
     };
 
@@ -82,7 +82,7 @@ export function TransportesTab() {
   const handleEdit = (transporte: Transporte) => {
     setEditingTransporte(transporte);
     setNovo({
-      tracking_number: transporte.tracking_number.toString(),
+      tracking_number: transporte.tracking_number,
       referencia: transporte.referencia || "",
     });
     setDialogOpen(true);
@@ -135,18 +135,20 @@ export function TransportesTab() {
       ) : (
         transportes.map((transporte) => (
           <Card key={transporte.id}>
-            <CardContent className="p-4">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <div className="font-semibold text-lg">#{transporte.tracking_number}</div>
-                  <div className="text-sm text-muted-foreground">
+            <CardContent className="p-3">
+              <div className="flex justify-between items-center">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold">#{transporte.tracking_number}</div>
+                  <div className="text-sm text-muted-foreground truncate">
                     {transporte.referencia || "Sem referência"}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Criado em: {new Date(transporte.created_at).toLocaleDateString("pt-BR")}
-                  </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1 items-center ml-2">
+                  <AttachmentManager 
+                    entityType="transporte" 
+                    entityId={transporte.id}
+                    compact={true}
+                  />
                   <Button 
                     variant="ghost" 
                     size="icon"
@@ -173,15 +175,6 @@ export function TransportesTab() {
                   </Button>
                 </div>
               </div>
-              
-              {/* Anexos */}
-              <div className="border-t pt-4">
-                <AttachmentManager 
-                  entityType="transporte" 
-                  entityId={transporte.id}
-                  title="Anexos do Transporte"
-                />
-              </div>
             </CardContent>
           </Card>
         ))
@@ -199,7 +192,6 @@ export function TransportesTab() {
             <div>
               <label className="text-sm font-medium">Tracking Number *</label>
               <Input
-                type="number"
                 placeholder="Digite o número de rastreamento"
                 value={novo.tracking_number}
                 onChange={(e) => setNovo((n) => ({ ...n, tracking_number: e.target.value }))}

@@ -17,12 +17,14 @@ interface AttachmentUploadProps {
     storage_url: string;
     file_size: number;
   }) => void;
+  compact?: boolean;
 }
 
 export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ 
   entityType, 
   entityId, 
-  onUploadSuccess 
+  onUploadSuccess,
+  compact = false
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading, uploadProgress } = useSupabaseStorage();
@@ -66,6 +68,36 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
 
   if (!canUpload) {
     return null;
+  }
+
+  if (compact) {
+    return (
+      <div className="flex items-center">
+        <input
+          ref={fileInputRef}
+          type="file"
+          onChange={handleFileChange}
+          className="hidden"
+          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+          multiple={false}
+        />
+        
+        <Button 
+          type="button"
+          onClick={handleFileSelect}
+          disabled={isUploading}
+          variant="ghost"
+          size="icon"
+          title="Anexar arquivo"
+        >
+          {isUploading ? (
+            <Upload className="h-4 w-4 animate-spin" />
+          ) : (
+            <Paperclip className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+    );
   }
 
   return (

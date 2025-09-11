@@ -626,7 +626,7 @@ export type Database = {
           created_by: string
           id: string
           referencia: string | null
-          tracking_number: number
+          tracking_number: string
           updated_at: string
         }
         Insert: {
@@ -634,7 +634,7 @@ export type Database = {
           created_by?: string
           id?: string
           referencia?: string | null
-          tracking_number: number
+          tracking_number: string
           updated_at?: string
         }
         Update: {
@@ -642,7 +642,7 @@ export type Database = {
           created_by?: string
           id?: string
           referencia?: string | null
-          tracking_number?: number
+          tracking_number?: string
           updated_at?: string
         }
         Relationships: []
