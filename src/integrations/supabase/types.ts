@@ -142,6 +142,8 @@ export type Database = {
           id: string
           numero_encomenda: string
           observacoes: string | null
+          observacoes_felipe: string | null
+          observacoes_joel: string | null
           peso_total: number | null
           referencia: string | null
           referencia_interna: string | null
@@ -172,6 +174,8 @@ export type Database = {
           id?: string
           numero_encomenda: string
           observacoes?: string | null
+          observacoes_felipe?: string | null
+          observacoes_joel?: string | null
           peso_total?: number | null
           referencia?: string | null
           referencia_interna?: string | null
@@ -202,6 +206,8 @@ export type Database = {
           id?: string
           numero_encomenda?: string
           observacoes?: string | null
+          observacoes_felipe?: string | null
+          observacoes_joel?: string | null
           peso_total?: number | null
           referencia?: string | null
           referencia_interna?: string | null

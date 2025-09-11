@@ -20,7 +20,6 @@ const encomendaSchema = z.object({
   fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
   data_producao_estimada: z.string().optional(),
   data_envio_estimada: z.string().optional(),
-  observacoes: z.string().optional(),
 });
 
 type EncomendaFormData = z.infer<typeof encomendaSchema>;
@@ -62,7 +61,6 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
       fornecedor_id: "",
       data_producao_estimada: "",
       data_envio_estimada: "",
-      observacoes: "",
     },
   });
 
@@ -91,15 +89,14 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
 
     if (clientes.length === 0 || fornecedores.length === 0) return;
 
-    form.reset({
-      numero_encomenda: editingData.numero_encomenda || "",
-      etiqueta: editingData.etiqueta || "",
-      cliente_id: editingData.cliente_id || "",
-      fornecedor_id: editingData.fornecedor_id || "",
-      data_producao_estimada: editingData.data_producao_estimada || "",
-      data_envio_estimada: editingData.data_envio_estimada || "",
-      observacoes: editingData.observacoes || "",
-    });
+      form.reset({
+        numero_encomenda: editingData.numero_encomenda || "",
+        etiqueta: editingData.etiqueta || "",
+        cliente_id: editingData.cliente_id || "",
+        fornecedor_id: editingData.fornecedor_id || "",
+        data_producao_estimada: editingData.data_producao_estimada || "",
+        data_envio_estimada: editingData.data_envio_estimada || "",
+      });
 
     // Carrega itens da encomenda
     const fetchItens = async () => {
@@ -150,7 +147,6 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
           fornecedor_id: data.fornecedor_id,
           data_envio_estimada: data.data_envio_estimada || null,
           data_producao_estimada: data.data_producao_estimada || null,
-          observacoes: data.observacoes || null
         };
 
         const itensParaSalvar = itens.map(item => ({
@@ -173,13 +169,12 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
         const { data: newEncomenda, error } = await supabase
           .from("encomendas")
           .insert([{
-            numero_encomenda: data.numero_encomenda,
-            etiqueta: data.etiqueta || null,
-            cliente_id: data.cliente_id,
-            fornecedor_id: data.fornecedor_id,
-            data_producao_estimada: data.data_producao_estimada || null,
-            data_envio_estimada: data.data_envio_estimada || null,
-            observacoes: data.observacoes || null,
+          numero_encomenda: data.numero_encomenda,
+          etiqueta: data.etiqueta || null,
+          cliente_id: data.cliente_id,
+          fornecedor_id: data.fornecedor_id,
+          data_producao_estimada: data.data_producao_estimada || null,
+          data_envio_estimada: data.data_envio_estimada || null,
             valor_total: valorTotal,
           }])
           .select();
@@ -327,23 +322,6 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="observacoes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Observações</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="Observações adicionais..."
-                        className="resize-none"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </CardContent>
           </Card>
 

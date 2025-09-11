@@ -18,7 +18,8 @@ type Encomenda = {
   data_criacao?: string | null;
   data_producao_estimada?: string | null;
   data_envio_estimada?: string | null;
-  observacoes?: string | null;
+  observacoes_joel?: string | null;
+  observacoes_felipe?: string | null;
   clientes?: { nome?: string | null } | null;
   fornecedores?: { nome?: string | null } | null;
 };
@@ -51,8 +52,10 @@ export default function EncomendaView({ encomendaId }: Props) {
   const [loading, setLoading] = useState(true);
   const [loadingItens, setLoadingItens] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [editingObs, setEditingObs] = useState(false);
-  const [obsValue, setObsValue] = useState("");
+  const [editingJoel, setEditingJoel] = useState(false);
+  const [editingFelipe, setEditingFelipe] = useState(false);
+  const [joelValue, setJoelValue] = useState("");
+  const [felipeValue, setFelipeValue] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -134,7 +137,8 @@ export default function EncomendaView({ encomendaId }: Props) {
         .single();
       if (error) throw error;
       setEncomenda(data as Encomenda);
-      setObsValue(data.observacoes ?? "");
+      setJoelValue(data.observacoes_joel ?? "");
+      setFelipeValue(data.observacoes_felipe ?? "");
     } catch (e) {
       console.error(e);
       toast.error(isHam ? "Erreur lors du chargement" : "Erro ao carregar encomenda");
@@ -305,40 +309,35 @@ export default function EncomendaView({ encomendaId }: Props) {
           )}
         </div>
 
-        {/* Observações */}
-        <div>
+        {/* Observações Joel */}
+        <div className="mt-6">
           <div className="flex items-center justify-between mb-1">
-            <div className="text-sm text-muted-foreground">{t.notes}</div>
-            {!editingObs && (
-              <button
-                type="button"
-                onClick={() => setEditingObs(true)}
-                className="text-xs text-blue-600 hover:underline"
-              >
+            <div className="text-sm font-semibold text-muted-foreground">Observações Joel</div>
+            {(email === "jbento1@gmail.com" || email === "admin@admin.com") && !editingJoel && (
+              <button onClick={() => setEditingJoel(true)} className="text-xs text-blue-600 hover:underline">
                 ✏️ Editar
               </button>
             )}
           </div>
-
-          {editingObs ? (
+          {editingJoel ? (
             <div className="space-y-2">
               <textarea
                 className="w-full rounded-md border p-2 text-sm"
                 rows={3}
-                value={obsValue}
-                onChange={(e) => setObsValue(e.target.value)}
+                value={joelValue}
+                onChange={(e) => setJoelValue(e.target.value)}
               />
               <div className="flex gap-2">
                 <button
                   onClick={async () => {
                     const { error } = await supabase
                       .from("encomendas")
-                      .update({ observacoes: obsValue })
+                      .update({ observacoes_joel: joelValue })
                       .eq("id", id);
                     if (!error) {
-                      toast.success("Observações salvas!");
-                      setEncomenda((prev) => prev ? { ...prev, observacoes: obsValue } : prev);
-                      setEditingObs(false);
+                      toast.success("Observações Joel salvas!");
+                      setEncomenda((prev) => prev ? { ...prev, observacoes_joel: joelValue } : prev);
+                      setEditingJoel(false);
                     } else {
                       toast.error("Erro ao salvar observações");
                     }
@@ -349,8 +348,8 @@ export default function EncomendaView({ encomendaId }: Props) {
                 </button>
                 <button
                   onClick={() => {
-                    setObsValue(encomenda?.observacoes ?? "");
-                    setEditingObs(false);
+                    setJoelValue(encomenda?.observacoes_joel ?? "");
+                    setEditingJoel(false);
                   }}
                   className="px-3 py-1 text-sm bg-muted rounded-md"
                 >
@@ -360,7 +359,62 @@ export default function EncomendaView({ encomendaId }: Props) {
             </div>
           ) : (
             <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
-              {encomenda.observacoes || "—"}
+              {encomenda.observacoes_joel || "—"}
+            </div>
+          )}
+        </div>
+
+        {/* Observações Felipe */}
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-sm font-semibold text-muted-foreground">Observações Felipe</div>
+            {isFelipe && !editingFelipe && (
+              <button onClick={() => setEditingFelipe(true)} className="text-xs text-blue-600 hover:underline">
+                ✏️ Editar
+              </button>
+            )}
+          </div>
+          {editingFelipe ? (
+            <div className="space-y-2">
+              <textarea
+                className="w-full rounded-md border p-2 text-sm"
+                rows={3}
+                value={felipeValue}
+                onChange={(e) => setFelipeValue(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from("encomendas")
+                      .update({ observacoes_felipe: felipeValue })
+                      .eq("id", id);
+                    if (!error) {
+                      toast.success("Observações Felipe salvas!");
+                      setEncomenda((prev) => prev ? { ...prev, observacoes_felipe: felipeValue } : prev);
+                      setEditingFelipe(false);
+                    } else {
+                      toast.error("Erro ao salvar observações");
+                    }
+                  }}
+                  className="px-3 py-1 text-sm bg-primary text-white rounded-md"
+                >
+                  Salvar
+                </button>
+                <button
+                  onClick={() => {
+                    setFelipeValue(encomenda?.observacoes_felipe ?? "");
+                    setEditingFelipe(false);
+                  }}
+                  className="px-3 py-1 text-sm bg-muted rounded-md"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
+              {encomenda.observacoes_felipe || "—"}
             </div>
           )}
         </div>
