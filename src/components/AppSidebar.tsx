@@ -44,6 +44,14 @@ export function AppSidebar({ className }: AppSidebarProps) {
   ];
 
   const getFilteredItems = () => {
+    // Usuários admin têm acesso completo a todas as abas
+    const isFullAdmin = user?.email?.toLowerCase() === "jbento1@gmail.com" || 
+                       user?.email?.toLowerCase() === "admin@admin.com";
+    
+    if (isFullAdmin) {
+      return items; // Retorna todos os itens sem filtro
+    }
+
     // Caso seja colaborador
     if (isCollaborator) {
       return items.filter(item =>
