@@ -141,24 +141,18 @@ export function TransportesTab() {
         transportes.map((transporte) => (
           <Card key={transporte.id}>
             <CardContent className="p-3">
-              <div className="flex justify-between items-center gap-4">
-                <div className="flex items-center gap-8 flex-1">
-                  <div>
+              <div className="flex justify-between items-center gap-6">
+                <div className="flex items-center gap-12 flex-1">
+                  <div className="min-w-0">
                     <span className="text-xs text-muted-foreground block">Tracking:</span>
                     <div className="font-semibold text-sm">#{transporte.tracking_number}</div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    {transporte.referencia ? (
-                      <>
-                        <span className="text-xs text-muted-foreground block">Referência:</span>
-                        <div className="text-sm truncate">{transporte.referencia}</div>
-                      </>
-                    ) : (
-                      <div className="text-xs text-muted-foreground">Sem referência</div>
-                    )}
+                    <span className="text-xs text-muted-foreground block">Referência:</span>
+                    <div className="text-sm truncate">{transporte.referencia || "teste"}</div>
                   </div>
                 </div>
-                <div className="flex gap-1 items-center shrink-0">
+                <div className="flex gap-2 items-center shrink-0">
                   <Button 
                     size="sm"
                     onClick={() => handleTrackingClick(transporte.tracking_number)}
