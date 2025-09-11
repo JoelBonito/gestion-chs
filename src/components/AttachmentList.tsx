@@ -109,6 +109,12 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
         fileType = attachment.file_type;
       }
       
+      // Para PDFs, abrir em nova aba em vez de modal
+      if (fileType?.includes('pdf')) {
+        window.open(fileUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      
       setPreviewUrl(fileUrl);
       setPreviewType(fileType);
       setPreviewTitle(fileName);
@@ -144,13 +150,18 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
         </div>
       );
     } else if (previewType?.includes('pdf')) {
+      // PDFs agora abrem em nova aba, mas mantemos este código para casos especiais
       return (
-        <div className="w-full h-96">
-          <iframe
-            src={previewUrl}
-            className="w-full h-full border-0"
-            title={previewTitle}
-          />
+        <div className="text-center p-8">
+          <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <p>PDF será aberto em nova aba.</p>
+          <Button 
+            onClick={() => window.open(previewUrl, '_blank', 'noopener,noreferrer')}
+            className="mt-4"
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Abrir PDF
+          </Button>
         </div>
       );
     } else {
@@ -210,7 +221,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
         
         {/* Preview Dialog */}
         <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto" aria-describedby="">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between">
                 <span>{previewTitle}</span>
@@ -291,7 +302,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
 
       {/* Preview Dialog */}
       <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto" aria-describedby="">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>{previewTitle}</span>

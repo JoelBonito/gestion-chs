@@ -328,7 +328,7 @@ export default function EncomendasFinanceiro({
       {/* Dialog: Registrar Pagamento — NÃO renderiza para ham */}
       {!isHam && selectedEncomenda && (
         <Dialog open={showPagamentoForm} onOpenChange={setShowPagamentoForm}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl" aria-describedby="">
             <DialogHeader>
               <DialogTitle>{tr("Registrar Pagamento")}</DialogTitle>
             </DialogHeader>
@@ -340,7 +340,7 @@ export default function EncomendasFinanceiro({
       {/* Dialog: Detalhes + Anexos */}
       {selectedEncomenda && (
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="">
             <DialogHeader>
               <DialogTitle>{tr("Detalhes da Conta a Receber")}</DialogTitle>
             </DialogHeader>

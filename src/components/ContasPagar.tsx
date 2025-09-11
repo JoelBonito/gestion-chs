@@ -283,7 +283,7 @@ export default function ContasPagar() {
                               <Paperclip className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
+                          <DialogContent className="max-w-2xl" aria-describedby="">
                             <AttachmentManager
                               entityType="payable"
                               entityId={conta.id}
@@ -312,7 +312,7 @@ export default function ContasPagar() {
       {/* Dialog: Detalhes + Anexos */}
       {selectedConta && (
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="">
             <DialogHeader>
               <DialogTitle>{t("Detalhes da Conta a Pagar")}</DialogTitle>
             </DialogHeader>
