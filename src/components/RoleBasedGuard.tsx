@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useIsCollaborator } from '@/hooks/useIsCollaborator';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
 
@@ -17,7 +18,15 @@ export function RoleBasedGuard({
   redirectTo = '/produtos',
   showMessage = true 
 }: RoleBasedGuardProps) {
-  const isCollaborator = useIsCollaborator();
+  const { isCollaborator } = useIsCollaborator();
+  const { user } = useAuth();
+
+  // Administradores têm acesso total sempre
+  const isHardcodedAdmin = user?.email === 'jbento1@gmail.com' || user?.email === 'admin@admin.com';
+  
+  if (isHardcodedAdmin) {
+    return <>{children}</>;
+  }
 
   if (blockCollaborator && isCollaborator) {
     if (redirectTo) {

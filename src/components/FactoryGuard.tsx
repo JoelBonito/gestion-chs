@@ -1,5 +1,6 @@
 import { ReactNode, useEffect } from 'react';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
@@ -20,7 +21,15 @@ export function FactoryGuard({
   showMessage = true
 }: FactoryGuardProps) {
   const { hasRole, loading } = useUserRole();
+  const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Administradores têm acesso total sempre
+  const isHardcodedAdmin = user?.email === 'jbento1@gmail.com' || user?.email === 'admin@admin.com';
+  
+  if (isHardcodedAdmin) {
+    return <>{children}</>;
+  }
 
   useEffect(() => {
     if (!loading && hasRole('factory')) {

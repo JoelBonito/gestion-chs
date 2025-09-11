@@ -34,6 +34,11 @@ export function OptimizedRoleGuard({
     );
   }
 
+  // If user is hardcoded admin, always allow access immediately (even with allowedEmails)
+  if (isHardcodedAdmin) {
+    return <>{children}</>;
+  }
+
   // If allowedEmails is specified, check against those specific emails
   if (allowedEmails) {
     const hasAccess = user?.email && allowedEmails.includes(user.email);
@@ -56,10 +61,6 @@ export function OptimizedRoleGuard({
     return <>{children}</>;
   }
 
-  // If user is hardcoded admin, always allow access immediately
-  if (isHardcodedAdmin) {
-    return <>{children}</>;
-  }
 
   // If we need to block collaborator and user is collaborator, block access
   if (blockCollaborator && isCollaborator) {
