@@ -1,8 +1,7 @@
 import React from "react";
-import { useFormatters } from "@/hooks/useFormatters";
+import { formatCurrencyEUR } from "@/lib/utils/currency";
 
 export default function ProdutoView({ produto }) {
-  const { formatCurrency } = useFormatters();
 
   return (
     <div className="space-y-4">
@@ -10,11 +9,11 @@ export default function ProdutoView({ produto }) {
       <p>{produto.marca}</p>
       <div>
         <strong>Preço de Venda: </strong>
-        {formatCurrency(produto.preco_venda)}
+        {formatCurrencyEUR(produto.preco_venda)}
       </div>
       <div>
         <strong>Preço de Custo: </strong>
-        {formatCurrency(produto.preco_custo)}
+        {formatCurrencyEUR(produto.preco_custo)}
       </div>
     </div>
   );

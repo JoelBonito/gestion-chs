@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { useFormatters } from "@/hooks/useFormatters";
 import { cn } from "@/lib/utils";
 
@@ -33,7 +34,7 @@ type Props = {
 };
 
 export default function EncomendaView({ encomendaId }: Props) {
-  const { formatCurrency, formatDate } = useFormatters();
+  const { formatDate } = useFormatters();
 
   // Normaliza id (evita eq.[object Object])
   const id = useMemo(() => {
@@ -221,7 +222,7 @@ export default function EncomendaView({ encomendaId }: Props) {
               {isFelipe ? t.totalCost : t.subtotalItems}
             </div>
             <div className="font-semibold">
-              {formatCurrency(isFelipe ? subtotalCusto : subtotalVenda)}
+              {formatCurrencyEUR(isFelipe ? subtotalCusto : subtotalVenda)}
             </div>
           </div>
 
@@ -229,7 +230,7 @@ export default function EncomendaView({ encomendaId }: Props) {
           {!isFelipe && (
             <div>
               <div className="text-sm text-muted-foreground">{t.paid}</div>
-              <div className="font-semibold">{formatCurrency(encomenda.valor_pago ?? 0)}</div>
+              <div className="font-semibold">{formatCurrencyEUR(encomenda.valor_pago ?? 0)}</div>
             </div>
           )}
 
@@ -243,7 +244,7 @@ export default function EncomendaView({ encomendaId }: Props) {
                   subtotalVenda - subtotalCusto >= 0 ? "text-green-600" : "text-red-600"
                 )}
               >
-                {formatCurrency(subtotalVenda - subtotalCusto)}
+                {formatCurrencyEUR(subtotalVenda - subtotalCusto)}
               </div>
             </div>
           )}
@@ -297,9 +298,9 @@ export default function EncomendaView({ encomendaId }: Props) {
                     <tr key={it.id} className="border-t">
                       <td className="px-3 py-2">{it.produtos?.nome ?? "—"}</td>
                       <td className="px-3 py-2 text-right">{q}</td>
-                      {!isFelipe && <td className="px-3 py-2 text-right">{formatCurrency(pu)}</td>}
-                      {!isHam && <td className="px-3 py-2 text-right">{formatCurrency(pc)}</td>}
-                      <td className="px-3 py-2 text-right font-medium">{formatCurrency(lineTotal)}</td>
+                      {!isFelipe && <td className="px-3 py-2 text-right">{formatCurrencyEUR(pu)}</td>}
+                      {!isHam && <td className="px-3 py-2 text-right">{formatCurrencyEUR(pc)}</td>}
+                      <td className="px-3 py-2 text-right font-medium">{formatCurrencyEUR(lineTotal)}</td>
                     </tr>
                   );
                 })}
@@ -319,17 +320,17 @@ export default function EncomendaView({ encomendaId }: Props) {
                     {isFelipe ? t.totalCostFooter : t.subtotalFooter}
                   </td>
                   <td className="px-3 py-2 text-right font-semibold">
-                    {formatCurrency(isFelipe ? subtotalCusto : subtotalVenda)}
+                    {formatCurrencyEUR(isFelipe ? subtotalCusto : subtotalVenda)}
                   </td>
                 </tr>
 
-                {/* Linha “Total (custo)” — mostrar para usuários normais; esconder para Felipe (já mostrado acima) e para Ham */}
+                {/* Linha "Total (custo)" — mostrar para usuários normais; esconder para Felipe (já mostrado acima) e para Ham */}
                 {!isFelipe && !isHam && (
                   <tr className="border-t">
                     <td className="px-3 py-2 text-right" colSpan={4}>
                       {t.totalCostFooter}
                     </td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(subtotalCusto)}</td>
+                    <td className="px-3 py-2 text-right">{formatCurrencyEUR(subtotalCusto)}</td>
                   </tr>
                 )}
               </tfoot>

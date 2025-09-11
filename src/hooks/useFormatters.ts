@@ -1,17 +1,12 @@
 import { useLocale } from '@/contexts/LocaleContext';
+import { formatCurrencyEUR } from '@/lib/utils/currency';
 
 export function useFormatters() {
   const { locale } = useLocale();
 
-  // Corrigido: sempre usar formato pt-PT para moeda EUR
+  // Usar formatCurrencyEUR para consistência 
   const formatCurrency = (value: number | null | undefined) => {
-    if (value === null || value === undefined || isNaN(value)) return "0,00€";
-    return new Intl.NumberFormat("pt-PT", {
-      style: "currency",
-      currency: "EUR",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
+    return formatCurrencyEUR(value);
   };
 
   const formatDate = (date: string | Date) => {

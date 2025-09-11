@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import StatCard from "@/components/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { RoleBasedGuard } from "@/components/RoleBasedGuard";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -238,19 +239,19 @@ export default function Dashboard() {
         />
         <StatCard
           title="A Receber"
-          value={formatCurrency(aReceber)}
+          value={formatCurrencyEUR(aReceber)}
           subtitle="Valor pendente de clientes"
           icon={<div />}
         />
         <StatCard
           title="A Pagar"
-          value={formatCurrency(aPagar)}
+          value={formatCurrencyEUR(aPagar)}
           subtitle="Valor pendente a fornecedores"
           icon={<div />}
         />
         <StatCard
           title="Comissões (Mês)"
-          value={formatCurrency(comissoesMensais)}
+          value={formatCurrencyEUR(comissoesMensais)}
           subtitle="Lucro do mês atual por data de produção"
           icon={<div />}
         />
@@ -260,7 +261,7 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
         <StatCard
           title="Comissões (Ano)"
-          value={formatCurrency(comissoesAnuais)}
+          value={formatCurrencyEUR(comissoesAnuais)}
           subtitle="Lucro total de todas as encomendas"
           icon={<div />}
         />
@@ -293,7 +294,7 @@ export default function Dashboard() {
                         <p className="text-xs text-muted-foreground">{formatDate(order.data_criacao)}</p>
                       </div>
                       <div className="text-right space-y-2">
-                        <p className="font-semibold text-sm">{formatCurrency(parseFloat(String(order.valor_total || 0)))}</p>
+                        <p className="font-semibold text-sm">{formatCurrencyEUR(parseFloat(String(order.valor_total || 0)))}</p>
                         <Badge variant={status.variant} className="text-xs">
                           {status.label}
                         </Badge>
@@ -329,7 +330,7 @@ export default function Dashboard() {
                       <p className="text-xs text-muted-foreground">Data: {formatDate(payment.data_criacao)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-sm">{formatCurrency(parseFloat(String(payment.saldo_devedor || 0)))}</p>
+                      <p className="font-semibold text-sm">{formatCurrencyEUR(parseFloat(String(payment.saldo_devedor || 0)))}</p>
                     </div>
                   </div>
                 ))
@@ -361,7 +362,7 @@ export default function Dashboard() {
                       <p className="text-xs text-muted-foreground">Data: {formatDate(payment.data_criacao)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-sm">{formatCurrency(parseFloat(String(payment.saldo_devedor_fornecedor || 0)))}</p>
+                      <p className="font-semibold text-sm">{formatCurrencyEUR(parseFloat(String(payment.saldo_devedor_fornecedor || 0)))}</p>
                     </div>
                   </div>
                 ))

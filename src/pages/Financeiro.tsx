@@ -4,8 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { useFormatters } from "@/hooks/useFormatters";
-const { formatCurrency } = useFormatters();
+import { formatCurrencyEUR } from "@/lib/utils/currency";
 import EncomendasFinanceiro from "@/components/EncomendasFinanceiro"; // Vendas
 import ContasPagar from "@/components/ContasPagar";                 // Compras
 import Invoices from "@/components/Invoices";                       // Faturas
@@ -111,19 +110,19 @@ export default function Financeiro() {
             <CardHeader>
               <CardTitle className="text-sm text-muted-foreground">{t("Total a Receber")}</CardTitle>
             </CardHeader>
-            <CardContent className="text-2xl font-bold">{formatCurrency(resumo.a_receber)}</CardContent>
+            <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.a_receber)}</CardContent>
           </Card>
           <Card>
             <CardHeader>
               <CardTitle className="text-sm text-muted-foreground">{t("Total a Pagar")}</CardTitle>
             </CardHeader>
-            <CardContent className="text-2xl font-bold">{formatCurrency(resumo.a_pagar)}</CardContent>
+            <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.a_pagar)}</CardContent>
           </Card>
           <Card>
             <CardHeader>
               <CardTitle className="text-sm text-muted-foreground">{t("Saldo Atual")}</CardTitle>
             </CardHeader>
-            <CardContent className="text-2xl font-bold">{formatCurrency(resumo.saldo)}</CardContent>
+            <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.saldo)}</CardContent>
           </Card>
         </div>
       )}
@@ -143,7 +142,7 @@ export default function Financeiro() {
 
         {!hideCompras && (
           <TabsContent value="pagar">
-            <ContasPagar />
+            <ContasPagar contas={[]} />
           </TabsContent>
         )}
 

@@ -26,7 +26,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { EncomendaForm } from "@/components/EncomendaForm";
+import EncomendaForm from "@/components/EncomendaForm";
 import EncomendaView from "@/components/EncomendaView"; // IMPORT DEFAULT (correto)
 import { EncomendaActions } from "@/components/EncomendaActions";
 import { EncomendaStatusFilter } from "@/components/EncomendaStatusFilter";
@@ -464,10 +464,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                 </DialogDescription>
               </DialogHeader>
               <EncomendaForm
-                onSuccess={() => {
-                  setDialogOpen(false);
-                  fetchEncomendas();
-                }}
+                valorTotal={0}
               />
             </DialogContent>
           </Dialog>
@@ -795,11 +792,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
           </DialogHeader>
           {selectedEncomenda && (
             <EncomendaForm
-              encomenda={selectedEncomenda}
-              onSuccess={() => {
-                setEditDialogOpen(false);
-                fetchEncomendas();
-              }}
+              valorTotal={selectedEncomenda?.valor_total || 0}
             />
           )}
         </DialogContent>
