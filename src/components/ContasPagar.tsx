@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye, Receipt, DollarSign, Plus, Paperclip } from "lucide-react";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +30,8 @@ export default function ContasPagar() {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
   const { toast } = useToast();
 
   const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
@@ -52,10 +54,12 @@ export default function ContasPagar() {
       "Registrar Pagamento": { pt: "Registrar Pagamento", fr: "Enregistrer paiement" },
       "Anexar Comprovante": { pt: "Anexar Comprovante", fr: "Joindre justificatif" },
       "Carregando...": { pt: "Carregando...", fr: "Chargement..." },
-      "Nenhuma conta a pagar encontrada": { pt: "Nenhuma conta a pagar encontrada", fr: "Aucun compte à payer trouvé" },
       "Mostrar Concluídos": { pt: "Mostrar Concluídos", fr: "Afficher terminés" },
       "Compras - Fornecedores": { pt: "Compras - Fornecedores", fr: "Achats - Fournisseurs" },
       "Encomendas com saldo devedor para fornecedores": { pt: "Encomendas com saldo devedor para fornecedores", fr: "Commandes avec solde débiteur aux fournisseurs" },
+      "Detalhes da Conta a Pagar": { pt: "Detalhes da Conta a Pagar", fr: "Détails du compte à payer" },
+      "Comprovantes e Anexos": { pt: "Comprovantes e Anexos", fr: "Justificatifs et pièces jointes" },
+      "Comprovantes de Pagamento": { pt: "Comprovantes de Pagamento", fr: "Justificatifs de paiement" },
     };
     return d[k]?.[lang] ?? k;
   };
@@ -127,6 +131,15 @@ export default function ContasPagar() {
       title: "Sucesso",
       description: "Pagamento registrado com sucesso",
     });
+  };
+
+  const handleViewDetails = (conta: ContaPagar) => {
+    setSelectedConta(conta);
+    setShowDetails(true);
+  };
+
+  const handleAttachmentChange = () => {
+    fetchContas();
   };
 
   if (loading) {
@@ -229,22 +242,16 @@ export default function ContasPagar() {
                     </TableCell>
 
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              title={t("Ver Detalhes")}
-                              type="button"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
-                            <EncomendaView encomendaId={conta.id} />
-                          </DialogContent>
-                        </Dialog>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewDetails(conta)}
+                        title={t("Ver Detalhes")}
+                        type="button"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
 
                         <Dialog>
                           <DialogTrigger asChild>
@@ -301,6 +308,74 @@ export default function ContasPagar() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog: Detalhes + Anexos */}
+      {selectedConta && (
+        <Dialog open={showDetails} onOpenChange={setShowDetails}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{t("Detalhes da Conta a Pagar")}</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {/* Detalhes da conta */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Encomenda:</label>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedConta.numero_encomenda}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Fornecedor:</label>
+                  <p className="text-sm text-muted-foreground">{selectedConta.fornecedor_nome}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Data Criação:</label>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(selectedConta.data_criacao).toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Status:</label>
+                  <p className="text-sm text-muted-foreground">
+                    <Badge variant="outline">{selectedConta.status}</Badge>
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Valor Total:</label>
+                  <p className="text-sm font-semibold">
+                    {formatCurrencyEUR(selectedConta.valor_total_custo)}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Valor Pago:</label>
+                  <p className="text-sm text-success">
+                    {formatCurrencyEUR(selectedConta.valor_pago_fornecedor)}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Saldo Devedor:</label>
+                  <p className="text-sm font-semibold text-warning">
+                    {formatCurrencyEUR(selectedConta.saldo_devedor_fornecedor)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Anexos */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-medium mb-4">{t("Comprovantes e Anexos")}</h3>
+                <AttachmentManager
+                  entityType="payable"
+                  entityId={selectedConta.id}
+                  title={t("Comprovantes de Pagamento")}
+                  onChanged={handleAttachmentChange}
+                />
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
