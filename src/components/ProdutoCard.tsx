@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Edit, Paperclip } from "lucide-react";
+import { Eye, Edit, Paperclip, Trash2 } from "lucide-react";
 import { ProdutoForm } from "@/components/ProdutoForm";
 import ProdutoView from "@/components/ProdutoView";
-import { ProdutoActions } from "@/components/ProdutoActions";
 import { AttachmentManager } from "@/components/AttachmentManager";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 
@@ -80,6 +80,28 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
               <Edit className="h-4 w-4" />
             </Button>
           )}
+
+          {!isCollaborator && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Excluir "{produto.nome}"?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(produto.id)}>Excluir</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       </div>
 
@@ -88,6 +110,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Visualizar Produto</DialogTitle>
+            <DialogDescription>Detalhes do produto selecionado.</DialogDescription>
           </DialogHeader>
           <ProdutoView produto={produto} />
         </DialogContent>
@@ -98,6 +121,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Anexos do Produto</DialogTitle>
+            <DialogDescription>Adicione, visualize e remova arquivos do produto.</DialogDescription>
           </DialogHeader>
           <AttachmentManager
             entityType="produto"
@@ -114,6 +138,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>Editar Produto</DialogTitle>
+            <DialogDescription>Atualize as informações do produto.</DialogDescription>
           </DialogHeader>
           <ProdutoForm
             produto={produto}
