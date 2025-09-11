@@ -5,8 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { RoleBasedGuard } from "@/components/RoleBasedGuard";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Dashboard() {
+  const { user } = useAuth();
   // Encomendas Ativas (não entregues)
   const { data: encomendasAtivas = 0 } = useQuery({
     queryKey: ['encomendas-ativas'],
@@ -185,19 +187,34 @@ export default function Dashboard() {
   });
 
   const getStatusInfo = (status: string) => {
+    const isHamAdmin = user?.email === 'ham@admin.com';
+    
+    const getStatusLabel = (status: string): string => {
+      if (!isHamAdmin) return status;
+      
+      switch (status) {
+        case "NOVO PEDIDO": return "Nouvelle demande";
+        case "PRODUÇÃO": return "Production";
+        case "EMBALAGEM": return "Emballage";
+        case "TRANSPORTE": return "Transport";
+        case "ENTREGUE": return "Livré";
+        default: return status;
+      }
+    };
+
     switch (status) {
       case 'NOVO PEDIDO':
-        return { label: 'Novo Pedido', variant: 'secondary' as const };
+        return { label: getStatusLabel(status), variant: 'secondary' as const };
       case 'PRODUÇÃO':
-        return { label: 'Produção', variant: 'default' as const };
+        return { label: getStatusLabel(status), variant: 'default' as const };
       case 'EMBALAGEM':
-        return { label: 'Embalagem', variant: 'outline' as const };
+        return { label: getStatusLabel(status), variant: 'outline' as const };
       case 'TRANSPORTE':
-        return { label: 'Transporte', variant: 'default' as const };
+        return { label: getStatusLabel(status), variant: 'default' as const };
       case 'ENTREGUE':
-        return { label: 'Entregue', variant: 'default' as const };
+        return { label: getStatusLabel(status), variant: 'default' as const };
       default:
-        return { label: status || 'N/A', variant: 'secondary' as const };
+        return { label: getStatusLabel(status) || 'N/A', variant: 'secondary' as const };
     }
   };
 

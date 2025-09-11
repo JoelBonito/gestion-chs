@@ -139,6 +139,20 @@ const isHam = email === "ham@admin.com";
         printError: "Erro ao abrir impressão",
       };
 
+  // Function to get status label in correct language
+  const getStatusLabel = (status: StatusEncomenda): string => {
+    if (!isHam) return status;
+    
+    switch (status) {
+      case "NOVO PEDIDO": return "Nouvelle demande";
+      case "PRODUÇÃO": return "Production";
+      case "EMBALAGEM": return "Emballage";
+      case "TRANSPORTE": return "Transport";
+      case "ENTREGUE": return "Livré";
+      default: return status;
+    }
+  };
+
   const [searchTerm, setSearchTerm] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("TODOS");
@@ -706,9 +720,9 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                     <div className="text-sm font-medium text-muted-foreground mb-2">{t.status}</div>
 
                     {isHam ? (
-                      // Pill estático (não clicável) com o status atual
+                      // Pill estático (não clicável) com o status atual em francês
                       <div className="inline-flex items-center px-3 h-10 rounded-md border bg-background text-sm font-medium">
-                        {e.status}
+                        {getStatusLabel(e.status)}
                       </div>
                     ) : (
                       <EncomendaStatusSelect

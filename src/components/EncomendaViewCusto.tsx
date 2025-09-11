@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 
@@ -57,9 +58,24 @@ const getStatusColor = (status: StatusEncomenda) => {
 };
 
 export function EncomendaViewCusto({ encomendaId }: EncomendaViewCustoProps) {
+  const { user } = useAuth();
   const [encomenda, setEncomenda] = useState<Encomenda | null>(null);
   const [itens, setItens] = useState<ItemEncomenda[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const getStatusLabel = (status: StatusEncomenda): string => {
+    const isHamAdmin = user?.email === 'ham@admin.com';
+    if (!isHamAdmin) return status;
+    
+    switch (status) {
+      case "NOVO PEDIDO": return "Nouvelle demande";
+      case "PRODUÇÃO": return "Production";
+      case "EMBALAGEM": return "Emballage";
+      case "TRANSPORTE": return "Transport";
+      case "ENTREGUE": return "Livré";
+      default: return status;
+    }
+  };
 
   useEffect(() => {
     fetchEncomenda();
@@ -148,7 +164,7 @@ export function EncomendaViewCusto({ encomendaId }: EncomendaViewCustoProps) {
               </p>
             </div>
             <Badge className={`${getStatusColor(encomenda.status)} text-white`}>
-              {encomenda.status}
+              {getStatusLabel(encomenda.status)}
             </Badge>
           </div>
         </CardHeader>
