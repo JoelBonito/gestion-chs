@@ -101,8 +101,8 @@ export default function Financeiro() {
 
   return (
     <div className="px-4 md:px-8">
-      {/* Cards de resumo - escondidos para ham@admin.com */}
-      {!isHam && (
+      {/* Cards de resumo - escondidos para ham@admin.com e felipe@colaborador.com */}
+      {!isHam && !isFelipe && (
         <>
           {loadingResumo ? (
             <p className="text-muted-foreground mb-4">{t("Carregando resumo...")}</p>
