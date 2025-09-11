@@ -34,6 +34,7 @@ import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
 import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TransportesTab } from "@/components/TransportesTab";
+import { PrintModal } from "@/components/PrintModal";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 type StatusFilter = StatusEncomenda | "TODOS";
@@ -163,6 +164,8 @@ const isHam = email === "ham@admin.com";
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [transportDialogOpen, setTransportDialogOpen] = useState(false);
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [printEncomendaId, setPrintEncomendaId] = useState<string | null>(null);
 
   const [selectedEncomenda, setSelectedEncomenda] = useState<Encomenda | null>(null);
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
@@ -288,7 +291,8 @@ const isHam = email === "ham@admin.com";
   };
 
   const handlePrint = (enc: Encomenda) => {
-    window.open(`/print-encomenda?id=${enc.id}`, "_blank");
+    setPrintEncomendaId(enc.id);
+    setPrintModalOpen(true);
   };
 
   const handleDelete = () => fetchEncomendas();
@@ -819,6 +823,16 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
       </Dialog>
         </>
       )}
+
+      {/* Modal de Impressão */}
+      <PrintModal
+        encomendaId={printEncomendaId}
+        isOpen={printModalOpen}
+        onClose={() => {
+          setPrintModalOpen(false);
+          setPrintEncomendaId(null);
+        }}
+      />
 
       {activeTab === "transportes" && (
         <TransportesTab />
