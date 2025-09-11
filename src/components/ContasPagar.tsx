@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, Receipt, DollarSign } from "lucide-react";
+import { Eye, Receipt, DollarSign, Plus, Paperclip } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
@@ -238,7 +238,7 @@ export default function ContasPagar() {
                               title={t("Registrar Pagamento")}
                               type="button"
                             >
-                              <DollarSign className="h-4 w-4" />
+                              <Plus className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
@@ -257,7 +257,7 @@ export default function ContasPagar() {
                               title={t("Anexar Comprovante")}
                               type="button"
                             >
-                              <Receipt className="h-4 w-4" />
+                              <Paperclip className="h-4 w-4" />
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl">
