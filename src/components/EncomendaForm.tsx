@@ -1,17 +1,29 @@
-import React, { useState, useEffect } from "react";
-import { toast } from "sonner";
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { ItensEncomendaManager, type ItemEncomenda } from "./ItensEncomendaManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { ItensEncomendaManager, ItemEncomenda } from "@/components/ItensEncomendaManager";
+import { formatCurrencyEUR } from "@/lib/utils/currency";
+
+const encomendaSchema = z.object({
+  numero_encomenda: z.string().min(1, "Número da encomenda é obrigatório"),
+  etiqueta: z.string().max(100).regex(/^[A-Za-z0-9\-_ ]*$/, "Apenas letras, números, espaços, hífen e underscore são permitidos").optional().transform(val => val?.trim() || undefined),
+  cliente_id: z.string().min(1, "Cliente é obrigatório"),
+  fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
+  data_producao_estimada: z.string().optional(),
+  data_envio_estimada: z.string().optional(),
+  observacoes: z.string().optional(),
+});
+
+type EncomendaFormData = z.infer<typeof encomendaSchema>;
 
 interface Cliente {
   id: string;
@@ -23,216 +35,171 @@ interface Fornecedor {
   nome: string;
 }
 
-interface EncomendaFormData {
-  numero_encomenda: string;
-  cliente_id: string;
-  fornecedor_id: string;
-  data_producao_estimada?: Date;
-  data_envio_estimada?: Date;
-  observacoes?: string;
-  referencia?: string;
-  referencia_interna?: string;
-  etiqueta?: string;
-}
-
 interface EncomendaFormProps {
-  encomenda?: any; // Para edição
+  onSuccess: () => void;
+  encomenda?: any;
+  initialData?: any;
   isEditing?: boolean;
-  onSuccess?: () => void;
-  valorTotal?: number;
 }
 
-export default function EncomendaForm({ encomenda, isEditing = false, onSuccess, valorTotal = 0 }: EncomendaFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export default function EncomendaForm({ onSuccess, encomenda, initialData, isEditing = false }: EncomendaFormProps) {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [itens, setItens] = useState<ItemEncomenda[]>([]);
-  const [valorTotalCalculado, setValorTotalCalculado] = useState(0);
+  const [valorTotal, setValorTotal] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pesoBruto, setPesoBruto] = useState(0);
 
-  const [formData, setFormData] = useState<EncomendaFormData>({
-    numero_encomenda: "",
-    cliente_id: "",
-    fornecedor_id: "",
-    data_producao_estimada: undefined,
-    data_envio_estimada: undefined,
-    observacoes: "",
-    referencia: "",
-    referencia_interna: "",
-    etiqueta: "",
+  const editingData = encomenda || initialData;
+  const isEdit = isEditing || !!editingData;
+
+  const form = useForm<EncomendaFormData>({
+    resolver: zodResolver(encomendaSchema),
+    defaultValues: {
+      numero_encomenda: "",
+      etiqueta: "",
+      cliente_id: "",
+      fornecedor_id: "",
+      data_producao_estimada: "",
+      data_envio_estimada: "",
+      observacoes: "",
+    },
   });
 
-  // Carregar dados iniciais
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Carregar clientes
-        const { data: clientesData, error: clientesError } = await supabase
-          .from("clientes")
-          .select("id, nome")
-          .eq("active", true)
-          .order("nome");
+    const pesoTotalGramas = itens.reduce((total, item) => {
+      return total + (item.quantidade * (item.peso_produto || 0));
+    }, 0);
+    setPesoBruto((pesoTotalGramas * 1.30) / 1000);
+  }, [itens]);
 
-        if (clientesError) throw clientesError;
-        setClientes(clientesData || []);
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: clientesData } = await supabase
+        .from("clientes").select("id, nome").eq("active", true).order("nome");
+      if (clientesData) setClientes(clientesData);
 
-        // Carregar fornecedores
-        const { data: fornecedoresData, error: fornecedoresError } = await supabase
-          .from("fornecedores")
-          .select("id, nome")
-          .eq("active", true)
-          .order("nome");
+      const { data: fornecedoresData } = await supabase
+        .from("fornecedores").select("id, nome").eq("active", true).order("nome");
+      if (fornecedoresData) setFornecedores(fornecedoresData);
+    };
+    fetchData();
+  }, []);
 
-        if (fornecedoresError) throw fornecedoresError;
-        setFornecedores(fornecedoresData || []);
+  useEffect(() => {
+    if (editingData && isEdit) {
+      setTimeout(() => {
+        form.reset({
+          numero_encomenda: editingData.numero_encomenda || "",
+          etiqueta: editingData.etiqueta || "",
+          cliente_id: editingData.cliente_id || "",
+          fornecedor_id: editingData.fornecedor_id || "",
+          data_producao_estimada: editingData.data_producao_estimada || "",
+          data_envio_estimada: editingData.data_envio_estimada || "",
+          observacoes: editingData.observacoes || "",
+        });
+      }, 100);
 
-        // Se editando, carregar dados da encomenda
-        if (isEditing && encomenda) {
-          setFormData({
-            numero_encomenda: encomenda.numero_encomenda || "",
-            cliente_id: encomenda.cliente_id || "",
-            fornecedor_id: encomenda.fornecedor_id || "",
-            data_producao_estimada: encomenda.data_producao_estimada ? new Date(encomenda.data_producao_estimada) : undefined,
-            data_envio_estimada: encomenda.data_envio_estimada ? new Date(encomenda.data_envio_estimada) : undefined,
-            observacoes: encomenda.observacoes || "",
-            referencia: encomenda.referencia || "",
-            referencia_interna: encomenda.referencia_interna || "",
-            etiqueta: encomenda.etiqueta || "",
-          });
-
-          // Carregar itens da encomenda
-          const { data: itensData, error: itensError } = await supabase
-            .from("itens_encomenda")
-            .select(`
-              id,
-              produto_id,
-              quantidade,
-              preco_unitario,
-              preco_custo,
-              produtos(nome, marca, tipo, size_weight)
-            `)
-            .eq("encomenda_id", encomenda.id);
-
-          if (itensError) throw itensError;
-
-          const itensFormatados = (itensData || []).map((item: any) => ({
+      const fetchItens = async () => {
+        const { data: itensData } = await supabase
+          .from("itens_encomenda")
+          .select(`*, produtos(nome, marca, tipo, preco_custo, preco_venda, size_weight)`)
+          .eq("encomenda_id", editingData.id);
+        if (itensData) {
+          const itensFormatados = itensData.map((item: any) => ({
             id: item.id,
             produto_id: item.produto_id,
-            produto_nome: item.produtos ? `${item.produtos.nome} - ${item.produtos.marca} - ${item.produtos.tipo}` : "",
+            produto_nome: item.produtos ? `${item.produtos.nome} - ${item.produtos.marca} - ${item.produtos.tipo}` : "Produto não encontrado",
             quantidade: item.quantidade,
-            preco_custo: item.preco_custo,
+            preco_custo: item.preco_custo || 0,
             preco_venda: item.preco_unitario,
-            subtotal: item.quantidade * item.preco_unitario,
+            subtotal: item.subtotal || (item.quantidade * item.preco_unitario),
             peso_produto: item.produtos?.size_weight || 0,
           }));
-
           setItens(itensFormatados);
         }
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-        toast.error("Erro ao carregar dados do formulário");
-      }
-    };
-
-    loadData();
-  }, [isEditing, encomenda]);
-
-  const handleInputChange = (field: keyof EncomendaFormData, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.numero_encomenda || !formData.cliente_id || !formData.fornecedor_id) {
-      toast.error("Preencha todos os campos obrigatórios");
-      return;
+      };
+      fetchItens();
     }
+  }, [editingData, isEdit, form]);
 
-    if (!isEditing && itens.length === 0) {
-      toast.error("Adicione pelo menos um item à encomenda");
-      return;
-    }
-
+  const onSubmit = async (data: EncomendaFormData) => {
     setIsSubmitting(true);
-
     try {
-      if (isEditing && encomenda) {
-        // Editar encomenda usando a função RPC
-        const dadosEncomenda = {
-          numero_encomenda: formData.numero_encomenda,
-          cliente_id: formData.cliente_id,
-          fornecedor_id: formData.fornecedor_id,
-          data_producao_estimada: formData.data_producao_estimada ? format(formData.data_producao_estimada, 'yyyy-MM-dd') : null,
-          data_envio_estimada: formData.data_envio_estimada ? format(formData.data_envio_estimada, 'yyyy-MM-dd') : null,
-          observacoes: formData.observacoes || null,
-          referencia: formData.referencia || null,
-          referencia_interna: formData.referencia_interna || null,
-          etiqueta: formData.etiqueta || null,
+      if (itens.length === 0) {
+        toast.error("Adicione pelo menos um item à encomenda antes de salvá-la.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        toast.error("Faça login para salvar a encomenda.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (isEdit && editingData?.id) {
+        const payloadEncomenda = {
+          id: editingData.id,
+          numero_encomenda: data.numero_encomenda,
+          etiqueta: data.etiqueta || null,
+          cliente_id: data.cliente_id,
+          fornecedor_id: data.fornecedor_id,
+          data_envio_estimada: data.data_envio_estimada || null,
+          data_producao_estimada: data.data_producao_estimada || null,
+          observacoes: data.observacoes || null
         };
 
         const itensParaSalvar = itens.map(item => ({
+          ...(item.id ? { id: item.id } : {}),
           produto_id: item.produto_id,
-          quantidade: item.quantidade,
-          preco_unitario: item.preco_venda,
-          preco_custo: item.preco_custo,
+          quantidade: Math.floor(Number(item.quantidade)) || 0,
+          preco_unitario: Number(item.preco_venda) || 0,
+          preco_custo: Number(item.preco_custo) || 0,
         }));
 
-        const { error } = await supabase.rpc('salvar_edicao_encomenda', {
-          p_encomenda_id: encomenda.id,
-          p_dados: dadosEncomenda,
+        const { error: updateError } = await supabase.rpc('salvar_edicao_encomenda', {
+          p_encomenda_id: editingData.id,
+          p_dados: payloadEncomenda,
           p_itens: itensParaSalvar
         });
-
-        if (error) throw error;
+        if (updateError) throw updateError;
 
         toast.success("Encomenda atualizada com sucesso!");
       } else {
-        // Criar nova encomenda
-        const { data: novaEncomenda, error: encomendaError } = await supabase
+        const { data: newEncomenda, error } = await supabase
           .from("encomendas")
           .insert([{
-            numero_encomenda: formData.numero_encomenda,
-            cliente_id: formData.cliente_id,
-            fornecedor_id: formData.fornecedor_id,
-            data_producao_estimada: formData.data_producao_estimada ? format(formData.data_producao_estimada, 'yyyy-MM-dd') : null,
-            data_envio_estimada: formData.data_envio_estimada ? format(formData.data_envio_estimada, 'yyyy-MM-dd') : null,
-            observacoes: formData.observacoes || null,
-            referencia: formData.referencia || null,
-            referencia_interna: formData.referencia_interna || null,
-            etiqueta: formData.etiqueta || null,
-            valor_total: valorTotalCalculado,
+            numero_encomenda: data.numero_encomenda,
+            etiqueta: data.etiqueta || null,
+            cliente_id: data.cliente_id,
+            fornecedor_id: data.fornecedor_id,
+            data_producao_estimada: data.data_producao_estimada || null,
+            data_envio_estimada: data.data_envio_estimada || null,
+            observacoes: data.observacoes || null,
+            valor_total: valorTotal,
           }])
-          .select()
-          .single();
+          .select();
+        if (error) throw error;
 
-        if (encomendaError) throw encomendaError;
-
-        // Inserir itens da encomenda
-        if (itens.length > 0) {
-          const itensParaInserir = itens.map(item => ({
-            encomenda_id: novaEncomenda.id,
-            produto_id: item.produto_id,
-            quantidade: item.quantidade,
-            preco_unitario: item.preco_venda,
-            preco_custo: item.preco_custo,
-          }));
-
-          const { error: itensError } = await supabase
-            .from("itens_encomenda")
-            .insert(itensParaInserir);
-
-          if (itensError) throw itensError;
+        if (newEncomenda && newEncomenda.length > 0) {
+          const encomendaId = newEncomenda[0].id;
+          for (const item of itens) {
+            await supabase.from("itens_encomenda").insert([{
+              encomenda_id: encomendaId,
+              produto_id: item.produto_id,
+              quantidade: Math.floor(item.quantidade),
+              preco_unitario: item.preco_venda,
+              preco_custo: item.preco_custo,
+            }]);
+          }
+          toast.success("Encomenda criada com sucesso!");
         }
-
-        toast.success("Encomenda criada com sucesso!");
       }
-
-      onSuccess?.();
+      onSuccess();
     } catch (error: any) {
-      console.error("Erro ao salvar encomenda:", error);
+      console.error(error);
       toast.error(error.message || "Erro ao salvar encomenda");
     } finally {
       setIsSubmitting(false);
@@ -240,171 +207,168 @@ export default function EncomendaForm({ encomenda, isEditing = false, onSuccess,
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Informações Básicas */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Informações da Encomenda</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Número da Encomenda *</label>
-              <Input
-                value={formData.numero_encomenda}
-                onChange={(e) => handleInputChange("numero_encomenda", e.target.value)}
-                placeholder="Ex: ENC001"
-                required
+    <div className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <Card>
+            <CardHeader><CardTitle>Informações da Encomenda</CardTitle></CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="numero_encomenda"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número da Encomenda *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: ENC001" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="etiqueta"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Etiqueta</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: URGENTE" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="cliente_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cliente *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um cliente" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {clientes.map((cliente) => (
+                            <SelectItem key={cliente.id} value={cliente.id}>
+                              {cliente.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="fornecedor_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fornecedor *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um fornecedor" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {fornecedores.map((fornecedor) => (
+                            <SelectItem key={fornecedor.id} value={fornecedor.id}>
+                              {fornecedor.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="data_producao_estimada"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de Produção Estimada</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="data_envio_estimada"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de Envio Estimada</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="observacoes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Observações</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Observações adicionais..."
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
+            </CardContent>
+          </Card>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Etiqueta</label>
-              <Input
-                value={formData.etiqueta}
-                onChange={(e) => handleInputChange("etiqueta", e.target.value)}
-                placeholder="Ex: URGENTE"
-              />
-            </div>
-          </div>
+          <ItensEncomendaManager
+            itens={itens}
+            onItensChange={setItens}
+            onValorTotalChange={setValorTotal}
+          />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Cliente *</label>
-              <Select value={formData.cliente_id} onValueChange={(value) => handleInputChange("cliente_id", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientes.map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.id}>
-                      {cliente.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Fornecedor *</label>
-              <Select value={formData.fornecedor_id} onValueChange={(value) => handleInputChange("fornecedor_id", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um fornecedor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {fornecedores.map((fornecedor) => (
-                    <SelectItem key={fornecedor.id} value={fornecedor.id}>
-                      {fornecedor.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex justify-end pt-4 border-t">
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">Valor Total:</p>
+              <p className="text-2xl font-bold text-primary">
+                {formatCurrencyEUR(valorTotal)}
+              </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Referência</label>
-              <Input
-                value={formData.referencia}
-                onChange={(e) => handleInputChange("referencia", e.target.value)}
-                placeholder="Referência externa"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Referência Interna</label>
-              <Input
-                value={formData.referencia_interna}
-                onChange={(e) => handleInputChange("referencia_interna", e.target.value)}
-                placeholder="Referência interna"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Data de Produção Estimada</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.data_producao_estimada && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.data_producao_estimada ? format(formData.data_producao_estimada, "dd/MM/yyyy") : "Selecione uma data"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.data_producao_estimada}
-                    onSelect={(date) => handleInputChange("data_producao_estimada", date)}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Data de Envio Estimada</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.data_envio_estimada && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.data_envio_estimada ? format(formData.data_envio_estimada, "dd/MM/yyyy") : "Selecione uma data"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.data_envio_estimada}
-                    onSelect={(date) => handleInputChange("data_envio_estimada", date)}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Observações</label>
-            <Textarea
-              value={formData.observacoes}
-              onChange={(e) => handleInputChange("observacoes", e.target.value)}
-              placeholder="Observações adicionais..."
-              rows={3}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Itens da Encomenda */}
-      <ItensEncomendaManager
-        itens={itens}
-        onItensChange={setItens}
-        onValorTotalChange={setValorTotalCalculado}
-      />
-
-      {/* Botões de Ação */}
-      <div className="flex justify-end gap-4 pt-6 border-t">
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          className="min-w-32"
-        >
-          {isSubmitting ? "Salvando..." : isEditing ? "Atualizar Encomenda" : "Criar Encomenda"}
-        </Button>
-      </div>
-    </form>
+          <Button 
+            type="submit" 
+            className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Salvando..." : (isEdit ? "Atualizar Encomenda" : "Criar Encomenda")}
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 }
