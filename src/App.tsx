@@ -18,6 +18,7 @@ import Encomendas from "./pages/Encomendas";
 import { default as Projetos } from "./pages/Projetos";
 import Producao from "./pages/Producao";
 import Financeiro from "./pages/Financeiro";
+import PrintEncomenda from "./pages/PrintEncomenda";
 import NotFound from "./pages/NotFound";
 
 // Create QueryClient instance outside component to avoid recreating on re-renders
@@ -72,6 +73,7 @@ const App = () => {
                               </FactoryGuard>
                             } />
                             <Route path="/financeiro" element={<Financeiro />} />
+                            <Route path="/print-encomenda" element={<PrintEncomenda />} />
                             <Route path="/welcome" element={<Index />} />
                             <Route path="*" element={<NotFound />} />
                           </Routes>

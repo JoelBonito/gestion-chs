@@ -287,47 +287,8 @@ const isHam = email === "ham@admin.com";
     await fetchEncomendas();
   };
 
-  const handlePrint = async (enc: Encomenda) => {
-    try {
-      const win = window.open("", "_blank", "width=800,height=600");
-      if (!win) return toast.error(t.printError);
-
-      const html = `
-        <!doctype html><html><head>
-          <meta charset="utf-8" />
-          <title>${t.order} #${enc.numero_encomenda}</title>
-          <style>
-            @page { size: A4; margin: 12mm; }
-            body { font-family: Arial, sans-serif; color:#000; }
-            .title { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
-            .sub { color:#555; margin-bottom: 10px; }
-            .row { margin: 6px 0; }
-            .label { width: 140px; display:inline-block; font-weight:600; }
-          </style>
-        </head><body>
-          <div class="title">${t.order} #${enc.numero_encomenda}</div>
-          <div class="sub">${t.createdOn} ${formatDate(enc.data_criacao)}</div>
-          ${enc.etiqueta ? `<div class="row"><span class="label">${t.label}:</span>${enc.etiqueta}</div>` : ""}
-          <div class="row"><span class="label">${t.client}:</span>${enc.clientes?.nome ?? "N/A"}</div>
-          <div class="row"><span class="label">${t.supplier}:</span>${enc.fornecedores?.nome ?? "N/A"}</div>
-          <div class="row"><span class="label">${t.status}:</span>${enc.status}</div>
-          <div class="row"><span class="label">${isFelipe ? t.totalCost : t.total}:</span>${
-            formatCurrency(isFelipe ? enc.valor_total_custo ?? 0 : enc.valor_total)
-          }</div>
-          <div class="row"><span class="label">${t.paid}:</span>${formatCurrency(enc.valor_pago)}</div>
-          ${enc.observacoes ? `<div class="row"><span class="label">${t.notes}:</span>${enc.observacoes}</div>` : ""}
-        </body></html>
-      `;
-      win.document.write(html);
-      win.document.close();
-      (win as any).onload = () => {
-        (win as any).print();
-        (win as any).onafterprint = () => (win as any).close();
-      };
-      toast.success(t.printOpened);
-    } catch {
-      toast.error(t.printError);
-    }
+  const handlePrint = (enc: Encomenda) => {
+    window.open(`/print-encomenda?id=${enc.id}`, "_blank");
   };
 
   const handleDelete = () => fetchEncomendas();
