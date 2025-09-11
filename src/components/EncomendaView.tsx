@@ -218,16 +218,14 @@ export default function EncomendaView({ encomendaId }: Props) {
   return (
     <div className="space-y-6">
       {/* Botão de Download PDF */}
-      {!isFelipe && (
-        <div className="flex justify-end">
-          <button
-            onClick={handleDownloadPDF}
-            className="px-3 py-1 mb-4 text-sm rounded-md bg-primary text-white hover:opacity-90"
-          >
-            📥 Baixar PDF
-          </button>
-        </div>
-      )}
+      <div className="flex justify-end">
+        <button
+          onClick={handleDownloadPDF}
+          className="px-3 py-1 mb-4 text-sm rounded-md bg-primary text-white hover:opacity-90"
+        >
+          📥 Baixar PDF
+        </button>
+      </div>
 
       <div ref={contentRef} className="space-y-6">
       {/* Cabeçalho */}
