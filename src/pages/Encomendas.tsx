@@ -33,6 +33,7 @@ import { EncomendaStatusFilter } from "@/components/EncomendaStatusFilter";
 import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
 import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TransportesTab } from "@/components/TransportesTab";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 type StatusFilter = StatusEncomenda | "TODOS";
@@ -156,6 +157,7 @@ const isHam = email === "ham@admin.com";
   const [searchTerm, setSearchTerm] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("TODOS");
+  const [activeTab, setActiveTab] = useState<"encomendas" | "transportes">("encomendas");
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -474,8 +476,34 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
         )}
       </div>
 
-      {/* Filtros */}
-      <Card>
+      {/* Abas */}
+      <div className="flex gap-4 mb-4 border-b">
+        <button
+          onClick={() => setActiveTab("encomendas")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "encomendas" 
+              ? "border-b-2 border-primary text-primary" 
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {t.orders}
+        </button>
+        <button
+          onClick={() => setActiveTab("transportes")}
+          className={`px-4 py-2 font-medium transition-colors ${
+            activeTab === "transportes" 
+              ? "border-b-2 border-primary text-primary" 
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {isHam ? "Transport" : "Transporte"}
+        </button>
+      </div>
+
+      {activeTab === "encomendas" && (
+        <>
+          {/* Filtros */}
+          <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 gap-4">
@@ -828,6 +856,12 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
           )}
         </DialogContent>
       </Dialog>
+        </>
+      )}
+
+      {activeTab === "transportes" && (
+        <TransportesTab />
+      )}
     </div>
   );
 }
