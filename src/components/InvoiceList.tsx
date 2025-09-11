@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Eye, Download, Edit, Trash2, FileText, ExternalLink, Paperclip } from 'lucide-react';
 import { Invoice } from '@/types/invoice';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { InvoiceAttachmentManager } from './InvoiceAttachmentManager';
 import { formatCurrencyEUR } from '@/lib/utils/currency';
@@ -30,6 +31,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   isLoading = false
 }) => {
   const { hasRole } = useUserRole();
+  const { user } = useAuth();
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
   const [editFormData, setEditFormData] = useState({
@@ -43,6 +45,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   } | null>(null);
   
   const canEdit = hasRole('admin') || hasRole('finance');
+  const isRestrictedUser = user?.email?.toLowerCase() === "ham@admin.com";
 
   const getPublicUrl = (storagePath: string) => {
     const { data } = supabase.storage.from('attachments').getPublicUrl(storagePath);
@@ -189,7 +192,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                           </Button>
                         )}
 
-                        {canEdit && (
+                        {canEdit && !isRestrictedUser && (
                           <>
                             <Button
                               variant="ghost"
