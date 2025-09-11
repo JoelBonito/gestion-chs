@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthGuard } from "@/components/AuthGuard";
 import { FactoryGuard } from "@/components/FactoryGuard";
+import { FelipeGuard } from "@/components/FelipeGuard";
 import { HorizontalNav } from "@/components/HorizontalNav";
 import { LocaleProvider } from "@/contexts/LocaleContext";
 import Index from "./pages/Index";
@@ -47,14 +48,18 @@ const App = () => {
                         <div className="container mx-auto p-6">
                           <Routes>
                             <Route path="/" element={
-                              <FactoryGuard>
-                                <Dashboard />
-                              </FactoryGuard>
+                              <FelipeGuard>
+                                <FactoryGuard>
+                                  <Dashboard />
+                                </FactoryGuard>
+                              </FelipeGuard>
                             } />
                             <Route path="/dashboard" element={
-                              <FactoryGuard>
-                                <Dashboard />
-                              </FactoryGuard>
+                              <FelipeGuard>
+                                <FactoryGuard>
+                                  <Dashboard />
+                                </FactoryGuard>
+                              </FelipeGuard>
                             } />
                             <Route path="/produtos" element={<Produtos />} />
                             <Route path="/clientes" element={<Clientes />} />
