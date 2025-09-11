@@ -217,9 +217,50 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Número da Encomenda *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex: ENC001" {...field} />
-                      </FormControl>
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input placeholder="Ex: ENC001" {...field} />
+                        </FormControl>
+                        {!isEdit && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={async () => {
+                              try {
+                                // Buscar o último número de encomenda
+                                const { data, error } = await supabase
+                                  .from("encomendas")
+                                  .select("numero_encomenda")
+                                  .order("created_at", { ascending: false })
+                                  .limit(1);
+
+                                if (error) throw error;
+
+                                let proximoNumero = "ENC001";
+                                
+                                if (data && data.length > 0) {
+                                  const ultimoNumero = data[0].numero_encomenda;
+                                  // Extrair o número do formato ENC001, ENC002, etc.
+                                  const match = ultimoNumero.match(/ENC(\d+)/);
+                                  if (match) {
+                                    const numero = parseInt(match[1]) + 1;
+                                    proximoNumero = `ENC${numero.toString().padStart(3, '0')}`;
+                                  }
+                                }
+
+                                form.setValue("numero_encomenda", proximoNumero);
+                                toast.success("Número gerado automaticamente!");
+                              } catch (error) {
+                                console.error("Erro ao gerar número:", error);
+                                toast.error("Erro ao gerar número automático");
+                              }
+                            }}
+                            className="whitespace-nowrap"
+                          >
+                            🔢 Auto
+                          </Button>
+                        )}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
