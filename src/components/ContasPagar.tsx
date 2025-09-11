@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -146,88 +146,145 @@ export default function ContasPagar() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("Contas a Pagar")}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t("Pedido")}</TableHead>
-              <TableHead>{t("Fornecedor")}</TableHead>
-              <TableHead>{t("Valor Total")}</TableHead>
-              <TableHead>{t("Valor Pago")}</TableHead>
-              <TableHead>{t("Saldo")}</TableHead>
-              <TableHead>{t("Data")}</TableHead>
-              <TableHead>{t("Status")}</TableHead>
-              <TableHead>{t("Ações")}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {contas.map((conta) => (
-              <TableRow key={conta.id}>
-                <TableCell className="font-medium">{conta.numero_encomenda}</TableCell>
-                <TableCell>{conta.fornecedor_nome}</TableCell>
-                <TableCell>{formatCurrencyEUR(conta.valor_total_custo)}</TableCell>
-                <TableCell>{formatCurrencyEUR(conta.valor_pago_fornecedor)}</TableCell>
-                <TableCell>
-                  <Badge variant="destructive">
-                    {formatCurrencyEUR(conta.saldo_devedor_fornecedor)}
-                  </Badge>
-                </TableCell>
-                <TableCell>{new Date(conta.data_criacao).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{conta.status}</Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
-                        <EncomendaView encomendaId={conta.id} />
-                      </DialogContent>
-                    </Dialog>
+    <div className="space-y-6">
+      <Card className="shadow-card">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-warning" />
+                {t("Contas a Pagar")}
+              </CardTitle>
+              <CardDescription>
+                Encomendas com saldo devedor para fornecedores
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
 
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <DollarSign className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <PagamentoFornecedorForm
-                          conta={{...conta, encomenda_id: conta.id}}
-                          onSuccess={handlePaymentSuccess}
-                        />
-                      </DialogContent>
-                    </Dialog>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("Pedido")}</TableHead>
+                  <TableHead>{t("Fornecedor")}</TableHead>
+                  <TableHead>Data Criação</TableHead>
+                  <TableHead>{t("Valor Total")}</TableHead>
+                  <TableHead>{t("Valor Pago")}</TableHead>
+                  <TableHead>{t("Saldo")}</TableHead>
+                  <TableHead>Pagamentos</TableHead>
+                  <TableHead>{t("Ações")}</TableHead>
+                </TableRow>
+              </TableHeader>
 
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Receipt className="h-4 w-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl">
-                        <AttachmentManager
-                          entityType="payable"
-                          entityId={conta.id}
-                          title={t("Anexar Comprovante")}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+              <TableBody>
+                {contas.map((conta) => (
+                  <TableRow key={conta.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col">
+                        <span>{conta.numero_encomenda}</span>
+                        <span className="mt-0.5">
+                          <Badge variant="secondary">{conta.status}</Badge>
+                        </span>
+                      </div>
+                    </TableCell>
+
+                    <TableCell>{conta.fornecedor_nome}</TableCell>
+
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(conta.data_criacao).toLocaleDateString()}
+                    </TableCell>
+
+                    <TableCell className="font-semibold">
+                      {formatCurrencyEUR(conta.valor_total_custo)}
+                    </TableCell>
+
+                    <TableCell className="text-success">
+                      {formatCurrencyEUR(conta.valor_pago_fornecedor)}
+                    </TableCell>
+
+                    <TableCell className="font-semibold text-warning">
+                      {formatCurrencyEUR(conta.saldo_devedor_fornecedor)}
+                    </TableCell>
+
+                    <TableCell className="text-sm text-muted-foreground">
+                      Nenhum
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title={t("Ver Detalhes")}
+                              type="button"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+                            <EncomendaView encomendaId={conta.id} />
+                          </DialogContent>
+                        </Dialog>
+
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title={t("Registrar Pagamento")}
+                              type="button"
+                            >
+                              <DollarSign className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <PagamentoFornecedorForm
+                              conta={{...conta, encomenda_id: conta.id}}
+                              onSuccess={handlePaymentSuccess}
+                            />
+                          </DialogContent>
+                        </Dialog>
+
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title={t("Anexar Comprovante")}
+                              type="button"
+                            >
+                              <Receipt className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <AttachmentManager
+                              entityType="payable"
+                              entityId={conta.id}
+                              title={t("Anexar Comprovante")}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+
+                {contas.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      {t("Nenhuma conta a pagar encontrada")}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
