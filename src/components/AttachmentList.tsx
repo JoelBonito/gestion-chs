@@ -13,12 +13,14 @@ interface AttachmentListProps {
   entityType: string;
   entityId: string;
   onChanged?: () => void;
+  compact?: boolean;
 }
 
 export const AttachmentList: React.FC<AttachmentListProps> = ({ 
   entityType, 
   entityId, 
-  onChanged 
+  onChanged,
+  compact = false 
 }) => {
   const { attachments, isLoading, deleteAttachment } = useAttachments(entityType, entityId);
   const { hasRole } = useUserRole();
@@ -147,7 +149,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
   };
 
   if (isLoading) {
-    return (
+    return compact ? null : (
       <div className="flex items-center justify-center p-4">
         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
       </div>
@@ -155,10 +157,34 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
   }
 
   if (!attachments || attachments.length === 0) {
-    return (
+    return compact ? null : (
       <div className="text-center p-4 text-muted-foreground">
         <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
         <p className="text-sm">Nenhum anexo encontrado</p>
+      </div>
+    );
+  }
+
+  if (compact) {
+    return (
+      <div className="flex items-center gap-1">
+        {attachments.slice(0, 2).map((attachment) => (
+          <Button
+            key={attachment.id}
+            variant="ghost"
+            size="icon"
+            onClick={() => handlePreview(attachment)}
+            title={attachment.file_name}
+            className="h-8 w-8"
+          >
+            {getFileIcon(attachment.file_type)}
+          </Button>
+        ))}
+        {attachments.length > 2 && (
+          <Badge variant="secondary" className="text-xs px-1">
+            +{attachments.length - 2}
+          </Badge>
+        )}
       </div>
     );
   }

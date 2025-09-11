@@ -149,12 +149,20 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
 
   if (compact) {
     return (
-      <AttachmentUpload 
-        entityType={entityType}
-        entityId={entityId}
-        onUploadSuccess={handleUploadSuccess}
-        compact={true}
-      />
+      <div className="flex items-center">
+        <AttachmentUpload 
+          entityType={entityType}
+          entityId={entityId}
+          onUploadSuccess={handleUploadSuccess}
+          compact={true}
+        />
+        <AttachmentList 
+          entityType={entityType} 
+          entityId={entityId}
+          onChanged={handleDeleteSuccess}
+          compact={true}
+        />
+      </div>
     );
   }
 

@@ -136,14 +136,14 @@ export function TransportesTab() {
         transportes.map((transporte) => (
           <Card key={transporte.id}>
             <CardContent className="p-3">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold">#{transporte.tracking_number}</div>
+                  <div className="font-semibold text-base">#{transporte.tracking_number}</div>
                   <div className="text-sm text-muted-foreground truncate">
                     {transporte.referencia || "Sem referência"}
                   </div>
                 </div>
-                <div className="flex gap-1 items-center ml-2">
+                <div className="flex gap-1 items-center shrink-0">
                   <AttachmentManager 
                     entityType="transporte" 
                     entityId={transporte.id}
@@ -154,6 +154,7 @@ export function TransportesTab() {
                     size="icon"
                     onClick={() => handleView(transporte)}
                     title="Visualizar"
+                    className="h-8 w-8"
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
@@ -162,6 +163,7 @@ export function TransportesTab() {
                     size="icon"
                     onClick={() => handleEdit(transporte)}
                     title="Editar"
+                    className="h-8 w-8"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -170,6 +172,7 @@ export function TransportesTab() {
                     size="icon"
                     onClick={() => handleDelete(transporte)}
                     title="Deletar"
+                    className="h-8 w-8"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -195,6 +198,7 @@ export function TransportesTab() {
                 placeholder="Digite o número de rastreamento"
                 value={novo.tracking_number}
                 onChange={(e) => setNovo((n) => ({ ...n, tracking_number: e.target.value }))}
+                pattern="[A-Za-z0-9]*"
               />
             </div>
             <div>
