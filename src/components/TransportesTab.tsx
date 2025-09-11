@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { AttachmentManager } from "@/components/AttachmentManager";
-import { Eye, Edit, Archive, Trash2, Plus, Truck } from "lucide-react";
+import { Eye, Edit, Archive, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 interface Transporte {
@@ -23,8 +23,6 @@ export function TransportesTab() {
   const [novo, setNovo] = useState({ tracking_number: "", referencia: "" });
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [viewingTransporte, setViewingTransporte] = useState<Transporte | null>(null);
-  const [trackingModalOpen, setTrackingModalOpen] = useState(false);
-  const [trackingUrl, setTrackingUrl] = useState("");
 
   const fetchTransportes = async () => {
     const { data, error } = await supabase
@@ -120,8 +118,7 @@ export function TransportesTab() {
 
   const handleTrackingClick = (trackingNumber: string) => {
     const url = `https://www.fedex.com/fedextrack/no-results-found?trknbr=${trackingNumber}`;
-    setTrackingUrl(url);
-    setTrackingModalOpen(true);
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -146,34 +143,32 @@ export function TransportesTab() {
             <CardContent className="p-3">
               <div className="flex justify-between items-center gap-2">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-6">
                     <div>
-                      <span className="text-xs text-muted-foreground">Tracking:</span>
+                      <span className="text-xs text-muted-foreground block">Tracking:</span>
                       <div className="font-semibold text-sm">#{transporte.tracking_number}</div>
                     </div>
                     {transporte.referencia && (
                       <div>
-                        <span className="text-xs text-muted-foreground">Referência:</span>
+                        <span className="text-xs text-muted-foreground block">Referência:</span>
                         <div className="text-sm truncate">{transporte.referencia}</div>
                       </div>
                     )}
                   </div>
                 </div>
                 <div className="flex gap-1 items-center shrink-0">
+                  <Button 
+                    size="sm"
+                    onClick={() => handleTrackingClick(transporte.tracking_number)}
+                    className="h-8"
+                  >
+                    Tracking
+                  </Button>
                   <AttachmentManager 
                     entityType="transporte" 
                     entityId={transporte.id}
                     compact={true}
                   />
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => handleTrackingClick(transporte.tracking_number)}
-                    title="Rastrear"
-                    className="h-8 w-8"
-                  >
-                    <Truck className="h-4 w-4" />
-                  </Button>
                   <Button 
                     variant="ghost" 
                     size="icon"
@@ -293,22 +288,6 @@ export function TransportesTab() {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog para rastreamento */}
-      <Dialog open={trackingModalOpen} onOpenChange={setTrackingModalOpen}>
-        <DialogContent className="max-w-4xl h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>Rastreamento de Transporte</DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-hidden">
-            <iframe
-              src={trackingUrl}
-              className="w-full h-full border-0"
-              title="Rastreamento FedEx"
-            />
-          </div>
         </DialogContent>
       </Dialog>
     </div>
