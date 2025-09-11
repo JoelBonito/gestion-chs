@@ -1,4 +1,18 @@
-import { Home, Package, Users, Building2, ShoppingCart, Factory, Calculator } from "lucide-react";
+import React from "react";
+import { cn } from "@/lib/utils";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useIsCollaborator } from "@/hooks/useIsCollaborator";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  Home,
+  Package,
+  Users,
+  Truck,
+  ClipboardList,
+  Factory,
+  DollarSign,
+  FolderKanban,
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -9,103 +23,77 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { useLocation } from "react-router-dom";
-import { useUserRole } from "@/hooks/useUserRole";
-import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 
-const items = [
-  {
-    title: "Dashboard",
-    url: "/dashboard",
-    icon: Home,
-  },
-  {
-    title: "Produtos",
-    url: "/produtos",
-    icon: Package,
-  },
-  {
-    title: "Clientes",
-    url: "/clientes",
-    icon: Users,
-  },
-  {
-    title: "Fornecedores",
-    url: "/fornecedores",
-    icon: Building2,
-  },
-  {
-    title: "Encomendas",
-    url: "/encomendas",
-    icon: ShoppingCart,
-  },
-  {
-    title: "Produção",
-    url: "/producao",
-    icon: Factory,
-  },
-  {
-    title: "Financeiro",
-    url: "/financeiro",
-    icon: Calculator,
-  },
-];
+interface AppSidebarProps {
+  className?: string;
+}
 
-export function AppSidebar() {
-  const location = useLocation();
+export function AppSidebar({ className }: AppSidebarProps) {
   const { hasRole } = useUserRole();
-  const isCollaborator = useIsCollaborator();
+  const { isCollaborator } = useIsCollaborator();
+  const { user } = useAuth();
 
-  // Filter items based on user role
+  const items = [
+    { title: "Dashboard", url: "/", icon: Home },
+    { title: "Produtos", url: "/produtos", icon: Package },
+    { title: "Clientes", url: "/clientes", icon: Users },
+    { title: "Fornecedores", url: "/fornecedores", icon: Truck },
+    { title: "Encomendas", url: "/encomendas", icon: ClipboardList },
+    { title: "Produção", url: "/producao", icon: Factory },
+    { title: "Financeiro", url: "/financeiro", icon: DollarSign },
+    { title: "Projetos", url: "/projetos", icon: FolderKanban }, // Novo item adicionado
+  ];
+
   const getFilteredItems = () => {
     if (isCollaborator) {
-      return items.filter(item => 
-        item.url === '/produtos' || 
-        item.url === '/encomendas' || 
-        item.url === '/financeiro'
+      return items.filter(
+        (item) =>
+          item.url === "/produtos" ||
+          item.url === "/encomendas" ||
+          item.url === "/financeiro" ||
+          item.url === "/projetos"
       );
     }
-    if (hasRole('factory')) {
-      return items.filter(item => 
-        item.url === '/produtos' || 
-        item.url === '/encomendas' || 
-        item.url === '/financeiro'
+
+    if (hasRole("factory")) {
+      return items.filter(
+        (item) =>
+          item.url === "/producao" ||
+          item.url === "/encomendas" ||
+          item.url === "/financeiro" ||
+          item.url === "/projetos"
       );
     }
+
+    if (user?.email?.toLowerCase() === "ham@admin.com") {
+      return items.filter(
+        (item) =>
+          item.url === "/encomendas" ||
+          item.url === "/financeiro" ||
+          item.url === "/projetos"
+      );
+    }
+
     return items;
   };
 
-  const filteredItems = getFilteredItems();
-
   return (
-    <Sidebar>
-      <SidebarContent className="bg-gradient-to-b from-primary/5 via-background to-background border-r border-primary/10">
+    <Sidebar className={cn(className)}>
+      <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-primary-dark font-display font-medium text-base px-4 py-6">
-            Sistema de Gestão
-          </SidebarGroupLabel>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-2 px-2">
-              {filteredItems.map((item) => {
-                const isActive = location.pathname === item.url;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      asChild
-                      className={`transition-all duration-300 hover:bg-primary/10 hover:text-primary-dark ${
-                        isActive 
-                          ? 'bg-gradient-primary text-white shadow-hover border-primary/20' 
-                          : 'text-muted-foreground hover:text-primary-dark'
-                      }`}
-                    >
-                      <a href={item.url} className="flex items-center gap-3 px-4 py-3 rounded-lg font-body font-medium">
-                        <item.icon className="h-5 w-5" />
-                        <span>{item.title}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+            <SidebarMenu>
+              {getFilteredItems().map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton asChild>
+                    <a href={item.url} className="flex items-center gap-2">
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
