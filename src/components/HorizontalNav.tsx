@@ -60,6 +60,7 @@ export function HorizontalNav() {
       return navigation.filter(item => 
         item.href === '/encomendas' || 
         item.href === '/financeiro'
+        item.href === '/projetos'                       
       );
     }
     if (isCollaborator) {
