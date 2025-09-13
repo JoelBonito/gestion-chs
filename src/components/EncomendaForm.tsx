@@ -387,7 +387,7 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                 />
               </div>
 
-              {/* Campos específicos para edição - SOMENTE LEITURA */}
+              {/* Campos específicos para edição - mesmas cores do card */}
               {isEdit && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
@@ -397,15 +397,9 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                       <FormItem>
                         <FormLabel>Peso Bruto (kg)</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            step="0.01"
-                            placeholder="0.00"
-                            value={field.value || ''}
-                            readOnly
-                            disabled
-                            className="bg-muted cursor-not-allowed"
-                          />
+                          <div className="text-lg font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-lg text-center">
+                            {field.value ? `${field.value} kg` : '0.00 kg'}
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -419,15 +413,9 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                       <FormItem>
                         <FormLabel>Valor Frete (€)</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            step="0.01"
-                            placeholder="0.00"
-                            value={field.value || ''}
-                            readOnly
-                            disabled
-                            className="bg-muted cursor-not-allowed"
-                          />
+                          <div className="text-lg font-bold text-amber-600 bg-amber-50 px-3 py-2 rounded-lg text-center">
+                            {field.value ? `${field.value.toFixed(2)}€` : '0.00€'}
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
