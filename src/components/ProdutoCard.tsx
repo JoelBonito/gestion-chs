@@ -113,12 +113,12 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
 
       {/* Modal de Visualização */}
       <Dialog open={showView} onOpenChange={setShowView}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Visualizar Produto</DialogTitle>
             <DialogDescription>Detalhes do produto selecionado.</DialogDescription>
           </DialogHeader>
-          <ProdutoView produto={produto} />
+          <ProdutoView produto={produto} onClose={() => setShowView(false)} />
         </DialogContent>
       </Dialog>
 

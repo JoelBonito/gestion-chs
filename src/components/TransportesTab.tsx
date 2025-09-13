@@ -125,8 +125,10 @@ export function TransportesTab() {
     <div className="space-y-4">
       {/* Header com botão Novo */}
       <div className="flex justify-end">
-        <Button onClick={openNewDialog}>
-          <Plus className="mr-2 h-4 w-4" /> Novo Transporte
+        <Button onClick={openNewDialog} className="w-full sm:w-auto">
+          <Plus className="mr-2 h-4 w-4" />
+          <span className="hidden sm:inline">Novo Transporte</span>
+          <span className="sm:hidden">Novo</span>
         </Button>
       </div>
 
@@ -139,54 +141,56 @@ export function TransportesTab() {
         </Card>
       ) : (
         transportes.map((transporte) => (
-          <Card key={transporte.id}>
-            <CardContent className="p-3">
-              <div className="flex justify-between items-center gap-6">
-                <div className="flex items-center gap-12 flex-1">
+          <Card key={transporte.id} className="overflow-hidden">
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 flex-1 min-w-0">
                   <div className="min-w-0">
                     <span className="text-xs text-muted-foreground block">Tracking:</span>
-                    <div className="font-semibold text-sm">#{transporte.tracking_number}</div>
+                    <div className="font-semibold text-sm truncate">#{transporte.tracking_number}</div>
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="text-xs text-muted-foreground block">Referência:</span>
                     <div className="text-sm truncate">{transporte.referencia || "teste"}</div>
                   </div>
                 </div>
-                <div className="flex gap-2 items-center shrink-0">
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   <Button 
                     size="sm"
                     onClick={() => handleTrackingClick(transporte.tracking_number)}
-                    className="h-8"
+                    className="w-full sm:w-auto"
                   >
                     Tracking
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => handleView(transporte)}
-                    title="Visualizar"
-                    className="h-8 w-8"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => handleEdit(transporte)}
-                    title="Editar"
-                    className="h-8 w-8"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => handleDelete(transporte)}
-                    title="Deletar"
-                    className="h-8 w-8"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleView(transporte)}
+                      title="Visualizar"
+                      className="h-8 w-8"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleEdit(transporte)}
+                      title="Editar"
+                      className="h-8 w-8"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleDelete(transporte)}
+                      title="Deletar"
+                      className="h-8 w-8"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -196,7 +200,7 @@ export function TransportesTab() {
 
       {/* Dialog para criar/editar transporte */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingTransporte ? "Editar Transporte" : "Novo Transporte"}
@@ -225,14 +229,14 @@ export function TransportesTab() {
                 Após salvar, você poderá anexar arquivos PDF/JPEG.
               </p>
             )}
-            <div className="flex gap-2 pt-4">
-              <Button onClick={handleSalvar} className="flex-1">
+            <div className="flex flex-col sm:flex-row gap-2 pt-4">
+              <Button onClick={handleSalvar} className="w-full sm:flex-1">
                 {editingTransporte ? "Atualizar" : "Salvar"}
               </Button>
               <Button 
                 variant="outline" 
                 onClick={() => setDialogOpen(false)}
-                className="flex-1"
+                className="w-full sm:flex-1"
               >
                 Cancelar
               </Button>
@@ -243,13 +247,13 @@ export function TransportesTab() {
 
       {/* Dialog para visualizar transporte */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Detalhes do Transporte</DialogTitle>
           </DialogHeader>
           {viewingTransporte && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     Tracking Number

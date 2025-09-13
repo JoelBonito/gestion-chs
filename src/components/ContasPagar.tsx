@@ -251,10 +251,10 @@ export default function ContasPagar() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card className="shadow-card">
-        <CardHeader>
-          <div className="flex items-center justify-between">
+        <CardHeader className="px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-warning" />
@@ -279,7 +279,7 @@ export default function ContasPagar() {
           </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="px-4 sm:px-6">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -330,15 +330,17 @@ export default function ContasPagar() {
                     </TableCell>
 
                     <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleViewDetails(conta)}
                         title={t("Ver Detalhes")}
                         type="button"
+                        className="w-full sm:w-auto"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-4 w-4 mr-0 sm:mr-2" />
+                        <span className="hidden sm:inline">Ver</span>
                       </Button>
 
                         {!isFelipe && (
@@ -349,8 +351,10 @@ export default function ContasPagar() {
                                 size="sm"
                                 title={t("Registrar Pagamento")}
                                 type="button"
+                                className="w-full sm:w-auto"
                               >
-                                <Plus className="h-4 w-4" />
+                                <Plus className="h-4 w-4 mr-0 sm:mr-2" />
+                                <span className="hidden sm:inline">Pagar</span>
                               </Button>
                             </DialogTrigger>
                             <DialogContent>
@@ -369,11 +373,13 @@ export default function ContasPagar() {
                               size="sm"
                               title={t("Anexar Comprovante")}
                               type="button"
+                              className="w-full sm:w-auto"
                             >
                               <IconWithBadge 
                                 icon={<Paperclip className="h-4 w-4" />}
                                 count={attachmentCounts[conta.id] || 0}
                               />
+                              <span className="hidden sm:inline ml-2">Anexos</span>
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl" aria-describedby="">
@@ -405,14 +411,14 @@ export default function ContasPagar() {
       {/* Dialog: Detalhes + Anexos */}
       {selectedConta && (
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="">
             <DialogHeader>
               <DialogTitle>{t("Detalhes da Conta a Pagar")}</DialogTitle>
             </DialogHeader>
 
             <div className="space-y-6">
               {/* Detalhes da conta */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Encomenda:</label>
                   <p className="text-sm text-muted-foreground">

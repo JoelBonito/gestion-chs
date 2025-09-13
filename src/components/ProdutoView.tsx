@@ -2,19 +2,20 @@ import React from "react";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Package, DollarSign, Paperclip } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, Package, DollarSign, Paperclip, X } from "lucide-react";
 import { AttachmentManager } from "@/components/AttachmentManager";
 import { useAuth } from "@/hooks/useAuth";
 
-export default function ProdutoView({ produto }) {
+export default function ProdutoView({ produto, onClose }) {
   const { user } = useAuth();
   const isFelipe = user?.email?.toLowerCase() === "felipe@colaborador.com";
   
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold">{produto.nome}</h2>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+        <div className="space-y-2 flex-1 min-w-0">
+          <h2 className="text-xl sm:text-2xl font-bold truncate">{produto.nome}</h2>
           <div className="flex items-center gap-2">
             <Badge variant={produto.ativo ? "default" : "secondary"}>
               {produto.ativo ? "Ativo" : "Inativo"}
@@ -33,9 +34,22 @@ export default function ProdutoView({ produto }) {
             </div>
           )}
         </div>
+        
+        {/* Botão Fechar */}
+        {onClose && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClose}
+            className="shrink-0"
+          >
+            <X className="h-4 w-4 mr-0 sm:mr-2" />
+            <span className="hidden sm:inline">Fechar</span>
+          </Button>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
