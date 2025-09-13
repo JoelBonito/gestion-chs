@@ -128,6 +128,20 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
     fetchItens();
   }, [isEdit, editingData, clientes.length, fornecedores.length]);
 
+  // Ao editar: calcular e preencher Peso Bruto e Valor do Frete conforme o card
+  useEffect(() => {
+    if (!isEdit) return;
+    if (!itens || itens.length === 0) return;
+
+    const totalGramas = itens.reduce((total, item) => total + (item.quantidade * (item.peso_produto || 0)), 0);
+    const pesoKg = (totalGramas * 1.30) / 1000; // mesmo cálculo do card
+    const tarifaPorKg = 4.5; // mesma taxa usada na lista
+    const frete = pesoKg * tarifaPorKg;
+
+    form.setValue("peso_total", Number(pesoKg.toFixed(2)));
+    form.setValue("valor_frete", Number(frete.toFixed(2)));
+  }, [isEdit, itens, form]);
+
   const onSubmit = async (data: EncomendaFormData) => {
     setIsSubmitting(true);
     try {
