@@ -30,6 +30,12 @@ export function TarefasTab() {
   const [editing, setEditing] = useState<EditingState | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
+  // Fornecedores permitidos para o Felipe (UUIDs)
+  const ALLOWED_SUPPLIERS_FOR_FELIPE = [
+    "f0920a27-752c-4483-ba02-e7f32beceef6",
+    "b8f995d2-47dc-4c8f-9779-ce21431f5244",
+  ];
+
   // Determinar permissões baseado no email
   const isJoel = userEmail === 'jbento1@gmail.com' || userEmail === 'admin@admin.com';
   const isFelipe = userEmail === 'felipe@colaborador.com';
@@ -48,11 +54,17 @@ export function TarefasTab() {
   const fetchEncomendas = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      let query = supabase
         .from('encomendas')
-        .select('id, numero_encomenda, etiqueta, status, observacoes_joel, observacoes_felipe')
-        .neq('status', 'ENTREGUE')
-        .order('numero_encomenda', { ascending: true });
+        .select('id, numero_encomenda, etiqueta, status, observacoes_joel, observacoes_felipe, fornecedor_id')
+        .neq('status', 'ENTREGUE');
+
+      // Filtrar por fornecedores permitidos para Felipe
+      if (isFelipe) {
+        query = query.in('fornecedor_id', ALLOWED_SUPPLIERS_FOR_FELIPE);
+      }
+
+      const { data, error } = await query.order('numero_encomenda', { ascending: true });
 
       if (error) throw error;
       setEncomendas(data || []);
