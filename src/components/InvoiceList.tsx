@@ -135,7 +135,8 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          {/* Tabela apenas no desktop */}
+          <div className="hidden lg:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -227,6 +228,64 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Lista em cartões no mobile/tablet */}
+          <div className="lg:hidden space-y-3">
+            {invoices.length === 0 && (
+              <Card className="shadow-none border-dashed">
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  Nenhuma fatura encontrada
+                </CardContent>
+              </Card>
+            )}
+            {invoices.map((invoice) => (
+              <Card key={invoice.id} className="overflow-hidden">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-sm font-semibold">
+                      {new Date(invoice.invoice_date).toLocaleDateString('pt-BR')}
+                    </div>
+                    <div className="text-sm font-semibold">
+                      {formatCurrencyEUR(invoice.amount)}
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {invoice.description || 'Sem descrição'}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {invoice.attachment ? (
+                      <div className="flex items-center gap-1">
+                        <FileText className="h-3 w-3 text-red-500" />
+                        <span className="truncate">{invoice.attachment.file_name}</span>
+                      </div>
+                    ) : (
+                      'Sem documento'
+                    )}
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setViewingInvoice(invoice)}>
+                      <Eye className="w-4 h-4 mr-2" /> Ver detalhes
+                    </Button>
+                    {invoice.attachment && (
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleDownload(invoice)}>
+                        <Download className="w-4 h-4 mr-2" /> Download
+                      </Button>
+                    )}
+                    {canEdit && !isRestrictedUser && (
+                      <>
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleEditClick(invoice)}>
+                          <Edit className="w-4 h-4 mr-2" /> Editar
+                        </Button>
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto text-destructive hover:text-destructive" onClick={() => onDelete(invoice)}>
+                          <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           {invoices.length > 0 && (

@@ -280,7 +280,8 @@ export default function ContasPagar() {
         </CardHeader>
 
         <CardContent className="px-4 sm:px-6">
-          <div className="overflow-x-auto">
+          {/* Tabela apenas no desktop */}
+          <div className="hidden lg:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -330,18 +331,16 @@ export default function ContasPagar() {
                     </TableCell>
 
                     <TableCell>
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleViewDetails(conta)}
-                        title={t("Ver Detalhes")}
-                        type="button"
-                        className="w-full sm:w-auto"
-                      >
-                        <Eye className="h-4 w-4 mr-0 sm:mr-2" />
-                        <span className="hidden sm:inline">Ver</span>
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetails(conta)}
+                          title={t("Ver Detalhes")}
+                          type="button"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
 
                         {!isFelipe && (
                           <Dialog>
@@ -351,13 +350,11 @@ export default function ContasPagar() {
                                 size="sm"
                                 title={t("Registrar Pagamento")}
                                 type="button"
-                                className="w-full sm:w-auto"
                               >
-                                <Plus className="h-4 w-4 mr-0 sm:mr-2" />
-                                <span className="hidden sm:inline">Pagar</span>
+                                <Plus className="h-4 w-4" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
                               <PagamentoFornecedorForm
                                 conta={{...conta, encomenda_id: conta.id}}
                                 onSuccess={handlePaymentSuccess}
@@ -373,16 +370,14 @@ export default function ContasPagar() {
                               size="sm"
                               title={t("Anexar Comprovante")}
                               type="button"
-                              className="w-full sm:w-auto"
                             >
                               <IconWithBadge 
                                 icon={<Paperclip className="h-4 w-4" />}
                                 count={attachmentCounts[conta.id] || 0}
                               />
-                              <span className="hidden sm:inline ml-2">Anexos</span>
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-2xl" aria-describedby="">
+                          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="">
                             <AttachmentManager
                               entityType="payable"
                               entityId={conta.id}
@@ -404,6 +399,88 @@ export default function ContasPagar() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Lista em cartões no mobile/tablet */}
+          <div className="lg:hidden space-y-3">
+            {contas.length === 0 && (
+              <Card className="shadow-none border-dashed">
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  {t("Nenhuma conta a pagar encontrada")}
+                </CardContent>
+              </Card>
+            )}
+            {contas.map((conta) => (
+              <Card key={conta.id} className="overflow-hidden">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold truncate">#{conta.numero_encomenda}</div>
+                      <Badge variant="secondary" className="mt-0.5">{conta.etiqueta || "Nenhum"}</Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground shrink-0">
+                      {new Date(conta.data_criacao).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="text-sm truncate">{conta.fornecedores?.nome || 'N/A'}</div>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">{t("Valor Total")}</div>
+                      <div className="font-semibold">{formatCurrencyEUR(conta.valor_total_custo)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">{t("Valor Pago")}</div>
+                      <div className="text-success">{formatCurrencyEUR(conta.valor_pago_fornecedor)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">{t("Saldo")}</div>
+                      <div className="font-semibold text-warning">{formatCurrencyEUR(conta.saldo_devedor_fornecedor)}</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {paymentCounts[conta.id] > 0 ? `${paymentCounts[conta.id]} pag.` : 'Nenhum'}
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleViewDetails(conta)}>
+                      <Eye className="w-4 h-4 mr-2" /> {t("Ver Detalhes")}
+                    </Button>
+                    {!isFelipe && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                            <Plus className="w-4 h-4 mr-2" /> {t("Registrar Pagamento")}
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
+                          <PagamentoFornecedorForm
+                            conta={{...conta, encomenda_id: conta.id}}
+                            onSuccess={handlePaymentSuccess}
+                          />
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto" title={t("Anexar Comprovante")}>
+                          <IconWithBadge 
+                            icon={<Paperclip className="h-4 w-4" />}
+                            count={attachmentCounts[conta.id] || 0}
+                          />
+                          <span className="ml-2">Anexos</span>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="">
+                        <AttachmentManager
+                          entityType="payable"
+                          entityId={conta.id}
+                          title={t("Anexar Comprovante")}
+                        />
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </CardContent>
       </Card>
