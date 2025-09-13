@@ -34,6 +34,7 @@ import { EncomendaTransportForm } from "@/components/EncomendaTransportForm";
 import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TransportesTab } from "@/components/TransportesTab";
+import { TarefasTab } from "@/components/TarefasTab";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 type StatusFilter = StatusEncomenda | "TODOS";
@@ -157,7 +158,7 @@ const isHam = email === "ham@admin.com";
   const [searchTerm, setSearchTerm] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("TODOS");
-  const [activeTab, setActiveTab] = useState<"encomendas" | "transportes">("encomendas");
+  const [activeTab, setActiveTab] = useState<"encomendas" | "transportes" | "tarefas">("encomendas");
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -457,6 +458,18 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
         >
           {isHam ? "Transport" : "Transporte"}
         </button>
+        {!isHam && (
+          <button
+            onClick={() => setActiveTab("tarefas")}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === "tarefas" 
+                ? "border-b-2 border-primary text-primary" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Tarefas
+          </button>
+        )}
       </div>
 
       {activeTab === "encomendas" && (
@@ -810,6 +823,10 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
 
       {activeTab === "transportes" && (
         <TransportesTab />
+      )}
+
+      {activeTab === "tarefas" && (
+        <TarefasTab />
       )}
     </div>
   );
