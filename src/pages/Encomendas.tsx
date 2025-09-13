@@ -400,21 +400,22 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
   return (
     <div className="space-y-6">
       {/* Cabeçalho */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">{t.orders}</h1>
-          <p className="text-muted-foreground">{t.manageOrders}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{t.orders}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">{t.manageOrders}</p>
         </div>
 
         {canEdit() && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
-                {t.newOrder}
+                <span className="hidden sm:inline">{t.newOrder}</span>
+                <span className="sm:hidden">Nova</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{t.newOrder}</DialogTitle>
                 <DialogDescription>
@@ -463,8 +464,8 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
           {/* Filtros */}
           <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-1 gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col sm:flex-row flex-1 gap-4">
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input

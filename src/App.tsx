@@ -38,14 +38,14 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route
+                <Route
                 path="*"
                 element={
                   <AuthGuard>
                     <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/20">
                       <HorizontalNav />
                       <main className="flex-1">
-                        <div className="container mx-auto p-6">
+                        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
                           <Routes>
                             <Route path="/" element={
                               <FelipeGuard>

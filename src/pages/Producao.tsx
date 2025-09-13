@@ -191,15 +191,15 @@ export default function Producao() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Produção</h1>
-          <p className="text-muted-foreground">Gerencie o status de produção das encomendas</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Produção</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Gerencie o status de produção das encomendas</p>
         </div>
       </div>
 
       {/* Status Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total</CardTitle>
@@ -280,7 +280,8 @@ export default function Producao() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <Table>
+            <div className="min-w-[800px]">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[100px]">ID</TableHead>
@@ -534,7 +535,8 @@ export default function Producao() {
                   })
                 )}
               </TableBody>
-            </Table>
+              </Table>
+            </div>
           </div>
         </CardContent>
       </Card>

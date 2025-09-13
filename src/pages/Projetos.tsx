@@ -51,18 +51,19 @@ export default function Projetos() {
 
   return (
     <OptimizedRoleGuard>
-      <div className="px-4 md:px-8 py-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">{t("Projetos")}</h1>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-2xl sm:text-3xl font-bold">{t("Projetos")}</h1>
           {!isRestrictedUser && (
             <Dialog open={showForm} onOpenChange={setShowForm}>
               <DialogTrigger asChild>
-                <Button onClick={() => setEditingProjeto(null)}>
+                <Button onClick={() => setEditingProjeto(null)} className="w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
-                  {t("Novo Projeto")}
+                  <span className="hidden sm:inline">{t("Novo Projeto")}</span>
+                  <span className="sm:hidden">Novo</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{editingProjeto ? t("Editar Projeto") : t("Novo Projeto")}</DialogTitle>
                 </DialogHeader>
@@ -80,7 +81,7 @@ export default function Projetos() {
         ) : projetos.length === 0 ? (
           <p className="text-muted-foreground">{t("Nenhum projeto encontrado")}</p>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {projetos.map((projeto) => (
               <Card key={projeto.id}>
                 <CardHeader>
@@ -110,7 +111,7 @@ export default function Projetos() {
 
         {viewingProjeto && (
           <Dialog open={!!viewingProjeto} onOpenChange={() => setViewingProjeto(null)}>
-            <DialogContent className="max-w-3xl">
+            <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{viewingProjeto.nome}</DialogTitle>
               </DialogHeader>

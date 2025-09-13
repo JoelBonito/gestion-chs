@@ -59,48 +59,53 @@ export default function Produtos() {
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tight">Produtos</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Produtos</h1>
 
         {/* Mantive sua regra de visibilidade do botão */}
         {email !== "felipe@colaborador.com" && (
-          <Button type="button" onClick={handleCadastrarProduto}>
+          <Button type="button" onClick={handleCadastrarProduto} className="w-full sm:w-auto">
             <PlusIcon className="w-4 h-4 mr-2" />
-            Cadastrar produto
+            <span className="hidden sm:inline">Cadastrar produto</span>
+            <span className="sm:hidden">Novo</span>
           </Button>
         )}
       </div>
 
       {/* Filtros e ações */}
-      <div className="flex flex-col md:flex-row items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Pesquisar por nome, marca ou tipo"
-          className="w-full md:w-1/3"
+          className="w-full"
         />
 
-        <Button
-          variant="outline"
-          onClick={() => setSort((prev) => (prev === "nameAsc" ? "nameDesc" : "nameAsc"))}
-        >
-          {sort === "nameAsc" ? (
-            <>
-              <SortAscIcon className="w-4 h-4 mr-2" />
-              A–Z
-            </>
-          ) : (
-            <>
-              <SortDescIcon className="w-4 h-4 mr-2" />
-              Z–A
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            onClick={() => setSort((prev) => (prev === "nameAsc" ? "nameDesc" : "nameAsc"))}
+            className="flex-1 sm:flex-none"
+          >
+            {sort === "nameAsc" ? (
+              <>
+                <SortAscIcon className="w-4 h-4 mr-2" />
+                A–Z
+              </>
+            ) : (
+              <>
+                <SortDescIcon className="w-4 h-4 mr-2" />
+                Z–A
+              </>
+            )}
+          </Button>
 
-        <Button variant="outline" onClick={handleRefresh}>
-          <RefreshCwIcon className="w-4 h-4 mr-2" />
-          Atualizar
-        </Button>
+          <Button variant="outline" onClick={handleRefresh} className="flex-1 sm:flex-none">
+            <RefreshCwIcon className="w-4 h-4 mr-2" />
+            <span className="hidden sm:inline">Atualizar</span>
+            <span className="sm:hidden">Refresh</span>
+          </Button>
+        </div>
       </div>
 
       {/* Lista */}
@@ -113,7 +118,7 @@ export default function Produtos() {
 
       {/* Modal: Novo produto */}
       <Dialog open={abrirNovo} onOpenChange={setAbrirNovo}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Novo produto</DialogTitle>
           </DialogHeader>

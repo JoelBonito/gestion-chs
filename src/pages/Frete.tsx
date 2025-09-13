@@ -189,20 +189,21 @@ export default function Frete() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Gestão de Frete</h1>
-          <p className="text-muted-foreground">Configure tarifas e calcule custos de envio</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Gestão de Frete</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Configure tarifas e calcule custos de envio</p>
         </div>
         {canEdit && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+              <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
-                Nova Taxa
+                <span className="hidden sm:inline">Nova Taxa</span>
+                <span className="sm:hidden">Nova</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Nova Taxa de Frete</DialogTitle>
                 <DialogDescription>
@@ -210,7 +211,7 @@ export default function Frete() {
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Origem *</Label>
                     <Input
@@ -228,7 +229,7 @@ export default function Frete() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Moeda</Label>
                     <Select value={newRate.currency} onValueChange={(value) => setNewRate({...newRate, currency: value})}>
@@ -293,7 +294,9 @@ export default function Frete() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto">
+            <div className="min-w-[600px]">
+              <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Origem</TableHead>
@@ -343,7 +346,9 @@ export default function Frete() {
                 ))
               )}
             </TableBody>
-          </Table>
+              </Table>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -359,7 +364,9 @@ export default function Frete() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
+          <div className="overflow-x-auto">
+            <div className="min-w-[800px]">
+              <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Encomenda</TableHead>
@@ -420,7 +427,9 @@ export default function Frete() {
                 ))
               )}
             </TableBody>
-          </Table>
+              </Table>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

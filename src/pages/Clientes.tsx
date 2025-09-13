@@ -85,19 +85,20 @@ export default function Clientes() {
   return (
     <OptimizedRoleGuard>
       <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Clientes</h1>
-          <p className="text-muted-foreground">Gerencie seus distribuidores e parceiros</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Clientes</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Gerencie seus distribuidores e parceiros</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+            <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
-              Novo Cliente
+              <span className="hidden sm:inline">Novo Cliente</span>
+              <span className="sm:hidden">Novo</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Novo Cliente</DialogTitle>
               <DialogDescription>
@@ -136,7 +137,7 @@ export default function Clientes() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Cliente</DialogTitle>
             <DialogDescription>
@@ -157,15 +158,15 @@ export default function Clientes() {
           <p className="text-muted-foreground">Carregando clientes...</p>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {filteredClientes.map((cliente) => (
-            <Card key={cliente.id} className="shadow-card hover:shadow-elevated transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{cliente.nome}</CardTitle>
+            <Card key={cliente.id} className="shadow-card hover:shadow-elevated transition-shadow overflow-hidden">
+              <CardHeader className="pb-3 px-4 sm:px-6">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className="text-lg truncate">{cliente.nome}</CardTitle>
                     {cliente.email && (
-                      <CardDescription className="flex items-center mt-1">
+                      <CardDescription className="flex items-center mt-1 truncate">
                         {cliente.email}
                       </CardDescription>
                     )}
@@ -186,7 +187,7 @@ export default function Clientes() {
                     </div>
                   )}
                   {cliente.endereco && (
-                    <div className="flex items-center text-muted-foreground">
+                    <div className="flex items-center text-muted-foreground break-words">
                       📍 {cliente.endereco}
                     </div>
                   )}

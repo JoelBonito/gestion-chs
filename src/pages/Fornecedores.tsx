@@ -87,19 +87,20 @@ export default function Fornecedores() {
   return (
     <OptimizedRoleGuard>
       <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Fornecedores</h1>
-          <p className="text-muted-foreground">Gerencie suas fábricas e parceiros de produção</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Fornecedores</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Gerencie suas fábricas e parceiros de produção</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90">
+            <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
-              Novo Fornecedor
+              <span className="hidden sm:inline">Novo Fornecedor</span>
+              <span className="sm:hidden">Novo</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Novo Fornecedor</DialogTitle>
               <DialogDescription>
@@ -138,7 +139,7 @@ export default function Fornecedores() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Fornecedor</DialogTitle>
             <DialogDescription>
@@ -159,15 +160,15 @@ export default function Fornecedores() {
           <p className="text-muted-foreground">Carregando fornecedores...</p>
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
           {filteredFornecedores.map((fornecedor) => (
-            <Card key={fornecedor.id} className="shadow-card hover:shadow-elevated transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-xl">{fornecedor.nome}</CardTitle>
+            <Card key={fornecedor.id} className="shadow-card hover:shadow-elevated transition-shadow overflow-hidden">
+              <CardHeader className="pb-3 px-4 sm:px-6">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className="text-lg sm:text-xl truncate">{fornecedor.nome}</CardTitle>
                     {fornecedor.email && (
-                      <CardDescription className="flex items-center mt-1">
+                      <CardDescription className="flex items-center mt-1 truncate">
                         <Mail className="h-3 w-3 mr-1" />
                         {fornecedor.email}
                       </CardDescription>
@@ -188,7 +189,7 @@ export default function Fornecedores() {
                     </div>
                   )}
                   {fornecedor.endereco && (
-                    <div className="flex items-center text-muted-foreground">
+                    <div className="flex items-center text-muted-foreground break-words">
                       <MapPin className="h-3 w-3 mr-2" />
                       {fornecedor.endereco}
                     </div>

@@ -251,16 +251,16 @@ export default function Dashboard() {
 
   return (
     <RoleBasedGuard>
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h2>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Visão geral do seu negócio
         </p>
       </div>
 
       {/* Primeira linha - 5 cards grandes */}
-      <div className="grid gap-4 lg:grid-cols-5">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         <StatCard title="Encomendas Ativas" value={encomendasAtivas.toString()} subtitle="Encomendas não entregues" />
         <StatCard title="A Receber" value={formatCurrencyEUR(aReceber)} subtitle="Valor pendente de clientes" />
         <StatCard title="A Pagar" value={formatCurrencyEUR(aPagar)} subtitle="Valor pendente a fornecedores" />
@@ -293,7 +293,7 @@ export default function Dashboard() {
       </div>
 
       {/* Tabelas */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
         {/* Encomendas em Progresso */}
         <Card>
           <CardHeader>

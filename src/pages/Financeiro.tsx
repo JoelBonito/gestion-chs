@@ -100,14 +100,14 @@ export default function Financeiro() {
   const hideFaturas = isFelipe;
 
   return (
-    <div className="px-4 md:px-8">
+    <div className="space-y-6">
       {/* Cards de resumo - escondidos para ham@admin.com e felipe@colaborador.com */}
       {!isHam && !isFelipe && (
         <>
           {loadingResumo ? (
             <p className="text-muted-foreground mb-4">{t("Carregando resumo...")}</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-sm text-muted-foreground">{t("Total a Receber")}</CardTitle>
