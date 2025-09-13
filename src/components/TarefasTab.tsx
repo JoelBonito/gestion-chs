@@ -182,12 +182,12 @@ export function TarefasTab() {
                 <div className="space-y-4">
                   {/* Cabeçalho da encomenda */}
                   <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
-                    <div>
-                      <h3 className="font-semibold text-lg">#{encomenda.numero_encomenda}</h3>
+                    <div className="space-y-2">
+                      <h3 className="font-bold text-lg text-primary-dark">#{encomenda.numero_encomenda}</h3>
                       {encomenda.etiqueta && (
-                        <p className="text-sm text-muted-foreground">
-                          Etiqueta: {encomenda.etiqueta}
-                        </p>
+                        <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full w-fit">
+                          {encomenda.etiqueta}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -233,7 +233,7 @@ export function TarefasTab() {
                           </div>
                         </div>
                       ) : (
-                        <div className="p-3 bg-muted/50 rounded-md min-h-[80px] text-sm">
+                        <div className="p-3 bg-muted/50 rounded-md min-h-[80px] text-sm whitespace-pre-wrap">
                           {encomenda.observacoes_joel || (
                             <span className="text-muted-foreground italic">
                               Sem observações
@@ -282,7 +282,7 @@ export function TarefasTab() {
                           </div>
                         </div>
                       ) : (
-                        <div className="p-3 bg-muted/50 rounded-md min-h-[80px] text-sm">
+                        <div className="p-3 bg-muted/50 rounded-md min-h-[80px] text-sm whitespace-pre-wrap">
                           {encomenda.observacoes_felipe || (
                             <span className="text-muted-foreground italic">
                               Sem observações
