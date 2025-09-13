@@ -43,12 +43,15 @@ export function TarefasTab() {
   const isReadOnly = !isJoel && !isFelipe;
 
   useEffect(() => {
-    // Buscar email do usuário
-    supabase.auth.getUser().then(({ data }) => {
+    const initializeData = async () => {
+      const { data } = await supabase.auth.getUser();
       setUserEmail(data.user?.email ?? null);
-    });
+      
+      // Depois buscar as encomendas (já com o email correto)
+      fetchEncomendas();
+    };
     
-    fetchEncomendas();
+    initializeData();
   }, []);
 
   const fetchEncomendas = async () => {
