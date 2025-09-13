@@ -373,53 +373,56 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="peso_total"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Peso Bruto (kg)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.01"
-                          placeholder="0.00"
-                          value={field.value || ''}
-                          onChange={(e) => {
-                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                            field.onChange(value);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {/* Campos específicos para edição */}
+              {isEdit && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="peso_total"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Peso Bruto (kg)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            placeholder="0.00"
+                            value={field.value || ''}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                              field.onChange(value);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="valor_frete"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Valor Frete (€)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          step="0.01"
-                          placeholder="0.00"
-                          value={field.value || ''}
-                          onChange={(e) => {
-                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                            field.onChange(value);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                  <FormField
+                    control={form.control}
+                    name="valor_frete"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valor Frete (€)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            placeholder="0.00"
+                            value={field.value || ''}
+                            onChange={(e) => {
+                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                              field.onChange(value);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
 
             </CardContent>
           </Card>
