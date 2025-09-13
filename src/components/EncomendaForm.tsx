@@ -373,7 +373,7 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                 />
               </div>
 
-              {/* Campos específicos para edição */}
+              {/* Campos específicos para edição - SOMENTE LEITURA */}
               {isEdit && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
@@ -388,10 +388,9 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                             step="0.01"
                             placeholder="0.00"
                             value={field.value || ''}
-                            onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              field.onChange(value);
-                            }}
+                            readOnly
+                            disabled
+                            className="bg-muted cursor-not-allowed"
                           />
                         </FormControl>
                         <FormMessage />
@@ -411,10 +410,9 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                             step="0.01"
                             placeholder="0.00"
                             value={field.value || ''}
-                            onChange={(e) => {
-                              const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                              field.onChange(value);
-                            }}
+                            readOnly
+                            disabled
+                            className="bg-muted cursor-not-allowed"
                           />
                         </FormControl>
                         <FormMessage />
