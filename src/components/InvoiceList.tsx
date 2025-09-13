@@ -244,7 +244,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
       {/* Edit Modal */}
       {editingInvoice && (
         <Dialog open={!!editingInvoice} onOpenChange={() => setEditingInvoice(null)}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="w-[95vw] max-w-md" >
             <DialogHeader>
               <DialogTitle>Editar Fatura</DialogTitle>
             </DialogHeader>
@@ -300,7 +300,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
       {/* View Invoice Details Modal */}
       {viewingInvoice && (
         <Dialog open={!!viewingInvoice} onOpenChange={() => setViewingInvoice(null)}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="w-[95vw] max-w-3xl">
             <DialogHeader>
               <DialogTitle>Detalhes da Fatura</DialogTitle>
             </DialogHeader>
@@ -342,7 +342,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
       {/* Preview Modal */}
       {previewModal && (
         <Dialog open={!!previewModal} onOpenChange={() => setPreviewModal(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] p-0">
             <DialogHeader className="p-4 pb-0 border-b">
               <DialogTitle className="text-lg font-medium truncate">
                 {previewModal.fileName}

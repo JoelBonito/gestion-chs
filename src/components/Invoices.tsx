@@ -61,7 +61,7 @@ export const Invoices: React.FC = () => {
       />
 
       <Dialog open={showNewInvoiceDialog} onOpenChange={setShowNewInvoiceDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl">
           <DialogHeader>
             <DialogTitle>{locale === 'fr-FR' ? 'Nouvelle Facture' : 'Nova Fatura'}</DialogTitle>
             <DialogDescription>

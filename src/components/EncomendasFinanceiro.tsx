@@ -219,8 +219,9 @@ export default function EncomendasFinanceiro({
           </div>
         </CardHeader>
 
-        <CardContent>
-          <div className="overflow-x-auto">
+        <CardContent className="px-4 sm:px-6">
+          {/* Tabela apenas no desktop */}
+          <div className="hidden lg:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -234,7 +235,6 @@ export default function EncomendasFinanceiro({
                   <TableHead>{tr("Ações")}</TableHead>
                 </TableRow>
               </TableHeader>
-
               <TableBody>
                 {encomendas.map((encomenda) => (
                   <TableRow key={encomenda.id}>
@@ -248,70 +248,37 @@ export default function EncomendasFinanceiro({
                         )}
                       </div>
                     </TableCell>
-
                     <TableCell>{encomenda.cliente_nome}</TableCell>
-
                     <TableCell className="text-sm text-muted-foreground">
                       {formatDate(encomenda.data_producao_estimada)}
                     </TableCell>
-
                     <TableCell className="font-semibold">
                       {formatCurrencyEUR(encomenda.valor_total)}
                     </TableCell>
-
                     <TableCell className="text-success">
                       {formatCurrencyEUR(encomenda.valor_pago)}
                     </TableCell>
-
                     <TableCell className="font-semibold text-warning">
                       {formatCurrencyEUR(encomenda.saldo_devedor)}
                     </TableCell>
-
                     <TableCell className="text-sm text-muted-foreground">
-                      {encomenda.total_pagamentos > 0
-                        ? `${encomenda.total_pagamentos} ${tr("pag.")}`
-                        : tr("Nenhum")}
+                      {encomenda.total_pagamentos > 0 ? `${encomenda.total_pagamentos} ${tr("pag.")}` : tr("Nenhum")}
                     </TableCell>
-
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewDetails(encomenda)}
-                          title={tr("Visualizar detalhes")}
-                          type="button"
-                        >
+                        <Button variant="outline" size="sm" onClick={() => handleViewDetails(encomenda)} title={tr("Visualizar detalhes")} type="button">
                           <Eye className="w-4 h-4" />
                         </Button>
-
-                        {/* Oculta o botão de registrar pagamento para ham */}
                         {!isHam && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedEncomenda(encomenda);
-                              setShowPagamentoForm(true);
-                            }}
-                            title={tr("Registrar pagamento")}
-                            type="button"
-                          >
+                          <Button variant="outline" size="sm" onClick={() => { setSelectedEncomenda(encomenda); setShowPagamentoForm(true); }} title={tr("Registrar pagamento")} type="button">
                             <Plus className="w-4 h-4" />
                           </Button>
                         )}
-
-                        <FinancialAttachmentButton
-                          entityType="receivable"
-                          entityId={encomenda.id}
-                          title={tr("Anexar Comprovante")}
-                          onChanged={handleAttachmentChange}
-                        />
+                        <FinancialAttachmentButton entityType="receivable" entityId={encomenda.id} title={tr("Anexar Comprovante")} onChanged={handleAttachmentChange} />
                       </div>
                     </TableCell>
                   </TableRow>
                 ))}
-
                 {encomendas.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
@@ -322,13 +289,66 @@ export default function EncomendasFinanceiro({
               </TableBody>
             </Table>
           </div>
+
+          {/* Lista em cartões no mobile/tablet */}
+          <div className="lg:hidden space-y-3">
+            {encomendas.length === 0 && (
+              <Card className="shadow-none border-dashed">
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  {tr("Nenhuma conta a receber encontrada")}
+                </CardContent>
+              </Card>
+            )}
+            {encomendas.map((e) => (
+              <Card key={e.id} className="overflow-hidden">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold truncate">#{e.numero_encomenda}</div>
+                      {e.etiqueta && (
+                        <Badge variant="secondary" className="mt-0.5">{e.etiqueta}</Badge>
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground shrink-0">{formatDate(e.data_producao_estimada)}</div>
+                  </div>
+                  <div className="text-sm truncate">{e.cliente_nome}</div>
+                  <div className="grid grid-cols-3 gap-2 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">{tr("Total")}</div>
+                      <div className="font-semibold">{formatCurrencyEUR(e.valor_total)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">{tr("Recebido")}</div>
+                      <div className="text-success">{formatCurrencyEUR(e.valor_pago)}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">{tr("Saldo")}</div>
+                      <div className="font-semibold text-warning">{formatCurrencyEUR(e.saldo_devedor)}</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground">{e.total_pagamentos > 0 ? `${e.total_pagamentos} ${tr("pag.")}` : tr("Nenhum")}</div>
+                  <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleViewDetails(e)}>
+                      <Eye className="w-4 h-4 mr-2" /> {tr("Visualizar detalhes")}
+                    </Button>
+                    {!isHam && (
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => { setSelectedEncomenda(e); setShowPagamentoForm(true); }}>
+                        <Plus className="w-4 h-4 mr-2" /> {tr("Registrar pagamento")}
+                      </Button>
+                    )}
+                    <FinancialAttachmentButton entityType="receivable" entityId={e.id} title={tr("Anexar Comprovante")} onChanged={handleAttachmentChange} />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
       {/* Dialog: Registrar Pagamento — NÃO renderiza para ham */}
       {!isHam && selectedEncomenda && (
         <Dialog open={showPagamentoForm} onOpenChange={setShowPagamentoForm}>
-          <DialogContent className="max-w-2xl" aria-describedby="">
+          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="">
             <DialogHeader>
               <DialogTitle>{tr("Registrar Pagamento")}</DialogTitle>
             </DialogHeader>
@@ -340,14 +360,14 @@ export default function EncomendasFinanceiro({
       {/* Dialog: Detalhes + Anexos */}
       {selectedEncomenda && (
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="">
             <DialogHeader>
               <DialogTitle>{tr("Detalhes da Conta a Receber")}</DialogTitle>
             </DialogHeader>
-
+            
             <div className="space-y-6">
               {/* Detalhes da encomenda */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">{tr("Encomenda:")}</label>
                   <p className="text-sm text-muted-foreground">
