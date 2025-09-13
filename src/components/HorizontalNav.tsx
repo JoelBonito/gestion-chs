@@ -9,6 +9,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useToast } from "@/hooks/use-toast";
 import { useLocale } from "@/contexts/LocaleContext";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { MobileMenu } from "./MobileMenu";
 import { 
   LayoutDashboard, 
   Package, 
@@ -29,6 +31,7 @@ export function HorizontalNav() {
   const { isCollaborator } = useIsCollaborator();
   const { toast } = useToast();
   const { locale, isRestrictedFR } = useLocale();
+  const isMobile = useIsMobile();
 
   const handleLogout = async () => {
     try {
@@ -96,20 +99,27 @@ export function HorizontalNav() {
   return (
     <nav className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/50 sticky top-0 z-50">
       <div className="container mx-auto">
-        <div className="flex h-16 items-center justify-between px-6">
-          <div className="flex items-center space-x-8">
+        <div className="flex h-16 items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center space-x-4">
+            {/* Mobile Menu Button */}
+            {(isMobile) && <MobileMenu />}
+            
+            {/* Logo and Brand */}
             <Link to={isRestrictedFR ? "/encomendas" : isCollaborator ? "/produtos" : "/dashboard"} className="flex items-center space-x-3">
               <img 
                 src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png" 
                 alt="Gestion CHS Logo" 
                 className="h-8 w-auto"
               />
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+              <span className="hidden sm:inline-block text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
                 Gestion CHS
               </span>
             </Link>
+          </div>
             
-            <div className="hidden md:flex space-x-1">
+          {/* Desktop Navigation - Hidden on Mobile/Tablet */}
+          {!isMobile && (
+            <div className="flex space-x-1">
               {filteredNavigation.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.href;
@@ -130,22 +140,28 @@ export function HorizontalNav() {
                 );
               })}
             </div>
-          </div>
+          )}
 
+          {/* User Info and Actions */}
           {user && (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* User Info - Show email on larger screens, just icon on mobile */}
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4" />
-                <span className="text-sm font-medium">{user.email}</span>
+                <span className="hidden lg:inline text-sm font-medium truncate max-w-[150px]">
+                  {user.email}
+                </span>
               </div>
+              
+              {/* Logout Button */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleLogout}
                 className="text-muted-foreground hover:text-foreground"
               >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sair
+                <LogOut className="h-4 w-4 mr-0 sm:mr-2" />
+                <span className="hidden sm:inline">Sair</span>
               </Button>
             </div>
           )}
