@@ -12,6 +12,7 @@ interface Encomenda {
   id: string;
   numero_encomenda: string;
   etiqueta?: string | null;
+  status: string;
   observacoes_joel?: string | null;
   observacoes_felipe?: string | null;
 }
@@ -49,7 +50,8 @@ export function TarefasTab() {
       setLoading(true);
       const { data, error } = await supabase
         .from('encomendas')
-        .select('id, numero_encomenda, etiqueta, observacoes_joel, observacoes_felipe')
+        .select('id, numero_encomenda, etiqueta, status, observacoes_joel, observacoes_felipe')
+        .neq('status', 'ENTREGUE')
         .order('numero_encomenda', { ascending: true });
 
       if (error) throw error;
