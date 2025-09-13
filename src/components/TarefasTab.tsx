@@ -45,25 +45,30 @@ export function TarefasTab() {
   useEffect(() => {
     const initializeData = async () => {
       const { data } = await supabase.auth.getUser();
-      setUserEmail(data.user?.email ?? null);
+      const email = data.user?.email ?? null;
+      setUserEmail(email);
       
       // Depois buscar as encomendas (já com o email correto)
-      fetchEncomendas();
+      await fetchEncomendas(email);
     };
     
     initializeData();
   }, []);
 
-  const fetchEncomendas = async () => {
+  const fetchEncomendas = async (emailOverride?: string) => {
     try {
       setLoading(true);
+
+      const emailToUse = emailOverride ?? userEmail ?? null;
+      const isFelipeCheck = emailToUse === 'felipe@colaborador.com';
+
       let query = supabase
         .from('encomendas')
         .select('id, numero_encomenda, etiqueta, status, observacoes_joel, observacoes_felipe, fornecedor_id')
         .neq('status', 'ENTREGUE');
 
       // Filtrar por fornecedores permitidos para Felipe
-      if (isFelipe) {
+      if (isFelipeCheck) {
         query = query.in('fornecedor_id', ALLOWED_SUPPLIERS_FOR_FELIPE);
       }
 
