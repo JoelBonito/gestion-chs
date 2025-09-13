@@ -20,6 +20,8 @@ const encomendaSchema = z.object({
   fornecedor_id: z.string().min(1, "Fornecedor é obrigatório"),
   data_producao_estimada: z.string().optional(),
   data_envio_estimada: z.string().optional(),
+  peso_total: z.number().min(0).optional(),
+  valor_frete: z.number().min(0).optional(),
 });
 
 type EncomendaFormData = z.infer<typeof encomendaSchema>;
@@ -61,6 +63,8 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
       fornecedor_id: "",
       data_producao_estimada: "",
       data_envio_estimada: "",
+      peso_total: 0,
+      valor_frete: 0,
     },
   });
 
@@ -96,6 +100,8 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
         fornecedor_id: editingData.fornecedor_id || "",
         data_producao_estimada: editingData.data_producao_estimada || "",
         data_envio_estimada: editingData.data_envio_estimada || "",
+        peso_total: editingData.peso_total || 0,
+        valor_frete: editingData.valor_frete || 0,
       });
 
     // Carrega itens da encomenda
@@ -147,6 +153,8 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
           fornecedor_id: data.fornecedor_id,
           data_envio_estimada: data.data_envio_estimada || null,
           data_producao_estimada: data.data_producao_estimada || null,
+          peso_total: data.peso_total || 0,
+          valor_frete: data.valor_frete || 0,
         };
 
         const itensParaSalvar = itens.map(item => ({
@@ -175,7 +183,9 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
           fornecedor_id: data.fornecedor_id,
           data_producao_estimada: data.data_producao_estimada || null,
           data_envio_estimada: data.data_envio_estimada || null,
-            valor_total: valorTotal,
+          valor_total: valorTotal,
+          peso_total: data.peso_total || 0,
+          valor_frete: data.valor_frete || 0,
           }])
           .select();
         if (error) throw error;
@@ -356,6 +366,48 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                       <FormLabel>Data de Envio Estimada</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="peso_total"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Peso Total (kg)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          step="0.01"
+                          placeholder="0.00"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="valor_frete"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Valor do Frete (€)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          step="0.01"
+                          placeholder="0.00"
+                          {...field}
+                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
