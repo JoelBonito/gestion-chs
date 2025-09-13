@@ -379,14 +379,17 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                   name="peso_total"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Peso Total (kg)</FormLabel>
+                      <FormLabel>Peso Bruto (kg)</FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
                           step="0.01"
                           placeholder="0.00"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          value={field.value || ''}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                            field.onChange(value);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -399,14 +402,17 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                   name="valor_frete"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Valor do Frete (€)</FormLabel>
+                      <FormLabel>Valor Frete (€)</FormLabel>
                       <FormControl>
                         <Input 
                           type="number" 
                           step="0.01"
                           placeholder="0.00"
-                          {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                          value={field.value || ''}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+                            field.onChange(value);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
