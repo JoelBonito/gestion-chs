@@ -92,7 +92,7 @@ export function MobileMenu() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="sm" className="md:hidden">
+        <Button variant="ghost" size="sm" className="xl:hidden">
           <Menu className="h-5 w-5" />
           <span className="sr-only">Abrir menu</span>
         </Button>
