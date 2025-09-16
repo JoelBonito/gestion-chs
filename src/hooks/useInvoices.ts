@@ -73,7 +73,7 @@ export const useInvoices = () => {
         throw new Error("Usuário não autenticado");
       }
 
-      let attachmentId = null;
+      let uploadResult = null;
 
       // Upload do arquivo se fornecido
       if (invoiceData.file) {
@@ -82,53 +82,28 @@ export const useInvoices = () => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         
-        const result = await uploadFile(
+        uploadResult = await uploadFile(
           invoiceData.file, 
           `faturas/${year}/${month}`,
           `invoice-${Date.now()}`
         );
 
-        if (!result) {
+        if (!uploadResult) {
           throw new Error("Erro no upload do arquivo");
         }
 
-        console.log('useInvoices - Upload concluído, criando registro de anexo');
-
-        // Criar registro temporário na tabela attachments
-        const { data: attachment, error: attachmentError } = await supabase
-          .from('attachments')
-          .insert([{
-            entity_type: 'invoice',
-            entity_id: 'temp-invoice', // Será atualizado após criar a fatura
-            file_name: result.fileName,
-            file_type: result.mimeType,
-            storage_path: result.path,
-            storage_url: result.publicUrl,
-            file_size: result.size,
-            uploaded_by: user.id
-          }])
-          .select()
-          .single();
-
-        if (attachmentError) {
-          console.error("useInvoices - Erro ao criar attachment:", attachmentError);
-          throw attachmentError;
-        }
-
-        attachmentId = attachment.id;
-        console.log('useInvoices - Anexo criado com ID:', attachmentId);
+        console.log('useInvoices - Upload concluído');
       }
 
       console.log('useInvoices - Criando registro da fatura');
 
-      // Criar a fatura
+      // Criar a fatura primeiro
       const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
         .insert([{
           invoice_date: invoiceData.invoice_date,
           amount: invoiceData.amount,
           description: invoiceData.description || null,
-          attachment_id: attachmentId,
           created_by: user.id
         }])
         .select()
@@ -141,17 +116,42 @@ export const useInvoices = () => {
 
       console.log('useInvoices - Fatura criada:', invoice);
 
-      // Atualizar entity_id do attachment se necessário
-      if (attachmentId && invoice.id) {
-        console.log('useInvoices - Atualizando entity_id do anexo');
-        const { error: updateError } = await supabase
+      // Criar attachment se há arquivo
+      if (uploadResult && invoice.id) {
+        console.log('useInvoices - Criando registro de anexo');
+        
+        const { data: attachment, error: attachmentError } = await supabase
           .from('attachments')
-          .update({ entity_id: invoice.id })
-          .eq('id', attachmentId);
+          .insert([{
+            entity_type: 'invoice',
+            entity_id: invoice.id,
+            file_name: uploadResult.fileName,
+            file_type: uploadResult.mimeType,
+            storage_path: uploadResult.path,
+            storage_url: uploadResult.publicUrl,
+            file_size: uploadResult.size,
+            uploaded_by: user.id
+          }])
+          .select()
+          .single();
+
+        if (attachmentError) {
+          console.error("useInvoices - Erro ao criar attachment:", attachmentError);
+          throw attachmentError;
+        }
+
+        // Atualizar a fatura com o attachment_id
+        const { error: updateError } = await supabase
+          .from('invoices')
+          .update({ attachment_id: attachment.id })
+          .eq('id', invoice.id);
 
         if (updateError) {
-          console.error("useInvoices - Erro ao atualizar entity_id:", updateError);
+          console.error("useInvoices - Erro ao atualizar attachment_id:", updateError);
+          throw updateError;
         }
+
+        console.log('useInvoices - Anexo criado e vinculado:', attachment.id);
       }
       
       return invoice;
