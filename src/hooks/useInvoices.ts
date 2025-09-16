@@ -120,14 +120,9 @@ export const useInvoices = () => {
       if (uploadResult && invoice.id) {
         console.log('useInvoices - Criando registro de anexo');
         
-        const newAttachmentId = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-        const { error: attachmentError } = await supabase
+        const { data: attachment, error: attachmentError } = await supabase
           .from('attachments')
           .insert({
-            id: newAttachmentId,
             entity_type: 'invoice',
             entity_id: invoice.id,
             file_name: uploadResult.fileName,
@@ -136,7 +131,9 @@ export const useInvoices = () => {
             storage_url: uploadResult.publicUrl,
             file_size: uploadResult.size,
             uploaded_by: user.id
-          });
+          })
+          .select('id')
+          .single();
 
         if (attachmentError) {
           console.error("useInvoices - Erro ao criar attachment:", attachmentError);
@@ -146,7 +143,7 @@ export const useInvoices = () => {
         // Atualizar a fatura com o attachment_id
         const { error: updateError } = await supabase
           .from('invoices')
-          .update({ attachment_id: newAttachmentId })
+          .update({ attachment_id: attachment.id })
           .eq('id', invoice.id);
 
         if (updateError) {
@@ -154,7 +151,7 @@ export const useInvoices = () => {
           throw updateError;
         }
 
-        console.log('useInvoices - Anexo criado e vinculado:', newAttachmentId);
+        console.log('useInvoices - Anexo criado e vinculado:', attachment.id);
       }
       
       return invoice;
