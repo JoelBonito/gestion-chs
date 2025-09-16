@@ -177,6 +177,10 @@ export default function EncomendaView({ encomendaId }: Props) {
     return acc + q * pc;
   }, 0);
 
+  // Cálculo da % de lucro
+  const lucro = subtotalVenda - subtotalCusto;
+  const percentLucro = subtotalVenda > 0 ? (lucro / subtotalVenda) * 100 : 0;
+
   const handleDownloadPDF = async () => {
     if (!contentRef.current || !encomenda) return;
     
@@ -300,124 +304,139 @@ export default function EncomendaView({ encomendaId }: Props) {
               <div
                 className={cn(
                   "font-semibold",
-                  subtotalVenda - subtotalCusto >= 0 ? "text-green-600" : "text-red-600"
+                  lucro >= 0 ? "text-green-600" : "text-red-600"
                 )}
               >
-                {formatCurrencyEUR(subtotalVenda - subtotalCusto)}
+                {formatCurrencyEUR(lucro)}
+              </div>
+            </div>
+          )}
+
+          {/* % Lucro — mostrar apenas para jbento1@gmail.com e admin@admin.com */}
+          {(email === "jbento1@gmail.com" || email === "admin@admin.com") && (
+            <div>
+              <div className="text-sm text-muted-foreground">% Lucro</div>
+              <div className={cn("font-semibold", percentLucro >= 0 ? "text-green-600" : "text-red-600")}>
+                {percentLucro.toFixed(2)}%
               </div>
             </div>
           )}
         </div>
 
-        {/* Observações Joel */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-1">
-            <div className="text-sm font-semibold text-muted-foreground">Observações Joel</div>
-            {(email === "jbento1@gmail.com" || email === "admin@admin.com") && !editingJoel && (
-              <button onClick={() => setEditingJoel(true)} className="text-xs text-blue-600 hover:underline">
-                ✏️ Editar
-              </button>
-            )}
-          </div>
-          {editingJoel ? (
-            <div className="space-y-2">
-              <textarea
-                className="w-full rounded-md border p-2 text-sm"
-                rows={3}
-                value={joelValue}
-                onChange={(e) => setJoelValue(e.target.value)}
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={async () => {
-                    const { error } = await supabase
-                      .from("encomendas")
-                      .update({ observacoes_joel: joelValue })
-                      .eq("id", id);
-                    if (!error) {
-                      toast.success("Observações Joel salvas!");
-                      setEncomenda((prev) => prev ? { ...prev, observacoes_joel: joelValue } : prev);
-                      setEditingJoel(false);
-                    } else {
-                      toast.error("Erro ao salvar observações");
-                    }
-                  }}
-                  className="px-3 py-1 text-sm bg-primary text-white rounded-md"
-                >
-                  Salvar
-                </button>
-                <button
-                  onClick={() => {
-                    setJoelValue(encomenda?.observacoes_joel ?? "");
-                    setEditingJoel(false);
-                  }}
-                  className="px-3 py-1 text-sm bg-muted rounded-md"
-                >
-                  Cancelar
-                </button>
+        {/* Observações - esconder para Ham */}
+        {!isHam && (
+          <>
+            {/* Observações Joel */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-sm font-semibold text-muted-foreground">Observações Joel</div>
+                {(email === "jbento1@gmail.com" || email === "admin@admin.com") && !editingJoel && (
+                  <button onClick={() => setEditingJoel(true)} className="text-xs text-blue-600 hover:underline">
+                    ✏️ Editar
+                  </button>
+                )}
               </div>
+              {editingJoel ? (
+                <div className="space-y-2">
+                  <textarea
+                    className="w-full rounded-md border p-2 text-sm"
+                    rows={3}
+                    value={joelValue}
+                    onChange={(e) => setJoelValue(e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        const { error } = await supabase
+                          .from("encomendas")
+                          .update({ observacoes_joel: joelValue })
+                          .eq("id", id);
+                        if (!error) {
+                          toast.success("Observações Joel salvas!");
+                          setEncomenda((prev) => prev ? { ...prev, observacoes_joel: joelValue } : prev);
+                          setEditingJoel(false);
+                        } else {
+                          toast.error("Erro ao salvar observações");
+                        }
+                      }}
+                      className="px-3 py-1 text-sm bg-primary text-white rounded-md"
+                    >
+                      Salvar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setJoelValue(encomenda?.observacoes_joel ?? "");
+                        setEditingJoel(false);
+                      }}
+                      className="px-3 py-1 text-sm bg-muted rounded-md"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
+                  {encomenda.observacoes_joel || "—"}
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
-              {encomenda.observacoes_joel || "—"}
-            </div>
-          )}
-        </div>
 
-        {/* Observações Felipe */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-1">
-            <div className="text-sm font-semibold text-muted-foreground">Observações Felipe</div>
-            {isFelipe && !editingFelipe && (
-              <button onClick={() => setEditingFelipe(true)} className="text-xs text-blue-600 hover:underline">
-                ✏️ Editar
-              </button>
-            )}
-          </div>
-          {editingFelipe ? (
-            <div className="space-y-2">
-              <textarea
-                className="w-full rounded-md border p-2 text-sm"
-                rows={3}
-                value={felipeValue}
-                onChange={(e) => setFelipeValue(e.target.value)}
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={async () => {
-                    const { error } = await supabase
-                      .from("encomendas")
-                      .update({ observacoes_felipe: felipeValue })
-                      .eq("id", id);
-                    if (!error) {
-                      toast.success("Observações Felipe salvas!");
-                      setEncomenda((prev) => prev ? { ...prev, observacoes_felipe: felipeValue } : prev);
-                      setEditingFelipe(false);
-                    } else {
-                      toast.error("Erro ao salvar observações");
-                    }
-                  }}
-                  className="px-3 py-1 text-sm bg-primary text-white rounded-md"
-                >
-                  Salvar
-                </button>
-                <button
-                  onClick={() => {
-                    setFelipeValue(encomenda?.observacoes_felipe ?? "");
-                    setEditingFelipe(false);
-                  }}
-                  className="px-3 py-1 text-sm bg-muted rounded-md"
-                >
-                  Cancelar
-                </button>
+            {/* Observações Felipe */}
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-sm font-semibold text-muted-foreground">Observações Felipe</div>
+                {isFelipe && !editingFelipe && (
+                  <button onClick={() => setEditingFelipe(true)} className="text-xs text-blue-600 hover:underline">
+                    ✏️ Editar
+                  </button>
+                )}
               </div>
+              {editingFelipe ? (
+                <div className="space-y-2">
+                  <textarea
+                    className="w-full rounded-md border p-2 text-sm"
+                    rows={3}
+                    value={felipeValue}
+                    onChange={(e) => setFelipeValue(e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={async () => {
+                        const { error } = await supabase
+                          .from("encomendas")
+                          .update({ observacoes_felipe: felipeValue })
+                          .eq("id", id);
+                        if (!error) {
+                          toast.success("Observações Felipe salvas!");
+                          setEncomenda((prev) => prev ? { ...prev, observacoes_felipe: felipeValue } : prev);
+                          setEditingFelipe(false);
+                        } else {
+                          toast.error("Erro ao salvar observações");
+                        }
+                      }}
+                      className="px-3 py-1 text-sm bg-primary text-white rounded-md"
+                    >
+                      Salvar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFelipeValue(encomenda?.observacoes_felipe ?? "");
+                        setEditingFelipe(false);
+                      }}
+                      className="px-3 py-1 text-sm bg-muted rounded-md"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
+                  {encomenda.observacoes_felipe || "—"}
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
-              {encomenda.observacoes_felipe || "—"}
-            </div>
-          )}
-        </div>
+          </>
+        )}
       </section>
 
       {/* Itens */}
