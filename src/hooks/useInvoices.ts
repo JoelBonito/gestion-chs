@@ -123,7 +123,7 @@ export const useInvoices = () => {
         const { data: attachment, error: attachmentError } = await supabase
           .from('attachments')
           .insert({
-            entity_type: 'invoice',
+            entity_type: 'financeiro',
             entity_id: invoice.id,
             file_name: uploadResult.fileName,
             file_type: uploadResult.mimeType,
