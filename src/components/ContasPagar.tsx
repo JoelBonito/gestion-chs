@@ -12,6 +12,7 @@ import EncomendaView from "@/components/EncomendaView";
 import PagamentoFornecedorForm from "@/components/PagamentoFornecedorForm";
 import { AttachmentManager } from "@/components/AttachmentManager";
 import { IconWithBadge } from "@/components/ui/icon-with-badge";
+import { PaymentDetailsModal } from "@/components/PaymentDetailsModal";
 
 interface ContaPagar {
   id: string;
@@ -37,6 +38,8 @@ export default function ContasPagar() {
   const [attachmentCounts, setAttachmentCounts] = useState<Record<string, number>>({});
   const [orderItems, setOrderItems] = useState<any[]>([]);
   const [paymentCounts, setPaymentCounts] = useState<Record<string, number>>({});
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [selectedPaymentConta, setSelectedPaymentConta] = useState<ContaPagar | null>(null);
   const { toast } = useToast();
 
   const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
@@ -327,7 +330,21 @@ export default function ContasPagar() {
                     </TableCell>
 
                     <TableCell className="text-sm text-muted-foreground">
-                      {paymentCounts[conta.id] > 0 ? `${paymentCounts[conta.id]} pag.` : 'Nenhum'}
+                      {paymentCounts[conta.id] > 0 ? (
+                        <Button 
+                          variant="link" 
+                          size="sm" 
+                          className="h-auto p-0 text-primary underline"
+                          onClick={() => {
+                            setSelectedPaymentConta(conta);
+                            setShowPaymentDetails(true);
+                          }}
+                        >
+                          {paymentCounts[conta.id]} pag.
+                        </Button>
+                      ) : (
+                        'Nenhum'
+                      )}
                     </TableCell>
 
                     <TableCell>
@@ -438,7 +455,19 @@ export default function ContasPagar() {
                     </div>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {paymentCounts[conta.id] > 0 ? `${paymentCounts[conta.id]} pag.` : 'Nenhum'}
+                    {paymentCounts[conta.id] > 0 ? (
+                      <button 
+                        className="text-primary underline cursor-pointer"
+                        onClick={() => {
+                          setSelectedPaymentConta(conta);
+                          setShowPaymentDetails(true);
+                        }}
+                      >
+                        {paymentCounts[conta.id]} pag.
+                      </button>
+                    ) : (
+                      'Nenhum'
+                    )}
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 pt-1">
                     <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleViewDetails(conta)}>
@@ -592,6 +621,21 @@ export default function ContasPagar() {
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Modal de detalhes dos pagamentos */}
+      {selectedPaymentConta && (
+        <PaymentDetailsModal
+          isOpen={showPaymentDetails}
+          onClose={() => {
+            setShowPaymentDetails(false);
+            setSelectedPaymentConta(null);
+          }}
+          encomendaId={selectedPaymentConta.id}
+          encomendaNumber={selectedPaymentConta.numero_encomenda}
+          paymentType="fornecedor"
+          isHam={isHam}
+        />
       )}
     </div>
   );

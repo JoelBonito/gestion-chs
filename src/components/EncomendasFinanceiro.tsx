@@ -13,6 +13,7 @@ import { AttachmentManager } from "@/components/AttachmentManager";
 import { OrderItemsView } from "@/components/OrderItemsView";
 import { useLocale } from "@/contexts/LocaleContext";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
+import { PaymentDetailsModal } from "@/components/PaymentDetailsModal";
 
 interface EncomendaFinanceira {
   id: string;
@@ -42,6 +43,8 @@ export default function EncomendasFinanceiro({
   const [showPagamentoForm, setShowPagamentoForm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [localShowCompleted, setLocalShowCompleted] = useState(showCompleted);
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [selectedPaymentEncomenda, setSelectedPaymentEncomenda] = useState<EncomendaFinanceira | null>(null);
   const { toast } = useToast();
   const { isRestrictedFR } = useLocale();
 
@@ -262,7 +265,21 @@ export default function EncomendasFinanceiro({
                       {formatCurrencyEUR(encomenda.saldo_devedor)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {encomenda.total_pagamentos > 0 ? `${encomenda.total_pagamentos} ${tr("pag.")}` : tr("Nenhum")}
+                      {encomenda.total_pagamentos > 0 ? (
+                        <Button 
+                          variant="link" 
+                          size="sm" 
+                          className="h-auto p-0 text-primary underline"
+                          onClick={() => {
+                            setSelectedPaymentEncomenda(encomenda);
+                            setShowPaymentDetails(true);
+                          }}
+                        >
+                          {encomenda.total_pagamentos} {tr("pag.")}
+                        </Button>
+                      ) : (
+                        tr("Nenhum")
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -326,7 +343,21 @@ export default function EncomendasFinanceiro({
                       <div className="font-semibold text-warning">{formatCurrencyEUR(e.saldo_devedor)}</div>
                     </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">{e.total_pagamentos > 0 ? `${e.total_pagamentos} ${tr("pag.")}` : tr("Nenhum")}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {e.total_pagamentos > 0 ? (
+                      <button 
+                        className="text-primary underline cursor-pointer"
+                        onClick={() => {
+                          setSelectedPaymentEncomenda(e);
+                          setShowPaymentDetails(true);
+                        }}
+                      >
+                        {e.total_pagamentos} {tr("pag.")}
+                      </button>
+                    ) : (
+                      tr("Nenhum")
+                    )}
+                  </div>
                   <div className="flex flex-col sm:flex-row gap-2 pt-1">
                     <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleViewDetails(e)}>
                       <Eye className="w-4 h-4 mr-2" /> {tr("Visualizar detalhes")}
@@ -443,6 +474,21 @@ export default function EncomendasFinanceiro({
             </div>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Modal de detalhes dos pagamentos */}
+      {selectedPaymentEncomenda && (
+        <PaymentDetailsModal
+          isOpen={showPaymentDetails}
+          onClose={() => {
+            setShowPaymentDetails(false);
+            setSelectedPaymentEncomenda(null);
+          }}
+          encomendaId={selectedPaymentEncomenda.id}
+          encomendaNumber={selectedPaymentEncomenda.numero_encomenda}
+          paymentType="cliente"
+          isHam={isHam}
+        />
       )}
     </div>
   );
