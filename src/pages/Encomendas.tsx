@@ -506,7 +506,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            AMOSTRAS
+            Amostras
           </button>
         )}
       </div>
