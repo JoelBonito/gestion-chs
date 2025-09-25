@@ -765,7 +765,6 @@ export type Database = {
         | "NOVO PEDIDO"
         | "MATÉRIA PRIMA"
         | "PRODUÇÃO"
-        | "EMBALAGEM"
         | "EMBALAGENS"
         | "TRANSPORTE"
         | "ENTREGUE"
@@ -907,7 +906,6 @@ export const Constants = {
         "NOVO PEDIDO",
         "MATÉRIA PRIMA",
         "PRODUÇÃO",
-        "EMBALAGEM",
         "EMBALAGENS",
         "TRANSPORTE",
         "ENTREGUE",
