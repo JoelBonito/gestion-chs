@@ -56,6 +56,8 @@ interface Encomenda {
   fornecedor_id?: string;
   clientes?: { nome: string | null } | null;
   fornecedores?: { nome: string | null } | null;
+  cliente_nome?: string | null;
+  fornecedor_nome?: string | null;
   // calculados no front:
   commission_amount?: number;
   valor_total_custo?: number;
@@ -197,13 +199,13 @@ const isRosa = email === "rosa@colaborador.com";
         .from("encomendas")
         .select(`
           *,
-          clientes!inner(nome),
-          fornecedores!inner(nome),
+          clientes(nome),
+          fornecedores(nome),
           itens_encomenda(
             quantidade,
             preco_unitario,
             preco_custo,
-            produtos!inner(nome, size_weight)
+            produtos(nome, size_weight)
           )
         `)
         .order("created_at", { ascending: false })
@@ -328,8 +330,8 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
     const byText =
       e.numero_encomenda.toLowerCase().includes(q) ||
       (e.etiqueta || "").toLowerCase().includes(q) ||
-      (e.clientes?.nome || "").toLowerCase().includes(q) ||
-      (e.fornecedores?.nome || "").toLowerCase().includes(q);
+      (e.clientes?.nome || e.cliente_nome || "").toLowerCase().includes(q) ||
+      (e.fornecedores?.nome || e.fornecedor_nome || "").toLowerCase().includes(q);
 
     const byDelivered = showCompleted ? e.status === "ENTREGUE" : e.status !== "ENTREGUE";
     const byStatus = selectedStatus === "TODOS" || e.status === selectedStatus;
@@ -563,7 +565,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                     }`}
                   >
                     <div className="text-sm font-medium text-muted-foreground mb-1">{t.client}</div>
-                    <div className="text-sm font-semibold truncate">{e.clientes?.nome ?? "N/A"}</div>
+                    <div className="text-sm font-semibold truncate">{e.clientes?.nome ?? e.cliente_nome ?? "N/A"}</div>
                   </div>
 
                   {/* Fornecedor */}
@@ -573,7 +575,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                     }`}
                   >
                     <div className="text-sm font-medium text-muted-foreground mb-1">{t.supplier}</div>
-                    <div className="text-sm font-medium text-muted-foreground truncate">{e.fornecedores?.nome ?? "N/A"}</div>
+                    <div className="text-sm font-medium text-muted-foreground truncate">{e.fornecedores?.nome ?? e.fornecedor_nome ?? "N/A"}</div>
                   </div>
 
                   {/* Ações */}

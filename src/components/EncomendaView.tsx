@@ -156,7 +156,7 @@ export default function EncomendaView({ encomendaId }: Props) {
       setLoadingItens(true);
       const { data, error } = await supabase
         .from("itens_encomenda")
-        .select(`id, quantidade, preco_unitario, preco_custo, produtos!inner(nome)`)
+        .select(`id, quantidade, preco_unitario, preco_custo, produtos(nome)`)
         .eq("encomenda_id", id);
       if (error) throw error;
       setItens((data || []) as ItemEncomenda[]);
