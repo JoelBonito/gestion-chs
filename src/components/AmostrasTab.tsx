@@ -201,10 +201,10 @@ export function AmostrasTab() {
           }}
         >
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              PEDIR AMOSTRA
-            </Button>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Pedir Amostra
+          </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
