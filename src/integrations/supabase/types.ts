@@ -763,8 +763,10 @@ export type Database = {
     Enums: {
       status_encomenda:
         | "NOVO PEDIDO"
+        | "MATÉRIA PRIMA"
         | "PRODUÇÃO"
         | "EMBALAGEM"
+        | "EMBALAGENS"
         | "TRANSPORTE"
         | "ENTREGUE"
       user_role:
@@ -903,8 +905,10 @@ export const Constants = {
     Enums: {
       status_encomenda: [
         "NOVO PEDIDO",
+        "MATÉRIA PRIMA",
         "PRODUÇÃO",
         "EMBALAGEM",
+        "EMBALAGENS",
         "TRANSPORTE",
         "ENTREGUE",
       ],

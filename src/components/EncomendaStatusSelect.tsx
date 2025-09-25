@@ -114,7 +114,7 @@ export function EncomendaStatusSelect({
       
       const { error } = await supabase
         .from("encomendas")
-        .update({ status: newStatus })
+        .update({ status: newStatus as any })
         .eq("id", encomendaId);
 
       if (error) {

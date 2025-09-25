@@ -97,7 +97,7 @@ export function EncomendaViewCusto({ encomendaId }: EncomendaViewCustoProps) {
         .single();
 
       if (error) throw error;
-      setEncomenda(data);
+      setEncomenda(data as Encomenda);
     } catch (error) {
       console.error("Erro ao carregar encomenda:", error);
       toast.error("Erro ao carregar encomenda");
