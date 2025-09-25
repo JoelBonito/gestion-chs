@@ -29,3 +29,11 @@ export function isReadonlyOrders(user: User | null): boolean {
 export function shouldHidePrices(user: User | null): boolean {
   return isNoPriceUser(user);
 }
+
+/**
+ * IDs dos fornecedores permitidos para Rosa
+ */
+export const ROSA_ALLOWED_SUPPLIERS = [
+  'f0920a27-752c-4483-ba02-e7f32beceef6', // Brazil Multi Cosmetics
+  'b8f995d2-47dc-4c8f-9779-ce21431f5244'  // Onl'us Beauty
+];

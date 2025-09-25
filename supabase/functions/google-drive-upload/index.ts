@@ -47,7 +47,7 @@ serve(async (req) => {
       console.log('Service account parsed successfully, client_email:', credentials.client_email);
     } catch (parseError) {
       console.error('Error parsing service account key:', parseError);
-      throw new Error(`Failed to parse service account key: ${parseError.message}`);
+      throw new Error(`Failed to parse service account key: ${(parseError as Error).message}`);
     }
 
     // Create JWT for Google API authentication
@@ -247,7 +247,7 @@ serve(async (req) => {
     console.error('Error in google-drive-upload function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: (error as Error).message,
         details: 'Check function logs for more information'
       }), 
       { 

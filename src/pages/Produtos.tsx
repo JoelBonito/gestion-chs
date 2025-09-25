@@ -48,12 +48,14 @@ export default function Produtos() {
   };
 
   const isFelipe = (email ?? "").toLowerCase() === "felipe@colaborador.com";
+  const isRosa = (email ?? "").toLowerCase() === "rosa@colaborador.com";
+  
   const allowedSupplierIds = useMemo(
-    () => (isFelipe ? [
+    () => (isFelipe || isRosa ? [
       "f0920a27-752c-4483-ba02-e7f32beceef6",
       "b8f995d2-47dc-4c8f-9779-ce21431f5244",
     ] : null),
-    [isFelipe]
+    [isFelipe, isRosa]
   );
 
   return (
@@ -63,7 +65,7 @@ export default function Produtos() {
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Produtos</h1>
 
         {/* Mantive sua regra de visibilidade do botão */}
-        {email !== "felipe@colaborador.com" && (
+        {email !== "felipe@colaborador.com" && email !== "rosa@colaborador.com" && (
           <Button type="button" onClick={handleCadastrarProduto} className="w-full sm:w-auto">
             <PlusIcon className="w-4 h-4 mr-2" />
             <span className="hidden sm:inline">Cadastrar produto</span>

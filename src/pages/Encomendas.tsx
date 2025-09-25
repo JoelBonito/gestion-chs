@@ -36,7 +36,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TransportesTab } from "@/components/TransportesTab";
 import { TarefasTab } from "@/components/TarefasTab";
 import { useAuth } from "@/hooks/useAuth";
-import { isLimitedNav, shouldHidePrices, isReadonlyOrders } from "@/lib/permissions";
+import { isLimitedNav, shouldHidePrices, isReadonlyOrders, ROSA_ALLOWED_SUPPLIERS } from "@/lib/permissions";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 type StatusFilter = StatusEncomenda | "TODOS";
@@ -82,7 +82,11 @@ const ALLOWED_SUPPLIERS_FOR_FELIPE = [
   "b8f995d2-47dc-4c8f-9779-ce21431f5244",
 ];
 
+// Rosa também usa os mesmos fornecedores
+const ALLOWED_SUPPLIERS_FOR_ROSA = ROSA_ALLOWED_SUPPLIERS;
+
 const isHam = email === "ham@admin.com";
+const isRosa = email === "rosa@colaborador.com";
 
   // Dicionário (FR para Ham, PT para demais)
   const t = isHam
@@ -192,13 +196,13 @@ const isHam = email === "ham@admin.com";
         .from("encomendas")
         .select(`
           *,
-          clientes(nome),
-          fornecedores(nome),
+          clientes!inner(nome),
+          fornecedores!inner(nome),
           itens_encomenda(
             quantidade,
             preco_unitario,
             preco_custo,
-            produtos(size_weight)
+            produtos!inner(nome, size_weight)
           )
         `)
         .order("created_at", { ascending: false })
@@ -304,8 +308,8 @@ const isHam = email === "ham@admin.com";
   };
 
   // Filtros
-  // Escopo de fornecedores (reforço em memória para Felipe)
-const scopedEncomendas = isFelipe
+  // Escopo de fornecedores (reforço em memória para Felipe e Rosa)
+const scopedEncomendas = isFelipe || isRosa
   ? encomendas.filter((e) => ALLOWED_SUPPLIERS_FOR_FELIPE.includes(e.fornecedor_id ?? ""))
   : encomendas;
 
