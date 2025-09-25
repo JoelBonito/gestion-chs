@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
+import { useAuth } from "@/hooks/useAuth";
+import { isReadonlyOrders } from "@/lib/permissions";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 
@@ -34,6 +36,8 @@ interface EncomendaActionsProps {
 export function EncomendaActions({ encomenda, onView, onEdit, onDelete }: EncomendaActionsProps) {
   const { hasRole, canEdit } = useUserRole();
   const { isCollaborator } = useIsCollaborator();
+  const { user } = useAuth();
+  const readOnlyOrders = isReadonlyOrders(user);
   const handleDelete = async () => {
     try {
       const { data, error } = await supabase.rpc('delete_encomenda_safely', {
@@ -63,7 +67,7 @@ export function EncomendaActions({ encomenda, onView, onEdit, onDelete }: Encome
           <Eye className="mr-2 h-4 w-4" />
           Visualizar
         </DropdownMenuItem>
-        {canEdit() && !isCollaborator && (
+        {canEdit() && !isCollaborator && !readOnlyOrders && (
           <>
             <DropdownMenuItem onClick={() => onEdit?.(encomenda)}>
               <Edit className="mr-2 h-4 w-4" />

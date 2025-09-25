@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { useFormatters } from "@/hooks/useFormatters";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+import { shouldHidePrices } from "@/lib/permissions";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -38,6 +40,8 @@ type Props = {
 
 export default function EncomendaView({ encomendaId }: Props) {
   const { formatDate } = useFormatters();
+  const { user } = useAuth();
+  const hidePrices = shouldHidePrices(user);
 
   // Normaliza id (evita eq.[object Object])
   const id = useMemo(() => {
@@ -454,13 +458,15 @@ export default function EncomendaView({ encomendaId }: Props) {
                 <tr className="bg-muted/50">
                   <th className="px-3 py-2 text-left font-medium">{t.product}</th>
                   <th className="px-3 py-2 text-right font-medium">{t.qty}</th>
-                  {/* Preço de venda visível para todos, exceto Felipe */}
-                  {!isFelipe && <th className="px-3 py-2 text-right font-medium">{t.unitPrice}</th>}
-                  {/* CUSTO: esconder para Ham; mostrar para Felipe e para usuários normais */}
-                  {!isHam && <th className="px-3 py-2 text-right font-medium">{t.unitCost}</th>}
-                  <th className="px-3 py-2 text-right font-medium">
-                    {isFelipe ? t.totalCostFooter : t.total}
-                  </th>
+                  {/* Preço de venda visível para todos, exceto Felipe e Rosa */}
+                  {!isFelipe && !hidePrices && <th className="px-3 py-2 text-right font-medium">{t.unitPrice}</th>}
+                  {/* CUSTO: esconder para Ham e Rosa; mostrar para Felipe e para usuários normais */}
+                  {!isHam && !hidePrices && <th className="px-3 py-2 text-right font-medium">{t.unitCost}</th>}
+                  {!hidePrices && (
+                    <th className="px-3 py-2 text-right font-medium">
+                      {isFelipe ? t.totalCostFooter : t.total}
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -478,42 +484,44 @@ export default function EncomendaView({ encomendaId }: Props) {
                     <tr key={it.id} className="border-t">
                       <td className="px-3 py-2">{it.produtos?.nome ?? "—"}</td>
                       <td className="px-3 py-2 text-right">{q}</td>
-                      {!isFelipe && <td className="px-3 py-2 text-right">{formatCurrencyEUR(pu)}</td>}
-                      {!isHam && <td className="px-3 py-2 text-right">{formatCurrencyEUR(pc)}</td>}
-                      <td className="px-3 py-2 text-right font-medium">{formatCurrencyEUR(lineTotal)}</td>
+                      {!isFelipe && !hidePrices && <td className="px-3 py-2 text-right">{formatCurrencyEUR(pu)}</td>}
+                      {!isHam && !hidePrices && <td className="px-3 py-2 text-right">{formatCurrencyEUR(pc)}</td>}
+                      {!hidePrices && <td className="px-3 py-2 text-right font-medium">{formatCurrencyEUR(lineTotal)}</td>}
                     </tr>
                   );
                 })}
               </tbody>
-              <tfoot>
-                <tr className="border-t bg-muted/30">
-                  <td
-                    className="px-3 py-2 font-medium text-right"
-                    colSpan={
-                      // cabeçalho tem: produto (1) + qtd(1) + preço venda(cond) + custo(cond)
-                      // Felipe: sem preço venda (+ custo) => 1+1+0+1 = 3
-                      // Ham: com preço venda (+ sem custo) => 1+1+1+0 = 3
-                      // Outros: com ambos => 1+1+1+1 = 4
-                      isFelipe ? 3 : isHam ? 3 : 4
-                    }
-                  >
-                    {isFelipe ? t.totalCostFooter : t.subtotalFooter}
-                  </td>
-                  <td className="px-3 py-2 text-right font-semibold">
-                    {formatCurrencyEUR(isFelipe ? subtotalCusto : subtotalVenda)}
-                  </td>
-                </tr>
-
-                {/* Linha "Total (custo)" — mostrar para usuários normais; esconder para Felipe (já mostrado acima) e para Ham */}
-                {!isFelipe && !isHam && (
-                  <tr className="border-t">
-                    <td className="px-3 py-2 text-right" colSpan={4}>
-                      {t.totalCostFooter}
+              {!hidePrices && (
+                <tfoot>
+                  <tr className="border-t bg-muted/30">
+                    <td
+                      className="px-3 py-2 font-medium text-right"
+                      colSpan={
+                        // cabeçalho tem: produto (1) + qtd(1) + preço venda(cond) + custo(cond)
+                        // Felipe: sem preço venda (+ custo) => 1+1+0+1 = 3
+                        // Ham: com preço venda (+ sem custo) => 1+1+1+0 = 3
+                        // Outros: com ambos => 1+1+1+1 = 4
+                        isFelipe ? 3 : isHam ? 3 : 4
+                      }
+                    >
+                      {isFelipe ? t.totalCostFooter : t.subtotalFooter}
                     </td>
-                    <td className="px-3 py-2 text-right">{formatCurrencyEUR(subtotalCusto)}</td>
+                    <td className="px-3 py-2 text-right font-semibold">
+                      {formatCurrencyEUR(isFelipe ? subtotalCusto : subtotalVenda)}
+                    </td>
                   </tr>
-                )}
-              </tfoot>
+
+                  {/* Linha "Total (custo)" — mostrar para usuários normais; esconder para Felipe (já mostrado acima) e para Ham */}
+                  {!isFelipe && !isHam && (
+                    <tr className="border-t">
+                      <td className="px-3 py-2 text-right" colSpan={4}>
+                        {t.totalCostFooter}
+                      </td>
+                      <td className="px-3 py-2 text-right">{formatCurrencyEUR(subtotalCusto)}</td>
+                    </tr>
+                  )}
+                </tfoot>
+              )}
             </table>
           </div>
         )}

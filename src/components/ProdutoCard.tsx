@@ -11,6 +11,8 @@ import { AttachmentManager } from "@/components/AttachmentManager";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useAttachments } from "@/hooks/useAttachments";
 import { IconWithBadge } from "@/components/ui/icon-with-badge";
+import { useAuth } from "@/hooks/useAuth";
+import { shouldHidePrices } from "@/lib/permissions";
 
 export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActive }) {
   const [showView, setShowView] = useState(false);
@@ -18,6 +20,8 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
   const [showAttachments, setShowAttachments] = useState(false);
   const { isCollaborator } = useIsCollaborator();
   const { attachments } = useAttachments("produto", produto.id);
+  const { user } = useAuth();
+  const hidePrices = shouldHidePrices(user);
 
   const handleEdit = () => {
     setShowEdit(true);
@@ -45,7 +49,9 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
         </div>
         
         <div className="space-y-1">
-          <div className="font-bold text-lg">{formatCurrencyEUR(produto.preco_venda)}</div>
+          {!hidePrices && (
+            <div className="font-bold text-lg">{formatCurrencyEUR(produto.preco_venda)}</div>
+          )}
           {produto.tipo && (
             <p className="text-sm text-muted-foreground">Tipo: {produto.tipo}</p>
           )}
@@ -76,7 +82,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
             />
           </Button>
           
-          {!isCollaborator && (
+          {!isCollaborator && !hidePrices && (
             <Button
               variant="ghost"
               size="icon"
@@ -87,7 +93,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
             </Button>
           )}
 
-          {!isCollaborator && (
+          {!isCollaborator && !hidePrices && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8">

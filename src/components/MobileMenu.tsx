@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useLocale } from "@/contexts/LocaleContext";
+import { isLimitedNav } from "@/lib/permissions";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -50,6 +51,14 @@ export function MobileMenu() {
   const getFilteredNavigation = () => {
     const userEmail = user?.email;
     const isHardcodedAdmin = userEmail === 'jbento1@gmail.com' || userEmail === 'admin@admin.com';
+    
+    // Rosa - navegação limitada apenas para Produtos e Encomendas
+    if (isLimitedNav(user)) {
+      return navigation.filter(item => 
+        item.href === '/produtos' || 
+        item.href === '/encomendas'
+      );
+    }
     
     // Hardcoded admins have full access
     if (isHardcodedAdmin) {

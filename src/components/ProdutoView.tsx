@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Package, DollarSign, Paperclip, X } from "lucide-react";
 import { AttachmentManager } from "@/components/AttachmentManager";
 import { useAuth } from "@/hooks/useAuth";
+import { shouldHidePrices } from "@/lib/permissions";
 
 export default function ProdutoView({ produto, onClose }) {
   const { user } = useAuth();
   const isFelipe = user?.email?.toLowerCase() === "felipe@colaborador.com";
+  const hidePrices = shouldHidePrices(user);
   
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -82,38 +84,40 @@ export default function ProdutoView({ produto, onClose }) {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              Preços
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <strong>Preço de Venda:</strong>
-              <div className="text-lg font-bold text-green-600">
-                {formatCurrencyEUR(produto.preco_venda)}
-              </div>
-            </div>
-            {!isFelipe && produto.preco_custo && (
+        {!hidePrices && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Preços
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
               <div>
-                <strong>Preço de Custo:</strong>
-                <div className="text-lg font-semibold">
-                  {formatCurrencyEUR(produto.preco_custo)}
+                <strong>Preço de Venda:</strong>
+                <div className="text-lg font-bold text-green-600">
+                  {formatCurrencyEUR(produto.preco_venda)}
                 </div>
               </div>
-            )}
-            {!isFelipe && produto.preco_custo && produto.preco_venda && (
-              <div>
-                <strong>Margem:</strong>
-                <div className="text-sm text-muted-foreground">
-                  {(((produto.preco_venda - produto.preco_custo) / produto.preco_venda) * 100).toFixed(1)}%
+              {!isFelipe && produto.preco_custo && (
+                <div>
+                  <strong>Preço de Custo:</strong>
+                  <div className="text-lg font-semibold">
+                    {formatCurrencyEUR(produto.preco_custo)}
+                  </div>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+              {!isFelipe && produto.preco_custo && produto.preco_venda && (
+                <div>
+                  <strong>Margem:</strong>
+                  <div className="text-sm text-muted-foreground">
+                    {(((produto.preco_venda - produto.preco_custo) / produto.preco_venda) * 100).toFixed(1)}%
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Card>

@@ -35,6 +35,8 @@ import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TransportesTab } from "@/components/TransportesTab";
 import { TarefasTab } from "@/components/TarefasTab";
+import { useAuth } from "@/hooks/useAuth";
+import { isLimitedNav, shouldHidePrices, isReadonlyOrders } from "@/lib/permissions";
 
 type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
 type StatusFilter = StatusEncomenda | "TODOS";
@@ -63,6 +65,12 @@ export default function Encomendas() {
   const { canEdit, hasRole } = useUserRole();
   const { isCollaborator } = useIsCollaborator();
   const { formatCurrency, formatDate } = useFormatters();
+  const { user } = useAuth();
+  
+  // Permissões para Rosa
+  const isRosaUser = isLimitedNav(user);
+  const hidePrices = shouldHidePrices(user);
+  const readOnlyOrders = isReadonlyOrders(user);
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const email = (userEmail || "").toLowerCase();
@@ -407,7 +415,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
           <p className="text-sm sm:text-base text-muted-foreground">{t.manageOrders}</p>
         </div>
 
-        {canEdit() && (
+        {canEdit() && !readOnlyOrders && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button className="w-full sm:w-auto">
@@ -448,17 +456,19 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
         >
           {t.orders}
         </button>
-        <button
-          onClick={() => setActiveTab("transportes")}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "transportes" 
-              ? "border-b-2 border-primary text-primary" 
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {isHam ? "Transport" : "Transporte"}
-        </button>
-        {!isHam && (
+        {!isRosaUser && (
+          <button
+            onClick={() => setActiveTab("transportes")}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === "transportes" 
+                ? "border-b-2 border-primary text-primary" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {isHam ? "Transport" : "Transporte"}
+          </button>
+        )}
+        {!isHam && !isRosaUser && (
           <button
             onClick={() => setActiveTab("tarefas")}
             className={`px-4 py-2 font-medium transition-colors ${
@@ -567,7 +577,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                     >
                       <Eye className="h-5 w-5" />
                     </Button>
-                    {canEdit() && (
+                    {canEdit() && !readOnlyOrders && (
                       <>
                         <Button
                           variant="ghost"
@@ -724,8 +734,8 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                     )}
                   </div>
 
-                  {/* Comissão — oculta para Felipe e Ham */}
-                  {!(isFelipe || isHam) && (
+                  {/* Comissão — oculta para Felipe, Ham e Rosa */}
+                  {!(isFelipe || isHam || hidePrices) && (
                     <div>
                       <div className="text-sm font-medium text-muted-foreground mb-2">{t.commission}</div>
                       <div
@@ -739,15 +749,17 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                     </div>
                   )}
 
-                  {/* Total: custo p/ Felipe; venda p/ demais (inclui Ham) */}
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground mb-2">
-                      {isFelipe ? t.totalCost : t.total}
+                  {/* Total: custo p/ Felipe; venda p/ demais (oculto para Rosa) */}
+                  {!hidePrices && (
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-2">
+                        {isFelipe ? t.totalCost : t.total}
+                      </div>
+                      <div className="text-lg font-bold text-primary-dark bg-primary/10 px-3 py-2 rounded-lg text-center">
+                        {formatCurrency(isFelipe ? e.valor_total_custo || 0 : e.valor_total)}
+                      </div>
                     </div>
-                    <div className="text-lg font-bold text-primary-dark bg-primary/10 px-3 py-2 rounded-lg text-center">
-                      {formatCurrency(isFelipe ? e.valor_total_custo || 0 : e.valor_total)}
-                    </div>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

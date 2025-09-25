@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileMenu } from "./MobileMenu";
+import { isLimitedNav } from "@/lib/permissions";
 import { 
   LayoutDashboard, 
   Package, 
@@ -61,6 +62,14 @@ export function HorizontalNav() {
     const userEmail = user?.email;
     const isHardcodedAdmin = userEmail === 'jbento1@gmail.com' || userEmail === 'admin@admin.com';
     
+    // Rosa - navegação limitada apenas para Produtos e Encomendas
+    if (isLimitedNav(user)) {
+      return navigation.filter(item => 
+        item.href === '/produtos' || 
+        item.href === '/encomendas'
+      );
+    }
+    
     // Hardcoded admins have full access
     if (isHardcodedAdmin) {
       return navigation;
@@ -105,7 +114,7 @@ export function HorizontalNav() {
             {(isMobile) && <MobileMenu />}
             
             {/* Logo and Brand */}
-            <Link to={isRestrictedFR ? "/encomendas" : isCollaborator ? "/produtos" : "/dashboard"} className="flex items-center space-x-3">
+            <Link to={isLimitedNav(user) ? "/produtos" : isRestrictedFR ? "/encomendas" : isCollaborator ? "/produtos" : "/dashboard"} className="flex items-center space-x-3">
               <img 
                 src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png" 
                 alt="Gestion CHS Logo" 
