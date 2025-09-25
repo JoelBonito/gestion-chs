@@ -1,4 +1,5 @@
 
+import React, { useState, useEffect } from 'react';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,6 +9,9 @@ import { FactoryGuard } from "@/components/FactoryGuard";
 import { FelipeGuard } from "@/components/FelipeGuard";
 import { HorizontalNav } from "@/components/HorizontalNav";
 import { LocaleProvider } from "@/contexts/LocaleContext";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { usePWA } from "@/hooks/usePWA";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -30,11 +34,29 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
+  const { isInstallable } = usePWA();
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+
+  useEffect(() => {
+    // Show install prompt after 30 seconds if installable
+    const timer = setTimeout(() => {
+      if (isInstallable) {
+        setShowInstallPrompt(true);
+      }
+    }, 30000);
+
+    return () => clearTimeout(timer);
+  }, [isInstallable]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <LocaleProvider>
           <Toaster />
+          <OfflineIndicator />
+          {showInstallPrompt && isInstallable && (
+            <PWAInstallPrompt onDismiss={() => setShowInstallPrompt(false)} />
+          )}
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
