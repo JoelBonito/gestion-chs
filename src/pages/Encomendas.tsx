@@ -35,6 +35,7 @@ import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TransportesTab } from "@/components/TransportesTab";
 import { TarefasTab } from "@/components/TarefasTab";
+import { AmostrasTab } from "@/components/AmostrasTab";
 import { useAuth } from "@/hooks/useAuth";
 import { isLimitedNav, shouldHidePrices, isReadonlyOrders, ROSA_ALLOWED_SUPPLIERS } from "@/lib/permissions";
 
@@ -87,8 +88,16 @@ const ALLOWED_SUPPLIERS_FOR_FELIPE = [
 // Rosa também usa os mesmos fornecedores
 const ALLOWED_SUPPLIERS_FOR_ROSA = ROSA_ALLOWED_SUPPLIERS;
 
-const isHam = email === "ham@admin.com";
+  const isHam = email === "ham@admin.com";
 const isRosa = email === "rosa@colaborador.com";
+
+// Check if user has access to amostras tab
+const hasAmostrasAccess = user?.email && [
+  'jbento1@gmail.com',
+  'admin@admin.com',
+  'rosa@colaborador.com',
+  'felipe@colaborador.com'
+].includes(user.email);
 
   // Dicionário (FR para Ham, PT para demais)
   const t = isHam
@@ -173,7 +182,7 @@ const isRosa = email === "rosa@colaborador.com";
   const [searchTerm, setSearchTerm] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("TODOS");
-  const [activeTab, setActiveTab] = useState<"encomendas" | "transportes" | "tarefas">("encomendas");
+  const [activeTab, setActiveTab] = useState<"encomendas" | "transportes" | "tarefas" | "amostras">("encomendas");
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -486,6 +495,18 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
             }`}
           >
             Tarefas
+          </button>
+        )}
+        {hasAmostrasAccess && (
+          <button
+            onClick={() => setActiveTab("amostras")}
+            className={`px-4 py-2 font-medium transition-colors ${
+              activeTab === "amostras" 
+                ? "border-b-2 border-primary text-primary" 
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            AMOSTRAS
           </button>
         )}
       </div>
@@ -849,6 +870,10 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
 
       {activeTab === "tarefas" && (
         <TarefasTab />
+      )}
+
+      {activeTab === "amostras" && (
+        <AmostrasTab />
       )}
     </div>
   );

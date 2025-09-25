@@ -44,6 +44,74 @@ export type Database = {
         }
         Relationships: []
       }
+      amostras: {
+        Row: {
+          archived: boolean
+          cliente_id: string | null
+          cor: string | null
+          created_at: string
+          created_by: string
+          data: string
+          data_envio: string | null
+          fragrancia: string | null
+          id: string
+          ingredientes_adicionais: string | null
+          observacoes: string | null
+          projeto: string | null
+          quantidade_amostras: number | null
+          referencia: string
+          textura: string | null
+          tipo_produto: string | null
+          updated_at: string
+        }
+        Insert: {
+          archived?: boolean
+          cliente_id?: string | null
+          cor?: string | null
+          created_at?: string
+          created_by?: string
+          data?: string
+          data_envio?: string | null
+          fragrancia?: string | null
+          id?: string
+          ingredientes_adicionais?: string | null
+          observacoes?: string | null
+          projeto?: string | null
+          quantidade_amostras?: number | null
+          referencia: string
+          textura?: string | null
+          tipo_produto?: string | null
+          updated_at?: string
+        }
+        Update: {
+          archived?: boolean
+          cliente_id?: string | null
+          cor?: string | null
+          created_at?: string
+          created_by?: string
+          data?: string
+          data_envio?: string | null
+          fragrancia?: string | null
+          id?: string
+          ingredientes_adicionais?: string | null
+          observacoes?: string | null
+          projeto?: string | null
+          quantidade_amostras?: number | null
+          referencia?: string
+          textura?: string | null
+          tipo_produto?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "amostras_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attachments: {
         Row: {
           created_at: string | null
