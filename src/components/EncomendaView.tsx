@@ -68,6 +68,7 @@ export default function EncomendaView({ encomendaId }: Props) {
   const email = (userEmail || "").toLowerCase();
   const isFelipe = email === "felipe@colaborador.com";
   const isHam = email === "ham@admin.com";
+  const isRosa = email === "rosa@colaborador.com";
 
   // Dicionário (FR para Ham, PT para demais)
   const t = isHam
@@ -282,166 +283,168 @@ export default function EncomendaView({ encomendaId }: Props) {
           </div>
         </div>
 
-        {/* Totais (oculta "Valor Pago" para Felipe; oculta lucro para Felipe e Ham) */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div>
-            <div className="text-sm text-muted-foreground">
-              {isFelipe ? t.totalCost : t.subtotalItems}
+        {/* Totais - para Rosa esconder subtotal, valor pago e lucro estimado */}
+        {!isRosa && (
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <div className="text-sm text-muted-foreground">
+                {isFelipe ? t.totalCost : t.subtotalItems}
+              </div>
+              <div className="font-semibold">
+                {formatCurrencyEUR(isFelipe ? subtotalCusto : subtotalVenda)}
+              </div>
             </div>
-            <div className="font-semibold">
-              {formatCurrencyEUR(isFelipe ? subtotalCusto : subtotalVenda)}
-            </div>
+
+            {/* Pago — NÃO mostrar para Felipe */}
+            {!isFelipe && (
+              <div>
+                <div className="text-sm text-muted-foreground">{t.paid}</div>
+                <div className="font-semibold">{formatCurrencyEUR(encomenda.valor_pago ?? 0)}</div>
+              </div>
+            )}
+
+            {/* Lucro estimado — oculto para Felipe e Ham */}
+            {!(isFelipe || isHam) && (
+              <div>
+                <div className="text-sm text-muted-foreground">{t.estProfit}</div>
+                <div
+                  className={cn(
+                    "font-semibold",
+                    lucro >= 0 ? "text-green-600" : "text-red-600"
+                  )}
+                >
+                  {formatCurrencyEUR(lucro)}
+                </div>
+              </div>
+            )}
+
+            {/* % Lucro — mostrar apenas para jbento1@gmail.com e admin@admin.com */}
+            {(email === "jbento1@gmail.com" || email === "admin@admin.com") && (
+              <div>
+                <div className="text-sm text-muted-foreground">% Lucro</div>
+                <div className={cn("font-semibold", percentLucro >= 0 ? "text-green-600" : "text-red-600")}>
+                  {percentLucro.toFixed(2)}%
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* Pago — NÃO mostrar para Felipe */}
-          {!isFelipe && (
-            <div>
-              <div className="text-sm text-muted-foreground">{t.paid}</div>
-              <div className="font-semibold">{formatCurrencyEUR(encomenda.valor_pago ?? 0)}</div>
-            </div>
-          )}
-
-          {/* Lucro estimado — oculto para Felipe e Ham */}
-          {!(isFelipe || isHam) && (
-            <div>
-              <div className="text-sm text-muted-foreground">{t.estProfit}</div>
-              <div
-                className={cn(
-                  "font-semibold",
-                  lucro >= 0 ? "text-green-600" : "text-red-600"
-                )}
-              >
-                {formatCurrencyEUR(lucro)}
-              </div>
-            </div>
-          )}
-
-          {/* % Lucro — mostrar apenas para jbento1@gmail.com e admin@admin.com */}
-          {(email === "jbento1@gmail.com" || email === "admin@admin.com") && (
-            <div>
-              <div className="text-sm text-muted-foreground">% Lucro</div>
-              <div className={cn("font-semibold", percentLucro >= 0 ? "text-green-600" : "text-red-600")}>
-                {percentLucro.toFixed(2)}%
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Observações - esconder para Ham */}
-        {!isHam && (
-          <>
-            {/* Observações Joel */}
-            <div className="mt-6">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-sm font-semibold text-muted-foreground">Observações Joel</div>
-                {(email === "jbento1@gmail.com" || email === "admin@admin.com") && !editingJoel && (
-                  <button onClick={() => setEditingJoel(true)} className="text-xs text-blue-600 hover:underline">
-                    ✏️ Editar
-                  </button>
-                )}
-              </div>
-              {editingJoel ? (
-                <div className="space-y-2">
-                  <textarea
-                    className="w-full rounded-md border p-2 text-sm"
-                    rows={3}
-                    value={joelValue}
-                    onChange={(e) => setJoelValue(e.target.value)}
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={async () => {
-                        const { error } = await supabase
-                          .from("encomendas")
-                          .update({ observacoes_joel: joelValue })
-                          .eq("id", id);
-                        if (!error) {
-                          toast.success("Observações Joel salvas!");
-                          setEncomenda((prev) => prev ? { ...prev, observacoes_joel: joelValue } : prev);
-                          setEditingJoel(false);
-                        } else {
-                          toast.error("Erro ao salvar observações");
-                        }
-                      }}
-                      className="px-3 py-1 text-sm bg-primary text-white rounded-md"
-                    >
-                      Salvar
-                    </button>
-                    <button
-                      onClick={() => {
-                        setJoelValue(encomenda?.observacoes_joel ?? "");
-                        setEditingJoel(false);
-                      }}
-                      className="px-3 py-1 text-sm bg-muted rounded-md"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
-                  {encomenda.observacoes_joel || "—"}
-                </div>
-              )}
-            </div>
-
-            {/* Observações Felipe */}
-            <div className="mt-4">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-sm font-semibold text-muted-foreground">Observações Felipe</div>
-                {isFelipe && !editingFelipe && (
-                  <button onClick={() => setEditingFelipe(true)} className="text-xs text-blue-600 hover:underline">
-                    ✏️ Editar
-                  </button>
-                )}
-              </div>
-              {editingFelipe ? (
-                <div className="space-y-2">
-                  <textarea
-                    className="w-full rounded-md border p-2 text-sm"
-                    rows={3}
-                    value={felipeValue}
-                    onChange={(e) => setFelipeValue(e.target.value)}
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={async () => {
-                        const { error } = await supabase
-                          .from("encomendas")
-                          .update({ observacoes_felipe: felipeValue })
-                          .eq("id", id);
-                        if (!error) {
-                          toast.success("Observações Felipe salvas!");
-                          setEncomenda((prev) => prev ? { ...prev, observacoes_felipe: felipeValue } : prev);
-                          setEditingFelipe(false);
-                        } else {
-                          toast.error("Erro ao salvar observações");
-                        }
-                      }}
-                      className="px-3 py-1 text-sm bg-primary text-white rounded-md"
-                    >
-                      Salvar
-                    </button>
-                    <button
-                      onClick={() => {
-                        setFelipeValue(encomenda?.observacoes_felipe ?? "");
-                        setEditingFelipe(false);
-                      }}
-                      className="px-3 py-1 text-sm bg-muted rounded-md"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
-                  {encomenda.observacoes_felipe || "—"}
-                </div>
-              )}
-            </div>
-          </>
         )}
       </section>
+
+      {/* Observações - esconder para Ham e Rosa */}
+      {!isHam && !isRosa && (
+        <section className="space-y-4">
+          {/* Observações Joel */}
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-sm font-semibold text-muted-foreground">Observações Joel</div>
+              {(email === "jbento1@gmail.com" || email === "admin@admin.com") && !editingJoel && (
+                <button onClick={() => setEditingJoel(true)} className="text-xs text-blue-600 hover:underline">
+                  ✏️ Editar
+                </button>
+              )}
+            </div>
+            {editingJoel ? (
+              <div className="space-y-2">
+                <textarea
+                  className="w-full rounded-md border p-2 text-sm"
+                  rows={3}
+                  value={joelValue}
+                  onChange={(e) => setJoelValue(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      const { error } = await supabase
+                        .from("encomendas")
+                        .update({ observacoes_joel: joelValue })
+                        .eq("id", id);
+                      if (!error) {
+                        toast.success("Observações Joel salvas!");
+                        setEncomenda((prev) => prev ? { ...prev, observacoes_joel: joelValue } : prev);
+                        setEditingJoel(false);
+                      } else {
+                        toast.error("Erro ao salvar observações");
+                      }
+                    }}
+                    className="px-3 py-1 text-sm bg-primary text-white rounded-md"
+                  >
+                    Salvar
+                  </button>
+                  <button
+                    onClick={() => {
+                      setJoelValue(encomenda?.observacoes_joel ?? "");
+                      setEditingJoel(false);
+                    }}
+                    className="px-3 py-1 text-sm bg-muted rounded-md"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
+                {encomenda.observacoes_joel || "—"}
+              </div>
+            )}
+          </div>
+
+          {/* Observações Felipe */}
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-sm font-semibold text-muted-foreground">Observações Felipe</div>
+              {isFelipe && !editingFelipe && (
+                <button onClick={() => setEditingFelipe(true)} className="text-xs text-blue-600 hover:underline">
+                  ✏️ Editar
+                </button>
+              )}
+            </div>
+            {editingFelipe ? (
+              <div className="space-y-2">
+                <textarea
+                  className="w-full rounded-md border p-2 text-sm"
+                  rows={3}
+                  value={felipeValue}
+                  onChange={(e) => setFelipeValue(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      const { error } = await supabase
+                        .from("encomendas")
+                        .update({ observacoes_felipe: felipeValue })
+                        .eq("id", id);
+                      if (!error) {
+                        toast.success("Observações Felipe salvas!");
+                        setEncomenda((prev) => prev ? { ...prev, observacoes_felipe: felipeValue } : prev);
+                        setEditingFelipe(false);
+                      } else {
+                        toast.error("Erro ao salvar observações");
+                      }
+                    }}
+                    className="px-3 py-1 text-sm bg-primary text-white rounded-md"
+                  >
+                    Salvar
+                  </button>
+                  <button
+                    onClick={() => {
+                      setFelipeValue(encomenda?.observacoes_felipe ?? "");
+                      setEditingFelipe(false);
+                    }}
+                    className="px-3 py-1 text-sm bg-muted rounded-md"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
+                {encomenda.observacoes_felipe || "—"}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Itens */}
       <section>
@@ -470,56 +473,48 @@ export default function EncomendaView({ encomendaId }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {itens.map((it) => {
-                  const q = Number(it.quantidade ?? 0) || 0;
-                  const pu = Number(it.preco_unitario ?? 0) || 0;
-                  const pc = Number(it.preco_custo ?? 0) || 0;
-
-                  // Total por linha:
-                  // - Felipe: usa custo
-                  // - Ham e demais: usa venda
-                  const lineTotal = isFelipe ? q * pc : q * pu;
+                {itens.map((item) => {
+                  const q = Number(item.quantidade ?? 0) || 0;
+                  const pu = Number(item.preco_unitario ?? 0) || 0;
+                  const pc = Number(item.preco_custo ?? 0) || 0;
+                  const totalVenda = q * pu;
+                  const totalCusto = q * pc;
 
                   return (
-                    <tr key={it.id} className="border-t">
-                      <td className="px-3 py-2">{it.produtos?.nome ?? "—"}</td>
+                    <tr key={item.id} className="border-t">
+                      <td className="px-3 py-2">{item.produtos?.nome ?? "—"}</td>
                       <td className="px-3 py-2 text-right">{q}</td>
-                      {!isFelipe && !hidePrices && <td className="px-3 py-2 text-right">{formatCurrencyEUR(pu)}</td>}
-                      {!isHam && !hidePrices && <td className="px-3 py-2 text-right">{formatCurrencyEUR(pc)}</td>}
-                      {!hidePrices && <td className="px-3 py-2 text-right font-medium">{formatCurrencyEUR(lineTotal)}</td>}
+                      {/* Preço de venda */}
+                      {!isFelipe && !hidePrices && (
+                        <td className="px-3 py-2 text-right">{formatCurrencyEUR(pu)}</td>
+                      )}
+                      {/* Custo */}
+                      {!isHam && !hidePrices && (
+                        <td className="px-3 py-2 text-right">{formatCurrencyEUR(pc)}</td>
+                      )}
+                      {/* Total */}
+                      {!hidePrices && (
+                        <td className="px-3 py-2 text-right font-medium">
+                          {formatCurrencyEUR(isFelipe ? totalCusto : totalVenda)}
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
               </tbody>
+              {/* Footer de totais */}
               {!hidePrices && (
                 <tfoot>
-                  <tr className="border-t bg-muted/30">
-                    <td
-                      className="px-3 py-2 font-medium text-right"
-                      colSpan={
-                        // cabeçalho tem: produto (1) + qtd(1) + preço venda(cond) + custo(cond)
-                        // Felipe: sem preço venda (+ custo) => 1+1+0+1 = 3
-                        // Ham: com preço venda (+ sem custo) => 1+1+1+0 = 3
-                        // Outros: com ambos => 1+1+1+1 = 4
-                        isFelipe ? 3 : isHam ? 3 : 4
-                      }
-                    >
+                  <tr className="bg-muted/50 border-t-2">
+                    <td className="px-3 py-2 font-semibold" colSpan={isFelipe || hidePrices ? 1 : 2}>
                       {isFelipe ? t.totalCostFooter : t.subtotalFooter}
                     </td>
+                    {!isFelipe && !hidePrices && <td></td>}
+                    {!isHam && !hidePrices && <td></td>}
                     <td className="px-3 py-2 text-right font-semibold">
                       {formatCurrencyEUR(isFelipe ? subtotalCusto : subtotalVenda)}
                     </td>
                   </tr>
-
-                  {/* Linha "Total (custo)" — mostrar para usuários normais; esconder para Felipe (já mostrado acima) e para Ham */}
-                  {!isFelipe && !isHam && (
-                    <tr className="border-t">
-                      <td className="px-3 py-2 text-right" colSpan={4}>
-                        {t.totalCostFooter}
-                      </td>
-                      <td className="px-3 py-2 text-right">{formatCurrencyEUR(subtotalCusto)}</td>
-                    </tr>
-                  )}
                 </tfoot>
               )}
             </table>

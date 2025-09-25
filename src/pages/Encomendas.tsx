@@ -714,15 +714,17 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                     </div>
                   </div>
 
-                  {/* Valor Frete (estimado) */}
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground mb-2">{t.shippingValue}</div>
-                    <div className="text-lg font-bold text-amber-600 bg-amber-50 px-3 py-2 rounded-lg text-center">
-                      {formatCurrency(((pesoTransporte[e.id] ?? 0) * 4.5) || 0)}
-                    </div>
-                  </div>
+                   {/* Valor Frete (estimado) - não mostrar para Rosa */}
+                   {!isRosa && (
+                     <div>
+                       <div className="text-sm font-medium text-muted-foreground mb-2">{t.shippingValue}</div>
+                       <div className="text-lg font-bold text-amber-600 bg-amber-50 px-3 py-2 rounded-lg text-center">
+                         {formatCurrency(((pesoTransporte[e.id] ?? 0) * 4.5) || 0)}
+                       </div>
+                     </div>
+                   )}
 
-                  {/* Status */}
+                   {/* Status */}
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">{t.status}</div>
 
