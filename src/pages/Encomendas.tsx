@@ -190,6 +190,7 @@ const isRosa = email === "rosa@colaborador.com";
   const fetchEncomendas = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Fetching encomendas for user:', userEmail, 'isFelipe:', isFelipe, 'isRosa:', isRosa);
 
       // Query otimizada: buscar encomendas com dados calculados de uma vez
       const { data, error } = await supabase
@@ -209,6 +210,8 @@ const isRosa = email === "rosa@colaborador.com";
         .limit(100); // Limitar resultados iniciais
 
       if (error) throw error;
+      
+      console.log('📦 Fetched encomendas raw data:', data?.length || 0, 'rows');
 
       // Processar dados em batch ao invés de queries individuais
       const computed = (data || []).map((enc: any) => {
@@ -236,6 +239,8 @@ const isRosa = email === "rosa@colaborador.com";
       });
 
       setEncomendas(computed);
+      console.log('✅ Final computed encomendas:', computed.length, 'rows');
+      console.log('📋 Sample data:', computed.slice(0, 2));
 
       // Criar mapa de pesos sem queries adicionais
       const pesos: Record<string, number> = {};
@@ -244,7 +249,7 @@ const isRosa = email === "rosa@colaborador.com";
       });
       setPesoTransporte(pesos);
     } catch (e) {
-      console.error(e);
+      console.error('❌ Error fetching encomendas:', e);
       toast.error(t.errLoad);
     } finally {
       setLoading(false);
@@ -257,10 +262,13 @@ const isRosa = email === "rosa@colaborador.com";
   useEffect(() => {
     if (!userDataCached) {
       supabase.auth.getUser().then(({ data }) => {
-        setUserEmail(data.user?.email ?? null);
+        const fetchedEmail = data.user?.email ?? null;
+        console.log('👤 Setting user email:', fetchedEmail);
+        setUserEmail(fetchedEmail);
         setUserDataCached(true);
       });
     }
+    console.log('🔄 Calling fetchEncomendas...');
     fetchEncomendas();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userDataCached]);
@@ -312,6 +320,8 @@ const isRosa = email === "rosa@colaborador.com";
 const scopedEncomendas = isFelipe || isRosa
   ? encomendas.filter((e) => ALLOWED_SUPPLIERS_FOR_FELIPE.includes(e.fornecedor_id ?? ""))
   : encomendas;
+
+console.log('🎯 Scoped encomendas for user:', userEmail, 'count:', scopedEncomendas.length);
 
 const filteredEncomendas = scopedEncomendas.filter((e) => {
     const q = searchTerm.trim().toLowerCase();
