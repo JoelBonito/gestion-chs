@@ -43,7 +43,7 @@ export default function Login() {
       // 🔽 regra de redirecionamento personalizada
       const userEmail = email.trim().toLowerCase();
 
-      if (userEmail === "ham@admin.com") {
+      if (userEmail === "ham@admin.com" || userEmail === "rosa@colaborador.com") {
         navigate("/encomendas");
       } else {
         navigate("/dashboard"); // rota padrão para os outros usuários
