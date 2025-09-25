@@ -114,7 +114,7 @@ export function HorizontalNav() {
             {(isMobile) && <MobileMenu />}
             
             {/* Logo and Brand */}
-            <Link to={isLimitedNav(user) ? "/produtos" : isRestrictedFR ? "/encomendas" : isCollaborator ? "/produtos" : "/dashboard"} className="flex items-center space-x-3">
+            <Link to={isLimitedNav(user) ? "/encomendas" : isRestrictedFR ? "/encomendas" : isCollaborator ? "/produtos" : "/dashboard"} className="flex items-center space-x-3">
               <img 
                 src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png" 
                 alt="Gestion CHS Logo" 
