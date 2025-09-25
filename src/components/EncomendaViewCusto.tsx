@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 
-type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
+type StatusEncomenda = "NOVO PEDIDO" | "MATÉRIA PRIMA" | "PRODUÇÃO" | "EMBALAGENS" | "TRANSPORTE" | "ENTREGUE";
 
 interface Encomenda {
   id: string;
@@ -49,8 +49,9 @@ interface EncomendaViewCustoProps {
 const getStatusColor = (status: StatusEncomenda) => {
   switch (status) {
     case "NOVO PEDIDO": return "bg-gray-500";
+    case "MATÉRIA PRIMA": return "bg-orange-500";
     case "PRODUÇÃO": return "bg-blue-500";
-    case "EMBALAGEM": return "bg-yellow-500";
+    case "EMBALAGENS": return "bg-yellow-500";
     case "TRANSPORTE": return "bg-purple-500";
     case "ENTREGUE": return "bg-green-500";
     default: return "bg-gray-500";
@@ -69,8 +70,9 @@ export function EncomendaViewCusto({ encomendaId }: EncomendaViewCustoProps) {
     
     switch (status) {
       case "NOVO PEDIDO": return "Nouvelle demande";
+      case "MATÉRIA PRIMA": return "Matières premières";
       case "PRODUÇÃO": return "Production";
-      case "EMBALAGEM": return "Emballage";
+      case "EMBALAGENS": return "Emballage";
       case "TRANSPORTE": return "Transport";
       case "ENTREGUE": return "Livré";
       default: return status;

@@ -38,7 +38,7 @@ import { TarefasTab } from "@/components/TarefasTab";
 import { useAuth } from "@/hooks/useAuth";
 import { isLimitedNav, shouldHidePrices, isReadonlyOrders, ROSA_ALLOWED_SUPPLIERS } from "@/lib/permissions";
 
-type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
+type StatusEncomenda = "NOVO PEDIDO" | "MATÉRIA PRIMA" | "PRODUÇÃO" | "EMBALAGENS" | "TRANSPORTE" | "ENTREGUE";
 type StatusFilter = StatusEncomenda | "TODOS";
 
 interface Encomenda {
@@ -161,8 +161,9 @@ const isRosa = email === "rosa@colaborador.com";
     
     switch (status) {
       case "NOVO PEDIDO": return "Nouvelle demande";
+      case "MATÉRIA PRIMA": return "Matières premières";
       case "PRODUÇÃO": return "Production";
-      case "EMBALAGEM": return "Emballage";
+      case "EMBALAGENS": return "Emballage";
       case "TRANSPORTE": return "Transport";
       case "ENTREGUE": return "Livré";
       default: return status;

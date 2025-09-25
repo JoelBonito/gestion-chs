@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 
-type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE" | "TODOS";
+type StatusEncomenda = "NOVO PEDIDO" | "MATÉRIA PRIMA" | "PRODUÇÃO" | "EMBALAGENS" | "TRANSPORTE" | "ENTREGUE" | "TODOS";
 
 interface EncomendaStatusFilterProps {
   selectedStatus: StatusEncomenda;
@@ -17,15 +17,17 @@ export function EncomendaStatusFilter({ selectedStatus, onStatusChange }: Encome
   const statusOptions = isHamAdmin ? [
     { value: "TODOS" as const, label: "Tous les statuts" },
     { value: "NOVO PEDIDO" as const, label: "Nouvelle demande" },
+    { value: "MATÉRIA PRIMA" as const, label: "Matières premières" },
     { value: "PRODUÇÃO" as const, label: "Production" },
-    { value: "EMBALAGEM" as const, label: "Emballage" },
+    { value: "EMBALAGENS" as const, label: "Emballage" },
     { value: "TRANSPORTE" as const, label: "Transport" },
     { value: "ENTREGUE" as const, label: "Livré" },
   ] : [
     { value: "TODOS" as const, label: "Todos os Status" },
     { value: "NOVO PEDIDO" as const, label: "Novo Pedido" },
+    { value: "MATÉRIA PRIMA" as const, label: "Matéria Prima" },
     { value: "PRODUÇÃO" as const, label: "Produção" },
-    { value: "EMBALAGEM" as const, label: "Embalagem" },
+    { value: "EMBALAGENS" as const, label: "Embalagens" },
     { value: "TRANSPORTE" as const, label: "Transporte" },
     { value: "ENTREGUE" as const, label: "Entregue" },
   ];

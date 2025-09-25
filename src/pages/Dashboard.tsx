@@ -225,8 +225,9 @@ export default function Dashboard() {
       
       switch (status) {
         case "NOVO PEDIDO": return "Nouvelle demande";
+        case "MATÉRIA PRIMA": return "Matières premières";
         case "PRODUÇÃO": return "Production";
-        case "EMBALAGEM": return "Emballage";
+        case "EMBALAGENS": return "Emballage";
         case "TRANSPORTE": return "Transport";
         case "ENTREGUE": return "Livré";
         default: return status;
@@ -238,7 +239,9 @@ export default function Dashboard() {
         return { label: getStatusLabel(status), variant: 'secondary' as const };
       case 'PRODUÇÃO':
         return { label: getStatusLabel(status), variant: 'default' as const };
-      case 'EMBALAGEM':
+      case 'MATÉRIA PRIMA':
+        return { label: getStatusLabel(status), variant: 'outline' as const };
+      case 'EMBALAGENS':
         return { label: getStatusLabel(status), variant: 'outline' as const };
       case 'TRANSPORTE':
         return { label: getStatusLabel(status), variant: 'default' as const };

@@ -10,7 +10,7 @@ import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useAuth } from "@/hooks/useAuth";
 import { isReadonlyOrders } from "@/lib/permissions";
 
-type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
+type StatusEncomenda = "NOVO PEDIDO" | "MATÉRIA PRIMA" | "PRODUÇÃO" | "EMBALAGENS" | "TRANSPORTE" | "ENTREGUE";
 
 interface Encomenda {
   id: string;

@@ -2,13 +2,15 @@
 import { useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 
-type StatusEncomenda = "NOVO PEDIDO" | "PRODUÇÃO" | "EMBALAGEM" | "TRANSPORTE" | "ENTREGUE";
+type StatusEncomenda = "NOVO PEDIDO" | "MATÉRIA PRIMA" | "PRODUÇÃO" | "EMBALAGENS" | "TRANSPORTE" | "ENTREGUE";
 
 interface EncomendaStatusSelectProps {
   encomendaId: string;
@@ -19,8 +21,9 @@ interface EncomendaStatusSelectProps {
 
 const getStatusOptions = (isHamAdmin: boolean): StatusEncomenda[] => [
   "NOVO PEDIDO",
+  "MATÉRIA PRIMA",
   "PRODUÇÃO", 
-  "EMBALAGEM",
+  "EMBALAGENS",
   "TRANSPORTE",
   "ENTREGUE"
 ];
@@ -30,8 +33,9 @@ const getStatusLabel = (status: StatusEncomenda, isHamAdmin: boolean): string =>
   
   switch (status) {
     case "NOVO PEDIDO": return "Nouvelle demande";
+    case "MATÉRIA PRIMA": return "Matières premières";
     case "PRODUÇÃO": return "Production";
-    case "EMBALAGEM": return "Emballage";
+    case "EMBALAGENS": return "Emballage";
     case "TRANSPORTE": return "Transport";
     case "ENTREGUE": return "Livré";
     default: return status;
@@ -41,12 +45,47 @@ const getStatusLabel = (status: StatusEncomenda, isHamAdmin: boolean): string =>
 const getStatusColor = (status: StatusEncomenda) => {
   switch (status) {
     case "NOVO PEDIDO": return "bg-gray-500";
+    case "MATÉRIA PRIMA": return "bg-orange-500";
     case "PRODUÇÃO": return "bg-blue-500";
-    case "EMBALAGEM": return "bg-yellow-500";
+    case "EMBALAGENS": return "bg-yellow-500";
     case "TRANSPORTE": return "bg-purple-500";
     case "ENTREGUE": return "bg-green-500";
     default: return "bg-gray-500";
   }
+};
+
+const getStatusTooltip = (status: StatusEncomenda): string | null => {
+  switch (status) {
+    case "MATÉRIA PRIMA": return "compra e preparação das matérias primas";
+    case "PRODUÇÃO": return "produção e envase dos produtos";
+    case "EMBALAGENS": return "rotulagem e montagem dos paletes";
+    default: return null;
+  }
+};
+
+const getStatusWithIcon = (status: StatusEncomenda, isHamAdmin: boolean) => {
+  const tooltip = getStatusTooltip(status);
+  const label = getStatusLabel(status, isHamAdmin);
+  
+  if (!tooltip) {
+    return <span>{label}</span>;
+  }
+  
+  return (
+    <div className="flex items-center gap-1">
+      <span>{label}</span>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Info className="w-3 h-3 cursor-pointer" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  );
 };
 
 export function EncomendaStatusSelect({ 
@@ -101,7 +140,7 @@ export function EncomendaStatusSelect({
     >
       <SelectTrigger className="w-auto border-none p-0 h-auto">
         <Badge className={`${getStatusColor(currentStatus)} text-white ${canChangeStatus ? 'hover:opacity-80 cursor-pointer' : 'opacity-60'}`}>
-          {isUpdating ? (isHamAdmin ? "Mise à jour..." : "Atualizando...") : getStatusLabel(currentStatus, isHamAdmin)}
+          {isUpdating ? (isHamAdmin ? "Mise à jour..." : "Atualizando...") : getStatusWithIcon(currentStatus, isHamAdmin)}
         </Badge>
       </SelectTrigger>
       <SelectContent>
@@ -109,7 +148,7 @@ export function EncomendaStatusSelect({
           <SelectItem key={status} value={status}>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`} />
-              {getStatusLabel(status, isHamAdmin)}
+              {getStatusWithIcon(status, isHamAdmin)}
             </div>
           </SelectItem>
         ))}
