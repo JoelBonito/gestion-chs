@@ -26,7 +26,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`📧 Sending email to: ${to.join(", ")} with subject: ${subject}`);
 
     const emailResponse = await resend.emails.send({
-      from: "notificacoes@gestionchs.app",
+      from: "notificacoes@gestionchs.inoveai.online",
       to,
       subject,
       html,
