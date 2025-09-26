@@ -1,18 +1,24 @@
-import { Resend } from "resend";
-
-const resend = new Resend("re_b9ZQKG3T_4WD9vHsNgBjXqn7eG32R77is"); // ⚠️ CHAVE EMBUTIDA
+import { supabase } from "@/integrations/supabase/client";
 
 export async function sendEmail(to: string[], subject: string, html: string) {
   try {
-    await resend.emails.send({
-      from: "notificacoes@gestionchs.app",
-      to,
-      subject,
-      html,
+    const { data, error } = await supabase.functions.invoke('send-email', {
+      body: {
+        to,
+        subject,
+        html,
+      },
     });
+
+    if (error) {
+      throw error;
+    }
+
     console.log(`✅ Email enviado para: ${to.join(", ")}`);
+    return data;
   } catch (error) {
     console.error("❌ Erro ao enviar e-mail:", error);
+    // Não propaga o erro para não interromper fluxos principais
   }
 }
 
