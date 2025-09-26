@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
+import { sendEmail, emailTemplates, emailRecipients } from "@/lib/email";
 
 type StatusEncomenda = "NOVO PEDIDO" | "MATÉRIA PRIMA" | "PRODUÇÃO" | "EMBALAGENS" | "TRANSPORTE" | "ENTREGUE";
 
@@ -120,6 +121,27 @@ export function EncomendaStatusSelect({
       if (error) {
         console.error("Erro na atualização do status:", error);
         throw error;
+      }
+
+      // Enviar notificação por email
+      try {
+        // Buscar dados da encomenda para incluir etiqueta
+        const { data: encomenda } = await supabase
+          .from("encomendas")
+          .select("etiqueta")
+          .eq("id", encomendaId)
+          .single();
+        
+        const etiqueta = encomenda?.etiqueta || 'N/A';
+        
+        await sendEmail(
+          emailRecipients.geral,
+          `📦 Status atualizado — ${numeroEncomenda}`,
+          emailTemplates.mudancaStatus(numeroEncomenda, etiqueta, newStatus)
+        );
+      } catch (emailError) {
+        console.error("Erro ao enviar email de notificação:", emailError);
+        // Não exibir erro de email para não atrapalhar o fluxo principal
       }
 
       toast.success(`Status da encomenda ${numeroEncomenda} atualizado para ${newStatus}`);

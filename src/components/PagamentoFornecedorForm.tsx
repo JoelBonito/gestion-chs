@@ -17,6 +17,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { sendEmail, emailTemplates, emailRecipients } from "@/lib/email";
 
 const pagamentoFornecedorSchema = z.object({
   valor_pagamento: z.string().min(1, "Valor é obrigatório"),
@@ -74,6 +75,19 @@ export default function PagamentoFornecedorForm({ onSuccess, conta }: PagamentoF
         });
 
       if (error) throw error;
+
+      // Enviar notificação por email
+      try {
+        const valorFormatado = `€${parseFloat(data.valor_pagamento).toFixed(2)}`;
+        await sendEmail(
+          emailRecipients.lipe,
+          `💳 Pagamento realizado — ${conta.numero_encomenda}`,
+          emailTemplates.pagamentoFornecedor(conta.numero_encomenda, 'N/A', valorFormatado)
+        );
+      } catch (emailError) {
+        console.error("Erro ao enviar email de notificação:", emailError);
+        // Não exibir erro de email para não atrapalhar o fluxo principal
+      }
 
       toast({
         title: "Pagamento ao fornecedor lançado com sucesso!",

@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Edit, Save, X } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { sendEmail, emailTemplates, emailRecipients } from '@/lib/email';
 
 interface EncomendaObservationsProps {
   encomendaId: string;
@@ -19,6 +21,7 @@ export function EncomendaObservations({
   onUpdate, 
   canEdit = false 
 }: EncomendaObservationsProps) {
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(observacoes);
   const [isSaving, setIsSaving] = useState(false);
@@ -34,6 +37,42 @@ export function EncomendaObservations({
         .eq('id', encomendaId);
 
       if (error) throw error;
+      
+      // Enviar notificação por email baseada no usuário
+      if (editValue && editValue.trim() !== observacoes?.trim()) {
+        try {
+          // Buscar dados da encomenda
+          const { data: encomenda } = await supabase
+            .from("encomendas")
+            .select("numero_encomenda, etiqueta")
+            .eq("id", encomendaId)
+            .single();
+          
+          if (encomenda) {
+            const userEmail = user?.email;
+            
+            // Determinar destinatários baseado no usuário que fez a observação
+            if (userEmail === 'msilva.lipe@gmail.com') {
+              // Observação do Lipe - enviar para Felipe
+              await sendEmail(
+                emailRecipients.felipe,
+                `📝 Observação Lipe — ${encomenda.numero_encomenda}`,
+                emailTemplates.observacaoJoel(encomenda.numero_encomenda, encomenda.etiqueta || 'N/A', editValue)
+              );
+            } else if (userEmail === 'jbento1@gmail.com' || userEmail === 'felipe@colaborador.com') {
+              // Observação do Felipe - enviar para Lipe
+              await sendEmail(
+                emailRecipients.lipe,
+                `📝 Observação Felipe — ${encomenda.numero_encomenda}`,
+                emailTemplates.observacaoFelipe(encomenda.numero_encomenda, encomenda.etiqueta || 'N/A', editValue)
+              );
+            }
+          }
+        } catch (emailError) {
+          console.error("Erro ao enviar email de notificação:", emailError);
+          // Não exibir erro de email para não atrapalhar o fluxo principal
+        }
+      }
       
       setIsEditing(false);
       onUpdate();

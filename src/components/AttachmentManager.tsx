@@ -5,6 +5,8 @@ import { useAttachments } from '@/hooks/useAttachments';
 import { useTransporteAttachments } from '@/hooks/useTransporteAttachments';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { sendEmail, emailTemplates, emailRecipients } from '@/lib/email';
 
 interface AttachmentManagerProps {
  entityType: string;
@@ -102,19 +104,42 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
        await genericAttachments.refetch();
      }
      
-     // Toast de sucesso específico para projetos
-     if (entityType === 'projeto') {
-       toast({
-         title: "Anexo adicionado ao projeto",
-         description: `Arquivo: ${fileData.file_name}`,
-       });
-     }
-     
-     // Chamar callback de mudança
-     if (onChanged) {
-       console.log("AttachmentManager - Executando onChanged após upload");
-       onChanged();
-     }
+      // Toast de sucesso específico para projetos
+      if (entityType === 'projeto') {
+        toast({
+          title: "Anexo adicionado ao projeto",
+          description: `Arquivo: ${fileData.file_name}`,
+        });
+      }
+      
+      // Enviar notificação por email para anexos de produtos
+      if (entityType === 'produto') {
+        try {
+          // Buscar nome do produto
+          const { data: produto } = await supabase
+            .from('produtos')
+            .select('nome')
+            .eq('id', entityId)
+            .single();
+          
+          if (produto) {
+            await sendEmail(
+              emailRecipients.felipe,
+              `📎 Novo anexo — ${produto.nome}`,
+              emailTemplates.novoAnexoProduto(produto.nome, fileData.storage_url)
+            );
+          }
+        } catch (emailError) {
+          console.error("Erro ao enviar email de notificação:", emailError);
+          // Não exibir erro de email para não atrapalhar o fluxo principal
+        }
+      }
+      
+      // Chamar callback de mudança
+      if (onChanged) {
+        console.log("AttachmentManager - Executando onChanged após upload");
+        onChanged();
+      }
      
      console.log("AttachmentManager - Processo de refresh completo");
    } catch (error) {

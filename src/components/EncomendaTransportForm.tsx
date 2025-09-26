@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { ItensEncomendaManager, type ItemEncomenda } from "./ItensEncomendaManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
+import { sendEmail, emailTemplates, emailRecipients } from "@/lib/email";
 
 const transportSchema = z.object({
   numero_encomenda: z.string(),
@@ -137,6 +138,18 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
 
           if (itemError) throw itemError;
         }
+      }
+
+      // Enviar notificação por email
+      try {
+        await sendEmail(
+          emailRecipients.geral,
+          `🚚 Novo transporte — ${data.numero_encomenda}`,
+          emailTemplates.novoTransporte(data.numero_encomenda || 'N/A')
+        );
+      } catch (emailError) {
+        console.error("Erro ao enviar email de notificação:", emailError);
+        // Não exibir erro de email para não atrapalhar o fluxo principal
       }
 
       toast.success("Encomenda atualizada para transporte!");

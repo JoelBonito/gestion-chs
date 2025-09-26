@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { ItensEncomendaManager, type ItemEncomenda } from "./ItensEncomendaManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
+import { sendEmail, emailTemplates, emailRecipients } from "@/lib/email";
 
 const encomendaSchema = z.object({
   numero_encomenda: z.string().min(1, "Número da encomenda é obrigatório"),
@@ -215,6 +216,23 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
               preco_custo: item.preco_custo,
             }]);
           }
+
+          // Enviar notificação por email
+          try {
+            const clienteNome = clientes.find(c => c.id === data.cliente_id)?.nome || 'Cliente não encontrado';
+            const fornecedorNome = fornecedores.find(f => f.id === data.fornecedor_id)?.nome || 'Fornecedor não encontrado';
+            const produtos = itens.map(item => ({ nome: item.produto_nome, quantidade: item.quantidade }));
+            
+            await sendEmail(
+              emailRecipients.geral,
+              `📦 Nova encomenda criada — ${data.numero_encomenda}`,
+              emailTemplates.novaEncomenda(data.numero_encomenda, data.etiqueta || 'N/A', clienteNome, fornecedorNome, produtos)
+            );
+          } catch (emailError) {
+            console.error("Erro ao enviar email de notificação:", emailError);
+            // Não exibir erro de email para não atrapalhar o fluxo principal
+          }
+
           toast.success("Encomenda criada com sucesso!");
         }
       }
