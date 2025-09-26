@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ interface Amostra {
 
 export function AmostrasTab() {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [amostras, setAmostras] = useState<Amostra[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -191,7 +193,7 @@ export function AmostrasTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h2 className="text-xl font-semibold">Amostras</h2>
         <Dialog 
           open={dialogOpen} 
@@ -201,10 +203,10 @@ export function AmostrasTab() {
           }}
         >
           <DialogTrigger asChild>
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Pedir Amostra
-          </Button>
+            <Button className="w-full sm:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              {isMobile ? "Pedir" : "Pedir Amostra"}
+            </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -220,135 +222,271 @@ export function AmostrasTab() {
         </Dialog>
       </div>
 
-      <Card>
+      {/* Desktop Table View */}
+      <Card className="hidden lg:block">
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Referência</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Projeto</TableHead>
-                <TableHead>Tipo de Produto</TableHead>
-                <TableHead>Data de Envio</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {amostras.length === 0 ? (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
-                    <p className="text-muted-foreground">Nenhuma amostra encontrada</p>
-                  </TableCell>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Referência</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Projeto</TableHead>
+                  <TableHead>Tipo de Produto</TableHead>
+                  <TableHead>Data de Envio</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
-              ) : (
-                amostras.map((amostra) => (
-                  <TableRow key={amostra.id}>
-                    <TableCell>
-                      {format(new Date(amostra.data), "dd/MM/yyyy")}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {amostra.referencia}
-                    </TableCell>
-                    <TableCell>
-                      {amostra.clientes?.nome || "N/A"}
-                    </TableCell>
-                    <TableCell>
-                      {amostra.projeto || "N/A"}
-                    </TableCell>
-                    <TableCell>
-                      {amostra.tipo_produto || "N/A"}
-                    </TableCell>
-                    <TableCell>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className={cn(
-                              "justify-start text-left font-normal",
-                              !amostra.data_envio && "text-muted-foreground"
-                            )}
-                          >
-                            <Calendar className="mr-2 h-4 w-4" />
-                            {amostra.data_envio 
-                              ? format(new Date(amostra.data_envio), "dd/MM/yyyy")
-                              : "Selecionar"
-                            }
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <CalendarComponent
-                            mode="single"
-                            selected={amostra.data_envio ? new Date(amostra.data_envio) : undefined}
-                            onSelect={(date) => {
-                              const dateStr = date ? format(date, "yyyy-MM-dd") : "";
-                              handleDataEnvioUpdate(amostra.id, dateStr);
-                            }}
-                            initialFocus
-                            className="pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingAmostra(amostra);
-                            setDialogOpen(true);
-                          }}
-                          title="Editar"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleArchive(amostra.id)}
-                          title="Arquivar"
-                        >
-                          <Archive className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title="Deletar"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Tem certeza que deseja deletar esta amostra? Esta ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(amostra.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Deletar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {amostras.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <p className="text-muted-foreground">Nenhuma amostra encontrada</p>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  amostras.map((amostra) => (
+                    <TableRow key={amostra.id}>
+                      <TableCell>
+                        {format(new Date(amostra.data), "dd/MM/yyyy")}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {amostra.referencia}
+                      </TableCell>
+                      <TableCell>
+                        {amostra.clientes?.nome || "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        {amostra.projeto || "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        {amostra.tipo_produto || "N/A"}
+                      </TableCell>
+                      <TableCell>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className={cn(
+                                "justify-start text-left font-normal",
+                                !amostra.data_envio && "text-muted-foreground"
+                              )}
+                            >
+                              <Calendar className="mr-2 h-4 w-4" />
+                              {amostra.data_envio 
+                                ? format(new Date(amostra.data_envio), "dd/MM/yyyy")
+                                : "Selecionar"
+                              }
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <CalendarComponent
+                              mode="single"
+                              selected={amostra.data_envio ? new Date(amostra.data_envio) : undefined}
+                              onSelect={(date) => {
+                                const dateStr = date ? format(date, "yyyy-MM-dd") : "";
+                                handleDataEnvioUpdate(amostra.id, dateStr);
+                              }}
+                              initialFocus
+                              className="pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditingAmostra(amostra);
+                              setDialogOpen(true);
+                            }}
+                            title="Editar"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleArchive(amostra.id)}
+                            title="Arquivar"
+                          >
+                            <Archive className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title="Deletar"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja deletar esta amostra? Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(amostra.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Deletar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Mobile Cards View */}
+      <div className="lg:hidden space-y-3">
+        {amostras.length === 0 ? (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p className="text-muted-foreground">Nenhuma amostra encontrada</p>
+            </CardContent>
+          </Card>
+        ) : (
+          amostras.map((amostra) => (
+            <Card key={amostra.id}>
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  {/* Header with reference and date */}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-medium text-sm">{amostra.referencia}</h3>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(amostra.data), "dd/MM/yyyy")}
+                      </p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingAmostra(amostra);
+                          setDialogOpen(true);
+                        }}
+                        title="Editar"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleArchive(amostra.id)}
+                        title="Arquivar"
+                      >
+                        <Archive className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title="Deletar"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja deletar esta amostra? Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDelete(amostra.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Deletar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+
+                  {/* Details */}
+                  <div className="grid grid-cols-1 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Cliente:</span>{" "}
+                      <span>{amostra.clientes?.nome || "N/A"}</span>
+                    </div>
+                    {amostra.projeto && (
+                      <div>
+                        <span className="text-muted-foreground">Projeto:</span>{" "}
+                        <span>{amostra.projeto}</span>
+                      </div>
+                    )}
+                    {amostra.tipo_produto && (
+                      <div>
+                        <span className="text-muted-foreground">Tipo:</span>{" "}
+                        <span>{amostra.tipo_produto}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Data de Envio */}
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <span className="text-sm text-muted-foreground">Data de Envio:</span>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className={cn(
+                            "text-xs",
+                            !amostra.data_envio && "text-muted-foreground"
+                          )}
+                        >
+                          <Calendar className="mr-1 h-3 w-3" />
+                          {amostra.data_envio 
+                            ? format(new Date(amostra.data_envio), "dd/MM/yyyy")
+                            : "Selecionar"
+                          }
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <CalendarComponent
+                          mode="single"
+                          selected={amostra.data_envio ? new Date(amostra.data_envio) : undefined}
+                          onSelect={(date) => {
+                            const dateStr = date ? format(date, "yyyy-MM-dd") : "";
+                            handleDataEnvioUpdate(amostra.id, dateStr);
+                          }}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 }
