@@ -5,8 +5,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { AttachmentManager } from "@/components/AttachmentManager";
-import { Eye, Edit, Archive, Trash2, Plus } from "lucide-react";
+import { Eye, Edit, Archive, Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+import { archiveTransporte, reactivateTransporte } from "@/lib/soft-delete-actions";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Transporte {
   id: string;
@@ -14,6 +24,9 @@ interface Transporte {
   referencia: string | null;
   created_at: string;
   created_by: string;
+  archived: boolean;
+  archived_at: string | null;
+  archived_reason: string | null;
 }
 
 export function TransportesTab() {
@@ -23,11 +36,13 @@ export function TransportesTab() {
   const [novo, setNovo] = useState({ tracking_number: "", referencia: "" });
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [viewingTransporte, setViewingTransporte] = useState<Transporte | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   const fetchTransportes = async () => {
     const { data, error } = await supabase
       .from("transportes")
       .select("*")
+      .eq("archived", showArchived)
       .order("created_at", { ascending: false });
     
     if (error) {
@@ -40,7 +55,7 @@ export function TransportesTab() {
 
   useEffect(() => {
     fetchTransportes();
-  }, []);
+  }, [showArchived]);
 
   const handleSalvar = async () => {
     if (!novo.tracking_number) {
@@ -93,20 +108,23 @@ export function TransportesTab() {
     setViewDialogOpen(true);
   };
 
-  const handleDelete = async (transporte: Transporte) => {
-    if (!confirm("Tem certeza que deseja deletar este transporte?")) return;
+  const handleArchive = async (transporte: Transporte) => {
+    if (!confirm("Tem certeza que deseja arquivar este transporte?")) return;
 
-    const { error } = await supabase
-      .from("transportes")
-      .delete()
-      .eq("id", transporte.id);
-
-    if (error) {
-      toast.error("Erro ao deletar transporte");
-      console.error(error);
-    } else {
-      toast.success("Transporte deletado");
+    try {
+      await archiveTransporte(transporte.id);
       fetchTransportes();
+    } catch (error) {
+      console.error("Erro ao arquivar transporte:", error);
+    }
+  };
+
+  const handleReactivate = async (transporte: Transporte) => {
+    try {
+      await reactivateTransporte(transporte.id);
+      fetchTransportes();
+    } catch (error) {
+      console.error("Erro ao reativar transporte:", error);
     }
   };
 
@@ -123,8 +141,28 @@ export function TransportesTab() {
 
   return (
     <div className="space-y-4">
-      {/* Header com botão Novo */}
-      <div className="flex justify-end">
+      {/* Header com botão Novo e toggle de arquivados */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show-archived"
+                  checked={showArchived}
+                  onCheckedChange={setShowArchived}
+                />
+                <Label htmlFor="show-archived" className="cursor-pointer">
+                  {showArchived ? "Mostrar arquivados" : "Mostrar ativos"}
+                </Label>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Alterne para visualizar transportes {showArchived ? "ativos" : "arquivados"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        
         <Button onClick={openNewDialog} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           <span className="hidden sm:inline">Novo Transporte</span>
@@ -141,7 +179,10 @@ export function TransportesTab() {
         </Card>
       ) : (
         transportes.map((transporte) => (
-          <Card key={transporte.id} className="overflow-hidden">
+          <Card 
+            key={transporte.id} 
+            className={`overflow-hidden ${transporte.archived ? 'opacity-60' : ''}`}
+          >
             <CardContent className="p-3 sm:p-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 flex-1 min-w-0">
@@ -151,17 +192,24 @@ export function TransportesTab() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="text-xs text-muted-foreground block">Referência:</span>
-                    <div className="text-sm truncate">{transporte.referencia || "teste"}</div>
+                    <div className="text-sm truncate">{transporte.referencia || "Sem referência"}</div>
                   </div>
+                  {transporte.archived && (
+                    <Badge variant="secondary" className="shrink-0">
+                      ARQUIVADO
+                    </Badge>
+                  )}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                  <Button 
-                    size="sm"
-                    onClick={() => handleTrackingClick(transporte.tracking_number)}
-                    className="w-full sm:w-auto"
-                  >
-                    Tracking
-                  </Button>
+                  {!transporte.archived && (
+                    <Button 
+                      size="sm"
+                      onClick={() => handleTrackingClick(transporte.tracking_number)}
+                      className="w-full sm:w-auto"
+                    >
+                      Tracking
+                    </Button>
+                  )}
                   <div className="flex gap-2">
                     <Button 
                       variant="ghost" 
@@ -172,24 +220,39 @@ export function TransportesTab() {
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => handleEdit(transporte)}
-                      title="Editar"
-                      className="h-8 w-8"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => handleDelete(transporte)}
-                      title="Deletar"
-                      className="h-8 w-8"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {!transporte.archived && (
+                      <>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleEdit(transporte)}
+                          title="Editar"
+                          className="h-8 w-8"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleArchive(transporte)}
+                          title="Arquivar"
+                          className="h-8 w-8 text-orange-500 hover:text-orange-600"
+                        >
+                          <Archive className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                    {transporte.archived && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleReactivate(transporte)}
+                        title="Reativar"
+                        className="h-8 w-8 text-green-500 hover:text-green-600"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>

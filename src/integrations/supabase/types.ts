@@ -737,6 +737,9 @@ export type Database = {
       }
       transportes: {
         Row: {
+          archived: boolean
+          archived_at: string | null
+          archived_reason: string | null
           created_at: string
           created_by: string
           id: string
@@ -745,6 +748,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived?: boolean
+          archived_at?: string | null
+          archived_reason?: string | null
           created_at?: string
           created_by?: string
           id?: string
@@ -753,6 +759,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived?: boolean
+          archived_at?: string | null
+          archived_reason?: string | null
           created_at?: string
           created_by?: string
           id?: string
@@ -788,27 +797,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      can_edit: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+      can_edit: { Args: never; Returns: boolean }
       delete_encomenda_safely: {
         Args: { p_encomenda_id: string }
         Returns: boolean
       }
-      has_role: {
-        Args:
-          | {
+      has_role:
+        | { Args: { p_role: string }; Returns: boolean }
+        | {
+            Args: {
               _role: Database["public"]["Enums"]["user_role"]
               _user_id: string
             }
-          | { p_role: string }
-        Returns: boolean
-      }
-      is_admin_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
+            Returns: boolean
+          }
+      is_admin_user: { Args: never; Returns: boolean }
       recalc_valor_total_custo_encomenda: {
         Args: { p_encomenda: string }
         Returns: undefined

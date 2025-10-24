@@ -149,6 +149,55 @@ export const reactivateProduto = async (id: string) => {
   }
 };
 
+// Specific functions for transportes
+export const archiveTransporte = async (id: string, reason: string = 'Inativado pelo usuário') => {
+  try {
+    const { data, error } = await supabase
+      .from('transportes')
+      .update({
+        archived: true,
+        archived_at: new Date().toISOString(),
+        archived_reason: reason
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    toast.success('Transporte arquivado com sucesso');
+    return data;
+  } catch (error) {
+    console.error('Erro ao arquivar transporte:', error);
+    toast.error('Erro ao arquivar transporte');
+    throw error;
+  }
+};
+
+export const reactivateTransporte = async (id: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('transportes')
+      .update({
+        archived: false,
+        archived_at: null,
+        archived_reason: null
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    toast.success('Transporte reativado com sucesso');
+    return data;
+  } catch (error) {
+    console.error('Erro ao reativar transporte:', error);
+    toast.error('Erro ao reativar transporte');
+    throw error;
+  }
+};
+
 // Function to handle 403 errors with helpful messages
 export const handleEntityInactiveError = (entityType: string, error: any) => {
   if (error?.code === '42501' || error?.status === 403) {
