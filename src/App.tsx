@@ -7,7 +7,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthGuard } from "@/components/AuthGuard";
 import { FactoryGuard } from "@/components/FactoryGuard";
 import { FelipeGuard } from "@/components/FelipeGuard";
-import { HorizontalNav } from "@/components/HorizontalNav";
+import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { MobileMenu } from "@/components/MobileMenu";
 import { LocaleProvider } from "@/contexts/LocaleContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
@@ -60,46 +62,55 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
-                <Route
+              <Route
                 path="*"
                 element={
                   <AuthGuard>
-                    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-muted/20">
-                      <HorizontalNav />
-                      <main className="flex-1">
-                        <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-                          <Routes>
-                            <Route path="/" element={
-                              <FelipeGuard>
-                                <FactoryGuard>
-                                  <Dashboard />
-                                </FactoryGuard>
-                              </FelipeGuard>
-                            } />
-                            <Route path="/dashboard" element={
-                              <FelipeGuard>
-                                <FactoryGuard>
-                                  <Dashboard />
-                                </FactoryGuard>
-                              </FelipeGuard>
-                            } />
-                            <Route path="/produtos" element={<Produtos />} />
-                            <Route path="/clientes" element={<Clientes />} />
-                            <Route path="/fornecedores" element={<Fornecedores />} />
-                            <Route path="/encomendas" element={<Encomendas />} />
-                            <Route path="/projetos" element={<Projetos />} />
-                            <Route path="/producao" element={
-                              <FactoryGuard>
-                                <Producao />
-                              </FactoryGuard>
-                            } />
-                            <Route path="/financeiro" element={<Financeiro />} />
-                            <Route path="/welcome" element={<Index />} />
-                            <Route path="*" element={<NotFound />} />
-                          </Routes>
-                        </div>
-                      </main>
-                    </div>
+                    <SidebarProvider defaultOpen={true}>
+                      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background/95 to-muted/20">
+                        <AppSidebar />
+                        <SidebarInset>
+                          <header className="flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-xl px-6">
+                            <SidebarTrigger className="ml-0" />
+                            <div className="flex-1" />
+                            <MobileMenu />
+                          </header>
+                          <main className="flex-1 overflow-auto">
+                            <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+                              <Routes>
+                                <Route path="/" element={
+                                  <FelipeGuard>
+                                    <FactoryGuard>
+                                      <Dashboard />
+                                    </FactoryGuard>
+                                  </FelipeGuard>
+                                } />
+                                <Route path="/dashboard" element={
+                                  <FelipeGuard>
+                                    <FactoryGuard>
+                                      <Dashboard />
+                                    </FactoryGuard>
+                                  </FelipeGuard>
+                                } />
+                                <Route path="/produtos" element={<Produtos />} />
+                                <Route path="/clientes" element={<Clientes />} />
+                                <Route path="/fornecedores" element={<Fornecedores />} />
+                                <Route path="/encomendas" element={<Encomendas />} />
+                                <Route path="/projetos" element={<Projetos />} />
+                                <Route path="/producao" element={
+                                  <FactoryGuard>
+                                    <Producao />
+                                  </FactoryGuard>
+                                } />
+                                <Route path="/financeiro" element={<Financeiro />} />
+                                <Route path="/welcome" element={<Index />} />
+                                <Route path="*" element={<NotFound />} />
+                              </Routes>
+                            </div>
+                          </main>
+                        </SidebarInset>
+                      </div>
+                    </SidebarProvider>
                   </AuthGuard>
                 }
               />
