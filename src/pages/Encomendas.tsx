@@ -558,14 +558,14 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                   {/* Pedido */}
                   <div className="col-span-12 sm:col-span-6 lg:col-span-2 min-w-0">
                     <div className="text-sm font-medium text-muted-foreground mb-1">{t.order}</div>
-                    <div className="font-bold text-lg text-primary-dark truncate">#{e.numero_encomenda}</div>
+                    <div className="font-bold text-lg text-primary truncate">#{e.numero_encomenda}</div>
                   </div>
 
                   {/* Etiqueta */}
                   {e.etiqueta && (
                     <div className="col-span-6 sm:col-span-6 lg:col-span-2 min-w-0">
                       <div className="text-sm font-medium text-muted-foreground mb-1">{t.label}</div>
-                      <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full w-fit truncate">
+                      <div className="flex items-center h-8 px-3 rounded-full bg-accent/10 text-accent font-medium text-sm w-fit truncate">
                         {e.etiqueta}
                       </div>
                     </div>
@@ -731,7 +731,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                   {/* Peso Bruto */}
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">{t.grossWeight}</div>
-                    <div className="text-lg font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-lg text-center">
+                    <div className="flex items-center justify-center h-10 px-3 rounded-lg bg-muted text-foreground font-semibold">
                       {(pesoTransporte[e.id] ?? 0).toFixed(2)} kg
                     </div>
                   </div>
@@ -740,7 +740,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                    {!isRosa && (
                      <div>
                        <div className="text-sm font-medium text-muted-foreground mb-2">{t.shippingValue}</div>
-                       <div className="text-lg font-bold text-amber-600 bg-amber-50 px-3 py-2 rounded-lg text-center">
+                       <div className="flex items-center justify-center h-10 px-3 rounded-lg bg-muted text-foreground font-semibold">
                          {formatCurrency(((pesoTransporte[e.id] ?? 0) * 4.5) || 0)}
                        </div>
                      </div>
@@ -752,7 +752,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
 
                     {isHam ? (
                       // Pill estático (não clicável) com o status atual em francês
-                      <div className="inline-flex items-center px-3 h-10 rounded-md border bg-background text-sm font-medium">
+                      <div className="flex items-center justify-center h-10 px-3 rounded-lg bg-muted text-foreground font-medium">
                         {getStatusLabel(e.status)}
                       </div>
                     ) : (
@@ -771,8 +771,8 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                       <div className="text-sm font-medium text-muted-foreground mb-2">{t.commission}</div>
                       <div
                         className={cn(
-                          "text-lg font-bold px-3 py-2 rounded-lg text-center",
-                          (e.commission_amount || 0) >= 0 ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"
+                          "flex items-center justify-center h-10 px-3 rounded-lg font-semibold",
+                          (e.commission_amount || 0) >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
                         )}
                       >
                         {formatCurrency(e.commission_amount || 0)}
@@ -786,7 +786,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                       <div className="text-sm font-medium text-muted-foreground mb-2">
                         {isFelipe ? t.totalCost : t.total}
                       </div>
-                      <div className="text-lg font-bold text-primary-dark bg-primary/10 px-3 py-2 rounded-lg text-center">
+                      <div className="flex items-center justify-center h-10 px-3 rounded-lg bg-primary/10 text-primary font-bold">
                         {formatCurrency(isFelipe ? e.valor_total_custo || 0 : e.valor_total)}
                       </div>
                     </div>
