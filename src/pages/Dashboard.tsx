@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/utils";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { RoleBasedGuard } from "@/components/RoleBasedGuard";
 import { useAuth } from "@/hooks/useAuth";
+import { Home, ClipboardList, DollarSign, Truck, Package, Factory } from "lucide-react";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -254,22 +255,59 @@ export default function Dashboard() {
 
   return (
     <RoleBasedGuard>
-      <div className="space-y-6 sm:space-y-8">
-      <div>
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h2>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Visão geral do seu negócio
-        </p>
-      </div>
+      <div className="min-h-screen bg-gradient-to-br from-white via-blue-50/20 to-purple-50/20">
+        <div className="space-y-8 sm:space-y-12 p-6 sm:p-8">
+          {/* Hero Section */}
+          <div className="text-center py-8 sm:py-12">
+            <div className="inline-flex p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-icon animate-float mb-6">
+              <Home className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
+            </div>
+            <h1 className="text-3xl sm:text-5xl font-bold mb-3 bg-gradient-to-r from-primary via-primary-dark to-primary-glow bg-clip-text text-transparent">
+              Gestão CHS
+            </h1>
+            <p className="text-base sm:text-xl text-muted-foreground font-medium">
+              Visão completa do seu negócio em tempo real
+            </p>
+          </div>
 
-      {/* Primeira linha - 5 cards grandes */}
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
-        <StatCard title="Encomendas Ativas" value={encomendasAtivas.toString()} subtitle="Encomendas não entregues" />
-        <StatCard title="A Receber" value={formatCurrencyEUR(aReceber)} subtitle="Valor pendente de clientes" />
-        <StatCard title="A Pagar" value={formatCurrencyEUR(aPagar)} subtitle="Valor pendente a fornecedores" />
-        <StatCard title="Comissões (Mês)" value={formatCurrencyEUR(comissoesMensais)} subtitle="Lucro do mês atual" />
-        <StatCard title="Comissões (Ano)" value={formatCurrencyEUR(comissoesAnuais)} subtitle="Lucro total em 2025" />
-      </div>
+          {/* Main Stats Grid */}
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+            <StatCard 
+              title="Encomendas Ativas" 
+              value={encomendasAtivas.toString()} 
+              subtitle="Encomendas não entregues"
+              icon={<ClipboardList className="w-6 h-6" />}
+              variant="blue"
+            />
+            <StatCard 
+              title="A Receber" 
+              value={formatCurrencyEUR(aReceber)} 
+              subtitle="Valor pendente de clientes"
+              icon={<DollarSign className="w-6 h-6" />}
+              variant="emerald"
+            />
+            <StatCard 
+              title="A Pagar" 
+              value={formatCurrencyEUR(aPagar)} 
+              subtitle="Valor pendente a fornecedores"
+              icon={<Truck className="w-6 h-6" />}
+              variant="orange"
+            />
+            <StatCard 
+              title="Comissões (Mês)" 
+              value={formatCurrencyEUR(comissoesMensais)} 
+              subtitle="Lucro do mês atual"
+              icon={<Package className="w-6 h-6" />}
+              variant="purple"
+            />
+            <StatCard 
+              title="Comissões (Ano)" 
+              value={formatCurrencyEUR(comissoesAnuais)} 
+              subtitle="Lucro total em 2025"
+              icon={<Factory className="w-6 h-6" />}
+              variant="pink"
+            />
+          </div>
 
       {/* Segunda linha: Jan-Jun */}
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mt-6">
@@ -295,8 +333,8 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Tabelas */}
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+          {/* Recent Activity Cards */}
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         {/* Encomendas em Progresso */}
         <Card>
           <CardHeader>
@@ -398,7 +436,8 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-      </div>
+          </div>
+        </div>
       </div>
     </RoleBasedGuard>
   );

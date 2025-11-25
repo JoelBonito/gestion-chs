@@ -44,20 +44,22 @@ export function ResponsiveHeader({ title, subtitle, actions }: ResponsiveHeaderP
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 max-w-screen-2xl items-center">
+    <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/80 shadow-sm">
+      <div className="container flex h-20 max-w-screen-2xl items-center px-6">
         <div className="mr-4 flex">
           {isMobile && <MobileMenu />}
           
-          <Link to={getHomeLink()} className="mr-6 flex items-center space-x-2">
+          <Link to={getHomeLink()} className="mr-6 flex items-center space-x-3 group">
             {!isMobile && (
-              <img 
-                src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png" 
-                alt="Gestion CHS Logo" 
-                className="h-8 w-auto"
-              />
+              <div className="p-2 rounded-2xl bg-gradient-to-br from-primary to-primary-dark shadow-icon transition-transform duration-300 group-hover:scale-110">
+                <img 
+                  src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png" 
+                  alt="Gestion CHS Logo" 
+                  className="h-8 w-auto brightness-0 invert"
+                />
+              </div>
             )}
-            <span className="hidden font-bold sm:inline-block text-xl bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+            <span className="hidden font-bold sm:inline-block text-2xl bg-gradient-to-r from-primary via-primary-dark to-primary-glow bg-clip-text text-transparent">
               Gestion CHS
             </span>
           </Link>
@@ -65,27 +67,29 @@ export function ResponsiveHeader({ title, subtitle, actions }: ResponsiveHeaderP
 
         {title && (
           <div className="flex-1 mr-4">
-            <h1 className="text-lg sm:text-2xl font-bold truncate">{title}</h1>
+            <h1 className="text-xl sm:text-3xl font-bold truncate bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">{title}</h1>
             {subtitle && !isMobile && (
-              <p className="text-sm text-muted-foreground">{subtitle}</p>
+              <p className="text-sm text-muted-foreground font-medium">{subtitle}</p>
             )}
           </div>
         )}
 
-        <div className="flex items-center space-x-2">
-          {actions && <div className="flex items-center space-x-2">{actions}</div>}
+        <div className="flex items-center space-x-3">
+          {actions && <div className="flex items-center space-x-3">{actions}</div>}
           
           {!isMobile && user && (
             <>
-              <div className="hidden sm:flex items-center space-x-2 px-3 py-1 rounded-md bg-muted/50">
-                <User className="h-4 w-4" />
-                <span className="text-sm font-medium">{user.email}</span>
+              <div className="hidden sm:flex items-center space-x-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-accent to-accent/50 border border-primary/10">
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary to-primary-dark">
+                  <User className="h-3.5 w-3.5 text-white" />
+                </div>
+                <span className="text-sm font-medium text-foreground">{user.email}</span>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleLogout}
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground hover:bg-destructive/10 rounded-2xl"
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Sair

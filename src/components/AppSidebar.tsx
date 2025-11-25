@@ -84,18 +84,38 @@ export function AppSidebar({ className }: AppSidebarProps) {
 
   const filteredItems = getFilteredItems();
 
+  // Icon gradient mapping
+  const iconGradients: Record<string, string> = {
+    "/": "bg-gradient-to-br from-blue-500 to-primary",
+    "/produtos": "bg-gradient-to-br from-emerald-500 to-emerald-600",
+    "/clientes": "bg-gradient-to-br from-pink-500 to-pink-600",
+    "/fornecedores": "bg-gradient-to-br from-orange-500 to-orange-600",
+    "/encomendas": "bg-gradient-to-br from-blue-500 to-blue-600",
+    "/producao": "bg-gradient-to-br from-purple-500 to-purple-600",
+    "/financeiro": "bg-gradient-to-br from-lime-500 to-lime-600",
+    "/projetos": "bg-gradient-to-br from-indigo-500 to-indigo-600",
+  };
+
   return (
-    <Sidebar className={cn(className)}>
-      <SidebarContent>
+    <Sidebar className={cn("border-r border-border/50 bg-white", className)}>
+      <SidebarContent className="p-4">
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-2">
               {filteredItems.map((item) => (
                 <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
+                  <SidebarMenuButton 
+                    asChild 
+                    className="h-14 rounded-2xl hover:bg-accent/50 transition-all duration-300 hover:scale-[1.02] data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/10 data-[active=true]:to-primary/5 data-[active=true]:border-l-4 data-[active=true]:border-primary"
+                  >
+                    <a href={item.url} className="flex items-center gap-4 px-4">
+                      <div className={cn(
+                        "p-2.5 rounded-xl shadow-icon transition-transform duration-300 hover:scale-110",
+                        iconGradients[item.url]
+                      )}>
+                        <item.icon className="h-5 w-5 text-white" />
+                      </div>
+                      <span className="font-medium text-foreground">{item.title}</span>
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
