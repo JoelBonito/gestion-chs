@@ -13,6 +13,7 @@ import { MobileMenu } from "@/components/MobileMenu";
 import { LocaleProvider } from "@/contexts/LocaleContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { AIAssistantChat } from "@/components/AIAssistantChat";
 import { usePWA } from "@/hooks/usePWA";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -56,6 +57,7 @@ const App = () => {
         <LocaleProvider>
           <Toaster />
           <OfflineIndicator />
+          <AIAssistantChat />
           {showInstallPrompt && isInstallable && (
             <PWAInstallPrompt onDismiss={() => setShowInstallPrompt(false)} />
           )}
