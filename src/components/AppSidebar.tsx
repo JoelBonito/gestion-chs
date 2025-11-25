@@ -59,56 +59,64 @@ export function AppSidebar() {
       href: "/dashboard", 
       icon: Home,
       gradient: "from-blue-500 to-purple-600",
-      iconColor: "text-blue-500"
+      iconColor: "text-blue-500",
+      borderColor: "border-l-blue-500"
     },
     { 
       name: "Produtos", 
       href: "/produtos", 
       icon: Package,
       gradient: "from-emerald-500 to-emerald-600",
-      iconColor: "text-emerald-500"
+      iconColor: "text-emerald-500",
+      borderColor: "border-l-emerald-500"
     },
     { 
       name: "Clientes", 
       href: "/clientes", 
       icon: Users,
       gradient: "from-pink-500 to-pink-600",
-      iconColor: "text-pink-500"
+      iconColor: "text-pink-500",
+      borderColor: "border-l-pink-500"
     },
     { 
       name: "Fornecedores", 
       href: "/fornecedores", 
       icon: Truck,
       gradient: "from-orange-500 to-orange-600",
-      iconColor: "text-orange-500"
+      iconColor: "text-orange-500",
+      borderColor: "border-l-orange-500"
     },
     { 
       name: locale === 'fr-FR' ? "Commandes" : "Encomendas", 
       href: "/encomendas", 
       icon: ClipboardList,
       gradient: "from-blue-500 to-blue-600",
-      iconColor: "text-blue-500"
+      iconColor: "text-blue-500",
+      borderColor: "border-l-blue-500"
     },
     { 
       name: locale === 'fr-FR' ? "Production" : "Produção", 
       href: "/producao", 
       icon: Factory,
       gradient: "from-purple-500 to-purple-600",
-      iconColor: "text-purple-500"
+      iconColor: "text-purple-500",
+      borderColor: "border-l-purple-500"
     },
     { 
       name: locale === 'fr-FR' ? "Finance" : "Financeiro", 
       href: "/financeiro", 
       icon: DollarSign,
       gradient: "from-lime-500 to-lime-600",
-      iconColor: "text-lime-500"
+      iconColor: "text-lime-500",
+      borderColor: "border-l-lime-500"
     },
     { 
       name: locale === 'fr-FR' ? "Projets" : "Projetos", 
       href: "/projetos", 
       icon: FolderKanban,
       gradient: "from-indigo-500 to-indigo-600",
-      iconColor: "text-indigo-500"
+      iconColor: "text-indigo-500",
+      borderColor: "border-l-indigo-500"
     },
   ];
 
@@ -201,7 +209,7 @@ export function AppSidebar() {
                           isActive={isActive}
                           className={cn(
                             "relative transition-all duration-200 h-12",
-                            isActive && "bg-gradient-to-r from-primary/10 to-primary-glow/10 border-l-4 border-primary",
+                            isActive && `bg-gradient-to-r from-primary/10 to-primary-glow/10 border-l-4 ${item.borderColor}`,
                             !isActive && "hover:bg-muted/50",
                             isCollapsed && "justify-center"
                           )}
