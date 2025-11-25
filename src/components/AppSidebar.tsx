@@ -160,7 +160,7 @@ export function AppSidebar() {
   const filteredNavigation = getFilteredNavigation();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/40 data-[state=collapsed]:w-24">
+    <Sidebar collapsible="icon" className="border-r border-border/40 data-[state=collapsed]:w-32">
       <SidebarHeader className={cn("p-4", isCollapsed && "flex items-center justify-center")}>
         <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
           <img 
@@ -168,7 +168,7 @@ export function AppSidebar() {
             alt="Gestion CHS" 
             className={cn(
               "transition-all duration-300 object-contain",
-              isCollapsed ? "h-12 w-12" : "h-10 w-10"
+              isCollapsed ? "h-14 w-14" : "h-10 w-10"
             )}
           />
           {!isCollapsed && (
@@ -213,7 +213,7 @@ export function AppSidebar() {
                               !isActive && "bg-muted"
                             )}>
                               <Icon className={cn(
-                                "h-5 w-5 transition-colors",
+                                "h-7 w-7 transition-colors",
                                 isActive ? "text-white" : item.iconColor
                               )} />
                             </div>
@@ -254,7 +254,7 @@ export function AppSidebar() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="p-3 rounded-full bg-gradient-to-br from-primary to-primary-glow">
-                    <User className="h-5 w-5 text-white" />
+                    <User className="h-7 w-7 text-white" />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="font-medium">
@@ -264,7 +264,7 @@ export function AppSidebar() {
             ) : (
               <>
                 <div className="p-2 rounded-full bg-gradient-to-br from-primary to-primary-glow">
-                  <User className="h-4 w-4 text-white" />
+                  <User className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-sm font-medium text-foreground truncate flex-1">
                   {user.email}
@@ -285,9 +285,9 @@ export function AppSidebar() {
             >
               <div className={cn("p-3 rounded-xl bg-primary/10", isCollapsed && "mx-auto")}>
                 {theme === "dark" ? (
-                  <Sun className="h-5 w-5 text-primary" />
+                  <Sun className="h-7 w-7 text-primary" />
                 ) : (
-                  <Moon className="h-5 w-5 text-primary" />
+                  <Moon className="h-7 w-7 text-primary" />
                 )}
               </div>
               {!isCollapsed && (
@@ -312,7 +312,7 @@ export function AppSidebar() {
               )}
             >
               <div className={cn("p-3 rounded-xl bg-destructive/10", isCollapsed && "mx-auto")}>
-                <LogOut className="h-5 w-5 text-destructive" />
+                <LogOut className="h-7 w-7 text-destructive" />
               </div>
               {!isCollapsed && (
                 <span className="font-medium">Sair</span>
