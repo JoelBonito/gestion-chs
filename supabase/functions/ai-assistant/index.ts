@@ -54,7 +54,7 @@ serve(async (req) => {
     const systemPrompt = `Você é um assistente de gestão empresarial especializado em análise de dados e automação de tarefas.
 
 Você tem acesso ao banco de dados com as seguintes tabelas principais:
-- produtos (id, nome, marca, tipo, preco_venda, preco_custo, fornecedor_id, ativo)
+- produtos (id, nome, marca, tipo, preco_venda, preco_custo, fornecedor_id, ativo, created_at)
 - clientes (id, nome, email, telefone, endereco, active)
 - fornecedores (id, nome, contato, telefone, email, endereco, active)
 - encomendas (id, numero_encomenda, cliente_id, fornecedor_id, status, valor_total, data_criacao, observacoes)
@@ -63,26 +63,47 @@ Você tem acesso ao banco de dados com as seguintes tabelas principais:
 - transportes (id, tracking_number, referencia, archived)
 
 Capacidades:
-1. LEITURA: Executar queries SELECT para análises, relatórios e estatísticas
+1. LEITURA: Buscar produtos, encomendas e outras informações do banco
 2. ESCRITA: Criar novos registros (produtos, clientes, fornecedores, encomendas)
 3. CONVERSAÇÃO: Pedir informações faltantes de forma natural e amigável
+
+Para buscar o último produto criado, use get_last_produto.
+Para buscar encomendas por status, use get_encomendas_by_status com o status (ex: 'PRODUÇÃO', 'TRANSPORTE').
+Para listar produtos, use get_produtos com limit, order_by e ascending.
 
 Quando o usuário pedir para criar algo, faça perguntas uma de cada vez para coletar todas as informações necessárias.
 Seja conciso, claro e útil. Sempre confirme antes de executar ações de escrita.`;
 
     const tools = [
       {
-        name: 'query_database',
-        description: 'Executa uma query SQL de leitura (SELECT) no banco de dados para buscar informações',
+        name: 'get_produtos',
+        description: 'Busca produtos no banco de dados com filtros e ordenação',
         parameters: {
           type: 'object',
           properties: {
-            query: {
-              type: 'string',
-              description: 'Query SQL SELECT para executar. Use apenas SELECT, não modifique dados.'
-            }
+            limit: { type: 'number', description: 'Número de produtos a retornar' },
+            order_by: { type: 'string', description: 'Campo para ordenar (created_at, nome, preco_venda)' },
+            ascending: { type: 'boolean', description: 'Ordenação crescente (true) ou decrescente (false)' }
+          }
+        }
+      },
+      {
+        name: 'get_last_produto',
+        description: 'Busca o último produto criado',
+        parameters: {
+          type: 'object',
+          properties: {}
+        }
+      },
+      {
+        name: 'get_encomendas_by_status',
+        description: 'Busca encomendas por status',
+        parameters: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', description: 'Status da encomenda (NOVO PEDIDO, PRODUÇÃO, TRANSPORTE, etc)' }
           },
-          required: ['query']
+          required: ['status']
         }
       },
       {
@@ -194,14 +215,39 @@ Seja conciso, claro e útil. Sempre confirme antes de executar ações de escrit
 
       try {
         switch (toolName) {
-          case 'query_database': {
-            const query = toolArgs.query;
-            // Validar que é apenas SELECT
-            if (!query.trim().toLowerCase().startsWith('select')) {
-              throw new Error('Apenas queries SELECT são permitidas');
-            }
+          case 'get_produtos': {
+            const { limit = 10, order_by = 'created_at', ascending = false } = toolArgs;
+            const { data, error } = await supabaseClient
+              .from('produtos')
+              .select('*')
+              .order(order_by, { ascending })
+              .limit(limit);
             
-            const { data, error } = await supabaseClient.rpc('execute_sql', { query });
+            if (error) throw error;
+            toolResult = { success: true, data };
+            break;
+          }
+
+          case 'get_last_produto': {
+            const { data, error } = await supabaseClient
+              .from('produtos')
+              .select('*')
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            
+            if (error) throw error;
+            toolResult = { success: true, data };
+            break;
+          }
+
+          case 'get_encomendas_by_status': {
+            const { status } = toolArgs;
+            const { data, error } = await supabaseClient
+              .from('encomendas')
+              .select('id, numero_encomenda, status, cliente_nome, fornecedor_nome, valor_total')
+              .eq('status', status.toUpperCase());
+            
             if (error) throw error;
             toolResult = { success: true, data };
             break;
