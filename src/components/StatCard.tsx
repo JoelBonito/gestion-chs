@@ -74,7 +74,7 @@ export default function StatCard({
 
           {/* Value - large and bold */}
           <div className="space-y-1">
-            <p className="text-3xl font-bold text-foreground tracking-tight">{value}</p>
+            <p className="text-2xl font-bold text-foreground tracking-tight">{value}</p>
             {subtitle && (
               <div className="text-xs text-muted-foreground">{subtitle}</div>
             )}
