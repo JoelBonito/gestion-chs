@@ -160,15 +160,15 @@ export function AppSidebar() {
   const filteredNavigation = getFilteredNavigation();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/40 data-[state=collapsed]:w-20">
-      <SidebarHeader className="p-4">
-        <div className="flex items-center gap-3">
+    <Sidebar collapsible="icon" className="border-r border-border/40 data-[state=collapsed]:w-24">
+      <SidebarHeader className={cn("p-4", isCollapsed && "flex items-center justify-center")}>
+        <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
           <img 
             src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png" 
             alt="Gestion CHS" 
             className={cn(
-              "transition-all duration-300",
-              isCollapsed ? "h-10 w-10 mx-auto" : "h-10 w-10"
+              "transition-all duration-300 object-contain",
+              isCollapsed ? "h-12 w-12" : "h-10 w-10"
             )}
           />
           {!isCollapsed && (
@@ -200,14 +200,15 @@ export function AppSidebar() {
                           asChild
                           isActive={isActive}
                           className={cn(
-                            "relative transition-all duration-200 h-11",
-                            isActive && "bg-gradient-to-r from-primary/10 to-primary-glow/10 border-l-2 border-primary",
-                            !isActive && "hover:bg-muted/50"
+                            "relative transition-all duration-200 h-12",
+                            isActive && "bg-gradient-to-r from-primary/10 to-primary-glow/10 border-l-4 border-primary",
+                            !isActive && "hover:bg-muted/50",
+                            isCollapsed && "justify-center"
                           )}
                         >
-                          <a href={item.href} className="flex items-center gap-3">
+                          <a href={item.href} className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
                             <div className={cn(
-                              "p-2.5 rounded-xl transition-all duration-200",
+                              "p-3 rounded-xl transition-all duration-200",
                               isActive && `bg-gradient-to-br ${item.gradient} shadow-icon`,
                               !isActive && "bg-muted"
                             )}>
@@ -252,7 +253,7 @@ export function AppSidebar() {
             {isCollapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="p-2.5 rounded-full bg-gradient-to-br from-primary to-primary-glow">
+                  <div className="p-3 rounded-full bg-gradient-to-br from-primary to-primary-glow">
                     <User className="h-5 w-5 text-white" />
                   </div>
                 </TooltipTrigger>
@@ -278,11 +279,11 @@ export function AppSidebar() {
             <SidebarMenuButton
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className={cn(
-                "transition-all duration-200 hover:bg-muted h-11",
+                "transition-all duration-200 hover:bg-muted h-12",
                 isCollapsed && "justify-center"
               )}
             >
-              <div className="p-2 rounded-xl bg-primary/10">
+              <div className={cn("p-3 rounded-xl bg-primary/10", isCollapsed && "mx-auto")}>
                 {theme === "dark" ? (
                   <Sun className="h-5 w-5 text-primary" />
                 ) : (
@@ -306,11 +307,11 @@ export function AppSidebar() {
             <SidebarMenuButton
               onClick={handleLogout}
               className={cn(
-                "transition-all duration-200 hover:bg-destructive/10 hover:text-destructive h-11",
+                "transition-all duration-200 hover:bg-destructive/10 hover:text-destructive h-12",
                 isCollapsed && "justify-center"
               )}
             >
-              <div className="p-2 rounded-xl bg-destructive/10">
+              <div className={cn("p-3 rounded-xl bg-destructive/10", isCollapsed && "mx-auto")}>
                 <LogOut className="h-5 w-5 text-destructive" />
               </div>
               {!isCollapsed && (
