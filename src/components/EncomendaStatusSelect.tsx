@@ -45,13 +45,13 @@ const getStatusLabel = (status: StatusEncomenda, isHamAdmin: boolean): string =>
 
 const getStatusColor = (status: StatusEncomenda) => {
   switch (status) {
-    case "NOVO PEDIDO": return "bg-gray-500";
-    case "MATÉRIA PRIMA": return "bg-orange-500";
-    case "PRODUÇÃO": return "bg-blue-500";
-    case "EMBALAGENS": return "bg-yellow-500";
-    case "TRANSPORTE": return "bg-purple-500";
-    case "ENTREGUE": return "bg-green-500";
-    default: return "bg-gray-500";
+    case "NOVO PEDIDO": return "bg-muted";
+    case "MATÉRIA PRIMA": return "bg-accent";
+    case "PRODUÇÃO": return "bg-primary";
+    case "EMBALAGENS": return "bg-secondary";
+    case "TRANSPORTE": return "bg-primary";
+    case "ENTREGUE": return "bg-success";
+    default: return "bg-muted";
   }
 };
 
@@ -160,12 +160,12 @@ export function EncomendaStatusSelect({
       onValueChange={handleStatusChange}
       disabled={isUpdating || !canChangeStatus}
     >
-      <SelectTrigger className="w-auto border-none p-0 h-auto">
-        <Badge className={`${getStatusColor(currentStatus)} text-white ${canChangeStatus ? 'hover:opacity-80 cursor-pointer' : 'opacity-60'}`}>
+      <SelectTrigger className="w-auto h-10 border-none bg-transparent p-0 hover:opacity-80 transition-opacity">
+        <Badge className={`h-10 px-3 rounded-lg font-medium ${getStatusColor(currentStatus)} ${canChangeStatus ? 'cursor-pointer' : 'opacity-60'}`}>
           {isUpdating ? (isHamAdmin ? "Mise à jour..." : "Atualizando...") : getStatusWithIcon(currentStatus, isHamAdmin)}
         </Badge>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="bg-background/95 backdrop-blur-xl border-border/50">
         {STATUS_OPTIONS.map((status) => (
           <SelectItem key={status} value={status}>
             <div className="flex items-center gap-2">
