@@ -558,14 +558,14 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                   {/* Pedido */}
                   <div className="col-span-12 sm:col-span-6 lg:col-span-2 min-w-0">
                     <div className="text-sm font-medium text-muted-foreground mb-1">{t.order}</div>
-                    <div className="font-bold text-lg text-primary truncate">#{e.numero_encomenda}</div>
+                    <div className="font-bold text-lg text-primary-dark truncate">#{e.numero_encomenda}</div>
                   </div>
 
                   {/* Etiqueta */}
                   {e.etiqueta && (
                     <div className="col-span-6 sm:col-span-6 lg:col-span-2 min-w-0">
                       <div className="text-sm font-medium text-muted-foreground mb-1">{t.label}</div>
-                      <div className="flex items-center justify-center h-10 px-3 rounded-lg bg-accent text-accent-foreground font-semibold text-sm w-full">
+                      <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full w-fit truncate">
                         {e.etiqueta}
                       </div>
                     </div>
@@ -639,12 +639,12 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full h-10 justify-start items-center text-left font-normal",
+                              "w-full justify-start text-left font-normal h-10",
                               !e.data_producao_estimada && "text-muted-foreground"
                             )}
                           >
-                            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-                            <span className="text-sm leading-none">
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            <span className="text-sm">
                               {e.data_producao_estimada ? formatDate(e.data_producao_estimada) : t.select}
                             </span>
                           </Button>
@@ -671,8 +671,8 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                         )}
                         title={t.productionDate}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-                        <span className="text-sm leading-none">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <span className="text-sm">
                           {e.data_producao_estimada ? formatDate(e.data_producao_estimada) : t.select}
                         </span>
                       </div>
@@ -689,12 +689,12 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full h-10 justify-start items-center text-left font-normal",
+                              "w-full justify-start text-left font-normal h-10",
                               !e.data_envio_estimada && "text-muted-foreground"
                             )}
                           >
-                            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-                            <span className="text-sm leading-none">
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            <span className="text-sm">
                               {e.data_envio_estimada ? formatDate(e.data_envio_estimada) : t.select}
                             </span>
                           </Button>
@@ -720,8 +720,8 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                         )}
                         title={t.deliveryDate}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-                        <span className="text-sm leading-none">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <span className="text-sm">
                           {e.data_envio_estimada ? formatDate(e.data_envio_estimada) : t.select}
                         </span>
                       </div>
@@ -731,7 +731,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                   {/* Peso Bruto */}
                   <div>
                     <div className="text-sm font-medium text-muted-foreground mb-2">{t.grossWeight}</div>
-                    <div className="flex items-center justify-center h-10 px-3 rounded-lg bg-muted text-foreground font-semibold">
+                    <div className="text-lg font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-lg text-center">
                       {(pesoTransporte[e.id] ?? 0).toFixed(2)} kg
                     </div>
                   </div>
@@ -740,7 +740,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                    {!isRosa && (
                      <div>
                        <div className="text-sm font-medium text-muted-foreground mb-2">{t.shippingValue}</div>
-                       <div className="flex items-center justify-center h-10 px-3 rounded-lg bg-muted text-foreground font-semibold">
+                       <div className="text-lg font-bold text-amber-600 bg-amber-50 px-3 py-2 rounded-lg text-center">
                          {formatCurrency(((pesoTransporte[e.id] ?? 0) * 4.5) || 0)}
                        </div>
                      </div>
@@ -752,7 +752,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
 
                     {isHam ? (
                       // Pill estático (não clicável) com o status atual em francês
-                      <div className="flex items-center justify-center h-10 px-3 rounded-lg bg-muted text-foreground font-medium">
+                      <div className="inline-flex items-center px-3 h-10 rounded-md border bg-background text-sm font-medium">
                         {getStatusLabel(e.status)}
                       </div>
                     ) : (
@@ -771,8 +771,8 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                       <div className="text-sm font-medium text-muted-foreground mb-2">{t.commission}</div>
                       <div
                         className={cn(
-                          "flex items-center justify-center h-10 px-3 rounded-lg font-semibold",
-                          (e.commission_amount || 0) >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+                          "text-lg font-bold px-3 py-2 rounded-lg text-center",
+                          (e.commission_amount || 0) >= 0 ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"
                         )}
                       >
                         {formatCurrency(e.commission_amount || 0)}
@@ -786,7 +786,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                       <div className="text-sm font-medium text-muted-foreground mb-2">
                         {isFelipe ? t.totalCost : t.total}
                       </div>
-                      <div className="flex items-center justify-center h-10 px-3 rounded-lg bg-primary/10 text-primary font-bold">
+                      <div className="text-lg font-bold text-primary-dark bg-primary/10 px-3 py-2 rounded-lg text-center">
                         {formatCurrency(isFelipe ? e.valor_total_custo || 0 : e.valor_total)}
                       </div>
                     </div>
