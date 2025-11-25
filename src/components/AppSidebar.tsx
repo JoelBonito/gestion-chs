@@ -213,7 +213,8 @@ export function AppSidebar() {
                               !isActive && "bg-muted"
                             )}>
                               <Icon className={cn(
-                                "h-7 w-7 transition-colors",
+                                "transition-colors",
+                                isCollapsed ? "h-7 w-7" : "h-5 w-5",
                                 isActive ? "text-white" : item.iconColor
                               )} />
                             </div>
@@ -285,9 +286,9 @@ export function AppSidebar() {
             >
               <div className={cn("p-3 rounded-xl bg-primary/10", isCollapsed && "mx-auto")}>
                 {theme === "dark" ? (
-                  <Sun className="h-7 w-7 text-primary" />
+                  <Sun className={cn("text-primary", isCollapsed ? "h-7 w-7" : "h-5 w-5")} />
                 ) : (
-                  <Moon className="h-7 w-7 text-primary" />
+                  <Moon className={cn("text-primary", isCollapsed ? "h-7 w-7" : "h-5 w-5")} />
                 )}
               </div>
               {!isCollapsed && (
@@ -312,7 +313,7 @@ export function AppSidebar() {
               )}
             >
               <div className={cn("p-3 rounded-xl bg-destructive/10", isCollapsed && "mx-auto")}>
-                <LogOut className="h-7 w-7 text-destructive" />
+                <LogOut className={cn("text-destructive", isCollapsed ? "h-7 w-7" : "h-5 w-5")} />
               </div>
               {!isCollapsed && (
                 <span className="font-medium">Sair</span>
