@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Package, Users, Truck, ClipboardList, Factory, DollarSign, FolderKanban, LogOut, User } from "lucide-react";
+import { Home, Package, Users, Truck, ClipboardList, Factory, DollarSign, FolderKanban, LogOut, User, Moon, Sun } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -7,6 +7,7 @@ import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useLocale } from "@/contexts/LocaleContext";
 import { isLimitedNav } from "@/lib/permissions";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "next-themes";
 import {
   Sidebar,
   SidebarContent,
@@ -37,6 +38,7 @@ export function AppSidebar() {
   const { toast } = useToast();
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const { theme, setTheme } = useTheme();
 
   const handleLogout = async () => {
     try {
@@ -158,7 +160,7 @@ export function AppSidebar() {
   const filteredNavigation = getFilteredNavigation();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/40">
+    <Sidebar collapsible="icon" className="border-r border-border/40 data-[state=collapsed]:w-20">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
           <img 
@@ -166,7 +168,7 @@ export function AppSidebar() {
             alt="Gestion CHS" 
             className={cn(
               "transition-all duration-300",
-              isCollapsed ? "h-8 w-8 mx-auto" : "h-10 w-10"
+              isCollapsed ? "h-10 w-10 mx-auto" : "h-10 w-10"
             )}
           />
           {!isCollapsed && (
@@ -205,12 +207,12 @@ export function AppSidebar() {
                         >
                           <a href={item.href} className="flex items-center gap-3">
                             <div className={cn(
-                              "p-2 rounded-xl transition-all duration-200",
+                              "p-2.5 rounded-xl transition-all duration-200",
                               isActive && `bg-gradient-to-br ${item.gradient} shadow-icon`,
                               !isActive && "bg-muted"
                             )}>
                               <Icon className={cn(
-                                "h-4 w-4 transition-colors",
+                                "h-5 w-5 transition-colors",
                                 isActive ? "text-white" : item.iconColor
                               )} />
                             </div>
@@ -241,7 +243,7 @@ export function AppSidebar() {
 
       <SidebarSeparator />
 
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 space-y-2">
         {user && (
           <div className={cn(
             "mb-3 transition-all duration-200",
@@ -250,8 +252,8 @@ export function AppSidebar() {
             {isCollapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="p-2 rounded-full bg-gradient-to-br from-primary to-primary-glow">
-                    <User className="h-4 w-4 text-white" />
+                  <div className="p-2.5 rounded-full bg-gradient-to-br from-primary to-primary-glow">
+                    <User className="h-5 w-5 text-white" />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="font-medium">
@@ -274,6 +276,34 @@ export function AppSidebar() {
         <Tooltip>
           <TooltipTrigger asChild>
             <SidebarMenuButton
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className={cn(
+                "transition-all duration-200 hover:bg-muted h-11",
+                isCollapsed && "justify-center"
+              )}
+            >
+              <div className="p-2 rounded-xl bg-primary/10">
+                {theme === "dark" ? (
+                  <Sun className="h-5 w-5 text-primary" />
+                ) : (
+                  <Moon className="h-5 w-5 text-primary" />
+                )}
+              </div>
+              {!isCollapsed && (
+                <span className="font-medium">{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>
+              )}
+            </SidebarMenuButton>
+          </TooltipTrigger>
+          {isCollapsed && (
+            <TooltipContent side="right" className="font-medium">
+              {theme === "dark" ? "Modo Claro" : "Modo Escuro"}
+            </TooltipContent>
+          )}
+        </Tooltip>
+        
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <SidebarMenuButton
               onClick={handleLogout}
               className={cn(
                 "transition-all duration-200 hover:bg-destructive/10 hover:text-destructive h-11",
@@ -281,7 +311,7 @@ export function AppSidebar() {
               )}
             >
               <div className="p-2 rounded-xl bg-destructive/10">
-                <LogOut className="h-4 w-4 text-destructive" />
+                <LogOut className="h-5 w-5 text-destructive" />
               </div>
               {!isCollapsed && (
                 <span className="font-medium">Sair</span>
