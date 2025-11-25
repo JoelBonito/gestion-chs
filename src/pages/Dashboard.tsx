@@ -8,57 +8,57 @@ import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { RoleBasedGuard } from "@/components/RoleBasedGuard";
 import { useAuth } from "@/hooks/useAuth";
 import { Home, ClipboardList, DollarSign, Truck, Package, Factory } from "lucide-react";
-
 export default function Dashboard() {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   // Encomendas Ativas (não entregues)
-  const { data: encomendasAtivas = 0 } = useQuery({
+  const {
+    data: encomendasAtivas = 0
+  } = useQuery({
     queryKey: ['encomendas-ativas'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('encomendas')
-        .select('*')
-        .neq('status', 'ENTREGUE');
-      
+      const {
+        data,
+        error
+      } = await supabase.from('encomendas').select('*').neq('status', 'ENTREGUE');
       if (error) throw error;
       return data?.length || 0;
     }
   });
 
   // A Receber - soma dos saldos devedores das encomendas
-  const { data: aReceber = 0 } = useQuery({
+  const {
+    data: aReceber = 0
+  } = useQuery({
     queryKey: ['a-receber'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('encomendas')
-        .select('saldo_devedor')
-        .gt('saldo_devedor', 0);
-      
+      const {
+        data,
+        error
+      } = await supabase.from('encomendas').select('saldo_devedor').gt('saldo_devedor', 0);
       if (error) throw error;
-      
       const total = data?.reduce((sum, encomenda) => {
         return sum + (parseFloat(String(encomenda.saldo_devedor || 0)) || 0);
       }, 0) || 0;
-
       return total;
     }
   });
 
   // A Pagar - soma dos saldos devedores dos fornecedores
-  const { data: aPagar = 0 } = useQuery({
+  const {
+    data: aPagar = 0
+  } = useQuery({
     queryKey: ['a-pagar'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('encomendas')
-        .select('saldo_devedor_fornecedor')
-        .gt('saldo_devedor_fornecedor', 0);
-      
+      const {
+        data,
+        error
+      } = await supabase.from('encomendas').select('saldo_devedor_fornecedor').gt('saldo_devedor_fornecedor', 0);
       if (error) throw error;
-      
       const total = data?.reduce((sum, encomenda) => {
         return sum + (parseFloat(String(encomenda.saldo_devedor_fornecedor || 0)) || 0);
       }, 0) || 0;
-
       return total;
     }
   });
@@ -69,27 +69,27 @@ export default function Dashboard() {
   }
 
   // Comissões Mensais - baseado na data de produção
-  const { data: comissoesMensais = 0 } = useQuery({
+  const {
+    data: comissoesMensais = 0
+  } = useQuery({
     queryKey: ['comissoes-mensais'],
     queryFn: async () => {
       const now = new Date();
       const start = new Date(now.getFullYear(), now.getMonth(), 1);
       const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      
+
       // Get order items from orders with production date in current month
-      const { data: itens, error } = await supabase
-        .from("itens_encomenda")
-        .select(`
+      const {
+        data: itens,
+        error
+      } = await supabase.from("itens_encomenda").select(`
           quantidade,
           preco_unitario,
           preco_custo,
           encomendas!inner(data_producao_estimada)
-        `)
-        .gte('encomendas.data_producao_estimada', isoDate(start))
-        .lt('encomendas.data_producao_estimada', isoDate(end));
-      
+        `).gte('encomendas.data_producao_estimada', isoDate(start)).lt('encomendas.data_producao_estimada', isoDate(end));
       if (error || !itens) return 0;
-      
+
       // Calculate total profit (commission) from current month items
       const total = itens.reduce((acc, item) => {
         const quantidade = item.quantidade || 0;
@@ -98,26 +98,27 @@ export default function Dashboard() {
         const lucro = quantidade * precoUnitario - quantidade * precoCusto;
         return acc + lucro;
       }, 0);
-      
       return total;
     }
   });
 
   // Comissões Anuais - soma de todas as encomendas
-  const { data: comissoesAnuais = 0 } = useQuery({
+  const {
+    data: comissoesAnuais = 0
+  } = useQuery({
     queryKey: ['comissoes-anuais'],
     queryFn: async () => {
       // Get all order items with their prices
-      const { data: itens, error } = await supabase
-        .from("itens_encomenda")
-        .select(`
+      const {
+        data: itens,
+        error
+      } = await supabase.from("itens_encomenda").select(`
           quantidade,
           preco_unitario,
           preco_custo
         `);
-      
       if (error || !itens) return 0;
-      
+
       // Calculate total profit (commission) from all items
       const total = itens.reduce((acc, item) => {
         const quantidade = item.quantidade || 0;
@@ -126,28 +127,26 @@ export default function Dashboard() {
         const lucro = quantidade * precoUnitario - quantidade * precoCusto;
         return acc + lucro;
       }, 0);
-      
       return total;
     }
   });
 
   // Comissões por Mês de 2025
-  const { data: comissoesPorMes = [] } = useQuery({
+  const {
+    data: comissoesPorMes = []
+  } = useQuery({
     queryKey: ['comissoes-2025'],
     queryFn: async () => {
-      const { data: itens, error } = await supabase
-        .from("itens_encomenda")
-        .select(`
+      const {
+        data: itens,
+        error
+      } = await supabase.from("itens_encomenda").select(`
           quantidade,
           preco_unitario,
           preco_custo,
           encomendas!inner(data_producao_estimada)
-        `)
-        .gte('encomendas.data_producao_estimada', '2025-01-01')
-        .lt('encomendas.data_producao_estimada', '2026-01-01');
-
+        `).gte('encomendas.data_producao_estimada', '2025-01-01').lt('encomendas.data_producao_estimada', '2026-01-01');
       if (error || !itens) return [];
-
       const meses = Array(12).fill(0);
       itens.forEach(item => {
         const dataProd = item.encomendas?.data_producao_estimada;
@@ -156,112 +155,134 @@ export default function Dashboard() {
         const lucro = (item.quantidade || 0) * ((item.preco_unitario || 0) - (item.preco_custo || 0));
         meses[mes] += lucro;
       });
-
       return meses;
     }
   });
 
   // Encomendas em Progresso
-  const { data: encomendasProgresso = [] } = useQuery({
+  const {
+    data: encomendasProgresso = []
+  } = useQuery({
     queryKey: ['encomendas-progresso'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('encomendas')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('encomendas').select(`
           *,
           clientes (nome)
-        `)
-        .neq('status', 'ENTREGUE')
-        .order('data_criacao', { ascending: false })
-        .limit(5);
-      
+        `).neq('status', 'ENTREGUE').order('data_criacao', {
+        ascending: false
+      }).limit(5);
       if (error) throw error;
       return data || [];
     }
   });
 
   // Pagamentos a Receber
-  const { data: pagamentosReceber = [] } = useQuery({
+  const {
+    data: pagamentosReceber = []
+  } = useQuery({
     queryKey: ['pagamentos-receber'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('encomendas')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('encomendas').select(`
           *,
           clientes (nome)
-        `)
-        .gt('saldo_devedor', 0)
-        .order('data_criacao', { ascending: false })
-        .limit(5);
-      
+        `).gt('saldo_devedor', 0).order('data_criacao', {
+        ascending: false
+      }).limit(5);
       if (error) throw error;
       return data || [];
     }
   });
 
   // Pagamentos a Fazer
-  const { data: pagamentosFazer = [] } = useQuery({
+  const {
+    data: pagamentosFazer = []
+  } = useQuery({
     queryKey: ['pagamentos-fazer'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('encomendas')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('encomendas').select(`
           *,
           fornecedores (nome)
-        `)
-        .gt('saldo_devedor_fornecedor', 0)
-        .order('data_criacao', { ascending: false })
-        .limit(5);
-      
+        `).gt('saldo_devedor_fornecedor', 0).order('data_criacao', {
+        ascending: false
+      }).limit(5);
       if (error) throw error;
       return data || [];
     }
   });
-
   const getStatusInfo = (status: string) => {
     const isHamAdmin = user?.email === 'ham@admin.com';
-    
     const getStatusLabel = (status: string): string => {
       if (!isHamAdmin) return status;
-      
       switch (status) {
-        case "NOVO PEDIDO": return "Nouvelle demande";
-        case "MATÉRIA PRIMA": return "Matières premières";
-        case "PRODUÇÃO": return "Production";
-        case "EMBALAGENS": return "Emballage";
-        case "TRANSPORTE": return "Transport";
-        case "ENTREGUE": return "Livré";
-        default: return status;
+        case "NOVO PEDIDO":
+          return "Nouvelle demande";
+        case "MATÉRIA PRIMA":
+          return "Matières premières";
+        case "PRODUÇÃO":
+          return "Production";
+        case "EMBALAGENS":
+          return "Emballage";
+        case "TRANSPORTE":
+          return "Transport";
+        case "ENTREGUE":
+          return "Livré";
+        default:
+          return status;
       }
     };
-
     switch (status) {
       case 'NOVO PEDIDO':
-        return { label: getStatusLabel(status), variant: 'secondary' as const };
+        return {
+          label: getStatusLabel(status),
+          variant: 'secondary' as const
+        };
       case 'PRODUÇÃO':
-        return { label: getStatusLabel(status), variant: 'default' as const };
+        return {
+          label: getStatusLabel(status),
+          variant: 'default' as const
+        };
       case 'MATÉRIA PRIMA':
-        return { label: getStatusLabel(status), variant: 'outline' as const };
+        return {
+          label: getStatusLabel(status),
+          variant: 'outline' as const
+        };
       case 'EMBALAGENS':
-        return { label: getStatusLabel(status), variant: 'outline' as const };
+        return {
+          label: getStatusLabel(status),
+          variant: 'outline' as const
+        };
       case 'TRANSPORTE':
-        return { label: getStatusLabel(status), variant: 'default' as const };
+        return {
+          label: getStatusLabel(status),
+          variant: 'default' as const
+        };
       case 'ENTREGUE':
-        return { label: getStatusLabel(status), variant: 'default' as const };
+        return {
+          label: getStatusLabel(status),
+          variant: 'default' as const
+        };
       default:
-        return { label: getStatusLabel(status) || 'N/A', variant: 'secondary' as const };
+        return {
+          label: getStatusLabel(status) || 'N/A',
+          variant: 'secondary' as const
+        };
     }
   };
-
-  return (
-    <RoleBasedGuard>
+  return <RoleBasedGuard>
       <div className="min-h-screen bg-gradient-to-br from-white via-blue-50/20 to-purple-50/20">
         <div className="space-y-8 sm:space-y-12 p-6 sm:p-8">
           {/* Hero Section */}
           <div className="text-center py-8 sm:py-12">
-            <div className="inline-flex p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-icon animate-float mb-6">
-              <Home className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
-            </div>
+            
             <h1 className="text-3xl sm:text-5xl font-bold mb-3 bg-gradient-to-r from-primary via-primary-dark to-primary-glow bg-clip-text text-transparent">
               Gestão CHS
             </h1>
@@ -272,65 +293,21 @@ export default function Dashboard() {
 
           {/* Main Stats Grid */}
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-            <StatCard 
-              title="Encomendas Ativas" 
-              value={encomendasAtivas.toString()} 
-              subtitle="Encomendas não entregues"
-              icon={<ClipboardList className="w-6 h-6" />}
-              variant="blue"
-            />
-            <StatCard 
-              title="A Receber" 
-              value={formatCurrencyEUR(aReceber)} 
-              subtitle="Valor pendente de clientes"
-              icon={<DollarSign className="w-6 h-6" />}
-              variant="emerald"
-            />
-            <StatCard 
-              title="A Pagar" 
-              value={formatCurrencyEUR(aPagar)} 
-              subtitle="Valor pendente a fornecedores"
-              icon={<Truck className="w-6 h-6" />}
-              variant="orange"
-            />
-            <StatCard 
-              title="Comissões (Mês)" 
-              value={formatCurrencyEUR(comissoesMensais)} 
-              subtitle="Lucro do mês atual"
-              icon={<Package className="w-6 h-6" />}
-              variant="purple"
-            />
-            <StatCard 
-              title="Comissões (Ano)" 
-              value={formatCurrencyEUR(comissoesAnuais)} 
-              subtitle="Lucro total em 2025"
-              icon={<Factory className="w-6 h-6" />}
-              variant="pink"
-            />
+            <StatCard title="Encomendas Ativas" value={encomendasAtivas.toString()} subtitle="Encomendas não entregues" icon={<ClipboardList className="w-6 h-6" />} variant="blue" />
+            <StatCard title="A Receber" value={formatCurrencyEUR(aReceber)} subtitle="Valor pendente de clientes" icon={<DollarSign className="w-6 h-6" />} variant="emerald" />
+            <StatCard title="A Pagar" value={formatCurrencyEUR(aPagar)} subtitle="Valor pendente a fornecedores" icon={<Truck className="w-6 h-6" />} variant="orange" />
+            <StatCard title="Comissões (Mês)" value={formatCurrencyEUR(comissoesMensais)} subtitle="Lucro do mês atual" icon={<Package className="w-6 h-6" />} variant="purple" />
+            <StatCard title="Comissões (Ano)" value={formatCurrencyEUR(comissoesAnuais)} subtitle="Lucro total em 2025" icon={<Factory className="w-6 h-6" />} variant="pink" />
           </div>
 
       {/* Segunda linha: Jan-Jun */}
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mt-6">
-        {["Jan","Fev","Mar","Abr","Mai","Jun"].map((mes, i) => (
-          <StatCard
-            key={mes}
-            title={`${mes}/2025`}
-            value={formatCurrencyEUR(comissoesPorMes[i] || 0)}
-            subtitle="Comissões"
-          />
-        ))}
+        {["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"].map((mes, i) => <StatCard key={mes} title={`${mes}/2025`} value={formatCurrencyEUR(comissoesPorMes[i] || 0)} subtitle="Comissões" />)}
       </div>
 
       {/* Terceira linha: Jul-Dez */}
       <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 mt-2">
-        {["Jul","Ago","Set","Out","Nov","Dez"].map((mes, i) => (
-          <StatCard
-            key={mes}
-            title={`${mes}/2025`}
-            value={formatCurrencyEUR(comissoesPorMes[i+6] || 0)}
-            subtitle="Comissões"
-          />
-        ))}
+        {["Jul", "Ago", "Set", "Out", "Nov", "Dez"].map((mes, i) => <StatCard key={mes} title={`${mes}/2025`} value={formatCurrencyEUR(comissoesPorMes[i + 6] || 0)} subtitle="Comissões" />)}
       </div>
 
           {/* Recent Activity Cards */}
@@ -345,15 +322,11 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {encomendasProgresso.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
+              {encomendasProgresso.length === 0 ? <p className="text-sm text-muted-foreground text-center py-4">
                   Nenhuma encomenda em progresso
-                </p>
-              ) : (
-                encomendasProgresso.map((order) => {
+                </p> : encomendasProgresso.map(order => {
                   const status = getStatusInfo(order.status);
-                  return (
-                    <div key={order.id} className="flex items-center justify-between p-3 rounded-lg border">
+                  return <div key={order.id} className="flex items-center justify-between p-3 rounded-lg border">
                       <div className="space-y-1">
                         <p className="font-medium text-sm">#{order.numero_encomenda}</p>
                         <p className="text-xs text-muted-foreground">{order.clientes?.nome || 'Cliente não encontrado'}</p>
@@ -365,10 +338,8 @@ export default function Dashboard() {
                           {status.label}
                         </Badge>
                       </div>
-                    </div>
-                  );
-                })
-              )}
+                    </div>;
+                })}
             </div>
           </CardContent>
         </Card>
@@ -383,13 +354,9 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {pagamentosReceber.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
+              {pagamentosReceber.length === 0 ? <p className="text-sm text-muted-foreground text-center py-4">
                   Nenhum pagamento pendente
-                </p>
-              ) : (
-                pagamentosReceber.map((payment) => (
-                  <div key={payment.id} className="flex items-center justify-between p-3 rounded-lg border">
+                </p> : pagamentosReceber.map(payment => <div key={payment.id} className="flex items-center justify-between p-3 rounded-lg border">
                     <div className="space-y-1">
                       <p className="font-medium text-sm">#{payment.numero_encomenda}</p>
                       <p className="text-xs text-muted-foreground">{payment.clientes?.nome || 'Cliente não encontrado'}</p>
@@ -398,9 +365,7 @@ export default function Dashboard() {
                     <div className="text-right">
                       <p className="font-semibold text-sm">{formatCurrencyEUR(parseFloat(String(payment.saldo_devedor || 0)))}</p>
                     </div>
-                  </div>
-                ))
-              )}
+                  </div>)}
             </div>
           </CardContent>
         </Card>
@@ -415,13 +380,9 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {pagamentosFazer.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
+              {pagamentosFazer.length === 0 ? <p className="text-sm text-muted-foreground text-center py-4">
                   Nenhum pagamento pendente
-                </p>
-              ) : (
-                pagamentosFazer.map((payment) => (
-                  <div key={payment.id} className="flex items-center justify-between p-3 rounded-lg border">
+                </p> : pagamentosFazer.map(payment => <div key={payment.id} className="flex items-center justify-between p-3 rounded-lg border">
                     <div className="space-y-1">
                       <p className="font-medium text-sm">#{payment.numero_encomenda}</p>
                       <p className="text-xs text-muted-foreground">{payment.fornecedores?.nome || 'Fornecedor não encontrado'}</p>
@@ -430,15 +391,12 @@ export default function Dashboard() {
                     <div className="text-right">
                       <p className="font-semibold text-sm">{formatCurrencyEUR(parseFloat(String(payment.saldo_devedor_fornecedor || 0)))}</p>
                     </div>
-                  </div>
-                ))
-              )}
+                  </div>)}
             </div>
           </CardContent>
         </Card>
           </div>
         </div>
       </div>
-    </RoleBasedGuard>
-  );
+    </RoleBasedGuard>;
 }
