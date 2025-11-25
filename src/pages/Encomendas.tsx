@@ -565,7 +565,7 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                   {e.etiqueta && (
                     <div className="col-span-6 sm:col-span-6 lg:col-span-2 min-w-0">
                       <div className="text-sm font-medium text-muted-foreground mb-1">{t.label}</div>
-                      <div className="flex items-center h-8 px-3 rounded-full bg-accent/10 text-accent font-medium text-sm w-fit truncate">
+                      <div className="flex items-center justify-center h-10 px-3 rounded-lg bg-accent text-accent-foreground font-semibold text-sm w-full">
                         {e.etiqueta}
                       </div>
                     </div>
@@ -639,12 +639,12 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full justify-start text-left font-normal h-10",
+                              "w-full h-10 justify-start items-center text-left font-normal",
                               !e.data_producao_estimada && "text-muted-foreground"
                             )}
                           >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            <span className="text-sm">
+                            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                            <span className="text-sm leading-none">
                               {e.data_producao_estimada ? formatDate(e.data_producao_estimada) : t.select}
                             </span>
                           </Button>
@@ -671,8 +671,8 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                         )}
                         title={t.productionDate}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        <span className="text-sm">
+                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                        <span className="text-sm leading-none">
                           {e.data_producao_estimada ? formatDate(e.data_producao_estimada) : t.select}
                         </span>
                       </div>
@@ -689,12 +689,12 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                           <Button
                             variant="outline"
                             className={cn(
-                              "w-full justify-start text-left font-normal h-10",
+                              "w-full h-10 justify-start items-center text-left font-normal",
                               !e.data_envio_estimada && "text-muted-foreground"
                             )}
                           >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            <span className="text-sm">
+                            <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                            <span className="text-sm leading-none">
                               {e.data_envio_estimada ? formatDate(e.data_envio_estimada) : t.select}
                             </span>
                           </Button>
@@ -720,8 +720,8 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
                         )}
                         title={t.deliveryDate}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        <span className="text-sm">
+                        <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                        <span className="text-sm leading-none">
                           {e.data_envio_estimada ? formatDate(e.data_envio_estimada) : t.select}
                         </span>
                       </div>
