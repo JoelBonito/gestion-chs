@@ -2,6 +2,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 export async function sendEmail(to: string[], subject: string, html: string) {
   try {
+    console.log(`⚠️ Email sending is currently SUSPENDED. Would have sent to: ${to.join(", ")}`);
+    return { success: true, message: "Email sending suspended" };
+
+    /*
     const { data, error } = await supabase.functions.invoke('send-email', {
       body: {
         to,
@@ -9,6 +13,7 @@ export async function sendEmail(to: string[], subject: string, html: string) {
         html,
       },
     });
+    */
 
     if (error) {
       throw error;
@@ -24,7 +29,7 @@ export async function sendEmail(to: string[], subject: string, html: string) {
 
 // Templates de email
 export const emailTemplates = {
-  novaEncomenda: (pedido: string, etiqueta: string, cliente: string, fornecedor: string, produtos: Array<{nome: string, quantidade: number}>) => `
+  novaEncomenda: (pedido: string, etiqueta: string, cliente: string, fornecedor: string, produtos: Array<{ nome: string, quantidade: number }>) => `
     <h2>📦 Nova encomenda registrada</h2>
     <p><b>Pedido:</b> ${pedido}</p>
     <p><b>Etiqueta:</b> ${etiqueta}</p>
@@ -47,10 +52,9 @@ export const emailTemplates = {
     <h2>🚚 Novo transporte</h2>
     <p><b>Tracking:</b> ${tracking || 'Não informado'}</p>
     <p><b>Referência:</b> ${referencia}</p>
-    ${
-      anexoUrl
-        ? `<p><a href="${anexoUrl}">📎 Baixar anexo</a></p>`
-        : "<p>Nenhum anexo enviado.</p>"
+    ${anexoUrl
+      ? `<p><a href="${anexoUrl}">📎 Baixar anexo</a></p>`
+      : "<p>Nenhum anexo enviado.</p>"
     }
   `,
 

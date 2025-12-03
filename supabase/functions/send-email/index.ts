@@ -24,13 +24,16 @@ const handler = async (req: Request): Promise<Response> => {
     const { to, subject, html }: EmailRequest = await req.json();
 
     console.log(`📧 Sending email to: ${to.join(", ")} with subject: ${subject}`);
+    console.log("⚠️ Email sending is currently SUSPENDED.");
 
-    const emailResponse = await resend.emails.send({
-      from: "notificacoes@gestionchs.inoveai.online",
-      to,
-      subject,
-      html,
-    });
+    // const emailResponse = await resend.emails.send({
+    //   from: "notificacoes@gestionchs.inoveai.online",
+    //   to,
+    //   subject,
+    //   html,
+    // });
+
+    const emailResponse = { id: "suspended-mock-id" };
 
     console.log("✅ Email sent successfully:", emailResponse);
 
