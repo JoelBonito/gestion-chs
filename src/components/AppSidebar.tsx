@@ -54,65 +54,65 @@ export function AppSidebar() {
   };
 
   const navigation = [
-    { 
-      name: "Dashboard", 
-      href: "/dashboard", 
+    {
+      name: "Dashboard",
+      href: "/dashboard",
       icon: Home,
       gradient: "from-blue-500 to-purple-600",
       iconColor: "text-blue-500",
       borderColor: "border-l-blue-500"
     },
-    { 
-      name: "Produtos", 
-      href: "/produtos", 
+    {
+      name: "Produtos",
+      href: "/produtos",
       icon: Package,
       gradient: "from-emerald-500 to-emerald-600",
       iconColor: "text-emerald-500",
       borderColor: "border-l-emerald-500"
     },
-    { 
-      name: "Clientes", 
-      href: "/clientes", 
+    {
+      name: "Clientes",
+      href: "/clientes",
       icon: Users,
       gradient: "from-pink-500 to-pink-600",
       iconColor: "text-pink-500",
       borderColor: "border-l-pink-500"
     },
-    { 
-      name: "Fornecedores", 
-      href: "/fornecedores", 
+    {
+      name: "Fornecedores",
+      href: "/fornecedores",
       icon: Truck,
       gradient: "from-orange-500 to-orange-600",
       iconColor: "text-orange-500",
       borderColor: "border-l-orange-500"
     },
-    { 
-      name: locale === 'fr-FR' ? "Commandes" : "Encomendas", 
-      href: "/encomendas", 
+    {
+      name: locale === 'fr-FR' ? "Commandes" : "Encomendas",
+      href: "/encomendas",
       icon: ClipboardList,
       gradient: "from-blue-500 to-blue-600",
       iconColor: "text-blue-500",
       borderColor: "border-l-blue-500"
     },
-    { 
-      name: locale === 'fr-FR' ? "Production" : "Produção", 
-      href: "/producao", 
+    {
+      name: locale === 'fr-FR' ? "Production" : "Produção",
+      href: "/producao",
       icon: Factory,
       gradient: "from-purple-500 to-purple-600",
       iconColor: "text-purple-500",
       borderColor: "border-l-purple-500"
     },
-    { 
-      name: locale === 'fr-FR' ? "Finance" : "Financeiro", 
-      href: "/financeiro", 
+    {
+      name: locale === 'fr-FR' ? "Finance" : "Financeiro",
+      href: "/financeiro",
       icon: DollarSign,
       gradient: "from-lime-500 to-lime-600",
       iconColor: "text-lime-500",
       borderColor: "border-l-lime-500"
     },
-    { 
-      name: locale === 'fr-FR' ? "Projets" : "Projetos", 
-      href: "/projetos", 
+    {
+      name: locale === 'fr-FR' ? "Projets" : "Projetos",
+      href: "/projetos",
       icon: FolderKanban,
       gradient: "from-indigo-500 to-indigo-600",
       iconColor: "text-indigo-500",
@@ -124,36 +124,36 @@ export function AppSidebar() {
   const getFilteredNavigation = () => {
     const userEmail = user?.email;
     const isHardcodedAdmin = userEmail === 'jbento1@gmail.com' || userEmail === 'admin@admin.com';
-    
+
     if (isLimitedNav(user)) {
-      return navigation.filter(item => 
-        item.href === '/produtos' || 
+      return navigation.filter(item =>
+        item.href === '/produtos' ||
         item.href === '/encomendas'
       );
     }
-    
+
     if (isHardcodedAdmin) {
       return navigation;
     }
-    
+
     if (isRestrictedFR) {
-      return navigation.filter(item => 
-        item.href === '/encomendas' || 
+      return navigation.filter(item =>
+        item.href === '/encomendas' ||
         item.href === '/financeiro' ||
-        item.href === '/projetos'                       
+        item.href === '/projetos'
       );
     }
-    
+
     if (isCollaborator) {
-      return navigation.filter(item => 
-        item.href === '/produtos' || 
-        item.href === '/encomendas' || 
+      return navigation.filter(item =>
+        item.href === '/produtos' ||
+        item.href === '/encomendas' ||
         item.href === '/financeiro'
       );
     }
-    
+
     const allowedProjectsEmails = ['jbento1@gmail.com', 'admin@admin.com', 'ham@admin.com'];
-    
+
     return navigation.filter(item => {
       if (item.href === '/projetos') {
         return userEmail && allowedProjectsEmails.includes(userEmail);
@@ -171,9 +171,9 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border/40 data-[state=collapsed]:w-32">
       <SidebarHeader className={cn("p-4", isCollapsed && "flex items-center justify-center")}>
         <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
-          <img 
-            src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png" 
-            alt="Gestion CHS" 
+          <img
+            src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png"
+            alt="Gestion CHS"
             className={cn(
               "transition-all duration-300 object-contain",
               isCollapsed ? "h-14 w-14" : "h-10 w-10"
@@ -199,7 +199,7 @@ export function AppSidebar() {
               {filteredNavigation.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.href || (item.href === '/dashboard' && location.pathname === '/');
-                
+
                 return (
                   <SidebarMenuItem key={item.name}>
                     <Tooltip>
@@ -282,7 +282,7 @@ export function AppSidebar() {
             )}
           </div>
         )}
-        
+
         <Tooltip>
           <TooltipTrigger asChild>
             <SidebarMenuButton
@@ -310,7 +310,7 @@ export function AppSidebar() {
             </TooltipContent>
           )}
         </Tooltip>
-        
+
         <Tooltip>
           <TooltipTrigger asChild>
             <SidebarMenuButton
