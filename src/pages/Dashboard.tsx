@@ -278,7 +278,7 @@ export default function Dashboard() {
     }
   };
   return <RoleBasedGuard>
-      <div className="min-h-screen bg-gradient-to-br from-white via-blue-50/20 to-purple-50/20">
+      <div className="min-h-screen bg-gradient-to-br from-white via-blue-50/20 to-purple-50/20 dark:bg-none dark:bg-background">
         <div className="space-y-8 sm:space-y-12 p-6 sm:p-8">
           {/* Hero Section */}
           <div className="text-center py-8 sm:py-12">

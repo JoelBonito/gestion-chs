@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Plus, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -21,7 +21,7 @@ export default function Projetos() {
   // Forçar francês se for ham@admin.com
   const forceFrench = user?.email?.toLowerCase() === "ham@admin.com";
   const lang: "pt" | "fr" = forceFrench ? "fr" : (isRestrictedFR ? "fr" : "pt");
-  
+
   // Restringir permissões para ham@admin.com
   const isRestrictedUser = user?.email?.toLowerCase() === "ham@admin.com";
 
@@ -66,6 +66,9 @@ export default function Projetos() {
               <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{editingProjeto ? t("Editar Projeto") : t("Novo Projeto")}</DialogTitle>
+                  <DialogDescription className="sr-only">
+                    {editingProjeto ? t("Editar Projeto") : t("Novo Projeto")}
+                  </DialogDescription>
                 </DialogHeader>
                 <ProjetoForm projeto={editingProjeto} onSuccess={handleSuccess} />
               </DialogContent>
@@ -114,6 +117,9 @@ export default function Projetos() {
             <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{viewingProjeto.nome}</DialogTitle>
+                <DialogDescription className="sr-only">
+                  {t("Projetos")} - {viewingProjeto.nome}
+                </DialogDescription>
               </DialogHeader>
               <ProjetoView
                 projeto={viewingProjeto}

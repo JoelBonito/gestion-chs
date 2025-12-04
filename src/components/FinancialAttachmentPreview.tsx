@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Download, Trash2, FileText, Image, File, ExternalLink } from 'lucide-react';
 import { Attachment } from '@/types/attachment';
@@ -25,7 +25,7 @@ export const FinancialAttachmentPreview: React.FC<FinancialAttachmentPreviewProp
     url: string;
     fileName: string;
   } | null>(null);
-  
+
   const canDelete = hasRole('admin') || hasRole('finance');
 
   const getPublicUrl = (storagePath: string) => {
@@ -59,9 +59,9 @@ export const FinancialAttachmentPreview: React.FC<FinancialAttachmentPreviewProp
 
   const handlePreview = (attachment: Attachment) => {
     console.log("FinancialAttachmentPreview - Visualizando:", attachment);
-    
+
     const publicUrl = getPublicUrl(attachment.storage_path);
-    
+
     if (attachment.file_type?.startsWith('image/')) {
       setPreviewModal({
         type: 'image',
@@ -81,7 +81,7 @@ export const FinancialAttachmentPreview: React.FC<FinancialAttachmentPreviewProp
 
   const handleDownload = async (attachment: Attachment) => {
     const publicUrl = getPublicUrl(attachment.storage_path);
-    
+
     try {
       const response = await fetch(publicUrl);
       const blob = await response.blob();
@@ -126,7 +126,7 @@ export const FinancialAttachmentPreview: React.FC<FinancialAttachmentPreviewProp
           <div key={attachment.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
             <div className="flex items-center space-x-3 flex-1 min-w-0">
               {getFileIcon(attachment.file_type)}
-              
+
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">
                   {attachment.file_name}
@@ -192,6 +192,9 @@ export const FinancialAttachmentPreview: React.FC<FinancialAttachmentPreviewProp
               <DialogTitle className="text-lg font-medium truncate">
                 {previewModal.fileName}
               </DialogTitle>
+              <DialogDescription className="sr-only">
+                Visualização do arquivo {previewModal.fileName}
+              </DialogDescription>
             </DialogHeader>
             <div className="p-4">
               <div className="bg-muted rounded-lg overflow-hidden border">

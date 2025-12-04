@@ -72,10 +72,8 @@ const App = () => {
                       <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background/95 to-muted/20">
                         <AppSidebar />
                         <SidebarInset>
-                          <header className="flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-xl px-6">
+                          <header className="flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-xl px-6 xl:hidden">
                             <SidebarTrigger className="ml-0" />
-                            <div className="flex-1" />
-                            <MobileMenu />
                           </header>
                           <main className="flex-1 overflow-auto">
                             <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">

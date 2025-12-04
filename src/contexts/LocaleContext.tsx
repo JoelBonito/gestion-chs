@@ -23,12 +23,12 @@ interface LocaleProviderProps {
 export function LocaleProvider({ children }: LocaleProviderProps) {
   const { user } = useAuth();
   const { hasRole } = useUserRole();
-  
+
   // Check if user is restricted FR user
   const isRestrictedFR = hasRole('restricted_fr' as any) || user?.id === 'aea47216-874e-49cf-a392-5aedad7f3962';
   const locale: Locale = isRestrictedFR ? 'fr-FR' : 'pt-PT';
 
-  console.log('[FR-Restricted] locale:', locale, 'isRestrictedFR:', isRestrictedFR);
+
 
   return (
     <LocaleContext.Provider value={{ locale, isRestrictedFR }}>

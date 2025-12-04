@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye, Receipt, DollarSign, Plus, Paperclip } from "lucide-react";
-import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { useToast } from "@/hooks/use-toast";
@@ -156,10 +156,10 @@ export default function ContasPagar() {
 
   const loadAttachmentCounts = async () => {
     if (contas.length === 0) return;
-    
+
     try {
       const counts: Record<string, number> = {};
-      
+
       await Promise.all(
         contas.map(async (conta) => {
           const { count, error } = await supabase
@@ -173,7 +173,7 @@ export default function ContasPagar() {
           }
         })
       );
-      
+
       setAttachmentCounts(counts);
     } catch (error) {
       console.error('Error loading attachment counts:', error);
@@ -203,10 +203,10 @@ export default function ContasPagar() {
 
   const loadPaymentCounts = async () => {
     if (contas.length === 0) return;
-    
+
     try {
       const counts: Record<string, number> = {};
-      
+
       await Promise.all(
         contas.map(async (conta) => {
           const { count, error } = await supabase
@@ -219,7 +219,7 @@ export default function ContasPagar() {
           }
         })
       );
-      
+
       setPaymentCounts(counts);
     } catch (error) {
       console.error('Error loading payment counts:', error);
@@ -305,8 +305,8 @@ export default function ContasPagar() {
                     <TableCell className="font-medium">
                       <div className="flex flex-col">
                         <span>{conta.numero_encomenda}</span>
-                        <span className="mt-0.5">
-                          <Badge variant="secondary">{conta.etiqueta || "Nenhum"}</Badge>
+                        <span className="mt-0.5 text-blue-600 font-medium text-xs">
+                          {conta.etiqueta || "Nenhum"}
                         </span>
                       </div>
                     </TableCell>
@@ -331,9 +331,9 @@ export default function ContasPagar() {
 
                     <TableCell className="text-sm text-muted-foreground">
                       {paymentCounts[conta.id] > 0 ? (
-                        <Button 
-                          variant="link" 
-                          size="sm" 
+                        <Button
+                          variant="link"
+                          size="sm"
                           className="h-auto p-0 text-primary underline"
                           onClick={() => {
                             setSelectedPaymentConta(conta);
@@ -373,7 +373,7 @@ export default function ContasPagar() {
                             </DialogTrigger>
                             <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
                               <PagamentoFornecedorForm
-                                conta={{...conta, encomenda_id: conta.id}}
+                                conta={{ ...conta, encomenda_id: conta.id }}
                                 onSuccess={handlePaymentSuccess}
                               />
                             </DialogContent>
@@ -388,7 +388,7 @@ export default function ContasPagar() {
                               title={t("Anexar Comprovante")}
                               type="button"
                             >
-                              <IconWithBadge 
+                              <IconWithBadge
                                 icon={<Paperclip className="h-4 w-4" />}
                                 count={attachmentCounts[conta.id] || 0}
                               />
@@ -433,7 +433,7 @@ export default function ContasPagar() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="text-sm font-semibold truncate">#{conta.numero_encomenda}</div>
-                      <Badge variant="secondary" className="mt-0.5">{conta.etiqueta || "Nenhum"}</Badge>
+                      <span className="mt-0.5 text-blue-600 font-medium text-xs">{conta.etiqueta || "Nenhum"}</span>
                     </div>
                     <div className="text-sm text-muted-foreground shrink-0">
                       {new Date(conta.data_criacao).toLocaleDateString()}
@@ -456,7 +456,7 @@ export default function ContasPagar() {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {paymentCounts[conta.id] > 0 ? (
-                      <button 
+                      <button
                         className="text-primary underline cursor-pointer"
                         onClick={() => {
                           setSelectedPaymentConta(conta);
@@ -482,7 +482,7 @@ export default function ContasPagar() {
                         </DialogTrigger>
                         <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
                           <PagamentoFornecedorForm
-                            conta={{...conta, encomenda_id: conta.id}}
+                            conta={{ ...conta, encomenda_id: conta.id }}
                             onSuccess={handlePaymentSuccess}
                           />
                         </DialogContent>
@@ -491,14 +491,20 @@ export default function ContasPagar() {
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button variant="outline" size="sm" className="w-full sm:w-auto" title={t("Anexar Comprovante")}>
-                          <IconWithBadge 
+                          <IconWithBadge
                             icon={<Paperclip className="h-4 w-4" />}
                             count={attachmentCounts[conta.id] || 0}
                           />
                           <span className="ml-2">Anexos</span>
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="">
+                      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
+                        <DialogHeader>
+                          <DialogTitle>{t("Anexar Comprovante")}</DialogTitle>
+                          <DialogDescription className="sr-only">
+                            {t("Anexar Comprovante")}
+                          </DialogDescription>
+                        </DialogHeader>
                         <AttachmentManager
                           entityType="payable"
                           entityId={conta.id}
@@ -520,6 +526,9 @@ export default function ContasPagar() {
           <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="">
             <DialogHeader>
               <DialogTitle>{t("Detalhes da Conta a Pagar")}</DialogTitle>
+              <DialogDescription className="sr-only">
+                {t("Detalhes da Conta a Pagar")}
+              </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-6">

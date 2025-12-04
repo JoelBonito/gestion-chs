@@ -36,8 +36,8 @@ export function AppSidebar() {
   const { isCollaborator } = useIsCollaborator();
   const { locale, isRestrictedFR } = useLocale();
   const { toast } = useToast();
-  const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
+  const { state, isMobile } = useSidebar();
+  const isCollapsed = isMobile ? false : state === "collapsed";
   const { theme, setTheme } = useTheme();
 
   const handleLogout = async () => {

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { TrendingDown, Eye, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -245,8 +245,8 @@ export default function EncomendasFinanceiro({
                       <div className="flex flex-col">
                         <span>{encomenda.numero_encomenda}</span>
                         {encomenda.etiqueta && (
-                          <span className="mt-0.5">
-                            <Badge variant="secondary">{encomenda.etiqueta}</Badge>
+                          <span className="mt-0.5 text-blue-600 font-medium text-xs">
+                            {encomenda.etiqueta}
                           </span>
                         )}
                       </div>
@@ -266,9 +266,9 @@ export default function EncomendasFinanceiro({
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {encomenda.total_pagamentos > 0 ? (
-                        <Button 
-                          variant="link" 
-                          size="sm" 
+                        <Button
+                          variant="link"
+                          size="sm"
                           className="h-auto p-0 text-primary underline"
                           onClick={() => {
                             setSelectedPaymentEncomenda(encomenda);
@@ -323,7 +323,7 @@ export default function EncomendasFinanceiro({
                     <div className="min-w-0">
                       <div className="text-sm font-semibold truncate">#{e.numero_encomenda}</div>
                       {e.etiqueta && (
-                        <Badge variant="secondary" className="mt-0.5">{e.etiqueta}</Badge>
+                        <span className="mt-0.5 text-blue-600 font-medium text-xs">{e.etiqueta}</span>
                       )}
                     </div>
                     <div className="text-sm text-muted-foreground shrink-0">{formatDate(e.data_producao_estimada)}</div>
@@ -345,7 +345,7 @@ export default function EncomendasFinanceiro({
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {e.total_pagamentos > 0 ? (
-                      <button 
+                      <button
                         className="text-primary underline cursor-pointer"
                         onClick={() => {
                           setSelectedPaymentEncomenda(e);
@@ -382,6 +382,9 @@ export default function EncomendasFinanceiro({
           <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="">
             <DialogHeader>
               <DialogTitle>{tr("Registrar Pagamento")}</DialogTitle>
+              <DialogDescription className="sr-only">
+                {tr("Registrar Pagamento")}
+              </DialogDescription>
             </DialogHeader>
             <PagamentoForm onSuccess={handlePagamentoSuccess} encomendas={[selectedEncomenda]} />
           </DialogContent>
@@ -394,8 +397,11 @@ export default function EncomendasFinanceiro({
           <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="">
             <DialogHeader>
               <DialogTitle>{tr("Detalhes da Conta a Receber")}</DialogTitle>
+              <DialogDescription className="sr-only">
+                {tr("Detalhes da Conta a Receber")}
+              </DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-6">
               {/* Detalhes da encomenda */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -406,7 +412,7 @@ export default function EncomendasFinanceiro({
                     {selectedEncomenda.etiqueta && (
                       <>
                         {" "}
-                        — <Badge variant="secondary">{selectedEncomenda.etiqueta}</Badge>
+                        — <span className="text-blue-600 font-medium text-xs">{selectedEncomenda.etiqueta}</span>
                       </>
                     )}
                   </p>

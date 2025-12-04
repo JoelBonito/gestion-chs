@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Paperclip, Upload } from 'lucide-react';
 import { AttachmentManager } from './AttachmentManager';
 import { Badge } from '@/components/ui/badge';
@@ -27,14 +27,14 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
   const [hasLoadedCount, setHasLoadedCount] = useState(false);
   const { hasRole, isHardcodedAdmin } = useUserRole();
   const { isCollaborator } = useIsCollaborator();
-  
+
   // Check if user can access financial attachments
   const canAccess = isHardcodedAdmin || hasRole('admin') || hasRole('finance') || hasRole('factory') || isCollaborator;
 
   // Load attachment count only when dialog opens or component mounts
   const loadAttachmentCount = async () => {
     if (hasLoadedCount) return;
-    
+
     try {
       const { count, error } = await supabase
         .from('attachments')
@@ -82,15 +82,15 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogOpen}>
       <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           className="relative"
           title="Anexar comprovante"
           type="button"
           onMouseEnter={() => !hasLoadedCount && loadAttachmentCount()}
         >
-          <IconWithBadge 
+          <IconWithBadge
             icon={<Paperclip className="h-4 w-4" />}
             count={hasLoadedCount ? attachmentCount : 0}
           />
@@ -102,9 +102,12 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
             <Paperclip className="h-5 w-5" />
             {title}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {title}
+          </DialogDescription>
         </DialogHeader>
-        
-        <AttachmentManager 
+
+        <AttachmentManager
           entityType={entityType}
           entityId={entityId}
           title={title}

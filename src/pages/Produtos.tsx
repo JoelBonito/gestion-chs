@@ -8,7 +8,7 @@ import { ListaProdutos, ListaProdutosRef } from "@/components/ListaProdutos";
 import { supabase } from "@/integrations/supabase/client";
 
 // ⬇️ imports para o modal
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 // ⬇️ usamos o formulário diretamente no modal
 import { ProdutoForm } from "@/components/ProdutoForm";
 
@@ -49,7 +49,7 @@ export default function Produtos() {
 
   const isFelipe = (email ?? "").toLowerCase() === "felipe@colaborador.com";
   const isRosa = (email ?? "").toLowerCase() === "rosa@colaborador.com";
-  
+
   const allowedSupplierIds = useMemo(
     () => (isFelipe || isRosa ? [
       "f0920a27-752c-4483-ba02-e7f32beceef6",
@@ -123,6 +123,9 @@ export default function Produtos() {
         <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Novo produto</DialogTitle>
+            <DialogDescription className="sr-only">
+              Formulário para cadastro de novo produto
+            </DialogDescription>
           </DialogHeader>
 
           <ProdutoForm

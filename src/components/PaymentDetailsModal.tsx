@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,11 +55,11 @@ export function PaymentDetailsModal({
 
   const fetchPayments = async () => {
     if (!encomendaId) return;
-    
+
     setLoading(true);
     try {
       const tableName = paymentType === "cliente" ? "pagamentos" : "pagamentos_fornecedor";
-      
+
       const { data, error } = await supabase
         .from(tableName)
         .select("id, data_pagamento, forma_pagamento, valor_pagamento, observacoes")
@@ -67,7 +67,7 @@ export function PaymentDetailsModal({
         .order("data_pagamento", { ascending: false });
 
       if (error) throw error;
-      
+
       setPayments(data || []);
     } catch (error) {
       console.error("Erro ao carregar pagamentos:", error);
@@ -98,6 +98,9 @@ export function PaymentDetailsModal({
           <DialogTitle>
             {t("Pagamentos Realizados")} - {t("Encomenda")} #{encomendaNumber}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {t("Pagamentos Realizados")}
+          </DialogDescription>
         </DialogHeader>
 
         {loading ? (

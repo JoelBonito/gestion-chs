@@ -1,6 +1,6 @@
 // src/pages/Encomendas.tsx
 import { useEffect, useState } from "react";
-import { Plus, Search, CalendarIcon, Eye, Edit } from "lucide-react";
+import { Plus, Search, CalendarIcon, Eye, Edit, User, Building2, Package, Truck, TrendingUp, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -69,7 +69,7 @@ export default function Encomendas() {
   const { isCollaborator } = useIsCollaborator();
   const { formatCurrency, formatDate } = useFormatters();
   const { user } = useAuth();
-  
+
   // Permissões para Rosa
   const isRosaUser = isLimitedNav(user);
   const hidePrices = shouldHidePrices(user);
@@ -79,95 +79,95 @@ export default function Encomendas() {
   const email = (userEmail || "").toLowerCase();
   const isFelipe = email === "felipe@colaborador.com";
 
-// Fornecedores permitidos para o Felipe (UUIDs)
-const ALLOWED_SUPPLIERS_FOR_FELIPE = [
-  "f0920a27-752c-4483-ba02-e7f32beceef6",
-  "b8f995d2-47dc-4c8f-9779-ce21431f5244",
-];
+  // Fornecedores permitidos para o Felipe (UUIDs)
+  const ALLOWED_SUPPLIERS_FOR_FELIPE = [
+    "f0920a27-752c-4483-ba02-e7f32beceef6",
+    "b8f995d2-47dc-4c8f-9779-ce21431f5244",
+  ];
 
-// Rosa também usa os mesmos fornecedores
-const ALLOWED_SUPPLIERS_FOR_ROSA = ROSA_ALLOWED_SUPPLIERS;
+  // Rosa também usa os mesmos fornecedores
+  const ALLOWED_SUPPLIERS_FOR_ROSA = ROSA_ALLOWED_SUPPLIERS;
 
   const isHam = email === "ham@admin.com";
-const isRosa = email === "rosa@colaborador.com";
+  const isRosa = email === "rosa@colaborador.com";
 
-// Check if user has access to amostras tab
-const hasAmostrasAccess = user?.email && [
-  'jbento1@gmail.com',
-  'admin@admin.com',
-  'rosa@colaborador.com',
-  'felipe@colaborador.com'
-].includes(user.email);
+  // Check if user has access to amostras tab
+  const hasAmostrasAccess = user?.email && [
+    'jbento1@gmail.com',
+    'admin@admin.com',
+    'rosa@colaborador.com',
+    'felipe@colaborador.com'
+  ].includes(user.email);
 
   // Dicionário (FR para Ham, PT para demais)
   const t = isHam
     ? {
-        orders: "Commandes",
-        manageOrders: "Gérer vos commandes",
-        newOrder: "Nouvelle commande",
-        searchPlaceholder: "Rechercher par numéro, client, fournisseur ou étiquette...",
-        showDelivered: "Afficher livrées",
-        noOrders: "Aucune commande trouvée",
-        order: "Commande",
-        label: "Étiquette",
-        client: "Client",
-        supplier: "Fournisseur",
-        status: "Statut",
-        productionDate: "Date de production",
-        deliveryDate: "Date de livraison",
-        grossWeight: "Poids brut",
-        shippingValue: "Valeur du transport",
-        commission: "Commission",
-        total: "Valeur Totale",
-        totalCost: "Coût total",
-        paid: "Montant payé",
-        notes: "Observations",
-        viewOrder: "Voir la commande",
-        editOrder: "Modifier la commande",
-        transportConfig: "Configurer le transport",
-        select: "Sélectionner",
-        loadingOrders: "Chargement des commandes...",
-        createdOn: "Créée le",
-        errLoad: "Erreur lors du chargement des commandes",
-        printOpened: "Fenêtre d’impression ouverte",
-        printError: "Erreur lors de l’ouverture de l’impression",
-      }
+      orders: "Commandes",
+      manageOrders: "Gérer vos commandes",
+      newOrder: "Nouvelle commande",
+      searchPlaceholder: "Rechercher par numéro, client, fournisseur ou étiquette...",
+      showDelivered: "Afficher livrées",
+      noOrders: "Aucune commande trouvée",
+      order: "Commande",
+      label: "Étiquette",
+      client: "Client",
+      supplier: "Fournisseur",
+      status: "Statut",
+      productionDate: "Date de production",
+      deliveryDate: "Date de livraison",
+      grossWeight: "Poids brut",
+      shippingValue: "Valeur du transport",
+      commission: "Commission",
+      total: "Valeur Totale",
+      totalCost: "Coût total",
+      paid: "Montant payé",
+      notes: "Observations",
+      viewOrder: "Voir la commande",
+      editOrder: "Modifier la commande",
+      transportConfig: "Configurer le transport",
+      select: "Sélectionner",
+      loadingOrders: "Chargement des commandes...",
+      createdOn: "Créée le",
+      errLoad: "Erreur lors du chargement des commandes",
+      printOpened: "Fenêtre d’impression ouverte",
+      printError: "Erreur lors de l’ouverture de l’impression",
+    }
     : {
-        orders: "Encomendas",
-        manageOrders: "Gerencie suas encomendas",
-        newOrder: "Nova Encomenda",
-        searchPlaceholder: "Buscar por número, cliente, fornecedor ou etiqueta...",
-        showDelivered: "Mostrar entregues",
-        noOrders: "Nenhuma encomenda encontrada",
-        order: "Pedido",
-        label: "Etiqueta",
-        client: "Cliente",
-        supplier: "Fornecedor",
-        status: "Status",
-        productionDate: "Data Produção",
-        deliveryDate: "Data Entrega",
-        grossWeight: "Peso Bruto",
-        shippingValue: "Valor Frete",
-        commission: "Comissão",
-        total: "Valor Total",
-        totalCost: "Custo Total",
-        paid: "Valor Pago",
-        notes: "Observações",
-        viewOrder: "Visualizar Encomenda",
-        editOrder: "Editar Encomenda",
-        transportConfig: "Configurar Transporte",
-        select: "Selecionar",
-        loadingOrders: "Carregando encomendas...",
-        createdOn: "Criada em",
-        errLoad: "Erro ao carregar encomendas",
-        printOpened: "Janela de impressão aberta",
-        printError: "Erro ao abrir impressão",
-      };
+      orders: "Encomendas",
+      manageOrders: "Gerencie suas encomendas",
+      newOrder: "Nova Encomenda",
+      searchPlaceholder: "Buscar por número, cliente, fornecedor ou etiqueta...",
+      showDelivered: "Mostrar entregues",
+      noOrders: "Nenhuma encomenda encontrada",
+      order: "Pedido",
+      label: "Etiqueta",
+      client: "Cliente",
+      supplier: "Fornecedor",
+      status: "Status",
+      productionDate: "Data Produção",
+      deliveryDate: "Data Entrega",
+      grossWeight: "Peso Bruto",
+      shippingValue: "Valor Frete",
+      commission: "Comissão",
+      total: "Valor Total",
+      totalCost: "Custo Total",
+      paid: "Valor Pago",
+      notes: "Observações",
+      viewOrder: "Visualizar Encomenda",
+      editOrder: "Editar Encomenda",
+      transportConfig: "Configurar Transporte",
+      select: "Selecionar",
+      loadingOrders: "Carregando encomendas...",
+      createdOn: "Criada em",
+      errLoad: "Erro ao carregar encomendas",
+      printOpened: "Janela de impressão aberta",
+      printError: "Erro ao abrir impressão",
+    };
 
   // Function to get status label in correct language
   const getStatusLabel = (status: StatusEncomenda): string => {
     if (!isHam) return status;
-    
+
     switch (status) {
       case "NOVO PEDIDO": return "Nouvelle demande";
       case "MATÉRIA PRIMA": return "Matières premières";
@@ -233,7 +233,7 @@ const hasAmostrasAccess = user?.email && [
           const pv = Number(it.preco_unitario || 0);
           const pc = Number(it.preco_custo || 0);
           const sw = Number(it.produtos?.size_weight || 0);
-          
+
           commission_amount += q * pv - q * pc;
           valor_total_custo += q * pc;
           totalGramas += q * sw;
@@ -265,7 +265,7 @@ const hasAmostrasAccess = user?.email && [
 
   // Cache do usuário para evitar múltiplas chamadas
   const [userDataCached, setUserDataCached] = useState(false);
-  
+
   useEffect(() => {
     if (!userDataCached) {
       supabase.auth.getUser().then(({ data }) => {
@@ -300,8 +300,8 @@ const hasAmostrasAccess = user?.email && [
           ? "production"
           : "livraison"
         : field === "data_producao_estimada"
-        ? "produção"
-        : "entrega";
+          ? "produção"
+          : "entrega";
       toast.success(isHam ? `Date de ${fieldName} mise à jour` : `Data de ${fieldName} atualizada`);
     } catch (e) {
       console.error(e);
@@ -322,11 +322,11 @@ const hasAmostrasAccess = user?.email && [
 
   // Filtros
   // Escopo de fornecedores (reforço em memória para Felipe e Rosa)
-const scopedEncomendas = isFelipe || isRosa
-  ? encomendas.filter((e) => ALLOWED_SUPPLIERS_FOR_FELIPE.includes(e.fornecedor_id ?? ""))
-  : encomendas;
+  const scopedEncomendas = isFelipe || isRosa
+    ? encomendas.filter((e) => ALLOWED_SUPPLIERS_FOR_FELIPE.includes(e.fornecedor_id ?? ""))
+    : encomendas;
 
-const filteredEncomendas = scopedEncomendas.filter((e) => {
+  const filteredEncomendas = scopedEncomendas.filter((e) => {
     const q = searchTerm.trim().toLowerCase();
     const byText =
       e.numero_encomenda.toLowerCase().includes(q) ||
@@ -465,22 +465,20 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
       <div className="flex gap-4 mb-4 border-b">
         <button
           onClick={() => setActiveTab("encomendas")}
-          className={`px-4 py-2 font-medium transition-colors ${
-            activeTab === "encomendas" 
-              ? "border-b-2 border-primary text-primary" 
-              : "text-muted-foreground hover:text-foreground"
-          }`}
+          className={`px-4 py-2 font-medium transition-colors ${activeTab === "encomendas"
+            ? "border-b-2 border-primary text-primary"
+            : "text-muted-foreground hover:text-foreground"
+            }`}
         >
           {t.orders}
         </button>
         {!isRosaUser && (
           <button
             onClick={() => setActiveTab("transportes")}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === "transportes" 
-                ? "border-b-2 border-primary text-primary" 
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === "transportes"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             {isHam ? "Transport" : "Transporte"}
           </button>
@@ -488,11 +486,10 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
         {!isHam && !isRosaUser && (
           <button
             onClick={() => setActiveTab("tarefas")}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === "tarefas" 
-                ? "border-b-2 border-primary text-primary" 
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === "tarefas"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             Tarefas
           </button>
@@ -500,11 +497,10 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
         {hasAmostrasAccess && (
           <button
             onClick={() => setActiveTab("amostras")}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === "amostras" 
-                ? "border-b-2 border-primary text-primary" 
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === "amostras"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             Amostras
           </button>
@@ -515,352 +511,319 @@ const filteredEncomendas = scopedEncomendas.filter((e) => {
         <>
           {/* Filtros */}
           <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col sm:flex-row flex-1 gap-4">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder={t.searchPlaceholder}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            <CardContent className="pt-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col sm:flex-row flex-1 gap-4">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder={t.searchPlaceholder}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+
+                  <EncomendaStatusFilter selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} />
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch id="show-completed" checked={showCompleted} onCheckedChange={setShowCompleted} />
+                    <Label htmlFor="show-completed">{t.showDelivered}</Label>
+                  </div>
+                </div>
               </div>
-
-              <EncomendaStatusFilter selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} />
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center space-x-2">
-                <Switch id="show-completed" checked={showCompleted} onCheckedChange={setShowCompleted} />
-                <Label htmlFor="show-completed">{t.showDelivered}</Label>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Lista */}
-      <div className="space-y-4">
-        {filteredEncomendas.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-8">
-              <p className="text-muted-foreground">{t.noOrders}</p>
             </CardContent>
           </Card>
-        ) : (
-          filteredEncomendas.map((e) => (
-            <Card key={e.id} className="shadow-card transition-all duration-300 hover:shadow-hover">
-              <CardContent className="p-6">
-                {/* Linha 1: Pedido / Etiqueta / Cliente / Fornecedor / Ações */}
-                <div className="grid grid-cols-12 gap-6 items-start mb-6">
-                  {/* Pedido */}
-                  <div className="col-span-12 sm:col-span-6 lg:col-span-2 min-w-0">
-                    <div className="text-sm font-medium text-muted-foreground mb-1">{t.order}</div>
-                    <div className="font-bold text-lg text-primary-dark truncate">#{e.numero_encomenda}</div>
-                  </div>
 
-                  {/* Etiqueta */}
-                  {e.etiqueta && (
-                    <div className="col-span-6 sm:col-span-6 lg:col-span-2 min-w-0">
-                      <div className="text-sm font-medium text-muted-foreground mb-1">{t.label}</div>
-                      <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full w-fit truncate">
-                        {e.etiqueta}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Cliente */}
-                  <div
-                    className={`min-w-0 ${
-                      e.etiqueta ? "col-span-12 sm:col-span-6 lg:col-span-3" : "col-span-12 sm:col-span-6 lg:col-span-4"
-                    }`}
-                  >
-                    <div className="text-sm font-medium text-muted-foreground mb-1">{t.client}</div>
-                    <div className="text-sm font-semibold truncate">{e.clientes?.nome ?? e.cliente_nome ?? "N/A"}</div>
-                  </div>
-
-                  {/* Fornecedor */}
-                  <div
-                    className={`min-w-0 ${
-                      e.etiqueta ? "col-span-12 sm:col-span-6 lg:col-span-3" : "col-span-12 sm:col-span-6 lg:col-span-4"
-                    }`}
-                  >
-                    <div className="text-sm font-medium text-muted-foreground mb-1">{t.supplier}</div>
-                    <div className="text-sm font-medium text-muted-foreground truncate">{e.fornecedores?.nome ?? e.fornecedor_nome ?? "N/A"}</div>
-                  </div>
-
-                  {/* Ações */}
-                  <div className="col-span-12 lg:col-span-2 flex items-center justify-start lg:justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-10 w-10 p-0"
-                      onClick={() => {
-                        setSelectedEncomenda(e);
-                        setViewDialogOpen(true);
-                      }}
-                      aria-label={t.viewOrder}
-                      title={t.viewOrder}
-                    >
-                      <Eye className="h-5 w-5" />
-                    </Button>
-                    {canEdit() && !readOnlyOrders && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-10 w-10 p-0"
-                          onClick={() => {
-                            setSelectedEncomenda(e);
-                            setEditDialogOpen(true);
-                          }}
-                          aria-label={t.editOrder}
-                          title={t.editOrder}
-                        >
-                          <Edit className="h-5 w-5" />
-                        </Button>
-                        <EncomendaActions encomenda={e as any} onDelete={handleDelete} onTransport={() => handleTransport(e)} />
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Linha 2: detalhes */}
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-6 items-start">
-                  {/* Data Produção */}
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground mb-2">{t.productionDate}</div>
-
-                    {canEditProductionUI ? (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal h-10",
-                              !e.data_producao_estimada && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            <span className="text-sm">
-                              {e.data_producao_estimada ? formatDate(e.data_producao_estimada) : t.select}
+          {/* Lista */}
+          <div className="space-y-4">
+            {filteredEncomendas.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <p className="text-muted-foreground">{t.noOrders}</p>
+                </CardContent>
+              </Card>
+            ) : (
+              filteredEncomendas.map((e) => (
+                <Card key={e.id} className="shadow-card transition-all duration-300 hover:shadow-hover">
+                  <CardContent className="p-5">
+                    <div className="flex flex-col gap-5">
+                      {/* Topo: Identificação e Status */}
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl font-bold text-primary-dark tracking-tight">
+                              #{e.numero_encomenda}
                             </span>
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={e.data_producao_estimada ? new Date(e.data_producao_estimada) : undefined}
-                            onSelect={(date) => {
-                              const v = date ? format(date, "yyyy-MM-dd") : "";
-                              handleDateUpdate(e.id, "data_producao_estimada", v);
-                            }}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    ) : (
-                      // “Fake button” (mesmo visual do outline), mas não clicável
-                      <div
-                        aria-disabled
-                        className={cn(
-                          "w-full h-10 inline-flex items-center justify-start rounded-md border bg-background",
-                          "px-3 py-2 text-sm font-normal text-left"
-                        )}
-                        title={t.productionDate}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        <span className="text-sm">
-                          {e.data_producao_estimada ? formatDate(e.data_producao_estimada) : t.select}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Data Entrega */}
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground mb-2">{t.deliveryDate}</div>
-
-                    {canEditDeliveryUI ? (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal h-10",
-                              !e.data_envio_estimada && "text-muted-foreground"
+                            {e.etiqueta && (
+                              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-600 border border-blue-100">
+                                {e.etiqueta}
+                              </span>
                             )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            <span className="text-sm">
-                              {e.data_envio_estimada ? formatDate(e.data_envio_estimada) : t.select}
-                            </span>
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={e.data_envio_estimada ? new Date(e.data_envio_estimada) : undefined}
-                            onSelect={(date) => {
-                              const v = date ? format(date, "yyyy-MM-dd") : "";
-                              handleDateUpdate(e.id, "data_envio_estimada", v);
-                            }}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    ) : (
-                      <div
-                        aria-disabled
-                        className={cn(
-                          "w-full h-10 inline-flex items-center justify-start rounded-md border bg-background",
-                          "px-3 py-2 text-sm font-normal text-left"
-                        )}
-                        title={t.deliveryDate}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        <span className="text-sm">
-                          {e.data_envio_estimada ? formatDate(e.data_envio_estimada) : t.select}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                          </div>
+                          {/* Cliente e Fornecedor - Visual limpo */}
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1.5">
+                              <User className="h-3.5 w-3.5" />
+                              <span className="font-medium text-foreground/80 truncate max-w-[200px]" title={e.clientes?.nome ?? e.cliente_nome ?? ""}>
+                                {e.clientes?.nome ?? e.cliente_nome ?? "N/A"}
+                              </span>
+                            </div>
+                            <span className="hidden sm:inline text-border">|</span>
+                            <div className="flex items-center gap-1.5">
+                              <Building2 className="h-3.5 w-3.5" />
+                              <span className="truncate max-w-[200px]" title={e.fornecedores?.nome ?? e.fornecedor_nome ?? ""}>
+                                {e.fornecedores?.nome ?? e.fornecedor_nome ?? "N/A"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
 
-                  {/* Peso Bruto */}
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground mb-2">{t.grossWeight}</div>
-                    <div className="text-lg font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-lg text-center">
-                      {(pesoTransporte[e.id] ?? 0).toFixed(2)} kg
+                        <div className="flex items-center gap-3 self-end sm:self-start">
+                          {/* Status Selector - Mais discreto mas visível */}
+                          <div className="min-w-[140px]">
+                            {isHam ? (
+                              <div className="flex items-center justify-center h-8 px-3 rounded-full border bg-muted/30 text-xs font-medium text-foreground">
+                                {getStatusLabel(e.status)}
+                              </div>
+                            ) : (
+                              <EncomendaStatusSelect
+                                encomendaId={e.id}
+                                currentStatus={e.status}
+                                numeroEncomenda={e.numero_encomenda}
+                                onStatusChange={handleStatusChange}
+                              />
+                            )}
+                          </div>
+
+                          {/* Ações */}
+                          <div className="flex items-center border-l pl-3 ml-1 gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-primary"
+                              onClick={() => {
+                                setSelectedEncomenda(e);
+                                setViewDialogOpen(true);
+                              }}
+                              title={t.viewOrder}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {canEdit() && !readOnlyOrders && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                  onClick={() => {
+                                    setSelectedEncomenda(e);
+                                    setEditDialogOpen(true);
+                                  }}
+                                  title={t.editOrder}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <EncomendaActions encomenda={e as any} onDelete={handleDelete} onTransport={() => handleTransport(e)} />
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-border/50 w-full" />
+
+                      {/* Rodapé: Logística e Financeiro na mesma linha */}
+                      <div className="flex flex-wrap items-center justify-between gap-4 text-sm w-full">
+
+                        <div className="flex flex-wrap items-center gap-4">
+                          {/* Datas */}
+                          <div className="flex items-center gap-4">
+                            {/* Entrega (Esquerda) */}
+                            <div className={cn("flex items-center gap-2", !e.data_envio_estimada && "opacity-50")}>
+                              <span className="text-xs text-muted-foreground font-medium">{t.deliveryDate}:</span>
+                              {canEditDeliveryUI ? (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <button className="flex items-center gap-1.5 hover:text-primary transition-colors font-medium">
+                                      <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                                      {e.data_envio_estimada ? formatDate(e.data_envio_estimada) : "Definir"}
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                      mode="single"
+                                      selected={e.data_envio_estimada ? new Date(e.data_envio_estimada) : undefined}
+                                      onSelect={(date) => {
+                                        const v = date ? format(date, "yyyy-MM-dd") : "";
+                                        handleDateUpdate(e.id, "data_envio_estimada", v);
+                                      }}
+                                      initialFocus
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              ) : (
+                                <div className="flex items-center gap-1.5">
+                                  <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <span>{e.data_envio_estimada ? formatDate(e.data_envio_estimada) : "N/A"}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="w-px h-4 bg-border/50" />
+
+                            {/* Produção (Direita) */}
+                            <div className={cn("flex items-center gap-2", !e.data_producao_estimada && "opacity-50")}>
+                              <span className="text-xs text-muted-foreground font-medium">{t.productionDate}:</span>
+                              {canEditProductionUI ? (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <button className="flex items-center gap-1.5 hover:text-primary transition-colors font-medium">
+                                      <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                                      {e.data_producao_estimada ? formatDate(e.data_producao_estimada) : "Definir"}
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                      mode="single"
+                                      selected={e.data_producao_estimada ? new Date(e.data_producao_estimada) : undefined}
+                                      onSelect={(date) => {
+                                        const v = date ? format(date, "yyyy-MM-dd") : "";
+                                        handleDateUpdate(e.id, "data_producao_estimada", v);
+                                      }}
+                                      initialFocus
+                                    />
+                                  </PopoverContent>
+                                </Popover>
+                              ) : (
+                                <div className="flex items-center gap-1.5">
+                                  <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <span>{e.data_producao_estimada ? formatDate(e.data_producao_estimada) : "N/A"}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="w-px h-4 bg-border hidden sm:block" />
+
+                          {/* Logística de Transporte (Peso + Frete) */}
+                          <div className="flex items-center gap-3 bg-muted/30 px-2.5 py-1 rounded-md border border-border/50">
+                            {/* Peso */}
+                            <div className="flex items-center gap-1.5 text-muted-foreground" title={t.grossWeight}>
+                              <Package className="h-3.5 w-3.5" />
+                              <span>{(pesoTransporte[e.id] ?? 0).toFixed(2)} kg</span>
+                            </div>
+
+                            {!isRosa && (
+                              <>
+                                <div className="w-px h-3 bg-border" />
+                                {/* Frete */}
+                                <div className="flex items-center gap-1.5 text-amber-600/90 text-sm" title={t.shippingValue}>
+                                  <Truck className="h-3.5 w-3.5" />
+                                  <span className="font-medium">{formatCurrency(((pesoTransporte[e.id] ?? 0) * 4.5) || 0)}</span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Financeiro */}
+                        <div className="flex items-center gap-4 sm:gap-6">
+                          {/* Comissão */}
+                          {!(isFelipe || isHam || hidePrices) && (
+                            <div
+                              className={cn(
+                                "flex items-center gap-1.5 text-sm font-medium",
+                                (e.commission_amount || 0) >= 0 ? "text-emerald-600" : "text-red-600"
+                              )}
+                              title={t.commission}
+                            >
+                              <TrendingUp className="h-3.5 w-3.5" />
+                              {formatCurrency(e.commission_amount || 0)}
+                            </div>
+                          )}
+
+                          {/* Total */}
+                          {!hidePrices && (
+                            <div className="flex items-center gap-2 pl-2 sm:pl-4 sm:border-l border-border/50" title={isFelipe ? t.totalCost : t.total}>
+                              <span className="text-xs text-muted-foreground uppercase tracking-wider font-semibold hidden sm:inline">Total</span>
+                              <span className="text-lg font-bold text-foreground">{formatCurrency(isFelipe ? e.valor_total_custo || 0 : e.valor_total)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
 
-                   {/* Valor Frete (estimado) - não mostrar para Rosa */}
-                   {!isRosa && (
-                     <div>
-                       <div className="text-sm font-medium text-muted-foreground mb-2">{t.shippingValue}</div>
-                       <div className="text-lg font-bold text-amber-600 bg-amber-50 px-3 py-2 rounded-lg text-center">
-                         {formatCurrency(((pesoTransporte[e.id] ?? 0) * 4.5) || 0)}
-                       </div>
-                     </div>
-                   )}
+          {/* Dialog: visualizar (PASSA SÓ O ID — evita eq.[object Object]) */}
+          <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" key={selectedEncomenda?.id}>
+              <DialogHeader>
+                <DialogTitle>
+                  {t.viewOrder} #{selectedEncomenda?.numero_encomenda}
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                  {isHam ? "Détails complets de la commande sélectionnée." : "Detalhes completos da encomenda selecionada."}
+                </DialogDescription>
+              </DialogHeader>
+              {selectedEncomenda && <EncomendaView encomendaId={selectedEncomenda.id} />}
+            </DialogContent>
+          </Dialog>
 
-                   {/* Status */}
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground mb-2">{t.status}</div>
+          {/* Dialog: editar */}
+          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {t.editOrder} #{selectedEncomenda?.numero_encomenda}
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                  {isHam
+                    ? "Formulaire de modification de la commande sélectionnée."
+                    : "Formulário para editar os dados da encomenda selecionada."}
+                </DialogDescription>
+              </DialogHeader>
+              {selectedEncomenda && (
+                <EncomendaForm
+                  encomenda={selectedEncomenda}
+                  isEditing={true}
+                  onSuccess={() => {
+                    setEditDialogOpen(false);
+                    fetchEncomendas();
+                  }}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
 
-                    {isHam ? (
-                      // Pill estático (não clicável) com o status atual em francês
-                      <div className="inline-flex items-center px-3 h-10 rounded-md border bg-background text-sm font-medium">
-                        {getStatusLabel(e.status)}
-                      </div>
-                    ) : (
-                      <EncomendaStatusSelect
-                        encomendaId={e.id}
-                        currentStatus={e.status}
-                        numeroEncomenda={e.numero_encomenda}
-                        onStatusChange={handleStatusChange}
-                      />
-                    )}
-                  </div>
-
-                  {/* Comissão — oculta para Felipe, Ham e Rosa */}
-                  {!(isFelipe || isHam || hidePrices) && (
-                    <div>
-                      <div className="text-sm font-medium text-muted-foreground mb-2">{t.commission}</div>
-                      <div
-                        className={cn(
-                          "text-lg font-bold px-3 py-2 rounded-lg text-center",
-                          (e.commission_amount || 0) >= 0 ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"
-                        )}
-                      >
-                        {formatCurrency(e.commission_amount || 0)}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Total: custo p/ Felipe; venda p/ demais (oculto para Rosa) */}
-                  {!hidePrices && (
-                    <div>
-                      <div className="text-sm font-medium text-muted-foreground mb-2">
-                        {isFelipe ? t.totalCost : t.total}
-                      </div>
-                      <div className="text-lg font-bold text-primary-dark bg-primary/10 px-3 py-2 rounded-lg text-center">
-                        {formatCurrency(isFelipe ? e.valor_total_custo || 0 : e.valor_total)}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-
-      {/* Dialog: visualizar (PASSA SÓ O ID — evita eq.[object Object]) */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" key={selectedEncomenda?.id}>
-          <DialogHeader>
-            <DialogTitle>
-              {t.viewOrder} #{selectedEncomenda?.numero_encomenda}
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              {isHam ? "Détails complets de la commande sélectionnée." : "Detalhes completos da encomenda selecionada."}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedEncomenda && <EncomendaView encomendaId={selectedEncomenda.id} />}
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog: editar */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {t.editOrder} #{selectedEncomenda?.numero_encomenda}
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              {isHam
-                ? "Formulaire de modification de la commande sélectionnée."
-                : "Formulário para editar os dados da encomenda selecionada."}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedEncomenda && (
-            <EncomendaForm
-              encomenda={selectedEncomenda}
-              isEditing={true}
-              onSuccess={() => {
-                setEditDialogOpen(false);
-                fetchEncomendas();
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog: transporte */}
-      <Dialog open={transportDialogOpen} onOpenChange={setTransportDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {t.transportConfig} - #{selectedEncomenda?.numero_encomenda}
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              {isHam ? "Paramètres et coûts de transport." : "Configurações e custos de transporte."}
-            </DialogDescription>
-          </DialogHeader>
-          {selectedEncomenda && (
-            <EncomendaTransportForm
-              encomendaId={selectedEncomenda.id}
-              onSuccess={() => {
-                setTransportDialogOpen(false);
-                fetchEncomendas();
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+          {/* Dialog: transporte */}
+          <Dialog open={transportDialogOpen} onOpenChange={setTransportDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {t.transportConfig} - #{selectedEncomenda?.numero_encomenda}
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                  {isHam ? "Paramètres et coûts de transport." : "Configurações e custos de transporte."}
+                </DialogDescription>
+              </DialogHeader>
+              {selectedEncomenda && (
+                <EncomendaTransportForm
+                  encomendaId={selectedEncomenda.id}
+                  onSuccess={() => {
+                    setTransportDialogOpen(false);
+                    fetchEncomendas();
+                  }}
+                />
+              )}
+            </DialogContent>
+          </Dialog>
         </>
       )}
 
