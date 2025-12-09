@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { ItensEncomendaManager, type ItemEncomenda } from "./ItensEncomendaManager";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from "@/components/GlassCard";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { sendEmail, emailTemplates, emailRecipients } from "@/lib/email";
+import { Package, Truck, Info, Hash, Tag, User, Store, Calendar as CalendarIcon, Save, Calculator } from "lucide-react";
 
 const encomendaSchema = z.object({
   numero_encomenda: z.string().min(1, "Número da encomenda é obrigatório"),
@@ -94,16 +95,16 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
 
     if (clientes.length === 0 || fornecedores.length === 0) return;
 
-      form.reset({
-        numero_encomenda: editingData.numero_encomenda || "",
-        etiqueta: editingData.etiqueta || "",
-        cliente_id: editingData.cliente_id || "",
-        fornecedor_id: editingData.fornecedor_id || "",
-        data_producao_estimada: editingData.data_producao_estimada || "",
-        data_envio_estimada: editingData.data_envio_estimada || "",
-        peso_total: editingData.peso_total || 0,
-        valor_frete: editingData.valor_frete || 0,
-      });
+    form.reset({
+      numero_encomenda: editingData.numero_encomenda || "",
+      etiqueta: editingData.etiqueta || "",
+      cliente_id: editingData.cliente_id || "",
+      fornecedor_id: editingData.fornecedor_id || "",
+      data_producao_estimada: editingData.data_producao_estimada || "",
+      data_envio_estimada: editingData.data_envio_estimada || "",
+      peso_total: editingData.peso_total || 0,
+      valor_frete: editingData.valor_frete || 0,
+    });
 
     // Carrega itens da encomenda
     const fetchItens = async () => {
@@ -192,15 +193,15 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
         const { data: newEncomenda, error } = await supabase
           .from("encomendas")
           .insert([{
-          numero_encomenda: data.numero_encomenda,
-          etiqueta: data.etiqueta || null,
-          cliente_id: data.cliente_id,
-          fornecedor_id: data.fornecedor_id,
-          data_producao_estimada: data.data_producao_estimada || null,
-          data_envio_estimada: data.data_envio_estimada || null,
-          valor_total: valorTotal,
-          peso_total: data.peso_total || 0,
-          valor_frete: data.valor_frete || 0,
+            numero_encomenda: data.numero_encomenda,
+            etiqueta: data.etiqueta || null,
+            cliente_id: data.cliente_id,
+            fornecedor_id: data.fornecedor_id,
+            data_producao_estimada: data.data_producao_estimada || null,
+            data_envio_estimada: data.data_envio_estimada || null,
+            valor_total: valorTotal,
+            peso_total: data.peso_total || 0,
+            valor_frete: data.valor_frete || 0,
           }])
           .select();
         if (error) throw error;
@@ -222,7 +223,7 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
             const clienteNome = clientes.find(c => c.id === data.cliente_id)?.nome || 'Cliente não encontrado';
             const fornecedorNome = fornecedores.find(f => f.id === data.fornecedor_id)?.nome || 'Fornecedor não encontrado';
             const produtos = itens.map(item => ({ nome: item.produto_nome, quantidade: item.quantidade }));
-            
+
             await sendEmail(
               emailRecipients.geral,
               `📦 Nova encomenda criada — ${data.numero_encomenda}`,
@@ -249,19 +250,28 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
     <div className="space-y-6">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <Card>
-            <CardHeader><CardTitle>Informações da Encomenda</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Informações Principais */}
+          <GlassCard className="p-6">
+            <div className="flex items-center gap-2 mb-6 border-b border-border/40 pb-4">
+              <Info className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold text-lg">Informações da Encomenda</h3>
+            </div>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="numero_encomenda"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Número da Encomenda *</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                        Número da Encomenda *
+                      </FormLabel>
                       <div className="flex gap-2">
                         <FormControl>
-                          <Input placeholder="Ex: ENC001" {...field} />
+                          <Input placeholder="Ex: ENC001" {...field} className="bg-background/50" />
                         </FormControl>
                         {!isEdit && (
                           <Button
@@ -269,7 +279,6 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                             variant="outline"
                             onClick={async () => {
                               try {
-                                // Buscar o último número de encomenda
                                 const { data, error } = await supabase
                                   .from("encomendas")
                                   .select("numero_encomenda")
@@ -279,10 +288,9 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                                 if (error) throw error;
 
                                 let proximoNumero = "ENC001";
-                                
+
                                 if (data && data.length > 0) {
                                   const ultimoNumero = data[0].numero_encomenda;
-                                  // Extrair o número do formato ENC001, ENC002, etc.
                                   const match = ultimoNumero.match(/ENC(\d+)/);
                                   if (match) {
                                     const numero = parseInt(match[1]) + 1;
@@ -297,9 +305,10 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                                 toast.error("Erro ao gerar número automático");
                               }
                             }}
-                            className="whitespace-nowrap"
+                            className="whitespace-nowrap gap-2 bg-secondary/50 border-secondary hover:bg-secondary/70"
                           >
-                            🔢 Auto
+                            <Calculator className="h-3.5 w-3.5" />
+                            Auto
                           </Button>
                         )}
                       </div>
@@ -313,9 +322,12 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                   name="etiqueta"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Etiqueta</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                        Etiqueta
+                      </FormLabel>
                       <FormControl>
-                        <Input placeholder="Ex: URGENTE" {...field} />
+                        <Input placeholder="Ex: URGENTE" {...field} className="bg-background/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -323,16 +335,19 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="cliente_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Cliente *</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        <User className="h-3.5 w-3.5 text-muted-foreground" />
+                        Cliente *
+                      </FormLabel>
                       <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-background/50">
                             <SelectValue placeholder="Selecione um cliente" />
                           </SelectTrigger>
                         </FormControl>
@@ -354,10 +369,13 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                   name="fornecedor_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Fornecedor *</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        <Store className="h-3.5 w-3.5 text-muted-foreground" />
+                        Fornecedor *
+                      </FormLabel>
                       <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-background/50">
                             <SelectValue placeholder="Selecione um fornecedor" />
                           </SelectTrigger>
                         </FormControl>
@@ -375,15 +393,18 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="data_producao_estimada"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Data de Produção Estimada</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                        Data de Produção Estimada
+                      </FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" {...field} className="bg-background/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -395,9 +416,12 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                   name="data_envio_estimada"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Data de Envio Estimada</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        <Truck className="h-3.5 w-3.5 text-muted-foreground" />
+                        Data de Envio Estimada
+                      </FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" {...field} className="bg-background/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -405,18 +429,23 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                 />
               </div>
 
-              {/* Campos específicos para edição - mesmas cores do card */}
+              {/* Campos específicos para edição - Visualização suave */}
               {isEdit && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                   <FormField
                     control={form.control}
                     name="peso_total"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Peso Bruto (kg)</FormLabel>
+                        <FormLabel className="flex items-center gap-2">
+                          <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                          Peso Bruto (kg)
+                        </FormLabel>
                         <FormControl>
-                          <div className="text-lg font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-lg text-center">
-                            {field.value ? `${field.value} kg` : '0.00 kg'}
+                          <div className="flex items-center justify-center p-3 rounded-lg border border-blue-100 bg-blue-50/50 dark:bg-blue-900/10 dark:border-blue-800">
+                            <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                              {field.value ? `${field.value} kg` : '0.00 kg'}
+                            </span>
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -429,10 +458,15 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                     name="valor_frete"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Valor Frete (€)</FormLabel>
+                        <FormLabel className="flex items-center gap-2">
+                          <Truck className="h-3.5 w-3.5 text-muted-foreground" />
+                          Valor Frete (€)
+                        </FormLabel>
                         <FormControl>
-                          <div className="text-lg font-bold text-amber-600 bg-amber-50 px-3 py-2 rounded-lg text-center">
-                            {field.value ? `${field.value.toFixed(2)}€` : '0.00€'}
+                          <div className="flex items-center justify-center p-3 rounded-lg border border-amber-100 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-800">
+                            <span className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                              {field.value ? `${field.value.toFixed(2)}€` : '0.00€'}
+                            </span>
                           </div>
                         </FormControl>
                         <FormMessage />
@@ -441,9 +475,8 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                   />
                 </div>
               )}
-
-            </CardContent>
-          </Card>
+            </div>
+          </GlassCard>
 
           <ItensEncomendaManager
             itens={itens}
@@ -451,22 +484,37 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
             onValorTotalChange={setValorTotal}
           />
 
-          <div className="flex justify-end pt-4 border-t">
-            <div className="text-right">
-              <p className="text-sm text-muted-foreground">Valor Total:</p>
-              <p className="text-2xl font-bold text-primary">
-                {formatCurrencyEUR(valorTotal)}
-              </p>
+          <GlassCard className="p-4 border-t-0 rounded-t-none mt-0 bg-primary/5 dark:bg-primary/10 border border-primary/20">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                <span>Verifique todas as informações antes de salvar.</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="text-right mr-4">
+                  <p className="text-xs uppercase text-muted-foreground font-semibold">Valor Total</p>
+                  <p className="text-2xl font-bold text-primary">
+                    {formatCurrencyEUR(valorTotal)}
+                  </p>
+                </div>
+                <Button
+                  type="submit"
+                  size="lg"
+                  className="min-w-[200px] bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    "Salvando..."
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Save className="h-4 w-4" />
+                      {isEdit ? "Atualizar Encomenda" : "Criar Encomenda"}
+                    </div>
+                  )}
+                </Button>
+              </div>
             </div>
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Salvando..." : (isEdit ? "Atualizar Encomenda" : "Criar Encomenda")}
-          </Button>
+          </GlassCard>
         </form>
       </Form>
     </div>

@@ -11,6 +11,8 @@ export interface Produto {
   fornecedor_id: string;
   created_at: string;
   updated_at: string;
+  imagem_url?: string | null;
+  descricao?: string | null;
 }
 
 export interface Fornecedor {

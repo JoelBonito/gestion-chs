@@ -1,19 +1,18 @@
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import EncomendasFinanceiro from "@/components/EncomendasFinanceiro"; // Vendas
 import ContasPagar from "@/components/ContasPagar";                 // Compras
 import Invoices from "@/components/Invoices";                       // Faturas
+import { PageContainer } from "@/components/PageContainer";
+import { GlassCard } from "@/components/GlassCard";
+import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
 
 type TabKey = "encomendas" | "pagar" | "faturas";
 
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState<TabKey>("encomendas");
-  const [showInactive, setShowInactive] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [resumo, setResumo] = useState({ a_receber: 0, a_pagar: 0, saldo: 0 });
   const [loadingResumo, setLoadingResumo] = useState(true);
@@ -100,62 +99,91 @@ export default function Financeiro() {
   const hideFaturas = isFelipe;
 
   return (
-    <div className="space-y-6">
+    <PageContainer
+      title="Financeiro"
+      subtitle="Gestão completa de fluxo de caixa e faturas"
+    >
       {/* Cards de resumo - escondidos para ham@admin.com e felipe@colaborador.com */}
       {!isHam && !isFelipe && (
-        <>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {loadingResumo ? (
-            <p className="text-muted-foreground mb-4">{t("Carregando resumo...")}</p>
+            [1, 2, 3].map(i => <GlassCard key={i} className="h-32 animate-pulse bg-muted/20"><div /></GlassCard>)
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">{t("Total a Receber")}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.a_receber)}</CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">{t("Total a Pagar")}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.a_pagar)}</CardContent>
-              </Card>
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm text-muted-foreground">{t("Saldo Atual")}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-2xl font-bold">{formatCurrencyEUR(resumo.saldo)}</CardContent>
-              </Card>
-            </div>
+            <>
+              <GlassCard className="p-6 relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+                <div className="flex flex-col gap-1 z-10 relative">
+                  <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    {t("Total a Receber")}
+                  </span>
+                  <span className="text-3xl font-bold text-foreground tracking-tight">
+                    {formatCurrencyEUR(resumo.a_receber)}
+                  </span>
+                </div>
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <TrendingUp className="h-16 w-16" />
+                </div>
+              </GlassCard>
+
+              <GlassCard className="p-6 relative overflow-hidden group hover:border-red-500/30 transition-all">
+                <div className="flex flex-col gap-1 z-10 relative">
+                  <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <TrendingDown className="h-4 w-4 text-red-500" />
+                    {t("Total a Pagar")}
+                  </span>
+                  <span className="text-3xl font-bold text-foreground tracking-tight">
+                    {formatCurrencyEUR(resumo.a_pagar)}
+                  </span>
+                </div>
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <TrendingDown className="h-16 w-16" />
+                </div>
+              </GlassCard>
+
+              <GlassCard className="p-6 relative overflow-hidden group hover:border-primary/30 transition-all">
+                <div className="flex flex-col gap-1 z-10 relative">
+                  <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Wallet className="h-4 w-4 text-primary" />
+                    {t("Saldo Atual")}
+                  </span>
+                  <span className={`text-3xl font-bold tracking-tight ${resumo.saldo >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                    {formatCurrencyEUR(resumo.saldo)}
+                  </span>
+                </div>
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <Wallet className="h-16 w-16" />
+                </div>
+              </GlassCard>
+            </>
           )}
-        </>
+        </div>
       )}
 
-      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as TabKey)}>
-        <TabsList className="mb-4">
-          {!hideVendas && <TabsTrigger value="encomendas">{t("Vendas")}</TabsTrigger>}
-          {!hideCompras && <TabsTrigger value="pagar">{t("Compras")}</TabsTrigger>}
-          {!hideFaturas && <TabsTrigger value="faturas">{t("Faturas")}</TabsTrigger>}
+      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as TabKey)} className="space-y-6">
+        <TabsList className="bg-background/40 p-1 border border-border/40 backdrop-blur-sm h-12 rounded-xl">
+          {!hideVendas && <TabsTrigger value="encomendas" className="rounded-lg h-10 px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary font-medium transition-all">{t("Vendas")}</TabsTrigger>}
+          {!hideCompras && <TabsTrigger value="pagar" className="rounded-lg h-10 px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary font-medium transition-all">{t("Compras")}</TabsTrigger>}
+          {!hideFaturas && <TabsTrigger value="faturas" className="rounded-lg h-10 px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary font-medium transition-all">{t("Faturas")}</TabsTrigger>}
         </TabsList>
 
         {!hideVendas && (
-          <TabsContent value="encomendas">
-            <EncomendasFinanceiro showCompleted={showInactive} />
+          <TabsContent value="encomendas" className="mt-0">
+            <EncomendasFinanceiro showCompleted={false} />
           </TabsContent>
         )}
 
         {!hideCompras && (
-          <TabsContent value="pagar">
+          <TabsContent value="pagar" className="mt-0">
             <ContasPagar />
           </TabsContent>
         )}
 
         {!hideFaturas && (
-          <TabsContent value="faturas">
+          <TabsContent value="faturas" className="mt-0">
             <Invoices />
           </TabsContent>
         )}
       </Tabs>
-    </div>
+    </PageContainer>
   );
 }

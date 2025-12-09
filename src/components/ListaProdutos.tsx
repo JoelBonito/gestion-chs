@@ -1,10 +1,9 @@
 import { useState, useEffect, forwardRef, useImperativeHandle, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import ProdutoCard from "@/components/ProdutoCard";
 import { logActivity } from "@/utils/activityLogger";
 import { Produto } from "@/types/database";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ProdutosTable } from "@/components/ProdutosTable";
 
 export interface ListaProdutosRef {
   fetchProdutos: () => void;
@@ -44,7 +43,7 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
       } finally {
         setLoading(false);
       }
-    }, [limit]);
+    }, [limit, allowedSupplierIds]);
 
     useImperativeHandle(ref, () => ({
       fetchProdutos,
@@ -52,7 +51,7 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
 
     useEffect(() => {
       fetchProdutos();
-    }, []);
+    }, [fetchProdutos]);
 
     const handleDelete = useCallback(async (id: string) => {
       try {
@@ -94,14 +93,11 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
       }
     }, []);
 
-    // Filtro e ordenacao dos produtos otimizado com useMemo
+    // Filtro e ordenacao
     const sortedAndFiltered = useMemo(() => {
       const baseProdutos = produtos;
-      const scopedProdutos = (allowedSupplierIds && allowedSupplierIds.length)
-        ? baseProdutos.filter(p => (p as any).fornecedor_id && allowedSupplierIds!.includes((p as any).fornecedor_id))
-        : baseProdutos;
 
-      return scopedProdutos
+      return baseProdutos
         .filter((p) => {
           if (!searchTerm.trim()) return true;
           const q = searchTerm.toLowerCase();
@@ -119,48 +115,20 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
           if (nomeA > nomeB) return sort === "nameAsc" ? 1 : -1;
           return 0;
         });
-    }, [produtos, searchTerm, sort, allowedSupplierIds]);
-
-    if (loading) {
-      return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="space-y-3">
-              <Skeleton className="h-[200px] w-full rounded-lg" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-          ))}
-        </div>
-      );
-    }
-
-    if (sortedAndFiltered.length === 0) {
-      return (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground font-body">Nenhum produto encontrado.</p>
-        </div>
-      );
-    }
+    }, [produtos, searchTerm, sort]);
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sortedAndFiltered.map((produto) => (
-          <MemoizedProdutoCard
-            key={produto.id}
-            produto={produto}
-            onUpdate={fetchProdutos}
-            onDelete={handleDelete}
-            onToggleActive={handleToggleActive}
-          />
-        ))}
+      <div className="w-full">
+        <ProdutosTable
+          produtos={sortedAndFiltered}
+          loading={loading}
+          onUpdate={fetchProdutos}
+          onDelete={handleDelete}
+          onToggleActive={handleToggleActive}
+        />
       </div>
     );
   }
 );
 
 ListaProdutos.displayName = "ListaProdutos";
-
-// Memoized ProdutoCard para evitar re-renders desnecessários
-import { memo } from "react";
-const MemoizedProdutoCard = memo(ProdutoCard);

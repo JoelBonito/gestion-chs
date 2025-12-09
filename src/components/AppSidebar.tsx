@@ -168,7 +168,7 @@ export function AppSidebar() {
   const filteredNavigation = getFilteredNavigation();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/40 data-[state=collapsed]:w-32">
+    <Sidebar collapsible="icon" className="border-r border-border/40 bg-background/60 dark:bg-card/40 backdrop-blur-md [&_[data-sidebar=sidebar]]:!bg-transparent data-[state=collapsed]:w-32">
       <SidebarHeader className={cn("p-4", isCollapsed && "flex items-center justify-center")}>
         <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
           <img

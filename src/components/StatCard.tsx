@@ -12,20 +12,22 @@ interface StatCardProps {
     isPositive: boolean;
   };
   variant?: "default" | "success" | "warning" | "destructive" | "blue" | "purple" | "pink" | "orange" | "emerald" | "lime" | "indigo";
+  className?: string;
 }
 
-export default function StatCard({ 
-  title, 
-  value, 
-  subtitle, 
-  icon, 
+export default function StatCard({
+  title,
+  value,
+  subtitle,
+  icon,
   trend,
-  variant = "default" 
+  variant = "default",
+  className
 }: StatCardProps) {
   const variantStyles = {
     default: "border-primary/20 hover:border-primary/40",
     success: "border-success/20 hover:border-success/40",
-    warning: "border-warning/20 hover:border-warning/40", 
+    warning: "border-warning/20 hover:border-warning/40",
     destructive: "border-destructive/20 hover:border-destructive/40",
     blue: "border-blue-500/20 hover:border-blue-500/40",
     purple: "border-purple-500/20 hover:border-purple-500/40",
@@ -39,7 +41,7 @@ export default function StatCard({
   const iconGradients = {
     default: "bg-gradient-to-br from-primary to-primary-dark",
     success: "bg-gradient-to-br from-success to-emerald-600",
-    warning: "bg-gradient-to-br from-warning to-orange-600", 
+    warning: "bg-gradient-to-br from-warning to-orange-600",
     destructive: "bg-gradient-to-br from-destructive to-red-600",
     blue: "bg-gradient-to-br from-blue-500 to-blue-600",
     purple: "bg-gradient-to-br from-purple-500 to-purple-600",
@@ -53,19 +55,18 @@ export default function StatCard({
   return (
     <Card className={cn(
       "shadow-float hover:shadow-float-hover transition-all duration-300 hover:scale-[1.02] animate-scale-in border-2",
-      variantStyles[variant]
+      variantStyles[variant],
+      className
     )}>
       <CardContent className="p-6">
         <div className="space-y-4">
           {/* Icon at top if provided */}
           {icon && (
             <div className={cn(
-              "inline-flex p-4 rounded-2xl shadow-icon",
+              "inline-flex p-3 rounded-xl shadow-icon text-white",
               iconGradients[variant]
             )}>
-              <div className="text-white">
-                {icon}
-              </div>
+              {icon}
             </div>
           )}
 
@@ -76,7 +77,7 @@ export default function StatCard({
           <div className="space-y-1">
             <p className="text-2xl font-bold text-foreground tracking-tight">{value}</p>
             {subtitle && (
-              <div className="text-xs text-muted-foreground">{subtitle}</div>
+              <div className="text-xs text-muted-foreground line-clamp-1">{subtitle}</div>
             )}
           </div>
 

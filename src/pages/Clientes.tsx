@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -13,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { OptimizedRoleGuard } from "@/components/OptimizedRoleGuard";
 import { useUserRole } from "@/hooks/useUserRole";
+import { PageContainer } from "@/components/PageContainer";
+import { GlassCard } from "@/components/GlassCard";
 
 interface Cliente {
   id: string;
@@ -76,149 +77,164 @@ export default function Clientes() {
   const filteredClientes = clientes.filter(cliente => {
     const matchesSearch = cliente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (cliente.email && cliente.email.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
     const matchesStatus = showInactive ? !cliente.active : cliente.active;
-    
+
     return matchesSearch && matchesStatus;
   });
 
+  const pageActions = (
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <DialogTrigger asChild>
+        <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 w-full sm:w-auto shadow-md">
+          <Plus className="mr-2 h-4 w-4" />
+          <span className="hidden sm:inline">Novo Cliente</span>
+          <span className="sm:hidden">Novo</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Novo Cliente</DialogTitle>
+          <DialogDescription>
+            Cadastre um novo cliente no sistema
+          </DialogDescription>
+        </DialogHeader>
+        <ClienteForm onSuccess={handleSuccess} />
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <OptimizedRoleGuard>
-      <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Clientes</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Gerencie seus distribuidores e parceiros</p>
-        </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Novo Cliente</span>
-              <span className="sm:hidden">Novo</span>
-            </Button>
-          </DialogTrigger>
+      <PageContainer
+        title="Clientes"
+        subtitle="Gerencie seus distribuidores e parceiros"
+        actions={pageActions}
+      >
+
+        {/* Search and filters */}
+        <GlassCard className="p-4 mb-6 sticky top-0 z-10 backdrop-blur-md bg-background/60">
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full sm:w-96">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Buscar cliente por nome ou email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-background/50 border-input/50 focus:bg-background/80 transition-all"
+              />
+            </div>
+            <div className="flex items-center space-x-2 whitespace-nowrap">
+              <Switch
+                id="show-inactive"
+                checked={showInactive}
+                onCheckedChange={setShowInactive}
+              />
+              <Label htmlFor="show-inactive">
+                {showInactive ? "Mostrar inativos" : "Mostrar ativos"}
+              </Label>
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* Edit Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
           <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Novo Cliente</DialogTitle>
+              <DialogTitle>Editar Cliente</DialogTitle>
               <DialogDescription>
-                Cadastre um novo cliente no sistema
+                Edite as informações do cliente
               </DialogDescription>
             </DialogHeader>
-            <ClienteForm onSuccess={handleSuccess} />
+            <ClienteForm
+              onSuccess={handleEditSuccess}
+              initialData={selectedCliente}
+              isEditing={true}
+            />
           </DialogContent>
         </Dialog>
-      </div>
 
-      {/* Search and filters */}
-      <Card className="shadow-card">
-        <CardContent className="pt-6 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Buscar cliente por nome ou email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+        {/* Clients Grid */}
+        {loading ? (
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <GlassCard key={i} className="h-40 animate-pulse bg-muted/20">
+                <div />
+              </GlassCard>
+            ))}
           </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="show-inactive"
-              checked={showInactive}
-              onCheckedChange={setShowInactive}
-            />
-            <Label htmlFor="show-inactive">
-              {showInactive ? "Mostrar inativos" : "Mostrar ativos"}
-            </Label>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Editar Cliente</DialogTitle>
-            <DialogDescription>
-              Edite as informações do cliente
-            </DialogDescription>
-          </DialogHeader>
-          <ClienteForm 
-            onSuccess={handleEditSuccess} 
-            initialData={selectedCliente}
-            isEditing={true}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Clients Grid */}
-      {loading ? (
-        <div className="text-center py-8">
-          <p className="text-muted-foreground">Carregando clientes...</p>
-        </div>
-      ) : (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          {filteredClientes.map((cliente) => (
-            <Card key={cliente.id} className="shadow-card hover:shadow-elevated transition-shadow overflow-hidden">
-              <CardHeader className="pb-3 px-4 sm:px-6">
-                <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <CardTitle className="text-lg truncate">{cliente.nome}</CardTitle>
-                    {cliente.email && (
-                      <CardDescription className="flex items-center mt-1 truncate">
-                        {cliente.email}
-                      </CardDescription>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Badge variant={cliente.active ? "default" : "secondary"}>
+        ) : (
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {filteredClientes.map((cliente) => (
+              <GlassCard
+                key={cliente.id}
+                className="overflow-hidden hover:scale-[1.02] transition-all duration-300 hover:shadow-lg border-border/40"
+              >
+                <div className="p-5 space-y-4">
+                  <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg font-semibold truncate text-foreground">{cliente.nome}</h3>
+                      {cliente.email && (
+                        <p className="flex items-center mt-1 truncate text-sm text-muted-foreground">
+                          {cliente.email}
+                        </p>
+                      )}
+                    </div>
+                    <Badge variant={cliente.active ? "default" : "secondary"} className={cliente.active ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-200" : ""}>
                       {cliente.active ? "Ativo" : "Inativo"}
                     </Badge>
                   </div>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                <div className="space-y-2 text-sm">
-                  {cliente.telefone && (
-                    <div className="flex items-center text-muted-foreground">
-                      📞 {cliente.telefone}
-                    </div>
-                  )}
-                  {cliente.endereco && (
-                    <div className="flex items-center text-muted-foreground break-words">
-                      📍 {cliente.endereco}
-                    </div>
-                  )}
-                </div>
 
-                <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
-                  <span>Cadastrado em:</span>
-                  <span>{new Date(cliente.created_at).toLocaleDateString()}</span>
+                  <div className="space-y-2 text-sm bg-muted/30 p-3 rounded-lg border border-border/20">
+                    {cliente.telefone ? (
+                      <div className="flex items-center text-muted-foreground">
+                        <span className="mr-2">📞</span> {cliente.telefone}
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-muted-foreground italic opacity-50">
+                        <span className="mr-2">📞</span> Sem telefone
+                      </div>
+                    )}
+                    {cliente.endereco ? (
+                      <div className="flex items-center text-muted-foreground break-words">
+                        <span className="mr-2">📍</span> {cliente.endereco}
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-muted-foreground italic opacity-50">
+                        <span className="mr-2">📍</span> Sem endereço
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/30">
+                    <span>Cadastrado em:</span>
+                    <span>{new Date(cliente.created_at).toLocaleDateString()}</span>
+                  </div>
+
+                  <div className="pt-2">
+                    <ClienteActions
+                      cliente={cliente}
+                      onEdit={handleEdit}
+                      onRefresh={fetchClientes}
+                    />
+                  </div>
                 </div>
+              </GlassCard>
+            ))}
+          </div>
+        )}
 
-                <ClienteActions 
-                  cliente={cliente} 
-                  onEdit={handleEdit} 
-                  onRefresh={fetchClientes} 
-                />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {filteredClientes.length === 0 && (
-        <Card className="shadow-card">
-          <CardContent className="text-center py-12">
-            <p className="text-muted-foreground">
+        {filteredClientes.length === 0 && !loading && (
+          <GlassCard className="text-center py-16">
+            <p className="text-muted-foreground text-lg">
               {showInactive ? "Nenhum cliente inativo encontrado" : "Nenhum cliente ativo encontrado"}
             </p>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+            <Button variant="link" onClick={() => setSearchTerm("")} className="mt-2 text-primary">
+              Limpar filtros
+            </Button>
+          </GlassCard>
+        )}
+      </PageContainer>
     </OptimizedRoleGuard>
   );
 }
