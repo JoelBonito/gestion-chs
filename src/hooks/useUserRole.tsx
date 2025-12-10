@@ -48,8 +48,8 @@ export function useUserRole() {
 
   // Admin “hardcoded” (mantive os seus e-mails)
   const isHardcodedAdmin =
-    user?.email === 'jbento1@gmail.com' ||
-    user?.email === 'admin@admin.com';
+    user?.email?.toLowerCase() === 'jbento1@gmail.com' ||
+    user?.email?.toLowerCase() === 'admin@admin.com';
 
   const canEdit = () => isHardcodedAdmin || hasRole('admin') || hasRole('ops');
 
