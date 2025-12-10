@@ -14,10 +14,12 @@ type Props = {
   sort?: "nameAsc" | "nameDesc";
   limit?: number;
   allowedSupplierIds?: string[] | null;
+  categoryFilter?: string[];
+  fornecedorFilter?: string[];
 };
 
 export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
-  ({ searchTerm = "", sort = "nameAsc", limit = 1000, allowedSupplierIds = null }, ref) => {
+  ({ searchTerm = "", sort = "nameAsc", limit = 1000, allowedSupplierIds = null, categoryFilter = [], fornecedorFilter = [] }, ref) => {
     const [produtos, setProdutos] = useState<Produto[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -26,7 +28,7 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
         setLoading(true);
         let q = supabase
           .from("produtos")
-          .select("*")
+          .select("*, fornecedores(id, nome)")
           .order("nome")
           .limit(limit);
 
@@ -99,13 +101,27 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
 
       return baseProdutos
         .filter((p) => {
-          if (!searchTerm.trim()) return true;
-          const q = searchTerm.toLowerCase();
-          return (
-            (p.nome ?? "").toLowerCase().includes(q) ||
-            (p.marca ?? "").toLowerCase().includes(q) ||
-            (p.tipo ?? "").toLowerCase().includes(q)
-          );
+          // Filtro por texto
+          if (searchTerm.trim()) {
+            const q = searchTerm.toLowerCase();
+            const matchesSearch =
+              (p.nome ?? "").toLowerCase().includes(q) ||
+              (p.marca ?? "").toLowerCase().includes(q) ||
+              (p.tipo ?? "").toLowerCase().includes(q);
+            if (!matchesSearch) return false;
+          }
+
+          // Filtro por categoria (tipo)
+          if (categoryFilter.length > 0) {
+            if (!p.tipo || !categoryFilter.includes(p.tipo)) return false;
+          }
+
+          // Filtro por fornecedor
+          if (fornecedorFilter.length > 0) {
+            if (!p.fornecedor_id || !fornecedorFilter.includes(p.fornecedor_id)) return false;
+          }
+
+          return true;
         })
         .sort((a, b) => {
           const nomeA = (a.nome ?? "").toLowerCase();
@@ -115,7 +131,7 @@ export const ListaProdutos = forwardRef<ListaProdutosRef, Props>(
           if (nomeA > nomeB) return sort === "nameAsc" ? 1 : -1;
           return 0;
         });
-    }, [produtos, searchTerm, sort]);
+    }, [produtos, searchTerm, sort, categoryFilter, fornecedorFilter]);
 
     return (
       <div className="w-full">

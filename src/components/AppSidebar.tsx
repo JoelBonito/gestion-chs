@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Package, Users, Truck, ClipboardList, Factory, DollarSign, FolderKanban, LogOut, User, Moon, Sun } from "lucide-react";
+import { Home, Package, Users, Truck, ClipboardList, Factory, DollarSign, FolderKanban, LogOut, User, Moon, Sun, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -27,6 +27,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export function AppSidebar() {
   const location = useLocation();
@@ -36,7 +37,7 @@ export function AppSidebar() {
   const { isCollaborator } = useIsCollaborator();
   const { locale, isRestrictedFR } = useLocale();
   const { toast } = useToast();
-  const { state, isMobile } = useSidebar();
+  const { state, isMobile, toggleSidebar } = useSidebar();
   const isCollapsed = isMobile ? false : state === "collapsed";
   const { theme, setTheme } = useTheme();
 
@@ -170,24 +171,56 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-border/40 bg-background/60 dark:bg-card/40 backdrop-blur-md [&_[data-sidebar=sidebar]]:!bg-transparent data-[state=collapsed]:w-32">
       <SidebarHeader className={cn("p-4", isCollapsed && "flex items-center justify-center")}>
-        <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
-          <img
-            src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png"
-            alt="Gestion CHS"
-            className={cn(
-              "transition-all duration-300 object-contain",
-              isCollapsed ? "h-14 w-14" : "h-10 w-10"
+        <div className={cn("flex items-center w-full", isCollapsed ? "justify-center" : "justify-between")}>
+          <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
+            <img
+              src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png"
+              alt="Gestion CHS"
+              className={cn(
+                "transition-all duration-300 object-contain",
+                isCollapsed ? "h-16 w-16" : "h-10 w-10"
+              )}
+            />
+            {!isCollapsed && (
+              <div className="flex flex-col">
+                <span className="text-lg font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                  Gestion CHS
+                </span>
+                <span className="text-xs text-muted-foreground">Sistema de Gestão</span>
+              </div>
             )}
-          />
+          </div>
           {!isCollapsed && (
-            <div className="flex flex-col">
-              <span className="text-lg font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-                Gestion CHS
-              </span>
-              <span className="text-xs text-muted-foreground">Sistema de Gestão</span>
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => toggleSidebar()}
+                  className="h-8 w-8 rounded-lg hover:bg-muted/80 transition-all duration-200"
+                >
+                  <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Recolher menu</TooltipContent>
+            </Tooltip>
           )}
         </div>
+        {isCollapsed && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => toggleSidebar()}
+                className="mt-2 h-8 w-8 rounded-lg hover:bg-muted/80 transition-all duration-200"
+              >
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Expandir menu</TooltipContent>
+          </Tooltip>
+        )}
       </SidebarHeader>
 
       <SidebarSeparator />
@@ -262,8 +295,8 @@ export function AppSidebar() {
             {isCollapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="p-3 rounded-full bg-gradient-to-br from-primary to-primary-glow">
-                    <User className="h-7 w-7 text-white" />
+                  <div className="p-2 rounded-full bg-gradient-to-br from-primary to-primary-glow">
+                    <User className="h-5 w-5 text-white" />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="font-medium">
@@ -288,19 +321,29 @@ export function AppSidebar() {
             <SidebarMenuButton
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className={cn(
-                "transition-all duration-200 hover:bg-muted h-12",
-                isCollapsed && "justify-center"
+                "transition-all duration-200 hover:bg-muted h-10",
+                isCollapsed ? "justify-center w-full" : ""
               )}
             >
-              <div className={cn("p-3 rounded-xl bg-primary/10", isCollapsed && "mx-auto")}>
-                {theme === "dark" ? (
-                  <Sun className={cn("text-primary", isCollapsed ? "h-7 w-7" : "h-5 w-5")} />
-                ) : (
-                  <Moon className={cn("text-primary", isCollapsed ? "h-7 w-7" : "h-5 w-5")} />
-                )}
-              </div>
-              {!isCollapsed && (
-                <span className="font-medium">{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>
+              {isCollapsed ? (
+                <div className="p-2 rounded-xl bg-primary/10">
+                  {theme === "dark" ? (
+                    <Sun className="h-5 w-5 text-primary" />
+                  ) : (
+                    <Moon className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="p-2 rounded-xl bg-primary/10">
+                    {theme === "dark" ? (
+                      <Sun className="h-5 w-5 text-primary" />
+                    ) : (
+                      <Moon className="h-5 w-5 text-primary" />
+                    )}
+                  </div>
+                  <span className="font-medium">{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>
+                </>
               )}
             </SidebarMenuButton>
           </TooltipTrigger>
@@ -316,15 +359,21 @@ export function AppSidebar() {
             <SidebarMenuButton
               onClick={handleLogout}
               className={cn(
-                "transition-all duration-200 hover:bg-destructive/10 hover:text-destructive h-12",
-                isCollapsed && "justify-center"
+                "transition-all duration-200 hover:bg-destructive/10 hover:text-destructive h-10",
+                isCollapsed ? "justify-center w-full" : ""
               )}
             >
-              <div className={cn("p-3 rounded-xl bg-destructive/10", isCollapsed && "mx-auto")}>
-                <LogOut className={cn("text-destructive", isCollapsed ? "h-7 w-7" : "h-5 w-5")} />
-              </div>
-              {!isCollapsed && (
-                <span className="font-medium">Sair</span>
+              {isCollapsed ? (
+                <div className="p-2 rounded-xl bg-destructive/10">
+                  <LogOut className="h-5 w-5 text-destructive" />
+                </div>
+              ) : (
+                <>
+                  <div className="p-2 rounded-xl bg-destructive/10">
+                    <LogOut className="h-5 w-5 text-destructive" />
+                  </div>
+                  <span className="font-medium">Sair</span>
+                </>
               )}
             </SidebarMenuButton>
           </TooltipTrigger>

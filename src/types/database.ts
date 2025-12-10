@@ -1,4 +1,5 @@
 
+
 export interface Produto {
   id: string;
   nome: string;
@@ -13,7 +14,11 @@ export interface Produto {
   updated_at: string;
   imagem_url?: string | null;
   descricao?: string | null;
+  estoque_garrafas?: number;
+  estoque_tampas?: number;
+  estoque_rotulos?: number;
 }
+
 
 export interface Fornecedor {
   id: string;

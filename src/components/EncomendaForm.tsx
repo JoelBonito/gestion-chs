@@ -208,6 +208,10 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
 
         if (newEncomenda && newEncomenda.length > 0) {
           const encomendaId = newEncomenda[0].id;
+
+          // UUID do fornecedor de produção
+          const FORNECEDOR_PRODUCAO_ID = 'b8f995d2-47dc-4c8f-9779-ce21431f5244';
+
           for (const item of itens) {
             await supabase.from("itens_encomenda").insert([{
               encomenda_id: encomendaId,
@@ -216,6 +220,35 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
               preco_unitario: item.preco_venda,
               preco_custo: item.preco_custo,
             }]);
+          }
+
+          // Deduzir estoque se a encomenda for para o fornecedor de produção
+          if (data.fornecedor_id === FORNECEDOR_PRODUCAO_ID) {
+            for (const item of itens) {
+              // Buscar produto para verificar se pertence ao fornecedor alvo
+              const { data: produto } = await supabase
+                .from('produtos')
+                .select('fornecedor_id, estoque_garrafas, estoque_tampas, estoque_rotulos')
+                .eq('id', item.produto_id)
+                .single();
+
+              // Só deduzir se produto pertence ao fornecedor alvo
+              if (produto?.fornecedor_id === FORNECEDOR_PRODUCAO_ID) {
+                const quantidade = Math.floor(item.quantidade);
+                const novoEstoqueGarrafas = (produto.estoque_garrafas || 0) - quantidade;
+                const novoEstoqueTampas = (produto.estoque_tampas || 0) - quantidade;
+                const novoEstoqueRotulos = (produto.estoque_rotulos || 0) - quantidade;
+
+                await supabase
+                  .from('produtos')
+                  .update({
+                    estoque_garrafas: novoEstoqueGarrafas,
+                    estoque_tampas: novoEstoqueTampas,
+                    estoque_rotulos: novoEstoqueRotulos,
+                  })
+                  .eq('id', item.produto_id);
+              }
+            }
           }
 
           // Enviar notificação por email

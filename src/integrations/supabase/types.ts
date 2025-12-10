@@ -591,6 +591,9 @@ export type Database = {
           created_by: string
           deactivated_at: string | null
           deactivated_reason: string | null
+          estoque_garrafas: number
+          estoque_rotulos: number
+          estoque_tampas: number
           fornecedor_id: string | null
           id: string
           marca: string
@@ -607,6 +610,9 @@ export type Database = {
           created_by?: string
           deactivated_at?: string | null
           deactivated_reason?: string | null
+          estoque_garrafas?: number
+          estoque_rotulos?: number
+          estoque_tampas?: number
           fornecedor_id?: string | null
           id?: string
           marca: string
@@ -623,6 +629,9 @@ export type Database = {
           created_by?: string
           deactivated_at?: string | null
           deactivated_reason?: string | null
+          estoque_garrafas?: number
+          estoque_rotulos?: number
+          estoque_tampas?: number
           fornecedor_id?: string | null
           id?: string
           marca?: string
@@ -803,7 +812,6 @@ export type Database = {
         Returns: boolean
       }
       has_role:
-        | { Args: { p_role: string }; Returns: boolean }
         | {
             Args: {
               _role: Database["public"]["Enums"]["user_role"]
@@ -811,6 +819,7 @@ export type Database = {
             }
             Returns: boolean
           }
+        | { Args: { p_role: string }; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
       recalc_valor_total_custo_encomenda: {
         Args: { p_encomenda: string }

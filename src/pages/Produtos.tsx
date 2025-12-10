@@ -2,12 +2,13 @@ import { useRef, useState, useEffect, useMemo } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusIcon, RefreshCwIcon, Search } from "lucide-react";
+import { PlusIcon, RefreshCwIcon, Search, Package, Truck } from "lucide-react";
 import { ListaProdutos, ListaProdutosRef } from "@/components/ListaProdutos";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ProdutoForm } from "@/components/ProdutoForm";
 import { PageContainer } from "@/components/PageContainer";
+import { MultiSelect, Option } from "@/components/ui/multi-select";
 
 export default function Produtos() {
   const [email, setEmail] = useState<string | null>(null);
@@ -23,12 +24,45 @@ export default function Produtos() {
   // ⬇️ controla a abertura do modal "Novo produto"
   const [abrirNovo, setAbrirNovo] = useState(false);
 
+  // 🎯 Filtros multi-select
+  const [categorias, setCategorias] = useState<Option[]>([]);
+  const [fornecedores, setFornecedores] = useState<Option[]>([]);
+  const [selectedCategorias, setSelectedCategorias] = useState<string[]>([]);
+  const [selectedFornecedores, setSelectedFornecedores] = useState<string[]>([]);
+
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setEmail(user?.email ?? null);
     };
     fetchUser();
+  }, []);
+
+  // Carregar categorias (tipos) e fornecedores
+  useEffect(() => {
+    const fetchFilters = async () => {
+      // Buscar categorias únicas (tipo)
+      const { data: produtosData } = await supabase
+        .from("produtos")
+        .select("tipo")
+        .not("tipo", "is", null);
+
+      if (produtosData) {
+        const uniqueCategories = [...new Set(produtosData.map(p => p.tipo).filter(Boolean))];
+        setCategorias(uniqueCategories.map(cat => ({ value: cat!, label: cat! })));
+      }
+
+      // Buscar fornecedores
+      const { data: fornecedoresData } = await supabase
+        .from("fornecedores")
+        .select("id, nome")
+        .order("nome");
+
+      if (fornecedoresData) {
+        setFornecedores(fornecedoresData.map(f => ({ value: f.id, label: f.nome })));
+      }
+    };
+    fetchFilters();
   }, []);
 
   const handleRefresh = () => {
@@ -75,8 +109,8 @@ export default function Produtos() {
       actions={pageActions}
     >
       {/* Filtros */}
-      <div className="flex items-center gap-4 bg-white/60 dark:bg-card/40 backdrop-blur-sm p-4 rounded-xl border shadow-sm">
-        <div className="relative flex-1 max-w-md">
+      <div className="flex flex-wrap items-center gap-3 bg-white/60 dark:bg-card/40 backdrop-blur-sm p-4 rounded-xl border shadow-sm">
+        <div className="relative flex-1 min-w-[200px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             value={search}
@@ -85,7 +119,28 @@ export default function Produtos() {
             className="pl-9 bg-white dark:bg-background/50 border-none shadow-inner"
           />
         </div>
-        {/* Aqui poderiamos ter mais filtros no futuro */}
+
+        <div className="flex items-center gap-2">
+          <Package className="w-4 h-4 text-muted-foreground" />
+          <MultiSelect
+            options={categorias}
+            selected={selectedCategorias}
+            onChange={setSelectedCategorias}
+            placeholder="Categorias"
+            emptyMessage="Nenhuma categoria"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Truck className="w-4 h-4 text-muted-foreground" />
+          <MultiSelect
+            options={fornecedores}
+            selected={selectedFornecedores}
+            onChange={setSelectedFornecedores}
+            placeholder="Fornecedores"
+            emptyMessage="Nenhum fornecedor"
+          />
+        </div>
       </div>
 
       {/* Lista / Tabela */}
@@ -94,6 +149,8 @@ export default function Produtos() {
         searchTerm={debouncedSearch}
         sort={sort}
         allowedSupplierIds={allowedSupplierIds}
+        categoryFilter={selectedCategorias}
+        fornecedorFilter={selectedFornecedores}
       />
 
       {/* Modal: Novo produto */}
