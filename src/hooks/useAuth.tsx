@@ -8,19 +8,29 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial user
+    let mounted = true;
+
+    // Get initial user - só seta loading=false quando isso terminar
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      setLoading(false);
+      if (mounted) {
+        setUser(user);
+        setLoading(false);
+      }
     });
 
-    // Listen for auth changes
+    // Listen for auth changes - NÃO seta loading aqui
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
+      if (mounted) {
+        setUser(session?.user ?? null);
+        // Só seta loading=false se já tiver terminado o getUser inicial
+        // (que já setou loading=false)
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return { user, loading };

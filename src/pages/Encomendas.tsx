@@ -70,7 +70,7 @@ export default function Encomendas() {
   const { canEdit, hasRole } = useUserRole();
   const { isCollaborator } = useIsCollaborator();
   const { formatCurrency, formatDate } = useFormatters();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // Permissões para Rosa
   const isRosaUser = isLimitedNav(user);
@@ -255,6 +255,11 @@ export default function Encomendas() {
   const [userDataCached, setUserDataCached] = useState(false);
 
   useEffect(() => {
+    // Aguarda autenticação antes de carregar dados
+    if (authLoading) {
+      return;
+    }
+
     if (!userDataCached) {
       supabase.auth.getUser().then(({ data }) => {
         const fetchedEmail = data.user?.email ?? null;
@@ -263,7 +268,7 @@ export default function Encomendas() {
       });
     }
     fetchEncomendas();
-  }, [userDataCached]);
+  }, [userDataCached, authLoading]);
 
   const handleDateUpdate = async (
     encomendaId: string,
@@ -434,7 +439,7 @@ export default function Encomendas() {
 
           {/* Lista de Encomendas */}
           <div className="space-y-4">
-            {loading ? (
+            {(loading || authLoading) ? (
               <div className="space-y-4">
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}
               </div>
@@ -449,7 +454,7 @@ export default function Encomendas() {
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {filteredEncomendas.map((e, index) => (
-                  <GlassCard key={e.id} className="p-0 overflow-hidden" hoverEffect>
+                  <GlassCard key={`${e.id}-${user?.email || 'loading'}`} className="p-0 overflow-hidden" hoverEffect>
                     <div className="p-5 space-y-5">
                       {/* Linha Superior: ID e Status */}
                       <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
@@ -626,6 +631,7 @@ export default function Encomendas() {
                               onEdit={() => setSelectedEncomendaForEdit(e)}
                               onDelete={handleDelete}
                               onTransport={() => setTransportDialogOpen(true)}
+                              canEditOrders={canEdit() && !isCollaborator && !readOnlyOrders}
                             />
                           </div>
                         </div>

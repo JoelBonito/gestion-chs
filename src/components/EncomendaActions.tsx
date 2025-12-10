@@ -5,10 +5,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useUserRole } from "@/hooks/useUserRole";
-import { useIsCollaborator } from "@/hooks/useIsCollaborator";
-import { useAuth } from "@/hooks/useAuth";
-import { isReadonlyOrders } from "@/lib/permissions";
 
 type StatusEncomenda = "NOVO PEDIDO" | "MATÉRIA PRIMA" | "PRODUÇÃO" | "EMBALAGENS" | "TRANSPORTE" | "ENTREGUE";
 
@@ -31,13 +27,12 @@ interface EncomendaActionsProps {
   onEdit?: (data: any) => void;
   onDelete?: () => void;
   onTransport?: () => void;
+  // Permissões passadas pelo componente pai
+  canEditOrders?: boolean;
 }
 
-export function EncomendaActions({ encomenda, onView, onEdit, onDelete }: EncomendaActionsProps) {
-  const { hasRole, canEdit } = useUserRole();
-  const { isCollaborator } = useIsCollaborator();
-  const { user } = useAuth();
-  const readOnlyOrders = isReadonlyOrders(user);
+export function EncomendaActions({ encomenda, onView, onEdit, onDelete, canEditOrders = false }: EncomendaActionsProps) {
+
   const handleDelete = async () => {
     try {
       const { data, error } = await supabase.rpc('delete_encomenda_safely', {
@@ -45,7 +40,7 @@ export function EncomendaActions({ encomenda, onView, onEdit, onDelete }: Encome
       });
 
       if (error) throw error;
-      
+
       toast.success("Encomenda excluída com sucesso!");
       onDelete();
     } catch (error: any) {
@@ -67,7 +62,7 @@ export function EncomendaActions({ encomenda, onView, onEdit, onDelete }: Encome
           <Eye className="mr-2 h-4 w-4" />
           Visualizar
         </DropdownMenuItem>
-        {canEdit() && !isCollaborator && !readOnlyOrders && (
+        {canEditOrders && (
           <>
             <DropdownMenuItem onClick={() => onEdit?.(encomenda)}>
               <Edit className="mr-2 h-4 w-4" />
