@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { MessageSquare, X, Send, Loader2 } from 'lucide-react';
+import { MessageSquare, X, Send, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 import { useAIChat } from '@/hooks/useAIChat';
+import { DataReportRenderer } from '@/components/chat/DataReportRenderer';
 
 export function AIAssistantChat() {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false); // Novo estado
   const { messages, isLoading, sendMessage, inputValue, setInputValue } = useAIChat();
 
   // Apenas mostrar para jbento1@gmail.com
@@ -52,15 +54,14 @@ export function AIAssistantChat() {
       {isOpen && (
         <div
           className={cn(
-            "fixed bottom-6 right-6 w-[400px] h-[600px]",
-            "bg-background/95 backdrop-blur-xl",
-            "border border-border/50 rounded-3xl shadow-elegant",
-            "flex flex-col overflow-hidden z-50",
-            "animate-in slide-in-from-bottom-4 duration-300"
+            "fixed bg-background/95 backdrop-blur-xl border border-border/50 shadow-elegant flex flex-col overflow-hidden z-50 transition-all duration-300", // Classes base
+            isFullScreen
+              ? "inset-0 rounded-none w-full h-full" // Modo Full Screen
+              : "bottom-6 right-6 w-[400px] h-[600px] rounded-3xl animate-in slide-in-from-bottom-4" // Modo Normal
           )}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border/50 bg-gradient-to-r from-blue-500/10 to-purple-600/10">
+          <div className="flex items-center justify-between p-4 border-b border-border/50 bg-gradient-to-r from-blue-500/10 to-purple-600/10 shrink-0">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-glow">
                 <MessageSquare className="h-5 w-5 text-white" />
@@ -70,14 +71,36 @@ export function AIAssistantChat() {
                 <p className="text-xs text-muted-foreground">Powered by Gemini 2.5 Flash</p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsOpen(false)}
-              className="h-8 w-8 rounded-full hover:bg-muted/50"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+
+            <div className="flex items-center gap-1">
+              {/* Botão Full Screen */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsFullScreen(!isFullScreen)}
+                className="h-8 w-8 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                title={isFullScreen ? "Restaurar" : "Tela Cheia"}
+              >
+                {isFullScreen ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+
+              {/* Botão Fechar */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setIsOpen(false);
+                  setIsFullScreen(false); // Reseta full screen ao fechar
+                }}
+                className="h-8 w-8 rounded-full hover:bg-muted/50 hover:bg-red-500/10 hover:text-red-500"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Mensagens */}
@@ -89,7 +112,7 @@ export function AIAssistantChat() {
                   <p className="text-xs mt-2">Posso analisar dados, criar registros e muito mais.</p>
                 </div>
               )}
-              
+
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
@@ -100,13 +123,14 @@ export function AIAssistantChat() {
                 >
                   <div
                     className={cn(
-                      "max-w-[80%] rounded-2xl px-4 py-2 shadow-sm",
+                      "max-w-[85%] rounded-2xl px-4 py-3 shadow-sm", // Aumentei largura máx para 85% para caber tabela
                       msg.role === 'user'
                         ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white"
-                        : "bg-muted text-foreground"
+                        : "bg-muted text-foreground overflow-hidden" // overflow-hidden para tabelas
                     )}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    {/* Renderizador Inteligente (Texto ou Tabela) */}
+                    <DataReportRenderer content={msg.content} />
                   </div>
                 </div>
               ))}

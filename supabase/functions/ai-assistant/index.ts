@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -37,9 +38,19 @@ serve(async (req) => {
 
     const { messages } = await req.json();
 
+    // Contexto Temporal Dinâmico
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const currentYear = new Date().getFullYear();
+
     // System Prompt Blindado Anti-Alucinação (PRODUÇÃO)
     const systemPrompt = `Você é o Analista de Dados e Gestor do sistema Gestion CHS.
 Sua função é fornecer relatórios precisos, cruzar dados e auxiliar na gestão empresarial.
+
+## CONTEXTO TEMPORAL ATUAL
+- Hoje é: ${today} (Ano-Mês-Dia)
+- Ano Atual: ${currentYear}
+- Ao fazer queries de "este mês" ou "este ano", use datas dinâmicas ou o ano atual (${currentYear}).
+- Se os dados no banco forem antigos, ajuste as datas das queries para encontrar resultados (ex: tente o ano anterior se o atual estiver vazio).
 
 ## BANCO DE DADOS (PostgreSQL/Supabase)
 Você tem acesso de LEITURA total via SQL a estas tabelas:
@@ -96,7 +107,14 @@ Você tem acesso de LEITURA total via SQL a estas tabelas:
    ❌ ERRADO: Query retorna {"nome": "X", "total": 100} → Você diz "Fornecedor Y encomendou X"
    ✅ CORRETO: Query retorna {"nome": "X", "total": 100} → Você diz "Produto X teve 100 unidades encomendadas"
 
-4. **FORMATO DE RESPOSTA - JSON ESTRUTURADO (OBRIGATÓRIO)**
+4. **Fidelidade e UX (IMPORTANTE)**:
+   - **ISOLAMENTO DE DADOS**: Use APENAS o JSON da execução atual. IGNORE dados de perguntas passadas.
+   - Se a query retornar 3 registros e o usuário pediu 10, **MOSTRE APENAS OS 3**.
+   - **PROIBIÇÃO ABSOLUTA DE PLACEHOLDERS**: Nunca use "Produto A", "Item X".
+   - **Sem Dados? Converse!**: Se a busca retornar vazio (lista vazia), **NÃO RETORNE ERRO JSON**.
+     - Em vez disso, responda com texto natural: "Não encontrei dados para [X] neste período..."
+
+5. **FORMATO DE RESPOSTA (QUANDO HOUVER DADOS)**
    - NUNCA escreva texto conversacional quando retornar dados.
    - Retorne SEMPRE um bloco de código JSON com esta estrutura exata:
    
@@ -122,23 +140,30 @@ Você tem acesso de LEITURA total via SQL a estas tabelas:
    - Se precisa de mais info -> Pergunte em texto normal.
    - NÃO misture texto com JSON na mesma resposta.
 
-## INSTRUÇÕES DE BUSCA INTELIGENTE
-1. **Busca Flexível**:
-   - Usuário diz "mahal serpent" → busque \`WHERE nome ILIKE '%mahal%' AND nome ILIKE '%serpent%'\`
-   - SEMPRE use múltiplos termos com AND.
+## INSTRUÇÕES DE BUSCA INTELIGENTE (SQL)
+1. **Tratamento de Strings e Aspas**:
+   - Nomes como "Onl'us" ou "onlusbeauty" sao dificeis.
+   - ESTRATEGIA DE CURINGAS: Nao busque a palavra exata. Quebre em partes.
+   - EVITE: WHERE nome ILIKE '%onlusbeauty%' (Falha se tiver espaco).
+   - USE: WHERE nome ILIKE '%onl%us%' ou '%onl%beauty%'.
+   - Se o usuario escrever tudo junto ("brazilmulti"), separe no SQL: ILIKE '%brazil%multi%'.
 
-2. **Desambiguação Proativa**:
-   - Se encontrar variantes (ex: 100ML, 500ML, 1KG), liste TODAS e pergunte se quer filtrar.
+2. **Datas - Seja Inclusivo**:
+   - Se o usuário não pedir "este ano" explicitamente, NÃO FILTRE POR DATA.
+   - Os dados podem ser futuros ou passados. Deixe o banco retornar tudo e ordene por data (ORDER BY data_criacao DESC).
 
-3. **Exemplos de Queries Corretas**:
+3. **Filtros de Exclusão**:
+   - Para "tirando X", use AND p.nome NOT ILIKE '%X%'
 
-   **Exemplo 1: Produtos mais encomendados (SEM fornecedor)**
+4. **Exemplos de Queries Corretas**:
+
+   **Exemplo 1: Produtos mais encomendados (Tempo Total)**
    \`\`\`sql
    SELECT p.nome, SUM(ie.quantidade) as total
    FROM itens_encomenda ie
    JOIN produtos p ON ie.produto_id = p.id
    JOIN encomendas e ON ie.encomenda_id = e.id
-   WHERE EXTRACT(YEAR FROM e.data_criacao) = 2025
+   -- Sem filtro de data para pegar histórico completo
    GROUP BY p.nome
    ORDER BY total DESC LIMIT 10;
    \`\`\`
@@ -148,9 +173,10 @@ Você tem acesso de LEITURA total via SQL a estas tabelas:
    SELECT p.nome, f.nome as fornecedor_produto, SUM(ie.quantidade) as total
    FROM itens_encomenda ie
    JOIN produtos p ON ie.produto_id = p.id
-   JOIN fornecedores f ON p.fornecedor_id = f.id
+   -- Use LEFT JOIN para não perder produtos sem fornecedor
+   LEFT JOIN fornecedores f ON p.fornecedor_id = f.id
    JOIN encomendas e ON ie.encomenda_id = e.id
-   WHERE EXTRACT(YEAR FROM e.data_criacao) = 2025
+   WHERE e.data_criacao >= DATE_TRUNC('year', CURRENT_DATE)
    GROUP BY p.nome, f.nome
    ORDER BY total DESC LIMIT 10;
    \`\`\`
@@ -162,7 +188,7 @@ Você tem acesso de LEITURA total via SQL a estas tabelas:
    JOIN produtos p ON ie.produto_id = p.id
    JOIN encomendas e ON ie.encomenda_id = e.id
    JOIN fornecedores fe ON e.fornecedor_id = fe.id
-   WHERE EXTRACT(YEAR FROM e.data_criacao) = 2025
+   WHERE e.data_criacao >= DATE_TRUNC('year', CURRENT_DATE)
    GROUP BY p.nome, fe.nome
    ORDER BY total DESC LIMIT 10;
    \`\`\`
@@ -225,28 +251,62 @@ Você tem acesso de LEITURA total via SQL a estas tabelas:
       throw new Error('GEMINI_API_KEY not configured');
     }
 
-    // Usando modelo flash v2 (ajuste conforme disponibilidade da API, usando link genérico de beta com modelo definido)
-    // Se gemini-2.0-flash ainda estiver em preview restrito, usaremos o endpoint experimental
-    const MODEL_ID = 'gemini-2.0-flash-exp';
-    const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${geminiApiKey}`;
+    // INTELLIGENT MODEL SELECTOR (GATEKEEPER AI)
+    // Implementação robusta para evitar obsolescência e garantir disponibilidade
+    const INTELLIGENT_MODELS = [
+      'gemini-2.5-flash',       // 1. Alvo Principal (Performance/Preço Ideal)
+      'gemini-2.0-flash-exp',   // 2. Fallback Experimental (High Data Window)
+      'gemini-1.5-flash'        // 3. Fallback Legacy Estável
+    ];
 
-    // 1. Primeira Chamada ao Gemini
-    const callGemini = async (msgs: any[], toolsList: any[]) => {
-      const response = await fetch(GEMINI_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: msgs,
-          tools: [{ function_declarations: toolsList }],
-          generationConfig: { temperature: 0.2, maxOutputTokens: 4096 } // Temp baixa para SQL preciso
-        })
-      });
+    const generateContentWithFallback = async (msgs: any[], toolsList: any[]) => {
+      let lastError = null;
 
-      if (!response.ok) {
-        const txt = await response.text();
-        throw new Error(`Gemini API Error (${response.status}): ${txt}`);
+      for (const model of INTELLIGENT_MODELS) {
+        try {
+          // console.log(`[Selector] Tentando modelo: ${model}`); // Debug opcional
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
+
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: msgs,
+              tools: [{ function_declarations: toolsList }],
+              generationConfig: { temperature: 0.0, maxOutputTokens: 4096 }
+            })
+          });
+
+          if (!response.ok) {
+            // Se for erro 404 (modelo não existe) ou 5xx (serviço fora), tenta o próximo
+            if (response.status === 404 || response.status >= 500) {
+              const txt = await response.text();
+              console.warn(`[Selector] Falha no modelo ${model} (${response.status}): ${txt}. Tentando próximo...`);
+              lastError = new Error(`Gemini API Error (${model}): ${txt}`);
+              continue;
+            }
+            // Outros erros (ex: 400 Bad Request) são fatais, não adianta trocar modelo
+            const txt = await response.text();
+            throw new Error(`Gemini API Error (${model} - ${response.status}): ${txt}`);
+          }
+
+          return response.json(); // Sucesso!
+        } catch (e: any) {
+          lastError = e;
+          // Se for erro de rede/fetch, tenta o próximo
+          if (e.name === 'TypeError' || e.message.includes('fetch')) {
+            console.warn(`[Selector] Erro de rede no modelo ${model}. Tentando próximo...`);
+            continue;
+          }
+          throw e; // Erro fatal re-lançado
+        }
       }
-      return response.json();
+      throw lastError || new Error('Todos os modelos falharam.');
+    };
+
+    // 1. Primeira Chamada ao Gemini (Via Seletor)
+    const callGemini = async (msgs: any[], toolsList: any[]) => {
+      return generateContentWithFallback(msgs, toolsList);
     };
 
     // Montar histórico
@@ -280,13 +340,20 @@ Você tem acesso de LEITURA total via SQL a estas tabelas:
 
     try {
       if (toolName === 'run_sql_select') {
-        const { query } = toolArgs;
+        let { query } = toolArgs;
+
+        // SANITIZAÇÃO DE SQL (Remove comentários que quebram a validação regex do RPC)
+        // Remove comentários de linha (-- até o fim da linha)
+        query = query.replace(/--.*$/gm, ' ').trim();
+        // Remove múltiplos espaços/newlines
+        query = query.replace(/\s+/g, ' ').trim();
 
         // LOG TEMP: Capturar SQL gerado
-        console.log('[DEBUG] SQL Generated by AI:', query);
+        console.log('[DEBUG] SQL Cleaned:', query);
 
         // Validação adicional de segurança (Deep Defense)
-        if (!query.trim().toUpperCase().startsWith('SELECT')) {
+        if (!query.toUpperCase().startsWith('SELECT')) {
+          console.error('[SECURITY] Query rejeitada:', query);
           throw new Error('Apenas consultas SELECT são permitidas por segurança.');
         }
 
@@ -294,13 +361,13 @@ Você tem acesso de LEITURA total via SQL a estas tabelas:
         const { data: sqlData, error: sqlError } = await supabaseClient.rpc('exec_sql_readonly', { query });
 
         // LOG TEMP: Capturar resultado bruto
-        console.log('[DEBUG] Raw SQL Result:', JSON.stringify(sqlData).substring(0, 500));
 
         if (sqlError) {
-          // Se a RPC não existir, tentar fallback (APENAS DEV/RISCO CONTROLADO) ou erro informativo
           console.error('RPC Error:', sqlError);
-          throw new Error(`Erro ao executar SQL: ${sqlError.message}. Verifique se a função 'exec_sql_readonly' foi criada no banco.`);
+          throw new Error(`Erro ao executar SQL: ${sqlError.message}`);
         }
+
+        console.log('[DEBUG] Raw SQL Result:', JSON.stringify(sqlData).substring(0, 500));
 
         toolResult = { success: true, count: Array.isArray(sqlData) ? sqlData.length : 0, data: sqlData };
 
@@ -326,14 +393,40 @@ Você tem acesso de LEITURA total via SQL a estas tabelas:
       console.error('Tool Exception:', err);
       toolResult = { success: false, error: err.message };
     }
+    const toolOutputString = JSON.stringify(toolResult);
+    let systemInstructionForFinalResponse = "";
+
+    if (toolName === 'run_sql_select') {
+      // O resultado do RPC é o payload 'data' dentro de toolResult
+      const resultData = toolResult.data || [];
+      const itemCount = Array.isArray(resultData) ? resultData.length : 0;
+
+      if (toolResult && toolResult.error) {
+        systemInstructionForFinalResponse = `SYSTEM: A query SQL falhou com o erro: "${toolResult.error}". NÃO INVENTE DADOS. Explique o erro técnico e sugira tentar novamente.`;
+      } else if (itemCount === 0) {
+        systemInstructionForFinalResponse = `SYSTEM: A query retornou 0 resultados. ISSO É UM FATO. NÃO INVENTE DADOS. Responda educadamente que não encontrou registros.`;
+      } else {
+        // Instrução DRACONIANA para fidelidade
+        systemInstructionForFinalResponse = `SYSTEM: SUCESSO. A query retornou exatamente ${itemCount} registros.
+SUA TAREFA É APENAS OPTAR PELO CAMINHO DA VERDADE:
+1. COPIE os dados acima para o campo 'data' do seu JSON.
+2. NÃO ADICIONE nenhum registro que não esteja na lista acima.
+3. NÃO REMOVA nenhum registro (a menos que solicitado).
+4. SE VOCÊ INVENTAR DADOS, A OPERAÇÃO FALHARÁ. SEJA MECÂNICO.`;
+      }
+    }
 
     // Chamada de Retorno (Follow-up)
     const followUpContents = [
       ...chatContents,
       { role: 'model', parts: [{ functionCall: functionCall.functionCall }] },
-      { role: 'user', parts: [{ functionResponse: { name: toolName, response: toolResult } }] }
+      {
+        role: 'user',
+        parts: [{
+          text: `Resultado da Função ${toolName}: ${toolOutputString}\n\n${systemInstructionForFinalResponse}`
+        }]
+      }
     ];
-
     const followUpData = await callGemini(followUpContents, tools);
     const finalText = followUpData.candidates?.[0]?.content?.parts?.[0]?.text || 'Ação concluída.';
 
