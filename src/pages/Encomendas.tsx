@@ -519,31 +519,6 @@ export default function Encomendas() {
 
                         {/* 1. ESQUERDA: Datas */}
                         <div className="flex items-center gap-6 self-start sm:self-center">
-                          {/* Data Entrega */}
-                          <div className={cn("flex flex-col", !e.data_envio_estimada && "opacity-60")}>
-                            <span className="text-[10px] uppercase text-muted-foreground font-semibold">{t.deliveryDate}</span>
-                            {canEditDeliveryUI ? (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <button className="flex items-center gap-1 hover:text-primary font-medium transition-colors text-left group">
-                                    <span>{e.data_envio_estimada ? formatDate(e.data_envio_estimada) : "Definir data"}</span>
-                                    <Edit className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
-                                  </button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                  <Calendar
-                                    mode="single"
-                                    selected={e.data_envio_estimada ? new Date(e.data_envio_estimada) : undefined}
-                                    onSelect={(d) => handleDateUpdate(e.id, "data_envio_estimada", d ? format(d, "yyyy-MM-dd") : "")}
-                                    initialFocus
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                            ) : (
-                              <span className="font-medium">{e.data_envio_estimada ? formatDate(e.data_envio_estimada) : "—"}</span>
-                            )}
-                          </div>
-
                           {/* Data Produção */}
                           <div className={cn("flex flex-col", !e.data_producao_estimada && "opacity-60")}>
                             <span className="text-[10px] uppercase text-muted-foreground font-semibold">{t.productionDate}</span>
@@ -566,6 +541,31 @@ export default function Encomendas() {
                               </Popover>
                             ) : (
                               <span className="font-medium">{e.data_producao_estimada ? formatDate(e.data_producao_estimada) : "—"}</span>
+                            )}
+                          </div>
+
+                          {/* Data Entrega */}
+                          <div className={cn("flex flex-col", !e.data_envio_estimada && "opacity-60")}>
+                            <span className="text-[10px] uppercase text-muted-foreground font-semibold">{t.deliveryDate}</span>
+                            {canEditDeliveryUI ? (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button className="flex items-center gap-1 hover:text-primary font-medium transition-colors text-left group">
+                                    <span>{e.data_envio_estimada ? formatDate(e.data_envio_estimada) : "Definir data"}</span>
+                                    <Edit className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                  <Calendar
+                                    mode="single"
+                                    selected={e.data_envio_estimada ? new Date(e.data_envio_estimada) : undefined}
+                                    onSelect={(d) => handleDateUpdate(e.id, "data_envio_estimada", d ? format(d, "yyyy-MM-dd") : "")}
+                                    initialFocus
+                                  />
+                                </PopoverContent>
+                              </Popover>
+                            ) : (
+                              <span className="font-medium">{e.data_envio_estimada ? formatDate(e.data_envio_estimada) : "—"}</span>
                             )}
                           </div>
                         </div>

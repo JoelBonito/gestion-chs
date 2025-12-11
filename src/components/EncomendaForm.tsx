@@ -1,44 +1,50 @@
-import { useState, useEffect, useRef, memo } from "react";
+import { useState, useEffect, useRef, memo, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
 import { ItensEncomendaManager, type ItemEncomenda } from "./ItensEncomendaManager";
+// Interface local simplificada para evitar problemas de importação
+interface Cliente {
+  id: string;
+  nome: string;
+  active?: boolean;
+}
+
+interface Fornecedor {
+  id: string;
+  nome: string;
+  active?: boolean;
+}
 import { GlassCard } from "@/components/GlassCard";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { sendEmail, emailTemplates, emailRecipients } from "@/lib/email";
-import { Package, Truck, Info, Hash, Tag, User, Store, Calendar as CalendarIcon, Save, Calculator } from "lucide-react";
+import { Package, Truck, Info, Hash, Tag, User, Store, Calendar as CalendarIcon, Save, Calculator, Euro } from "lucide-react";
 
 // Componente de Input com estado local para evitar re-renders do formulário
 interface LocalInputProps {
-  id: string;
-  value: string;
+  value: string | number;
   onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
   type?: string;
   step?: string;
   min?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  className?: string;
+  id?: string;
 }
 
-const LocalInput = memo(({ id, value, onChange, placeholder, className, type = "text", step, min }: LocalInputProps) => {
-  const [localValue, setLocalValue] = useState(value);
+const LocalInput = memo(({ value, onChange, type = "text", step, min, placeholder, disabled, className, id }: LocalInputProps) => {
+  const [localValue, setLocalValue] = useState(String(value ?? ""));
   const isFocusedRef = useRef(false);
-  const lastExternalValueRef = useRef(value);
 
-  // Sincronizar com valor externo quando muda de fora (ex: botão Auto)
   useEffect(() => {
-    // Se o valor externo mudou E (não está focado OU mudou drasticamente)
-    const valueChangedExternally = value !== lastExternalValueRef.current;
-    const significantChange = value !== localValue && !isFocusedRef.current;
-
-    if (valueChangedExternally || significantChange) {
-      setLocalValue(value);
-      lastExternalValueRef.current = value;
+    if (!isFocusedRef.current) {
+      setLocalValue(String(value ?? ""));
     }
-  }, [value, localValue]);
+  }, [value]);
 
   const handleFocus = () => {
     isFocusedRef.current = true;
@@ -46,6 +52,13 @@ const LocalInput = memo(({ id, value, onChange, placeholder, className, type = "
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalValue(e.target.value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleBlur();
+    }
   };
 
   const handleBlur = () => {
@@ -63,23 +76,15 @@ const LocalInput = memo(({ id, value, onChange, placeholder, className, type = "
       onChange={handleChange}
       onFocus={handleFocus}
       onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
       placeholder={placeholder}
       className={className}
+      disabled={disabled}
     />
   );
 });
 
 LocalInput.displayName = "LocalInput";
-
-interface Cliente {
-  id: string;
-  nome: string;
-}
-
-interface Fornecedor {
-  id: string;
-  nome: string;
-}
 
 interface EncomendaFormProps {
   onSuccess: () => void;
@@ -99,12 +104,11 @@ interface FormData {
   valor_frete: number;
 }
 
-// Função auxiliar para calcular peso com margem de 30%
 const calcularPesoComEmbalagem = (listaItens: ItemEncomenda[]) => {
   const totalGramas = listaItens.reduce((total, item) => {
     return total + (Number(item.quantidade) * (item.peso_produto || 0));
   }, 0);
-  return (totalGramas * 1.30) / 1000; // Retorna em KG
+  return (totalGramas * 1.30) / 1000;
 };
 
 export default function EncomendaForm({ onSuccess, encomenda, initialData, isEditing = false }: EncomendaFormProps) {
@@ -113,10 +117,11 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
   const [itens, setItens] = useState<ItemEncomenda[]>([]);
   const [valorTotal, setValorTotal] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pesoBruto, setPesoBruto] = useState(0);
 
-  const editingData = encomenda || initialData;
-  const isEdit = isEditing || !!editingData;
+  // Flag para prevenir sobrescrita durante carregamento
+  const isInitializing = useRef(true);
+
+  const pesoBruto = useMemo(() => calcularPesoComEmbalagem(itens), [itens]);
 
   const [formData, setFormData] = useState<FormData>({
     numero_encomenda: "",
@@ -129,253 +134,255 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
     valor_frete: 0,
   });
 
-  // Handler simples para atualizar campos
+  // Atualizar peso/frete APENAS após inicialização
+  useEffect(() => {
+    if (isInitializing.current) return;
+
+    const freteCalculado = pesoBruto * 4.5;
+    setFormData(prev => ({
+      ...prev,
+      peso_total: pesoBruto,
+      valor_frete: freteCalculado
+    }));
+  }, [pesoBruto]);
+
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  useEffect(() => {
-    const pesoKg = calcularPesoComEmbalagem(itens);
-    setPesoBruto(pesoKg);
-  }, [itens.length]);
-
+  // Fetch clientes e fornecedores
   useEffect(() => {
     const fetchData = async () => {
       const { data: clientesData } = await supabase
-        .from("clientes").select("id, nome").eq("active", true).order("nome");
-      if (clientesData) setClientes(clientesData);
+        .from("clientes").select("id, nome, active").eq("active", true).order("nome");
+      if (clientesData) setClientes(clientesData as any);
 
       const { data: fornecedoresData } = await supabase
-        .from("fornecedores").select("id, nome").eq("active", true).order("nome");
-      if (fornecedoresData) setFornecedores(fornecedoresData);
+        .from("fornecedores").select("id, nome, active").eq("active", true).order("nome");
+      if (fornecedoresData) setFornecedores(fornecedoresData as any);
     };
     fetchData();
   }, []);
 
+  // Carregar dados de edição ou gerar número para nova encomenda
   useEffect(() => {
-    if (!isEdit || !editingData) return;
-    if (clientes.length === 0 || fornecedores.length === 0) return;
+    const editingData = encomenda || initialData;
+    const isEdit = isEditing || !!editingData;
 
-    setFormData({
-      numero_encomenda: editingData.numero_encomenda || "",
-      etiqueta: editingData.etiqueta || "",
-      cliente_id: editingData.cliente_id || "",
-      fornecedor_id: editingData.fornecedor_id || "",
-      data_producao_estimada: editingData.data_producao_estimada || "",
-      data_envio_estimada: editingData.data_envio_estimada || "",
-      peso_total: editingData.peso_total || 0,
-      valor_frete: editingData.valor_frete || 0,
-    });
+    if (editingData) {
+      isInitializing.current = true;
 
-    // Carrega itens da encomenda
-    const fetchItens = async () => {
-      const { data: itensData } = await supabase
-        .from("itens_encomenda")
-        .select(`*, produtos(nome, marca, tipo, preco_custo, preco_venda, size_weight)`)
-        .eq("encomenda_id", editingData.id);
-      if (itensData) {
-        const itensFormatados = itensData.map((item: any) => ({
-          id: item.id,
+      setFormData({
+        numero_encomenda: editingData.numero_encomenda || "",
+        etiqueta: editingData.etiqueta || "",
+        cliente_id: editingData.cliente_id || "",
+        fornecedor_id: editingData.fornecedor_id || "",
+        data_producao_estimada: editingData.data_producao_estimada || "",
+        data_envio_estimada: editingData.data_envio_estimada || "",
+        peso_total: editingData.peso_total || 0,
+        valor_frete: editingData.valor_frete || 0,
+      });
+
+      // Se itens não vieram no objeto, buscar do banco
+      const loadItens = async () => {
+
+        let itensData = editingData.itens;
+
+        if (!itensData && editingData.id) {
+
+          const { data: itensFromDb, error } = await supabase
+            .from("itens_encomenda")
+            .select(`
+              *,
+              produtos:produto_id (
+                nome,
+                marca,
+                tipo,
+                size_weight
+              )
+            `)
+            .eq("encomenda_id", editingData.id);
+
+
+          if (error) {
+          }
+
+          if (itensFromDb) {
+            itensData = itensFromDb.map((item: any) => ({
+              ...item,
+              produto_nome: item.produtos?.nome || "",
+              peso_produto: item.produtos?.size_weight || 0,
+              preco_venda: item.preco_unitario || 0,
+            }));
+          }
+        } else {
+        }
+
+        const initialItens = (itensData || []).map((item: any) => ({
+          ...item,
           tempId: crypto.randomUUID(),
-          produto_id: item.produto_id,
-          produto_nome: item.produtos ? `${item.produtos.nome} - ${item.produtos.marca} - ${item.produtos.tipo}` : "Produto não encontrado",
-          quantidade: item.quantidade ? `${item.quantidade}` : "",
-          preco_custo: item.preco_custo || 0,
-          preco_venda: item.preco_unitario,
-          subtotal: item.subtotal || (Number(item.quantidade) * item.preco_unitario),
-          peso_produto: item.produtos?.size_weight || 0,
+          quantidade: String(item.quantidade || 0),
+          preco_custo: Number(item.preco_custo || 0),
+          preco_venda: Number(item.preco_venda || item.preco_unitario || 0),
+          peso_produto: Number(item.peso_produto || item.produtos?.size_weight || 0),
+          produto_nome: item.produto_nome || item.produtos?.nome || "",
         }));
-        setItens(itensFormatados);
-      }
-    };
-    fetchItens();
-  }, [isEdit, editingData, clientes.length, fornecedores.length]);
 
-  // Ao editar: calcular e preencher Peso Bruto e Valor do Frete
-  useEffect(() => {
-    if (!isEdit) return;
-    if (!itens || itens.length === 0) return;
 
-    const pesoKg = calcularPesoComEmbalagem(itens);
-    const tarifaPorKg = 4.5;
-    const frete = pesoKg * tarifaPorKg;
+        setItens(initialItens);
 
-    setFormData(prev => ({
-      ...prev,
-      peso_total: Number(pesoKg.toFixed(2)),
-      valor_frete: Number(frete.toFixed(2)),
-    }));
-  }, [isEdit, itens.length]);
+        const total = initialItens.reduce((acc: number, item: any) => acc + (item.subtotal || 0), 0);
+        setValorTotal(total);
+
+
+        // Se frete está zerado, calcular automaticamente
+        if ((editingData.valor_frete || 0) === 0 && initialItens.length > 0) {
+          const pesoCalculado = calcularPesoComEmbalagem(initialItens);
+          const freteCalculado = pesoCalculado * 4.5;
+          setFormData(prev => ({
+            ...prev,
+            peso_total: pesoCalculado,
+            valor_frete: freteCalculado
+          }));
+        }
+
+        setTimeout(() => {
+          isInitializing.current = false;
+        }, 100);
+      };
+
+      loadItens();
+    } else {
+      const fetchLastNumber = async () => {
+        const { data } = await supabase
+          .from("encomendas")
+          .select("numero_encomenda")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
+
+        if (data?.numero_encomenda) {
+          const lastNum = parseInt(data.numero_encomenda.replace(/\D/g, ""));
+          const nextNum = `ENC${String(lastNum + 1).padStart(3, "0")}`;
+          handleInputChange("numero_encomenda", nextNum);
+        } else {
+          handleInputChange("numero_encomenda", "ENC001");
+        }
+
+        isInitializing.current = false;
+      };
+
+      if (!isEdit) fetchLastNumber();
+    }
+  }, [encomenda, initialData, isEditing]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!formData.numero_encomenda || !formData.cliente_id || !formData.fornecedor_id) {
-      toast.error("Número, cliente e fornecedor são obrigatórios.");
-      return;
-    }
-
-    if (itens.length === 0) {
-      toast.error("Adicione pelo menos um item à encomenda.");
-      return;
-    }
-
     setIsSubmitting(true);
+
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData?.session) {
-        toast.error("Faça login para salvar.");
+      // Validações obrigatórias
+      if (itens.length === 0) {
+        alert("Adicione pelo menos um produto.");
         setIsSubmitting(false);
         return;
       }
 
-      if (isEdit && editingData?.id) {
-        const payloadEncomenda = {
-          id: editingData.id,
-          numero_encomenda: formData.numero_encomenda,
-          etiqueta: formData.etiqueta || null,
-          cliente_id: formData.cliente_id,
-          fornecedor_id: formData.fornecedor_id,
-          data_envio_estimada: formData.data_envio_estimada || null,
-          data_producao_estimada: formData.data_producao_estimada || null,
-          peso_total: formData.peso_total || 0,
-          valor_frete: formData.valor_frete || 0,
-        };
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
 
-        const itensParaSalvar = itens.map(item => ({
-          ...(item.id ? { id: item.id } : {}),
+      // Para UPDATE: não enviar user_id (não existe na tabela)
+      // Para CREATE: created_by é preenchido automaticamente via default auth.uid()
+      const encomendaData = {
+        ...formData,
+        peso_total: pesoBruto,
+        // Converter strings vazias em null para datas
+        data_producao_estimada: formData.data_producao_estimada || null,
+        data_envio_estimada: formData.data_envio_estimada || null,
+      };
+
+      let encomendaId = encomenda?.id;
+      const isEdit = isEditing || !!encomendaId;
+
+      if (isEdit && encomendaId) {
+
+        const { error } = await supabase
+          .from("encomendas")
+          .update(encomendaData)
+          .eq("id", encomendaId);
+
+        if (error) {
+          throw error;
+        }
+
+
+        await supabase.from("itens_encomenda").delete().eq("encomenda_id", encomendaId);
+
+        const itensToInsert = itens.map(item => ({
+          encomenda_id: encomendaId,
           produto_id: item.produto_id,
-          quantidade: Math.floor(Number(item.quantidade)) || 0,
-          preco_unitario: Number(item.preco_venda) || 0,
-          preco_custo: Number(item.preco_custo) || 0,
+          quantidade: parseInt(item.quantidade) || 0,
+          preco_custo: item.preco_custo,
+          preco_unitario: item.preco_venda
         }));
 
-        const { error: updateError } = await supabase.rpc('salvar_edicao_encomenda', {
-          p_encomenda_id: editingData.id,
-          p_dados: payloadEncomenda,
-          p_itens: itensParaSalvar
-        });
-        if (updateError) throw updateError;
-
-        toast.success("Encomenda atualizada!");
+        if (itensToInsert.length > 0) {
+          const { error: itemsError } = await supabase.from("itens_encomenda").insert(itensToInsert);
+          if (itemsError) throw itemsError;
+        }
       } else {
         const { data: newEncomenda, error } = await supabase
           .from("encomendas")
-          .insert([{
-            numero_encomenda: formData.numero_encomenda,
-            etiqueta: formData.etiqueta || null,
-            cliente_id: formData.cliente_id,
-            fornecedor_id: formData.fornecedor_id,
-            data_producao_estimada: formData.data_producao_estimada || null,
-            data_envio_estimada: formData.data_envio_estimada || null,
-            valor_total: valorTotal,
-            peso_total: formData.peso_total || 0,
-            valor_frete: formData.valor_frete || 0,
-          }])
-          .select();
+          .insert([encomendaData])
+          .select()
+          .single();
+
         if (error) throw error;
+        encomendaId = newEncomenda.id;
 
-        if (newEncomenda && newEncomenda.length > 0) {
-          const encomendaId = newEncomenda[0].id;
-          const FORNECEDOR_PRODUCAO_ID = 'b8f995d2-47dc-4c8f-9779-ce21431f5244';
+        const itensToInsert = itens.map(item => ({
+          encomenda_id: encomendaId,
+          produto_id: item.produto_id,
+          quantidade: parseInt(item.quantidade) || 0,
+          preco_custo: item.preco_custo,
+          preco_unitario: item.preco_venda
+        }));
 
-          for (const item of itens) {
-            await supabase.from("itens_encomenda").insert([{
-              encomenda_id: encomendaId,
-              produto_id: item.produto_id,
-              quantidade: Math.floor(Number(item.quantidade)),
-              preco_unitario: item.preco_venda,
-              preco_custo: item.preco_custo,
-            }]);
-          }
+        if (itensToInsert.length > 0) {
+          const { error: itemsError } = await supabase.from("itens_encomenda").insert(itensToInsert);
+          if (itemsError) throw itemsError;
+        }
 
-          // Deduzir estoque se a encomenda for para o fornecedor de produção
-          if (formData.fornecedor_id === FORNECEDOR_PRODUCAO_ID) {
-            for (const item of itens) {
-              const { data: produto } = await supabase
-                .from('produtos')
-                .select('fornecedor_id, estoque_garrafas, estoque_tampas, estoque_rotulos')
-                .eq('id', item.produto_id)
-                .single();
-
-              if (produto?.fornecedor_id === FORNECEDOR_PRODUCAO_ID) {
-                const quantidade = Math.floor(Number(item.quantidade));
-                const novoEstoqueGarrafas = (produto.estoque_garrafas || 0) - quantidade;
-                const novoEstoqueTampas = (produto.estoque_tampas || 0) - quantidade;
-                const novoEstoqueRotulos = (produto.estoque_rotulos || 0) - quantidade;
-
-                await supabase
-                  .from('produtos')
-                  .update({
-                    estoque_garrafas: novoEstoqueGarrafas,
-                    estoque_tampas: novoEstoqueTampas,
-                    estoque_rotulos: novoEstoqueRotulos,
-                  })
-                  .eq('id', item.produto_id);
-              }
-            }
-          }
-
-          // Enviar notificação por email
-          try {
-            const clienteNome = clientes.find(c => c.id === formData.cliente_id)?.nome || 'Cliente não encontrado';
-            const fornecedorNome = fornecedores.find(f => f.id === formData.fornecedor_id)?.nome || 'Fornecedor não encontrado';
-            const produtos = itens.map(item => ({ nome: item.produto_nome, quantidade: Number(item.quantidade) }));
-
-            await sendEmail(
-              emailRecipients.geral,
-              `📦 Nova encomenda criada — ${formData.numero_encomenda}`,
-              emailTemplates.novaEncomenda(formData.numero_encomenda, formData.etiqueta || 'N/A', clienteNome, fornecedorNome, produtos)
-            );
-          } catch (emailError) {
-            console.error("Erro ao enviar email:", emailError);
-          }
-
-          toast.success("Encomenda criada!");
+        try {
+          await sendEmail(
+            emailRecipients.geral,
+            "Nova Encomenda",
+            emailTemplates.novaEncomenda(
+              formData.numero_encomenda,
+              formData.etiqueta,
+              clientes.find(c => c.id === formData.cliente_id)?.nome || "Cliente",
+              fornecedores.find(f => f.id === formData.fornecedor_id)?.nome || "Fornecedor",
+              itens.map(i => ({ nome: i.produto_nome || "Produto", quantidade: Number(i.quantidade) }))
+            )
+          );
+        } catch (emailError) {
+          console.error("Erro ao enviar email:", emailError);
         }
       }
+
       onSuccess();
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.message || "Erro ao salvar encomenda");
+    } catch (error) {
+      console.error("Erro ao salvar:", error);
+      alert("Erro ao salvar encomenda. Verifique os dados.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const gerarNumeroAuto = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("encomendas")
-        .select("numero_encomenda")
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      if (error) throw error;
-
-      let proximoNumero = "ENC001";
-
-      if (data && data.length > 0) {
-        const ultimoNumero = data[0].numero_encomenda;
-        const match = ultimoNumero.match(/ENC(\d+)/);
-        if (match) {
-          const numero = parseInt(match[1]) + 1;
-          proximoNumero = `ENC${numero.toString().padStart(3, '0')}`;
-        }
-      }
-
-      handleInputChange("numero_encomenda", proximoNumero);
-      toast.success("Número gerado automaticamente!");
-    } catch (error) {
-      console.error("Erro ao gerar número:", error);
-      toast.error("Erro ao gerar número automático");
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Informações Principais */}
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="flex flex-col gap-6">
+
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6 border-b border-border/40 pb-4">
             <Info className="h-5 w-5 text-primary" />
@@ -392,22 +399,35 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                 <div className="flex gap-2">
                   <LocalInput
                     id="numero_encomenda"
-                    placeholder="Ex: ENC001"
                     value={formData.numero_encomenda}
                     onChange={(value) => handleInputChange("numero_encomenda", value)}
-                    className="bg-background/50"
+                    className="bg-background/50 font-mono flex-1"
+                    placeholder="ENC..."
                   />
-                  {!isEdit && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={gerarNumeroAuto}
-                      className="whitespace-nowrap gap-2 bg-secondary/50 border-secondary hover:bg-secondary/70"
-                    >
-                      <Calculator className="h-3.5 w-3.5" />
-                      Auto
-                    </Button>
-                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      const { data } = await supabase
+                        .from("encomendas")
+                        .select("numero_encomenda")
+                        .order("created_at", { ascending: false })
+                        .limit(1)
+                        .single();
+
+                      if (data?.numero_encomenda) {
+                        const lastNum = parseInt(data.numero_encomenda.replace(/\D/g, ""));
+                        const nextNum = `ENC${String(lastNum + 1).padStart(3, "0")}`;
+                        handleInputChange("numero_encomenda", nextNum);
+                      } else {
+                        handleInputChange("numero_encomenda", "ENC001");
+                      }
+                    }}
+                    className="shrink-0"
+                  >
+                    AUTO
+                  </Button>
                 </div>
               </div>
 
@@ -418,10 +438,10 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                 </Label>
                 <LocalInput
                   id="etiqueta"
-                  placeholder="Ex: URGENTE"
                   value={formData.etiqueta}
                   onChange={(value) => handleInputChange("etiqueta", value)}
                   className="bg-background/50"
+                  placeholder="Ex: Urgente, Promoção..."
                 />
               </div>
             </div>
@@ -490,7 +510,7 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
               <div className="space-y-2">
                 <Label htmlFor="data_envio" className="flex items-center gap-2">
                   <Truck className="h-3.5 w-3.5 text-muted-foreground" />
-                  Data Envio Estimada
+                  Data Entrega Estimada
                 </Label>
                 <Input
                   id="data_envio"
@@ -501,10 +521,37 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
                 />
               </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                  Peso Bruto Estimado
+                </Label>
+                <div className="p-2 bg-muted/30 rounded border border-border/50 text-sm h-10 flex items-center">
+                  {pesoBruto.toFixed(2)} kg
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="valor_frete" className="flex items-center gap-2">
+                  <Euro className="h-3.5 w-3.5 text-muted-foreground" />
+                  Valor do Frete (€)
+                </Label>
+                <LocalInput
+                  id="valor_frete"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={String(formData.valor_frete || "")}
+                  onChange={(value) => handleInputChange("valor_frete", value ? parseFloat(value) : 0)}
+                  className="bg-background/50"
+                />
+              </div>
+            </div>
           </div>
         </GlassCard>
 
-        {/* Seção de Itens */}
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 mb-6 border-b border-border/40 pb-4">
             <Package className="h-5 w-5 text-primary" />
@@ -518,46 +565,6 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
           />
         </GlassCard>
 
-        {/* Seção de Transporte */}
-        <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6 border-b border-border/40 pb-4">
-            <Truck className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold text-lg">Transporte</h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="peso_total">Peso Total (kg)</Label>
-              <LocalInput
-                id="peso_total"
-                type="number"
-                step="0.01"
-                min="0"
-                value={String(formData.peso_total || "")}
-                onChange={(value) => handleInputChange("peso_total", value ? parseFloat(value) : 0)}
-                className="bg-background/50"
-              />
-              <p className="text-xs text-muted-foreground">
-                Peso bruto calculado: {pesoBruto.toFixed(2)} kg (com margem de 30%)
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="valor_frete">Valor do Frete (€)</Label>
-              <LocalInput
-                id="valor_frete"
-                type="number"
-                step="0.01"
-                min="0"
-                value={String(formData.valor_frete || "")}
-                onChange={(value) => handleInputChange("valor_frete", value ? parseFloat(value) : 0)}
-                className="bg-background/50"
-              />
-            </div>
-          </div>
-        </GlassCard>
-
-        {/* Resumo */}
         <GlassCard className="p-6 bg-primary/5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-center sm:text-left">
@@ -576,23 +583,25 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
               </Button>
               <Button
                 type="submit"
-                size="lg"
-                className="min-w-[200px] bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]"
+                className="bg-primary hover:bg-primary/90"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
-                  "Salvando..."
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                    Salvando...
+                  </>
                 ) : (
-                  <div className="flex items-center gap-2">
-                    <Save className="h-4 w-4" />
-                    {isEdit ? "Atualizar Encomenda" : "Criar Encomenda"}
-                  </div>
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Salvar Encomenda
+                  </>
                 )}
               </Button>
             </div>
           </div>
         </GlassCard>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 }

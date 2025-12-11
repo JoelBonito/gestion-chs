@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nocheck - Edge Functions usam Deno runtime (tipos não disponíveis localmente)
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,12 +7,70 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// === INTERFACES DE TIPAGEM ===
+
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
-serve(async (req) => {
+interface GeminiPart {
+  text?: string;
+  functionCall?: {
+    name: string;
+    args: Record<string, unknown>;
+  };
+}
+
+interface GeminiContent {
+  role: 'user' | 'model';
+  parts: GeminiPart[];
+}
+
+interface GeminiCandidate {
+  content: {
+    parts: GeminiPart[];
+  };
+}
+
+interface GeminiResponse {
+  candidates?: GeminiCandidate[];
+}
+
+interface ToolDefinition {
+  name: string;
+  description: string;
+  parameters: {
+    type: string;
+    properties: Record<string, { type: string; description?: string }>;
+    required: string[];
+  };
+}
+
+interface ToolResult {
+  success: boolean;
+  data?: unknown;
+  count?: number;
+  error?: string;
+}
+
+interface CreateProdutoArgs {
+  nome: string;
+  marca: string;
+  tipo: string;
+  preco_venda: number;
+  preco_custo: number;
+  fornecedor_id?: string;
+}
+
+interface CreateClienteArgs {
+  nome: string;
+  email?: string;
+  telefone?: string;
+  endereco?: string;
+}
+
+serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -291,8 +349,8 @@ Você tem acesso de LEITURA total via SQL a estas tabelas:
           }
 
           return response.json(); // Sucesso!
-        } catch (e: any) {
-          lastError = e;
+        } catch (e) {
+          lastError = e as Error;
           // Se for erro de rede/fetch, tenta o próximo
           if (e.name === 'TypeError' || e.message.includes('fetch')) {
             console.warn(`[Selector] Erro de rede no modelo ${model}. Tentando próximo...`);
@@ -305,7 +363,7 @@ Você tem acesso de LEITURA total via SQL a estas tabelas:
     };
 
     // 1. Primeira Chamada ao Gemini (Via Seletor)
-    const callGemini = async (msgs: any[], toolsList: any[]) => {
+    const callGemini = async (msgs: GeminiContent[], toolsList: ToolDefinition[]): Promise<GeminiResponse> => {
       return generateContentWithFallback(msgs, toolsList);
     };
 

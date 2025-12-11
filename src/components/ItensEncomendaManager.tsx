@@ -48,9 +48,10 @@ interface LocalInputProps {
   disabled?: boolean;
   className?: string;
   id?: string;
+  debounce?: boolean; // Novo prop para controlar debounce
 }
 
-const LocalInput = memo(({ value, onChange, type = "text", step, min, placeholder, disabled, className, id }: LocalInputProps) => {
+const LocalInput = memo(({ value, onChange, type = "text", step, min, placeholder, disabled, className, id, debounce = false }: LocalInputProps) => {
   const [localValue, setLocalValue] = useState(String(value ?? ""));
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isFocusedRef = useRef(false);
@@ -70,13 +71,21 @@ const LocalInput = memo(({ value, onChange, type = "text", step, min, placeholde
     const newValue = e.target.value;
     setLocalValue(newValue);
 
-    // Debounce: só propaga após 500ms sem digitar
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+    if (debounce) {
+      // Debounce: só propaga após 500ms sem digitar
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
+        onChange(newValue);
+      }, 500);
     }
-    timeoutRef.current = setTimeout(() => {
-      onChange(newValue);
-    }, 500);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    }
   };
 
   const handleBlur = () => {
@@ -98,6 +107,7 @@ const LocalInput = memo(({ value, onChange, type = "text", step, min, placeholde
       onChange={handleChange}
       onFocus={handleFocus}
       onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
       placeholder={placeholder}
       disabled={disabled}
       className={className}
