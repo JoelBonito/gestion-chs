@@ -9,6 +9,7 @@ import { formatCurrencyEUR } from "@/lib/utils/currency";
 
 export interface ItemEncomenda {
   id?: string;
+  tempId?: string; // ID temporário para React keys - evita re-render ao editar
   produto_id: string;
   produto_nome?: string;
   quantidade: number; // Always integer - no decimals allowed
@@ -76,6 +77,7 @@ export function ItensEncomendaManager({
 
   const adicionarItem = () => {
     const novoItem: ItemEncomenda = {
+      tempId: crypto.randomUUID(), // ID temporário único para React key
       produto_id: "",
       quantidade: 1,
       preco_custo: 0,
@@ -158,14 +160,16 @@ export function ItensEncomendaManager({
         ) : (
           <div className="space-y-4">
             {itens.map((item, index) => {
+              // Usar tempId ou id como key estável para evitar re-render ao editar
+              const itemKey = item.tempId || item.id || `fallback-${index}`;
               const isFrete = isFreteItem(item);
 
               return (
                 <div
-                  key={index}
+                  key={itemKey}
                   className={`p-5 rounded-xl border transition-all duration-300 ${isFrete
-                      ? 'bg-blue-50/50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800'
-                      : 'bg-background/40 hover:bg-background/60 border-border/40 hover:border-border/60 shadow-sm'
+                    ? 'bg-blue-50/50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800'
+                    : 'bg-background/40 hover:bg-background/60 border-border/40 hover:border-border/60 shadow-sm'
                     }`}
                 >
                   <div className="space-y-4">

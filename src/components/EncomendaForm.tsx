@@ -115,6 +115,7 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
       if (itensData) {
         const itensFormatados = itensData.map((item: any) => ({
           id: item.id,
+          tempId: crypto.randomUUID(), // ID temporário para React key
           produto_id: item.produto_id,
           produto_nome: item.produtos ? `${item.produtos.nome} - ${item.produtos.marca} - ${item.produtos.tipo}` : "Produto não encontrado",
           quantidade: item.quantidade,
