@@ -1,6 +1,6 @@
 
 // src/pages/Encomendas.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Plus, Search, CalendarIcon, Eye, Edit, User, Building2, Package, Truck, TrendingUp, CreditCard, Filter, CheckCircle2, Clock } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -192,7 +192,7 @@ export default function Encomendas() {
   const canEditProductionUI = (canEdit() || hasRole("factory") || isCollaborator) && !isHam;
   const canEditDeliveryUI = (canEdit() || isCollaborator) && !isHam;
 
-  const fetchEncomendas = async () => {
+  const fetchEncomendas = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -250,7 +250,18 @@ export default function Encomendas() {
     } finally {
       setLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]);
+
+  const handleSuccess = useCallback(() => {
+    setDialogOpen(false);
+    fetchEncomendas();
+  }, [fetchEncomendas]);
+
+  const handleEditSuccess = useCallback(() => {
+    setSelectedEncomendaForEdit(null);
+    fetchEncomendas();
+  }, [fetchEncomendas]);
 
   const [userDataCached, setUserDataCached] = useState(false);
 
@@ -320,29 +331,14 @@ export default function Encomendas() {
   const pageActions = (
     <div className="flex items-center gap-2">
       {canEdit() && !readOnlyOrders && (
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20">
-              <Plus className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">{t.newOrder}</span>
-              <span className="sm:hidden">Nova</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{t.newOrder}</DialogTitle>
-              <DialogDescription>
-                {t.manageOrders}
-              </DialogDescription>
-            </DialogHeader>
-            <EncomendaForm
-              onSuccess={() => {
-                setDialogOpen(false);
-                fetchEncomendas();
-              }}
-            />
-          </DialogContent>
-        </Dialog>
+        <Button
+          className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
+          onClick={() => setDialogOpen(true)}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          <span className="hidden sm:inline">{t.newOrder}</span>
+          <span className="sm:hidden">Nova</span>
+        </Button>
       )}
     </div>
   );
@@ -666,6 +662,21 @@ export default function Encomendas() {
       )}
 
       {/* DIALOGS */}
+      {/* Create Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t.newOrder}</DialogTitle>
+            <DialogDescription>
+              {t.manageOrders}
+            </DialogDescription>
+          </DialogHeader>
+          <EncomendaForm
+            onSuccess={handleSuccess}
+          />
+        </DialogContent>
+      </Dialog>
+
       {/* View Dialog */}
       <Dialog open={!!selectedEncomendaForView} onOpenChange={(open) => !open && setSelectedEncomendaForView(null)}>
         <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -688,10 +699,7 @@ export default function Encomendas() {
             <EncomendaForm
               encomenda={selectedEncomendaForEdit}
               isEditing={true}
-              onSuccess={() => {
-                setSelectedEncomendaForEdit(null);
-                fetchEncomendas();
-              }}
+              onSuccess={handleEditSuccess}
             />
           )}
         </DialogContent>
