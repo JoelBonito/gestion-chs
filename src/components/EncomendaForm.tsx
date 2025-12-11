@@ -26,13 +26,19 @@ interface LocalInputProps {
 const LocalInput = memo(({ id, value, onChange, placeholder, className, type = "text", step, min }: LocalInputProps) => {
   const [localValue, setLocalValue] = useState(value);
   const isFocusedRef = useRef(false);
+  const lastExternalValueRef = useRef(value);
 
-  // Sincronizar com valor externo apenas quando NÃO está focado
+  // Sincronizar com valor externo quando muda de fora (ex: botão Auto)
   useEffect(() => {
-    if (!isFocusedRef.current) {
+    // Se o valor externo mudou E (não está focado OU mudou drasticamente)
+    const valueChangedExternally = value !== lastExternalValueRef.current;
+    const significantChange = value !== localValue && !isFocusedRef.current;
+
+    if (valueChangedExternally || significantChange) {
       setLocalValue(value);
+      lastExternalValueRef.current = value;
     }
-  }, [value]);
+  }, [value, localValue]);
 
   const handleFocus = () => {
     isFocusedRef.current = true;
