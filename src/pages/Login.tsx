@@ -62,24 +62,23 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 bg-slate-50 dark:bg-background z-0" />
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] z-0" />
-      <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]" />
-
+    <div className="min-h-screen flex items-center justify-center p-6 bg-background">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md z-10"
+        className="w-full max-w-md"
       >
-        <div className="relative overflow-hidden rounded-2xl border bg-white/60 dark:bg-black/40 backdrop-blur-xl p-8 shadow-2xl">
+        <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
           <div className="flex flex-col items-center text-center mb-8 space-y-2">
-            <div className="p-3 rounded-2xl bg-primary/10 text-primary mb-2">
-              <LogIn className="w-8 h-8" />
+            <div className="mb-4">
+              <img
+                src="/logo-inove.jpg"
+                alt="Gestion CHS"
+                className="h-16 w-auto rounded-xl shadow-sm mx-auto"
+              />
             </div>
-            <h1 className="text-3xl font-bold tracking-tight">Bem-vindo</h1>
+            <h1 className="text-3xl font-display font-bold tracking-tight">Bem-vindo</h1>
             <p className="text-muted-foreground">
               Entre com suas credenciais para acessar o sistema
             </p>
@@ -99,7 +98,6 @@ export default function Login() {
                   placeholder="seu@email.com"
                   required
                   autoComplete="email"
-                  className="bg-white/50 dark:bg-white/5 backdrop-blur-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -114,14 +112,13 @@ export default function Login() {
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
-                  className="bg-white/50 dark:bg-white/5 backdrop-blur-sm"
                 />
               </div>
             </div>
 
             <Button
               type="submit"
-              className="w-full h-11 text-base font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full h-11 text-base font-medium"
               disabled={isLoading}
             >
               {isLoading ? (

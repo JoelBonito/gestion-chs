@@ -104,7 +104,7 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
     const pesoTotalGramas = itens.reduce((total, item) => {
       return total + (item.quantidade * (item.peso_produto || 0));
     }, 0);
-    
+
     const pesoTotalKg = pesoTotalGramas / 1000;
     const pesoComFator = pesoTotalKg * 1.30;
     setPesoParaTransporte(pesoComFator);
@@ -290,9 +290,9 @@ export function EncomendaTransportForm({ encomendaId, onSuccess }: EncomendaTran
                 )}
               />
 
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
+              <Button
+                type="submit"
+                className="w-full"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Salvando..." : "Salvar Alterações"}

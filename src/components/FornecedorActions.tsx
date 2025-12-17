@@ -59,23 +59,23 @@ export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorA
 
   return (
     <div className="flex gap-2 pt-2">
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="flex-1" 
+      <Button
+        variant="ghost"
+        size="sm"
+        className="flex-1"
         onClick={() => onEdit(fornecedor)}
         disabled={isLoading}
       >
         <Edit className="h-3 w-3 mr-1" />
         Editar
       </Button>
-      
+
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-red-600 hover:text-red-700"
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
             disabled={isLoading}
           >
             <Trash2 className="h-3 w-3" />
@@ -91,10 +91,10 @@ export function FornecedorActions({ fornecedor, onEdit, onRefresh }: FornecedorA
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDelete}
               disabled={isLoading}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
               {isLoading ? 'Excluindo...' : 'Excluir'}
             </AlertDialogAction>

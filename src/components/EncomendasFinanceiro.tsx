@@ -245,9 +245,9 @@ export default function EncomendasFinanceiro({
                       <div className="flex flex-col">
                         <span>{encomenda.numero_encomenda}</span>
                         {encomenda.etiqueta && (
-                          <span className="mt-0.5 text-blue-600 font-medium text-xs">
+                          <Badge variant="info" className="mt-0.5">
                             {encomenda.etiqueta}
-                          </span>
+                          </Badge>
                         )}
                       </div>
                     </TableCell>
@@ -283,11 +283,11 @@ export default function EncomendasFinanceiro({
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleViewDetails(encomenda)} title={tr("Visualizar detalhes")} type="button">
+                        <Button variant="ghost" size="sm" onClick={() => handleViewDetails(encomenda)} title={tr("Visualizar detalhes")} type="button">
                           <Eye className="w-4 h-4" />
                         </Button>
                         {!isHam && (
-                          <Button variant="outline" size="sm" onClick={() => { setSelectedEncomenda(encomenda); setShowPagamentoForm(true); }} title={tr("Registrar pagamento")} type="button">
+                          <Button variant="ghost" size="sm" onClick={() => { setSelectedEncomenda(encomenda); setShowPagamentoForm(true); }} title={tr("Registrar pagamento")} type="button">
                             <Plus className="w-4 h-4" />
                           </Button>
                         )}
@@ -323,7 +323,7 @@ export default function EncomendasFinanceiro({
                     <div className="min-w-0">
                       <div className="text-sm font-semibold truncate">#{e.numero_encomenda}</div>
                       {e.etiqueta && (
-                        <span className="mt-0.5 text-blue-600 font-medium text-xs">{e.etiqueta}</span>
+                        <Badge variant="info" className="mt-0.5">{e.etiqueta}</Badge>
                       )}
                     </div>
                     <div className="text-sm text-muted-foreground shrink-0">{formatDate(e.data_producao_estimada)}</div>
@@ -359,11 +359,11 @@ export default function EncomendasFinanceiro({
                     )}
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                    <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleViewDetails(e)}>
+                    <Button variant="ghost" size="sm" className="w-full sm:w-auto" onClick={() => handleViewDetails(e)}>
                       <Eye className="w-4 h-4 mr-2" /> {tr("Visualizar detalhes")}
                     </Button>
                     {!isHam && (
-                      <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => { setSelectedEncomenda(e); setShowPagamentoForm(true); }}>
+                      <Button variant="ghost" size="sm" className="w-full sm:w-auto" onClick={() => { setSelectedEncomenda(e); setShowPagamentoForm(true); }}>
                         <Plus className="w-4 h-4 mr-2" /> {tr("Registrar pagamento")}
                       </Button>
                     )}
@@ -412,7 +412,7 @@ export default function EncomendasFinanceiro({
                     {selectedEncomenda.etiqueta && (
                       <>
                         {" "}
-                        — <span className="text-blue-600 font-medium text-xs">{selectedEncomenda.etiqueta}</span>
+                        — <Badge variant="info">{selectedEncomenda.etiqueta}</Badge>
                       </>
                     )}
                   </p>

@@ -86,17 +86,17 @@ export default function Produtos() {
 
   const canCreate = email !== "felipe@colaborador.com" && email !== "rosa@colaborador.com";
 
-  // Actions for PageHeader
+  // Actions for PageHeader - Compacto no mobile
   const pageActions = (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="sm" onClick={handleRefresh}>
-        <RefreshCwIcon className="w-4 h-4 mr-2" />
-        Atualizar
+      <Button variant="outline" size="sm" onClick={handleRefresh} className="gap-1.5">
+        <RefreshCwIcon className="w-4 h-4" />
+        <span className="hidden xs:inline">Atualizar</span>
       </Button>
       {canCreate && (
-        <Button size="sm" onClick={handleCadastrarProduto} className="bg-primary hover:bg-primary/90">
-          <PlusIcon className="w-4 h-4 mr-2" />
-          Novo Produto
+        <Button size="sm" onClick={handleCadastrarProduto} className="bg-primary hover:bg-primary/90 gap-1.5">
+          <PlusIcon className="w-4 h-4" />
+          <span className="hidden xs:inline">Novo</span>
         </Button>
       )}
     </div>
@@ -108,38 +108,48 @@ export default function Produtos() {
       subtitle="Gerencie seu catálogo de produtos"
       actions={pageActions}
     >
-      {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-3 bg-white/60 dark:bg-card/40 backdrop-blur-sm p-4 rounded-xl border shadow-sm">
-        <div className="relative flex-1 min-w-[200px] max-w-md">
+      {/* Filtros - Responsivos */}
+      <div className="flex flex-col gap-3 bg-card/60 dark:bg-card/40 backdrop-blur-sm p-3 sm:p-4 rounded-xl border shadow-sm">
+        {/* Busca - sempre full width */}
+        <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Pesquisar produtos..."
-            className="pl-9 bg-white dark:bg-background/50 border-none shadow-inner"
+            className="pl-9 bg-background dark:bg-background/50 border-none shadow-inner w-full"
           />
         </div>
 
-        <div className="flex items-center gap-2">
-          <Package className="w-4 h-4 text-muted-foreground" />
-          <MultiSelect
-            options={categorias}
-            selected={selectedCategorias}
-            onChange={setSelectedCategorias}
-            placeholder="Categorias"
-            emptyMessage="Nenhuma categoria"
-          />
-        </div>
+        {/* Categorias e Fornecedores - empilha no mobile */}
+        <div className="flex flex-col xs:flex-row gap-2 xs:gap-3">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Package className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex-1 min-w-0">
+              <MultiSelect
+                options={categorias}
+                selected={selectedCategorias}
+                onChange={setSelectedCategorias}
+                placeholder="Categorias"
+                emptyMessage="Nenhuma categoria"
+                className="w-full"
+              />
+            </div>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <Truck className="w-4 h-4 text-muted-foreground" />
-          <MultiSelect
-            options={fornecedores}
-            selected={selectedFornecedores}
-            onChange={setSelectedFornecedores}
-            placeholder="Fornecedores"
-            emptyMessage="Nenhum fornecedor"
-          />
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            <Truck className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex-1 min-w-0">
+              <MultiSelect
+                options={fornecedores}
+                selected={selectedFornecedores}
+                onChange={setSelectedFornecedores}
+                placeholder="Fornecedores"
+                emptyMessage="Nenhum fornecedor"
+                className="w-full"
+              />
+            </div>
+          </div>
         </div>
       </div>
 

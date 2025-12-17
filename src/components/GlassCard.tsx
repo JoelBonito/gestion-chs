@@ -21,26 +21,29 @@ export function GlassCard({
     hoverEffect = true
 }: GlassCardProps) {
     const CardWrapper = hoverEffect ? motion.create(Card) : Card;
+    const hasHeader = title || description;
+    const hasFooter = footer;
+
+    // Check if className contains p-0 to skip CardContent wrapper
+    const skipCardContent = className?.includes('p-0') || className?.includes('p-');
 
     return (
         <CardWrapper
             whileHover={hoverEffect ? { y: -2, transition: { duration: 0.2 } } : undefined}
             className={cn(
-                "border-none shadow-lg bg-white/80 dark:bg-card/50 backdrop-blur-sm transition-all duration-300",
+                "border-none shadow-lg bg-[hsl(var(--glass-bg))] backdrop-blur-sm border border-[hsl(var(--glass-border))] transition-all duration-300 overflow-hidden",
                 hoverEffect && "hover:shadow-xl hover:bg-white/90 dark:hover:bg-card/60",
                 className
             )}
         >
-            {(title || description) && (
+            {hasHeader && (
                 <CardHeader>
                     {title && <CardTitle>{title}</CardTitle>}
                     {description && <CardDescription>{description}</CardDescription>}
                 </CardHeader>
             )}
-            <CardContent>
-                {children}
-            </CardContent>
-            {footer && <CardFooter>{footer}</CardFooter>}
+            {skipCardContent ? children : <CardContent>{children}</CardContent>}
+            {hasFooter && <CardFooter>{footer}</CardFooter>}
         </CardWrapper>
     );
 }

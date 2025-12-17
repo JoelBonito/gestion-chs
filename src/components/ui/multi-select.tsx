@@ -66,7 +66,7 @@ export function MultiSelect({
                     role="combobox"
                     aria-expanded={open}
                     className={cn(
-                        "min-w-[180px] justify-between bg-white dark:bg-background/50 border-none shadow-inner hover:bg-muted/50",
+                        "w-full justify-between bg-white dark:bg-background/50 border-none shadow-inner hover:bg-muted/50",
                         className
                     )}
                 >

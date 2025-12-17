@@ -110,10 +110,10 @@ export default function Financeiro() {
             [1, 2, 3].map(i => <GlassCard key={i} className="h-32 animate-pulse bg-muted/20"><div /></GlassCard>)
           ) : (
             <>
-              <GlassCard className="p-6 relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+              <GlassCard className="p-6 relative overflow-hidden group hover:border-success/30 transition-all">
                 <div className="flex flex-col gap-1 z-10 relative">
                   <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-emerald-500" />
+                    <TrendingUp className="h-4 w-4 text-success" />
                     {t("Total a Receber")}
                   </span>
                   <span className="text-3xl font-bold text-foreground tracking-tight">
@@ -125,10 +125,10 @@ export default function Financeiro() {
                 </div>
               </GlassCard>
 
-              <GlassCard className="p-6 relative overflow-hidden group hover:border-red-500/30 transition-all">
+              <GlassCard className="p-6 relative overflow-hidden group hover:border-destructive/30 transition-all">
                 <div className="flex flex-col gap-1 z-10 relative">
                   <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <TrendingDown className="h-4 w-4 text-red-500" />
+                    <TrendingDown className="h-4 w-4 text-destructive" />
                     {t("Total a Pagar")}
                   </span>
                   <span className="text-3xl font-bold text-foreground tracking-tight">
@@ -146,7 +146,7 @@ export default function Financeiro() {
                     <Wallet className="h-4 w-4 text-primary" />
                     {t("Saldo Atual")}
                   </span>
-                  <span className={`text-3xl font-bold tracking-tight ${resumo.saldo >= 0 ? 'text-primary' : 'text-red-500'}`}>
+                  <span className={`text-3xl font-bold tracking-tight ${resumo.saldo >= 0 ? 'text-primary' : 'text-destructive'}`}>
                     {formatCurrencyEUR(resumo.saldo)}
                   </span>
                 </div>

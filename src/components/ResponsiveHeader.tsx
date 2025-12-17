@@ -48,14 +48,14 @@ export function ResponsiveHeader({ title, subtitle, actions }: ResponsiveHeaderP
       <div className="container flex h-20 max-w-screen-2xl items-center px-6">
         <div className="mr-4 flex">
           {isMobile && <MobileMenu />}
-          
+
           <Link to={getHomeLink()} className="mr-6 flex items-center space-x-3 group">
             {!isMobile && (
-              <div className="p-2 rounded-2xl bg-gradient-to-br from-primary to-primary-dark shadow-icon transition-transform duration-300 group-hover:scale-110">
-                <img 
-                  src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png" 
-                  alt="Gestion CHS Logo" 
-                  className="h-8 w-auto brightness-0 invert"
+              <div className="transition-transform duration-300 group-hover:scale-105">
+                <img
+                  src="/logo-inove.jpg"
+                  alt="Gestion CHS Logo"
+                  className="h-10 w-auto rounded-lg"
                 />
               </div>
             )}
@@ -76,7 +76,7 @@ export function ResponsiveHeader({ title, subtitle, actions }: ResponsiveHeaderP
 
         <div className="flex items-center space-x-3">
           {actions && <div className="flex items-center space-x-3">{actions}</div>}
-          
+
           {!isMobile && user && (
             <>
               <div className="hidden sm:flex items-center space-x-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-accent to-accent/50 border border-primary/10">

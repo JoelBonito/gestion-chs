@@ -187,9 +187,9 @@ export function FornecedorForm({ onSuccess, initialData, isEditing = false }: Fo
           )}
         />
 
-        <Button 
-          type="submit" 
-          className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
+        <Button
+          type="submit"
+          className="w-full"
           disabled={isSubmitting}
         >
           {isSubmitting ? (isEditing ? "Salvando..." : "Cadastrando...") : (isEditing ? "Salvar Alterações" : "Cadastrar Fornecedor")}

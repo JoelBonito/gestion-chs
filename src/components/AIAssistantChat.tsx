@@ -39,7 +39,7 @@ export function AIAssistantChat() {
         <Button
           onClick={() => setIsOpen(true)}
           className={cn(
-            "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-elegant",
+            "fixed bottom-6 right-6 h-14 w-14 rounded-lg shadow-elegant",
             "bg-gradient-to-br from-blue-500 to-purple-600",
             "hover:shadow-glow hover:scale-110",
             "transition-all duration-300",
@@ -63,7 +63,7 @@ export function AIAssistantChat() {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border/50 bg-gradient-to-r from-blue-500/10 to-purple-600/10 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-glow">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-glow">
                 <MessageSquare className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -78,7 +78,7 @@ export function AIAssistantChat() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsFullScreen(!isFullScreen)}
-                className="h-8 w-8 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                className="h-8 w-8 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                 title={isFullScreen ? "Restaurar" : "Tela Cheia"}
               >
                 {isFullScreen ? (
@@ -96,7 +96,7 @@ export function AIAssistantChat() {
                   setIsOpen(false);
                   setIsFullScreen(false); // Reseta full screen ao fechar
                 }}
-                className="h-8 w-8 rounded-full hover:bg-muted/50 hover:bg-red-500/10 hover:text-red-500"
+                className="h-8 w-8 rounded-lg hover:bg-muted/50 hover:bg-red-500/10 hover:text-red-500"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -161,7 +161,7 @@ export function AIAssistantChat() {
                 disabled={!inputValue.trim() || isLoading}
                 size="icon"
                 className={cn(
-                  "h-11 w-11 rounded-full shrink-0",
+                  "h-11 w-11 rounded-lg shrink-0",
                   "bg-gradient-to-br from-blue-500 to-purple-600",
                   "hover:shadow-glow hover:scale-105",
                   "transition-all duration-200"

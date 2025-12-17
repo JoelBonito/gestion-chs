@@ -83,24 +83,24 @@ export function ProdutoActions({ produto, onEdit, onRefresh }: ProdutoActionsPro
 
   return (
     <div className="flex gap-2 pt-2">
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        className="flex-1" 
+      <Button
+        variant="ghost"
+        size="sm"
+        className="flex-1"
         onClick={() => onEdit(produto)}
         disabled={isLoading}
       >
         <Edit className="h-3 w-3 mr-1" />
         Editar
       </Button>
-      
+
       {produto.ativo ? (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-orange-600 hover:text-orange-700"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-warning hover:text-warning/80"
               disabled={isLoading}
             >
               <Archive className="h-3 w-3" />
@@ -116,10 +116,10 @@ export function ProdutoActions({ produto, onEdit, onRefresh }: ProdutoActionsPro
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction 
+              <AlertDialogAction
                 onClick={handleArchive}
                 disabled={isLoading}
-                className="bg-orange-600 hover:bg-orange-700"
+                className="bg-warning hover:bg-warning/80"
               >
                 {isLoading ? 'Arquivando...' : 'Arquivar'}
               </AlertDialogAction>
@@ -129,10 +129,10 @@ export function ProdutoActions({ produto, onEdit, onRefresh }: ProdutoActionsPro
       ) : (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-green-600 hover:text-green-700"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-success hover:text-success/80"
               disabled={isLoading}
             >
               <RotateCcw className="h-3 w-3" />
@@ -148,10 +148,10 @@ export function ProdutoActions({ produto, onEdit, onRefresh }: ProdutoActionsPro
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction 
+              <AlertDialogAction
                 onClick={handleReactivate}
                 disabled={isLoading}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-success hover:bg-success/80"
               >
                 {isLoading ? 'Reativando...' : 'Reativar'}
               </AlertDialogAction>
@@ -162,10 +162,10 @@ export function ProdutoActions({ produto, onEdit, onRefresh }: ProdutoActionsPro
 
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-red-600 hover:text-red-700"
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive/80"
             disabled={isLoading}
           >
             <Trash2 className="h-3 w-3" />
@@ -182,7 +182,7 @@ export function ProdutoActions({ produto, onEdit, onRefresh }: ProdutoActionsPro
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDelete}
               disabled={isLoading}
               className="bg-red-600 hover:bg-red-700"

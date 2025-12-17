@@ -349,12 +349,12 @@ export default function Encomendas() {
       subtitle={t.manageOrders}
       actions={pageActions}
     >
-      {/* Navegação Secundária (Abas) */}
-      <div className="flex border-b border-border/40 mb-6 overflow-x-auto no-scrollbar">
+      {/* Navegação Secundária (Abas) - Compacta no mobile */}
+      <div className="flex border-b border-border/40 mb-4 sm:mb-6 overflow-x-auto no-scrollbar -mx-1">
         <button
           onClick={() => setActiveTab("encomendas")}
           className={cn(
-            "px-6 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap",
+            "px-3 xs:px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
             activeTab === "encomendas"
               ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/10"
@@ -366,7 +366,7 @@ export default function Encomendas() {
           <button
             onClick={() => setActiveTab("transportes")}
             className={cn(
-              "px-6 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap",
+              "px-3 xs:px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
               activeTab === "transportes"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/10"
@@ -379,7 +379,7 @@ export default function Encomendas() {
           <button
             onClick={() => setActiveTab("tarefas")}
             className={cn(
-              "px-6 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap",
+              "px-3 xs:px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
               activeTab === "tarefas"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/10"
@@ -392,7 +392,7 @@ export default function Encomendas() {
           <button
             onClick={() => setActiveTab("amostras")}
             className={cn(
-              "px-6 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap",
+              "px-3 xs:px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
               activeTab === "amostras"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/10"
@@ -409,26 +409,27 @@ export default function Encomendas() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
-          {/* Filtros em Glass */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 rounded-xl bg-white/60 dark:bg-card/40 backdrop-blur-sm border shadow-sm">
-            <div className="md:col-span-5 relative">
+          {/* Filtros - Responsivo */}
+          <div className="flex flex-col gap-3 p-3 sm:p-4 rounded-xl bg-white/60 dark:bg-card/40 backdrop-blur-sm border shadow-sm">
+            {/* Linha 1: Busca */}
+            <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder={t.searchPlaceholder}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 bg-white dark:bg-black/20 border-border/50"
+                className="pl-9 bg-white dark:bg-black/20 border-border/50 w-full"
               />
             </div>
 
-            <div className="md:col-span-4">
-              <EncomendaStatusFilter selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} />
-            </div>
-
-            <div className="md:col-span-3 flex items-center justify-end gap-3 px-2">
-              <div className="flex items-center space-x-2">
+            {/* Linha 2: Status Filter + Toggle */}
+            <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <EncomendaStatusFilter selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} />
+              </div>
+              <div className="flex items-center justify-end gap-2 shrink-0">
                 <Switch id="show-completed" checked={showCompleted} onCheckedChange={setShowCompleted} />
-                <Label htmlFor="show-completed" className="text-sm cursor-pointer">{t.showDelivered}</Label>
+                <Label htmlFor="show-completed" className="text-xs sm:text-sm cursor-pointer whitespace-nowrap">{t.showDelivered}</Label>
               </div>
             </div>
           </div>
@@ -451,83 +452,72 @@ export default function Encomendas() {
               <div className="grid grid-cols-1 gap-4">
                 {filteredEncomendas.map((e, index) => (
                   <GlassCard key={`${e.id}-${user?.email || 'loading'}`} className="p-0 overflow-hidden" hoverEffect>
-                    <div className="p-5 space-y-5">
-                      {/* Linha Superior: ID e Status */}
-                      <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
-                        <div className="flex items-center flex-wrap gap-3">
-                          <span className="text-lg font-bold font-mono text-primary">
+                    <div className="p-4 sm:p-5">
+                      {/* Header: ID, Tag, Data e Status - Tudo em uma linha */}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span className="text-base sm:text-lg font-bold font-mono text-primary shrink-0">
                             #{e.numero_encomenda}
                           </span>
                           {e.etiqueta && (
-                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border-blue-100 dark:border-blue-800">
+                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-[10px] sm:text-xs px-1.5 py-0 shrink-0">
                               {e.etiqueta}
                             </Badge>
                           )}
-                          <div className="flex items-center text-xs text-muted-foreground ml-1">
-                            <CalendarIcon className="w-3 h-3 mr-1" />
+                          <span className="text-[10px] sm:text-xs text-muted-foreground shrink-0 hidden xs:inline">
                             {formatDate(e.data_criacao)}
-                          </div>
+                          </span>
                         </div>
 
-                        <div className="flex items-center gap-2 self-end sm:self-auto">
-                          {/* Status */}
-                          <div className="w-[150px]">
-                            {isHam ? (
-                              <Badge variant="outline" className="w-full justify-center py-1">
-                                {getStatusLabel(e.status)}
-                              </Badge>
-                            ) : (
-                              <EncomendaStatusSelect
-                                encomendaId={e.id}
-                                currentStatus={e.status}
-                                numeroEncomenda={e.numero_encomenda}
-                                onStatusChange={handleStatusChange}
-                              />
-                            )}
-                          </div>
+                        {/* Status - Compacto */}
+                        <div className="shrink-0 w-[120px] sm:w-[140px]">
+                          {isHam ? (
+                            <Badge variant="outline" className="w-full justify-center py-0.5 text-[10px] sm:text-xs">
+                              {getStatusLabel(e.status)}
+                            </Badge>
+                          ) : (
+                            <EncomendaStatusSelect
+                              encomendaId={e.id}
+                              currentStatus={e.status}
+                              numeroEncomenda={e.numero_encomenda}
+                              onStatusChange={handleStatusChange}
+                            />
+                          )}
                         </div>
                       </div>
 
-                      {/* Info Principal: Clientes e Fornecedores */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-3 border-y border-border/40">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
-                            <User className="h-4 w-4" />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-xs text-muted-foreground uppercase font-semibold">{t.client}</span>
-                            <span className="text-sm font-medium truncate max-w-[200px]" title={e.clientes?.nome ?? e.cliente_nome ?? ""}>
-                              {e.clientes?.nome ?? e.cliente_nome ?? "—"}
-                            </span>
-                          </div>
+                      {/* Cliente e Fornecedor - Layout Horizontal Compacto */}
+                      <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-4 py-2 border-y border-border/30 text-xs sm:text-sm">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <span className="text-muted-foreground shrink-0">{t.client}:</span>
+                          <span className="font-medium truncate" title={e.clientes?.nome ?? e.cliente_nome ?? ""}>
+                            {e.clientes?.nome ?? e.cliente_nome ?? "—"}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
-                            <Building2 className="h-4 w-4" />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-xs text-muted-foreground uppercase font-semibold">{t.supplier}</span>
-                            <span className="text-sm font-medium truncate max-w-[200px]" title={e.fornecedores?.nome ?? e.fornecedor_nome ?? ""}>
-                              {e.fornecedores?.nome ?? e.fornecedor_nome ?? "—"}
-                            </span>
-                          </div>
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <span className="text-muted-foreground shrink-0">{t.supplier}:</span>
+                          <span className="font-medium truncate" title={e.fornecedores?.nome ?? e.fornecedor_nome ?? ""}>
+                            {e.fornecedores?.nome ?? e.fornecedor_nome ?? "—"}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Rodapé: Logística, Datas, Financeiro e Ações */}
-                      <div className="flex flex-col sm:flex-row items-center gap-4 text-sm w-full pt-2">
+                      {/* Rodapé: Datas, Peso, Financeiro e Ações */}
+                      <div className="flex flex-wrap items-end justify-between gap-3 pt-3 text-xs sm:text-sm">
 
-                        {/* 1. ESQUERDA: Datas */}
-                        <div className="flex items-center gap-6 self-start sm:self-center">
+                        {/* Grupo Esquerdo: Datas e Peso */}
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-5">
                           {/* Data Produção */}
-                          <div className={cn("flex flex-col", !e.data_producao_estimada && "opacity-60")}>
-                            <span className="text-[10px] uppercase text-muted-foreground font-semibold">{t.productionDate}</span>
+                          <div className={cn("flex flex-col", !e.data_producao_estimada && "opacity-50")}>
+                            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold">{t.productionDate}</span>
                             {canEditProductionUI ? (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <button className="flex items-center gap-1 hover:text-primary font-medium transition-colors text-left group">
-                                    <span>{e.data_producao_estimada ? formatDate(e.data_producao_estimada) : "Definir data"}</span>
-                                    <Edit className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                                  <button className="flex items-center gap-1 hover:text-primary font-medium transition-colors text-left group text-xs sm:text-sm">
+                                    <span>{e.data_producao_estimada ? formatDate(e.data_producao_estimada) : "—"}</span>
+                                    <Edit className="h-2.5 w-2.5 opacity-0 group-hover:opacity-50" />
                                   </button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
@@ -545,14 +535,14 @@ export default function Encomendas() {
                           </div>
 
                           {/* Data Entrega */}
-                          <div className={cn("flex flex-col", !e.data_envio_estimada && "opacity-60")}>
-                            <span className="text-[10px] uppercase text-muted-foreground font-semibold">{t.deliveryDate}</span>
+                          <div className={cn("flex flex-col", !e.data_envio_estimada && "opacity-50")}>
+                            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold">{t.deliveryDate}</span>
                             {canEditDeliveryUI ? (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <button className="flex items-center gap-1 hover:text-primary font-medium transition-colors text-left group">
-                                    <span>{e.data_envio_estimada ? formatDate(e.data_envio_estimada) : "Definir data"}</span>
-                                    <Edit className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                                  <button className="flex items-center gap-1 hover:text-primary font-medium transition-colors text-left group text-xs sm:text-sm">
+                                    <span>{e.data_envio_estimada ? formatDate(e.data_envio_estimada) : "—"}</span>
+                                    <Edit className="h-2.5 w-2.5 opacity-0 group-hover:opacity-50" />
                                   </button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">
@@ -568,70 +558,48 @@ export default function Encomendas() {
                               <span className="font-medium">{e.data_envio_estimada ? formatDate(e.data_envio_estimada) : "—"}</span>
                             )}
                           </div>
-                        </div>
 
-                        {/* 2. CENTRO: Peso e Frete (Centralizados) */}
-                        <div className="flex-1 flex items-center justify-center gap-6 w-full sm:w-auto border-y sm:border-y-0 border-border/30 py-2 sm:py-0">
                           {/* Peso */}
-                          <div className="flex items-center gap-2" title={t.grossWeight}>
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium text-foreground">
-                              {((e as any).peso_bruto || 0).toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg
+                          <div className="flex items-center gap-1.5" title={t.grossWeight}>
+                            <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="font-medium">
+                              {((e as any).peso_bruto || 0).toLocaleString('pt-PT', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kg
                             </span>
                           </div>
-
-                          {/* Frete */}
-                          {!hidePrices && (
-                            <div className="flex items-center gap-2 text-orange-600 dark:text-orange-400" title={t.shippingValue}>
-                              <Truck className="h-4 w-4" />
-                              <span className="font-medium">
-                                {formatCurrency((e as any).valor_frete || 0)}
-                              </span>
-                            </div>
-                          )}
                         </div>
 
-                        {/* 3. DIREITA: Financeiro e Ações */}
-                        <div className="flex items-center gap-4 justify-end w-full sm:w-auto">
-
-                          {/* Separador e Grupo Financeiro */}
+                        {/* Grupo Direito: Financeiro e Ações */}
+                        <div className="flex items-center gap-2 sm:gap-3 ml-auto">
                           {!hidePrices && (
                             <>
-                              <div className="h-8 w-px bg-border/40 hidden sm:block" />
-                              <div className="flex flex-col items-end min-w-[100px]">
-                                <span className="text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">Total</span>
-                                <div className="flex items-center gap-3">
-                                  {/* Lucro Estimado / Comissão (Antes do Total) */}
-                                  {!isFelipe && !hidePrices && (
-                                    <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400" title="Lucro Estimado">
-                                      <TrendingUp className="h-3.5 w-3.5" />
-                                      <span className="font-medium text-sm">
-                                        {formatCurrency(e.commission_amount || 0)}
-                                      </span>
-                                    </div>
-                                  )}
-                                  {/* Valor Total */}
-                                  <span className="font-bold text-lg text-foreground leading-none">
-                                    {formatCurrency(isFelipe ? e.valor_total_custo || 0 : e.valor_total)}
-                                  </span>
+                              {/* Lucro - Hidden on very small screens */}
+                              {!isFelipe && (
+                                <div className="hidden sm:flex items-center gap-1 text-success text-xs" title="Lucro Estimado">
+                                  <TrendingUp className="h-3 w-3" />
+                                  <span className="font-medium">{formatCurrency(e.commission_amount || 0)}</span>
                                 </div>
+                              )}
+
+                              {/* Total */}
+                              <div className="flex flex-col items-end">
+                                <span className="text-[9px] uppercase text-muted-foreground font-semibold leading-none">Total</span>
+                                <span className="font-bold text-sm sm:text-base text-foreground leading-tight">
+                                  {formatCurrency(isFelipe ? e.valor_total_custo || 0 : e.valor_total)}
+                                </span>
                               </div>
                             </>
                           )}
 
-                          {/* Botões de Ação Simplificados (Apenas Menu) */}
-                          <div className="flex items-center pl-2">
-                            <EncomendaActions
-                              encomenda={e as any}
-                              onView={() => setSelectedEncomendaForView(e)}
-                              onEdit={() => setSelectedEncomendaForEdit(e)}
-                              onDelete={handleDelete}
-                              onTransport={() => setTransportDialogOpen(true)}
-                              canEditOrders={canEdit() && !isCollaborator && !readOnlyOrders}
-                            />
-                          </div>
+                          {/* Ações */}
+                          <EncomendaActions
+                            encomenda={e as any}
+                            onView={() => setSelectedEncomendaForView(e)}
+                            onEdit={() => setSelectedEncomendaForEdit(e)}
+                            onDelete={handleDelete}
+                            onTransport={() => setTransportDialogOpen(true)}
+                            canEditOrders={canEdit() && !isCollaborator && !readOnlyOrders}
+                          />
                         </div>
-
                       </div>
                     </div>
                   </GlassCard>
@@ -639,27 +607,34 @@ export default function Encomendas() {
               </div>
             )}
           </div>
-        </motion.div>
-      )}
+        </motion.div >
+      )
+      }
 
       {/* Abas Secundárias - Restauradas */}
-      {activeTab === "transportes" && (
-        <div className="mt-6">
-          <TransportesTab />
-        </div>
-      )}
+      {
+        activeTab === "transportes" && (
+          <div className="mt-6">
+            <TransportesTab />
+          </div>
+        )
+      }
 
-      {activeTab === "tarefas" && (
-        <div className="mt-6">
-          <TarefasTab />
-        </div>
-      )}
+      {
+        activeTab === "tarefas" && (
+          <div className="mt-6">
+            <TarefasTab />
+          </div>
+        )
+      }
 
-      {activeTab === "amostras" && (
-        <div className="mt-6">
-          <AmostrasTab />
-        </div>
-      )}
+      {
+        activeTab === "amostras" && (
+          <div className="mt-6">
+            <AmostrasTab />
+          </div>
+        )
+      }
 
       {/* DIALOGS */}
       {/* Create Dialog */}
@@ -705,6 +680,6 @@ export default function Encomendas() {
         </DialogContent>
       </Dialog>
 
-    </PageContainer>
+    </PageContainer >
   );
 }

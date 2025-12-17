@@ -34,9 +34,9 @@ interface ItemEncomenda {
   preco_unitario: number;
   subtotal: number;
   produto_id: string;
-  produtos?: { 
-    nome: string; 
-    marca: string; 
+  produtos?: {
+    nome: string;
+    marca: string;
     tipo: string;
     preco_custo: number;
   };
@@ -48,13 +48,13 @@ interface EncomendaViewCustoProps {
 
 const getStatusColor = (status: StatusEncomenda) => {
   switch (status) {
-    case "NOVO PEDIDO": return "bg-gray-500";
-    case "MATÉRIA PRIMA": return "bg-orange-500";
-    case "PRODUÇÃO": return "bg-blue-500";
+    case "NOVO PEDIDO": return "bg-muted-foreground";
+    case "MATÉRIA PRIMA": return "bg-warning";
+    case "PRODUÇÃO": return "bg-info";
     case "EMBALAGENS": return "bg-yellow-500";
     case "TRANSPORTE": return "bg-purple-500";
-    case "ENTREGUE": return "bg-green-500";
-    default: return "bg-gray-500";
+    case "ENTREGUE": return "bg-success";
+    default: return "bg-muted-foreground";
   }
 };
 
@@ -67,7 +67,7 @@ export function EncomendaViewCusto({ encomendaId }: EncomendaViewCustoProps) {
   const getStatusLabel = (status: StatusEncomenda): string => {
     const isHamAdmin = user?.email === 'ham@admin.com';
     if (!isHamAdmin) return status;
-    
+
     switch (status) {
       case "NOVO PEDIDO": return "Nouvelle demande";
       case "MATÉRIA PRIMA": return "Matières premières";
@@ -146,7 +146,7 @@ export function EncomendaViewCusto({ encomendaId }: EncomendaViewCustoProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-lg h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -193,11 +193,11 @@ export function EncomendaViewCusto({ encomendaId }: EncomendaViewCustoProps) {
             </div>
             <div>
               <h4 className="font-semibold text-sm text-muted-foreground">Valor Pago ao Fornecedor</h4>
-              <p className="text-lg font-semibold text-green-600">{formatCurrency(encomenda.valor_pago_fornecedor)}</p>
+              <p className="text-lg font-semibold text-success">{formatCurrency(encomenda.valor_pago_fornecedor)}</p>
             </div>
             <div>
               <h4 className="font-semibold text-sm text-muted-foreground">Saldo Devedor ao Fornecedor</h4>
-              <p className="text-lg font-semibold text-red-600">
+              <p className="text-lg font-semibold text-destructive">
                 {formatCurrency(totalCusto - encomenda.valor_pago_fornecedor)}
               </p>
             </div>
@@ -251,7 +251,7 @@ export function EncomendaViewCusto({ encomendaId }: EncomendaViewCustoProps) {
             {itens.map((item) => {
               const precoCusto = item.produtos?.preco_custo || 0;
               const subtotalCusto = item.quantidade * precoCusto;
-              
+
               return (
                 <div key={item.id} className="flex justify-between items-center p-3 border rounded-lg">
                   <div>

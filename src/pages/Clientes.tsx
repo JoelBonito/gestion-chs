@@ -86,7 +86,7 @@ export default function Clientes() {
   const pageActions = (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 w-full sm:w-auto shadow-md">
+        <Button>
           <Plus className="mr-2 h-4 w-4" />
           <span className="hidden sm:inline">Novo Cliente</span>
           <span className="sm:hidden">Novo</span>
@@ -180,7 +180,7 @@ export default function Clientes() {
                         </p>
                       )}
                     </div>
-                    <Badge variant={cliente.active ? "default" : "secondary"} className={cliente.active ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-200" : ""}>
+                    <Badge variant={cliente.active ? "success" : "secondary"}>
                       {cliente.active ? "Ativo" : "Inativo"}
                     </Badge>
                   </div>

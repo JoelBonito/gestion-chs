@@ -1,32 +1,41 @@
-# Plano de Implementação – Correção de Input no Formulário de Encomenda
+# 📋 Plano Mestre - Migração Design System 100%
 
-## Contexto
-O formulário de encomenda apresenta três problemas críticos que afetam a usabilidade:
-1. **Perda de foco** nos campos de texto após digitar um único caractere, exigindo novo clique.
-2. **Scroll inesperado** para o topo da página ao inserir números nos campos de quantidade.
-3. **Valor padrão "1"** na quantidade que não pode ser apagado, resultando em valores incorretos (ex.: ao digitar "200" o campo fica "1200").
+## 🎯 Objetivo
+Padronizar 100% da interface do usuário do Gestion CHS utilizando o Design System (shadcn/ui + Tailwind), eliminando cores hardcoded e componentes fora do padrão.
+**Meta**: Atingir score 10/10 na auditoria de design.
 
-## Objetivo
-Reescrever a lógica de gerenciamento de inputs para garantir:
-- Manutenção do foco durante a digitação.
-- Eliminação de scrolls indesejados.
-- Permissão para limpar e inserir valores numéricos livremente.
+## User Review Required
+> [!IMPORTANT]
+> A migração pode alterar sutilmente a aparência de "Emerald/Orange" para os novos tons de "Success/Warning".
 
-## Estratégia de Solução
-1. **Estabilizar chaves de lista** – já implementado com `tempId`, garantindo que componentes não sejam remontados.
-2. **Separar estado de formulário** – usar `useRef` para armazenar referências dos inputs e evitar re‑renders que causem perda de foco.
-3. **Controlar scroll** – remover quaisquer chamadas implícitas de `window.scrollTo` ou dependências de `react-hook-form` que possam disparar `reset` do formulário.
-4. **Gerenciar valor da quantidade**:
-   - Inicializar `quantidade` como `""` (string vazia) ao invés de `0` ou `1`.
-   - No `onChange`, aceitar apenas dígitos e converter para número apenas na submissão.
-   - Utilizar `parseInt` com fallback para `0` ao salvar.
-5. **Atualizar `ItensEncomendaManager`**:
-   - Substituir `input` controlado por `value={item.quantidade}` e `onChange` que atualiza o array via callback sem recriar o componente inteiro.
-   - Aplicar `event.stopPropagation()` para prevenir re‑renders de pais.
-6. **Testes Manuais** – validar fluxo de digitação em todos os campos (texto, número, quantidade) e confirmar ausência de scroll e perda de foco.
+## 🚀 Fases da Implementação
 
-## Próximos Passos
-- Implementar as mudanças acima nos arquivos `EncomendaForm.tsx` e `ItensEncomendaManager.tsx`.
-- Atualizar tipos para refletir `quantidade` como `string` temporariamente.
-- Executar testes manuais e ajustar conforme necessário.
-- Atualizar documentação de uso.
+### Fase 1: Fundação & Tokens (Prioridade Alta)
+*Padronizar a base para suportar a migração sem quebra de layout.*
+- [ ] **Definir Tokens Semânticos**: Adicionar `success`, `warning`, `info` no `tailwind.config.ts`.
+- [ ] **Configurar Glassmorphism**: Criar tokens `glass-bg`, `glass-border` no CSS global.
+- [ ] **Validar Dark Mode**: Garantir que novos tokens revertam cores corretamente no modo escuro.
+
+### Fase 2: Componentes Core (Prioridade Alta)
+*Refatorar componentes base para usar os novos tokens.*
+- [ ] **Refatorar `GlassCard.tsx`**: Remover opacidades manuais e usar `bg-glass-bg`.
+- [ ] **Refatorar `StatCard.tsx`**: Aceitar variantes semânticas (`success`) em vez de nomes de cor (`emerald`).
+- [ ] **Refatorar `Badge`**: Garantir suporte a todas as novas variantes semânticas.
+
+### Fase 3: Migração de Páginas (Prioridade Média)
+*Aplicar as mudanças página por página.*
+#### 3.1. Dashboard
+- [ ] Substituir classes `text-emerald-*`, `bg-orange-*` por tokens.
+- [ ] Atualizar uso de `StatCard` e `GlassCard`.
+
+#### 3.2. Encomendas
+- [ ] Remover lógica de cor misturada com estado.
+- [ ] Padronizar Badges e Botões.
+
+#### 3.3. Outras Páginas (Batch)
+- [ ] Aplicar correções globais (Search & Replace inteligente).
+
+## ✅ Critérios de Verificação
+- [ ] **Audit Automatizado**: `grep` por cores hardcoded deve retornar 0 resultados (exceto exceções documentadas).
+- [ ] **Visual Test**: Dark mode deve ter contraste perfeito em todos os cards.
+- [ ] **Build**: `npm run build` deve passar sem erros de tipo.

@@ -205,10 +205,10 @@ export default function Dashboard() {
 
   return (
     <RoleBasedGuard>
-      <div className="min-h-screen w-full bg-slate-50/50 dark:bg-background">
+      <div className="min-h-screen w-full bg-background dark:bg-background">
         <div className="p-6 sm:p-8 max-w-7xl mx-auto space-y-8 sm:space-y-12">
 
-          {/* Enhanced Hero Section */}
+          {/* Hero Section - Stitch v5.0 */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -216,15 +216,15 @@ export default function Dashboard() {
             className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4"
           >
             <div>
-              <h1 className="text-4xl sm:text-5xl font-bold tracking-tight bg-gradient-to-r from-primary to-violet-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl sm:text-5xl font-display font-bold tracking-tight text-foreground">
                 Dashboard
               </h1>
               <p className="text-muted-foreground mt-2 text-lg">
                 Visão geral da sua operação em tempo real
               </p>
             </div>
-            <div className="flex items-center gap-2 bg-white dark:bg-card px-4 py-2 rounded-full shadow-sm border">
-              <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="flex items-center gap-2 bg-surface px-4 py-2 rounded-lg border border-border">
+              <div className="h-2 w-2 rounded-lg bg-success animate-pulse" />
               <span className="text-sm font-medium text-muted-foreground">Sistema Operacional</span>
             </div>
           </motion.div>
@@ -237,19 +237,19 @@ export default function Dashboard() {
             className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5"
           >
             <motion.div variants={item}>
-              <StatCard title="Encomendas Ativas" value={encomendasAtivas.toString()} subtitle="Em andamento" icon={<ClipboardList className="w-5 h-5" />} variant="blue" />
+              <StatCard title="Encomendas Ativas" value={encomendasAtivas.toString()} subtitle="Em andamento" icon={<ClipboardList className="w-5 h-5" />} variant="info" />
             </motion.div>
             <motion.div variants={item}>
-              <StatCard title="A Receber" value={formatCurrencyEUR(aReceber)} subtitle="Dos clientes" icon={<DollarSign className="w-5 h-5" />} variant="emerald" />
+              <StatCard title="A Receber" value={formatCurrencyEUR(aReceber)} subtitle="Dos clientes" icon={<DollarSign className="w-5 h-5" />} variant="success" />
             </motion.div>
             <motion.div variants={item}>
-              <StatCard title="A Pagar" value={formatCurrencyEUR(aPagar)} subtitle="Aos fornecedores" icon={<Truck className="w-5 h-5" />} variant="orange" />
+              <StatCard title="A Pagar" value={formatCurrencyEUR(aPagar)} subtitle="Aos fornecedores" icon={<Truck className="w-5 h-5" />} variant="warning" />
             </motion.div>
             <motion.div variants={item}>
-              <StatCard title="Comissões (Mês)" value={formatCurrencyEUR(comissoesMensais)} subtitle="Lucro Atual" icon={<TrendingUp className="w-5 h-5" />} variant="purple" />
+              <StatCard title="Comissões (Mês)" value={formatCurrencyEUR(comissoesMensais)} subtitle="Lucro Atual" icon={<TrendingUp className="w-5 h-5" />} variant="default" />
             </motion.div>
             <motion.div variants={item}>
-              <StatCard title="Comissões (Ano)" value={formatCurrencyEUR(comissoesAnuais)} subtitle="Acumulado 2025" icon={<Factory className="w-5 h-5" />} variant="pink" />
+              <StatCard title="Comissões (Ano)" value={formatCurrencyEUR(comissoesAnuais)} subtitle="Acumulado 2025" icon={<Factory className="w-5 h-5" />} variant="default" />
             </motion.div>
           </motion.div>
 
@@ -272,22 +272,32 @@ export default function Dashboard() {
                     title={`${mes}`}
                     value={formatCurrencyEUR(comissoesPorMes[i] || 0)}
                     subtitle={i < new Date().getMonth() ? "Finalizado" : "Projetado"}
-                    className={comissoesPorMes[i] > 0 ? "border-emerald-500/20 bg-emerald-50/10" : "opacity-70"}
+                    className={comissoesPorMes[i] > 0 ? "border-success/20 bg-success/10" : "opacity-70"}
                   />
                 </motion.div>
               ))}
             </div>
             <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-              {["Jul", "Ago", "Set", "Out", "Nov", "Dez"].map((mes, i) => (
-                <motion.div key={mes} whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
-                  <StatCard
-                    title={`${mes}`}
-                    value={formatCurrencyEUR(comissoesPorMes[i + 6] || 0)}
-                    subtitle="Futuro"
-                    className="opacity-60"
-                  />
-                </motion.div>
-              ))}
+              {["Jul", "Ago", "Set", "Out", "Nov", "Dez"].map((mes, i) => {
+                const monthIndex = i + 6; // Jul=6, Ago=7, ..., Dez=11
+                const currentMonth = new Date().getMonth();
+                const isFinalizado = monthIndex <= currentMonth;
+
+                return (
+                  <motion.div key={mes} whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
+                    <StatCard
+                      title={`${mes}`}
+                      value={formatCurrencyEUR(comissoesPorMes[monthIndex] || 0)}
+                      subtitle={isFinalizado ? "Finalizado" : "Futuro"}
+                      className={
+                        isFinalizado
+                          ? (comissoesPorMes[monthIndex] > 0 ? "border-success/20 bg-success/10" : "opacity-70")
+                          : "opacity-60"
+                      }
+                    />
+                  </motion.div>
+                );
+              })}
             </div>
           </motion.div>
 
@@ -300,7 +310,7 @@ export default function Dashboard() {
           >
             {/* Encomendas em Progresso */}
             <motion.div variants={item} className="h-full">
-              <Card className="h-full border-none shadow-lg bg-white/80 dark:bg-card/50 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+              <Card className="h-full">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="w-5 h-5 text-primary" />
@@ -346,9 +356,9 @@ export default function Dashboard() {
 
             {/* Pagamentos a Receber */}
             <motion.div variants={item} className="h-full">
-              <Card className="h-full border-none shadow-lg bg-emerald-50/50 dark:bg-emerald-950/10 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+              <Card className="h-full border-success/30">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                  <CardTitle className="flex items-center gap-2 text-success">
                     <DollarSign className="w-5 h-5" />
                     Recebíveis
                   </CardTitle>
@@ -363,10 +373,10 @@ export default function Dashboard() {
                     <motion.div
                       key={payment.id}
                       whileHover={{ x: 4 }}
-                      className="flex items-center justify-between p-3 rounded-xl bg-white/60 dark:bg-background/40 border border-emerald-100 dark:border-emerald-900/50"
+                      className="flex items-center justify-between p-3 rounded-xl bg-card/60 dark:bg-background/40 border border-success/20 dark:border-success/10 hover:bg-card/80 transition-all shadow-sm"
                     >
                       <div className="space-y-1">
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                        <span className="font-bold text-success text-sm">
                           {formatCurrencyEUR(parseFloat(String(payment.saldo_devedor || 0)))}
                         </span>
                         <p className="text-xs text-muted-foreground truncate max-w-[140px]">
@@ -374,7 +384,7 @@ export default function Dashboard() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs text-muted-foreground bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-md">
+                        <span className="text-xs text-muted-foreground bg-success/10 px-2 py-1 rounded-md">
                           #{payment.numero_encomenda}
                         </span>
                       </div>
@@ -386,9 +396,9 @@ export default function Dashboard() {
 
             {/* Pagamentos a Fazer */}
             <motion.div variants={item} className="h-full">
-              <Card className="h-full border-none shadow-lg bg-orange-50/50 dark:bg-orange-950/10 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+              <Card className="h-full border-warning/30">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                  <CardTitle className="flex items-center gap-2 text-warning">
                     <Truck className="w-5 h-5" />
                     A Pagar
                   </CardTitle>
@@ -403,10 +413,10 @@ export default function Dashboard() {
                     <motion.div
                       key={payment.id}
                       whileHover={{ x: 4 }}
-                      className="flex items-center justify-between p-3 rounded-xl bg-white/60 dark:bg-background/40 border border-orange-100 dark:border-orange-900/50"
+                      className="flex items-center justify-between p-3 rounded-xl bg-card/60 dark:bg-background/40 border border-warning/20 dark:border-warning/10 hover:bg-card/80 transition-all shadow-sm"
                     >
                       <div className="space-y-1">
-                        <span className="font-bold text-orange-600 dark:text-orange-400 text-sm">
+                        <span className="font-bold text-warning text-sm">
                           {formatCurrencyEUR(parseFloat(String(payment.saldo_devedor_fornecedor || 0)))}
                         </span>
                         <p className="text-xs text-muted-foreground truncate max-w-[140px]">
@@ -414,7 +424,7 @@ export default function Dashboard() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs text-muted-foreground bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-md">
+                        <span className="text-xs text-muted-foreground bg-warning/10 px-2 py-1 rounded-md">
                           #{payment.numero_encomenda}
                         </span>
                       </div>

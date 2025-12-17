@@ -63,7 +63,7 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
   const onSubmit = async (data: PagamentoFormData) => {
     try {
       setIsLoading(true);
-      
+
       const { error } = await supabase
         .from("pagamentos")
         .insert({
@@ -116,7 +116,7 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
               <SelectContent>
                 {encomendas.map((encomenda) => (
                   <SelectItem key={encomenda.id} value={encomenda.id}>
-                    {encomenda.numero_encomenda} - {encomenda.cliente_nome} 
+                    {encomenda.numero_encomenda} - {encomenda.cliente_nome}
                     (Saldo: €{encomenda.saldo_devedor.toFixed(2)})
                   </SelectItem>
                 ))}
@@ -191,7 +191,7 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {watch("data_pagamento") 
+                  {watch("data_pagamento")
                     ? format(watch("data_pagamento"), "PPP", { locale: ptBR })
                     : "Selecione uma data"
                   }
@@ -218,9 +218,9 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
             />
           </div>
 
-          <Button 
-            type="submit" 
-            className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
+          <Button
+            type="submit"
+            className="w-full"
             disabled={isLoading}
           >
             {isLoading ? "Lançando..." : "Lançar Pagamento"}

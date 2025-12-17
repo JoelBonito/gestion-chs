@@ -23,7 +23,7 @@ interface EncomendaStatusSelectProps {
 const getStatusOptions = (isHamAdmin: boolean): StatusEncomenda[] => [
   "NOVO PEDIDO",
   "MATÉRIA PRIMA",
-  "PRODUÇÃO", 
+  "PRODUÇÃO",
   "EMBALAGENS",
   "TRANSPORTE",
   "ENTREGUE"
@@ -31,7 +31,7 @@ const getStatusOptions = (isHamAdmin: boolean): StatusEncomenda[] => [
 
 const getStatusLabel = (status: StatusEncomenda, isHamAdmin: boolean): string => {
   if (!isHamAdmin) return status;
-  
+
   switch (status) {
     case "NOVO PEDIDO": return "Nouvelle demande";
     case "MATÉRIA PRIMA": return "Matières premières";
@@ -45,13 +45,13 @@ const getStatusLabel = (status: StatusEncomenda, isHamAdmin: boolean): string =>
 
 const getStatusColor = (status: StatusEncomenda) => {
   switch (status) {
-    case "NOVO PEDIDO": return "bg-gray-500";
-    case "MATÉRIA PRIMA": return "bg-orange-500";
-    case "PRODUÇÃO": return "bg-blue-500";
+    case "NOVO PEDIDO": return "bg-muted-foreground";
+    case "MATÉRIA PRIMA": return "bg-warning";
+    case "PRODUÇÃO": return "bg-info";
     case "EMBALAGENS": return "bg-yellow-500";
     case "TRANSPORTE": return "bg-purple-500";
-    case "ENTREGUE": return "bg-green-500";
-    default: return "bg-gray-500";
+    case "ENTREGUE": return "bg-success";
+    default: return "bg-muted-foreground";
   }
 };
 
@@ -67,11 +67,11 @@ const getStatusTooltip = (status: StatusEncomenda): string | null => {
 const getStatusWithIcon = (status: StatusEncomenda, isHamAdmin: boolean) => {
   const tooltip = getStatusTooltip(status);
   const label = getStatusLabel(status, isHamAdmin);
-  
+
   if (!tooltip) {
     return <span>{label}</span>;
   }
-  
+
   return (
     <div className="flex items-center gap-1">
       <span>{label}</span>
@@ -89,20 +89,20 @@ const getStatusWithIcon = (status: StatusEncomenda, isHamAdmin: boolean) => {
   );
 };
 
-export function EncomendaStatusSelect({ 
-  encomendaId, 
-  currentStatus, 
+export function EncomendaStatusSelect({
+  encomendaId,
+  currentStatus,
   numeroEncomenda,
-  onStatusChange 
+  onStatusChange
 }: EncomendaStatusSelectProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const { isCollaborator } = useIsCollaborator();
   const { canEdit } = useUserRole();
   const { user } = useAuth();
-  
+
   const isHamAdmin = user?.email === 'ham@admin.com';
   const STATUS_OPTIONS = getStatusOptions(isHamAdmin);
-  
+
   // Allow collaborators and admins to change status
   const canChangeStatus = canEdit() || isCollaborator;
 
@@ -112,7 +112,7 @@ export function EncomendaStatusSelect({
     setIsUpdating(true);
     try {
       console.log("Atualizando status:", { encomendaId, newStatus, userEmail: await supabase.auth.getUser() });
-      
+
       const { error } = await supabase
         .from("encomendas")
         .update({ status: newStatus as any })
@@ -131,9 +131,9 @@ export function EncomendaStatusSelect({
           .select("etiqueta")
           .eq("id", encomendaId)
           .single();
-        
+
         const etiqueta = encomenda?.etiqueta || 'N/A';
-        
+
         await sendEmail(
           emailRecipients.geral,
           `📦 Status atualizado — ${numeroEncomenda}`,
@@ -155,8 +155,8 @@ export function EncomendaStatusSelect({
   };
 
   return (
-    <Select 
-      value={currentStatus} 
+    <Select
+      value={currentStatus}
       onValueChange={handleStatusChange}
       disabled={isUpdating || !canChangeStatus}
     >
@@ -169,7 +169,7 @@ export function EncomendaStatusSelect({
         {STATUS_OPTIONS.map((status) => (
           <SelectItem key={status} value={status}>
             <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${getStatusColor(status)}`} />
+              <div className={`w-2 h-2 rounded-lg ${getStatusColor(status)}`} />
               {getStatusWithIcon(status, isHamAdmin)}
             </div>
           </SelectItem>

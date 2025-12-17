@@ -69,7 +69,7 @@ const App = () => {
                 element={
                   <AuthGuard>
                     <SidebarProvider defaultOpen={true}>
-                      <div className="min-h-screen flex w-full bg-slate-50/50 dark:bg-background">
+                      <div className="min-h-screen flex w-full bg-background dark:bg-background">
                         <AppSidebar />
                         <SidebarInset>
                           <header className="flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-xl px-6 xl:hidden">

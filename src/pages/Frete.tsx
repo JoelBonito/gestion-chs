@@ -44,7 +44,7 @@ export default function Frete() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  
+
   // Form states
   const [newRate, setNewRate] = useState({
     origin: "",
@@ -60,7 +60,7 @@ export default function Frete() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch freight rates (mock data since table doesn't exist yet)
       const mockRates: FreightRate[] = [
         {
@@ -73,7 +73,7 @@ export default function Frete() {
           created_at: new Date().toISOString()
         },
         {
-          id: "2", 
+          id: "2",
           origin: "Portugal",
           destination: "Francia",
           currency: "EUR",
@@ -144,11 +144,11 @@ export default function Frete() {
 
       setFreightRates(prev => [mockNewRate, ...prev]);
       toast.success("Taxa de frete criada com sucesso!");
-      
+
       setNewRate({
         origin: "",
         destination: "",
-        currency: "EUR", 
+        currency: "EUR",
         rate_per_kg: ""
       });
       setDialogOpen(false);
@@ -191,13 +191,13 @@ export default function Frete() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Gestão de Frete</h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Gestão de Frete</h1>
           <p className="text-sm sm:text-base text-muted-foreground">Configure tarifas e calcule custos de envio</p>
         </div>
         {canEdit && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 w-full sm:w-auto">
+              <Button className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Nova Taxa</span>
                 <span className="sm:hidden">Nova</span>
@@ -216,7 +216,7 @@ export default function Frete() {
                     <Label>Origem *</Label>
                     <Input
                       value={newRate.origin}
-                      onChange={(e) => setNewRate({...newRate, origin: e.target.value})}
+                      onChange={(e) => setNewRate({ ...newRate, origin: e.target.value })}
                       placeholder="Ex: Portugal"
                     />
                   </div>
@@ -224,7 +224,7 @@ export default function Frete() {
                     <Label>Destino *</Label>
                     <Input
                       value={newRate.destination}
-                      onChange={(e) => setNewRate({...newRate, destination: e.target.value})}
+                      onChange={(e) => setNewRate({ ...newRate, destination: e.target.value })}
                       placeholder="Ex: España"
                     />
                   </div>
@@ -232,7 +232,7 @@ export default function Frete() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>Moeda</Label>
-                    <Select value={newRate.currency} onValueChange={(value) => setNewRate({...newRate, currency: value})}>
+                    <Select value={newRate.currency} onValueChange={(value) => setNewRate({ ...newRate, currency: value })}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -248,7 +248,7 @@ export default function Frete() {
                       type="number"
                       step="0.01"
                       value={newRate.rate_per_kg}
-                      onChange={(e) => setNewRate({...newRate, rate_per_kg: e.target.value})}
+                      onChange={(e) => setNewRate({ ...newRate, rate_per_kg: e.target.value })}
                       placeholder="0.00"
                     />
                   </div>
@@ -297,55 +297,55 @@ export default function Frete() {
           <div className="overflow-x-auto">
             <div className="min-w-[600px]">
               <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Origem</TableHead>
-                <TableHead>Destino</TableHead>
-                <TableHead>Taxa/Kg</TableHead>
-                <TableHead>Status</TableHead>
-                {canEdit && <TableHead className="text-right">Ações</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8">
-                    Carregando taxas...
-                  </TableCell>
-                </TableRow>
-              ) : filteredRates.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8 text-muted-foreground">
-                    Nenhuma taxa encontrada
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredRates.map((rate) => (
-                  <TableRow key={rate.id}>
-                    <TableCell className="font-medium">{rate.origin}</TableCell>
-                    <TableCell>{rate.destination}</TableCell>
-                    <TableCell>{rate.currency} {rate.rate_per_kg.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge variant={rate.active ? "default" : "secondary"}>
-                        {rate.active ? "Ativa" : "Inativa"}
-                      </Badge>
-                    </TableCell>
-                    {canEdit && (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-destructive">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    )}
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Origem</TableHead>
+                    <TableHead>Destino</TableHead>
+                    <TableHead>Taxa/Kg</TableHead>
+                    <TableHead>Status</TableHead>
+                    {canEdit && <TableHead className="text-right">Ações</TableHead>}
                   </TableRow>
-                ))
-              )}
-            </TableBody>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8">
+                        Carregando taxas...
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredRates.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8 text-muted-foreground">
+                        Nenhuma taxa encontrada
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredRates.map((rate) => (
+                      <TableRow key={rate.id}>
+                        <TableCell className="font-medium">{rate.origin}</TableCell>
+                        <TableCell>{rate.destination}</TableCell>
+                        <TableCell>{rate.currency} {rate.rate_per_kg.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <Badge variant={rate.active ? "default" : "secondary"}>
+                            {rate.active ? "Ativa" : "Inativa"}
+                          </Badge>
+                        </TableCell>
+                        {canEdit && (
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="ghost" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" className="text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
               </Table>
             </div>
           </div>
@@ -367,66 +367,66 @@ export default function Frete() {
           <div className="overflow-x-auto">
             <div className="min-w-[800px]">
               <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Encomenda</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Peso Total</TableHead>
-                <TableHead>Peso Ajustado</TableHead>
-                <TableHead>Taxa/Kg</TableHead>
-                <TableHead>Valor Frete</TableHead>
-                <TableHead>Status</TableHead>
-                {canEdit && <TableHead className="text-right">Ações</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={canEdit ? 8 : 7} className="text-center py-8">
-                    Carregando encomendas...
-                  </TableCell>
-                </TableRow>
-              ) : filteredEncomendas.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={canEdit ? 8 : 7} className="text-center py-8 text-muted-foreground">
-                    Nenhuma encomenda encontrada
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredEncomendas.map((encomenda) => (
-                  <TableRow key={encomenda.id}>
-                    <TableCell className="font-medium">{encomenda.numero_encomenda}</TableCell>
-                    <TableCell>{encomenda.clientes?.nome || "N/A"}</TableCell>
-                    <TableCell>{encomenda.total_weight_kg?.toFixed(2)} kg</TableCell>
-                    <TableCell>{encomenda.adjusted_weight_kg?.toFixed(2)} kg</TableCell>
-                    <TableCell>{encomenda.freight_rate_currency} {encomenda.freight_rate_per_kg?.toFixed(2)}</TableCell>
-                    <TableCell className="font-semibold">{encomenda.freight_rate_currency} {encomenda.freight_value?.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge variant={encomenda.status === 'enviado' ? 'default' : 'secondary'}>
-                        {encomenda.status}
-                      </Badge>
-                    </TableCell>
-                    {canEdit && (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleRecalculateFreight(encomenda.id)}
-                            title="Recalcular frete"
-                          >
-                            <Calculator className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" title="Ver detalhes">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    )}
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Encomenda</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Peso Total</TableHead>
+                    <TableHead>Peso Ajustado</TableHead>
+                    <TableHead>Taxa/Kg</TableHead>
+                    <TableHead>Valor Frete</TableHead>
+                    <TableHead>Status</TableHead>
+                    {canEdit && <TableHead className="text-right">Ações</TableHead>}
                   </TableRow>
-                ))
-              )}
-            </TableBody>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={canEdit ? 8 : 7} className="text-center py-8">
+                        Carregando encomendas...
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredEncomendas.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={canEdit ? 8 : 7} className="text-center py-8 text-muted-foreground">
+                        Nenhuma encomenda encontrada
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredEncomendas.map((encomenda) => (
+                      <TableRow key={encomenda.id}>
+                        <TableCell className="font-medium">{encomenda.numero_encomenda}</TableCell>
+                        <TableCell>{encomenda.clientes?.nome || "N/A"}</TableCell>
+                        <TableCell>{encomenda.total_weight_kg?.toFixed(2)} kg</TableCell>
+                        <TableCell>{encomenda.adjusted_weight_kg?.toFixed(2)} kg</TableCell>
+                        <TableCell>{encomenda.freight_rate_currency} {encomenda.freight_rate_per_kg?.toFixed(2)}</TableCell>
+                        <TableCell className="font-semibold">{encomenda.freight_rate_currency} {encomenda.freight_value?.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <Badge variant={encomenda.status === 'enviado' ? 'default' : 'secondary'}>
+                            {encomenda.status}
+                          </Badge>
+                        </TableCell>
+                        {canEdit && (
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRecalculateFreight(encomenda.id)}
+                                title="Recalcular frete"
+                              >
+                                <Calculator className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm" title="Ver detalhes">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
               </Table>
             </div>
           </div>

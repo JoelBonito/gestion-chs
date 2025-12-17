@@ -87,7 +87,7 @@ export default function Fornecedores() {
   const pageActions = (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-gradient-to-r from-primary to-primary-glow hover:opacity-90 w-full sm:w-auto shadow-md">
+        <Button className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           <span className="hidden sm:inline">Novo Fornecedor</span>
           <span className="sm:hidden">Novo</span>
@@ -182,7 +182,7 @@ export default function Fornecedores() {
                         </p>
                       )}
                     </div>
-                    <Badge variant={fornecedor.active ? "default" : "secondary"} className={fornecedor.active ? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-200" : ""}>
+                    <Badge variant={fornecedor.active ? "success" : "secondary"}>
                       {fornecedor.active ? "Ativo" : "Inativo"}
                     </Badge>
                   </div>

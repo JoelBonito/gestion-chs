@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { Search, Edit3, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -47,11 +48,11 @@ export function TarefasTab() {
       const { data } = await supabase.auth.getUser();
       const email = data.user?.email ?? null;
       setUserEmail(email);
-      
+
       // Depois buscar as encomendas (já com o email correto)
       await fetchEncomendas(email);
     };
-    
+
     initializeData();
   }, []);
 
@@ -107,8 +108,8 @@ export function TarefasTab() {
       if (error) throw error;
 
       // Atualizar estado local
-      setEncomendas(prev => prev.map(enc => 
-        enc.id === editing.id 
+      setEncomendas(prev => prev.map(enc =>
+        enc.id === editing.id
           ? { ...enc, [editing.field]: editing.value }
           : enc
       ));
@@ -205,9 +206,9 @@ export function TarefasTab() {
                     <div className="space-y-2">
                       <h3 className="font-bold text-lg text-primary-dark">#{encomenda.numero_encomenda}</h3>
                       {encomenda.etiqueta && (
-                        <div className="text-sm font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full w-fit">
+                        <Badge variant="info">
                           {encomenda.etiqueta}
-                        </div>
+                        </Badge>
                       )}
                     </div>
                   </div>
@@ -232,7 +233,7 @@ export function TarefasTab() {
                           </Button>
                         )}
                       </div>
-                      
+
                       {editing?.id === encomenda.id && editing.field === 'observacoes_joel' ? (
                         <div className="space-y-2">
                           <Textarea
@@ -281,7 +282,7 @@ export function TarefasTab() {
                           </Button>
                         )}
                       </div>
-                      
+
                       {editing?.id === encomenda.id && editing.field === 'observacoes_felipe' ? (
                         <div className="space-y-2">
                           <Textarea

@@ -18,9 +18,9 @@ export const IconWithBadge: React.FC<IconWithBadgeProps> = ({
     <div className={cn("relative inline-flex", className)}>
       {icon}
       {count > 0 && (
-        <span 
+        <span
           className={cn(
-            "absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-4 w-4 flex items-center justify-center font-semibold min-w-[16px]",
+            "absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-lg h-4 w-4 flex items-center justify-center font-semibold min-w-[16px]",
             badgeClassName
           )}
         >

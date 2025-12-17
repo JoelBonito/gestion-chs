@@ -63,7 +63,7 @@ export default function PagamentoFornecedorForm({ onSuccess, conta }: PagamentoF
   const onSubmit = async (data: PagamentoFornecedorFormData) => {
     try {
       setIsLoading(true);
-      
+
       const { error } = await supabase
         .from("pagamentos_fornecedor")
         .insert({
@@ -179,7 +179,7 @@ export default function PagamentoFornecedorForm({ onSuccess, conta }: PagamentoF
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {watch("data_pagamento") 
+                  {watch("data_pagamento")
                     ? format(watch("data_pagamento"), "PPP", { locale: ptBR })
                     : "Selecione uma data"
                   }
@@ -206,9 +206,9 @@ export default function PagamentoFornecedorForm({ onSuccess, conta }: PagamentoF
             />
           </div>
 
-          <Button 
-            type="submit" 
-            className="w-full bg-gradient-to-r from-primary to-primary-glow hover:opacity-90"
+          <Button
+            type="submit"
+            className="w-full"
             disabled={isLoading}
           >
             {isLoading ? "Lançando..." : "Lançar Pagamento"}

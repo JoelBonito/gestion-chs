@@ -37,6 +37,7 @@ export function TransportesTab() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [viewingTransporte, setViewingTransporte] = useState<Transporte | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchTransportes = async () => {
     const { data, error } = await supabase
@@ -44,7 +45,7 @@ export function TransportesTab() {
       .select("*")
       .eq("archived", showArchived)
       .order("created_at", { ascending: false });
-    
+
     if (error) {
       toast.error("Erro ao carregar transportes");
       console.error(error);
@@ -62,6 +63,8 @@ export function TransportesTab() {
       toast.error("Tracking number é obrigatório");
       return;
     }
+
+    setIsLoading(true);
 
     const data = {
       tracking_number: novo.tracking_number,
@@ -90,8 +93,10 @@ export function TransportesTab() {
       setDialogOpen(false);
       setEditingTransporte(null);
       setNovo({ tracking_number: "", referencia: "" });
+      setNovo({ tracking_number: "", referencia: "" });
       fetchTransportes();
     }
+    setIsLoading(false);
   };
 
   const handleEdit = (transporte: Transporte) => {
@@ -111,20 +116,26 @@ export function TransportesTab() {
   const handleArchive = async (transporte: Transporte) => {
     if (!confirm("Tem certeza que deseja arquivar este transporte?")) return;
 
+    setIsLoading(true);
     try {
       await archiveTransporte(transporte.id);
       fetchTransportes();
     } catch (error) {
       console.error("Erro ao arquivar transporte:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleReactivate = async (transporte: Transporte) => {
+    setIsLoading(true);
     try {
       await reactivateTransporte(transporte.id);
       fetchTransportes();
     } catch (error) {
       console.error("Erro ao reativar transporte:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -162,7 +173,7 @@ export function TransportesTab() {
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        
+
         <Button onClick={openNewDialog} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           <span className="hidden sm:inline">Novo Transporte</span>
@@ -179,8 +190,8 @@ export function TransportesTab() {
         </Card>
       ) : (
         transportes.map((transporte) => (
-          <Card 
-            key={transporte.id} 
+          <Card
+            key={transporte.id}
             className={`overflow-hidden ${transporte.archived ? 'opacity-60' : ''}`}
           >
             <CardContent className="p-3 sm:p-4">
@@ -202,7 +213,7 @@ export function TransportesTab() {
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   {!transporte.archived && (
-                    <Button 
+                    <Button
                       size="sm"
                       onClick={() => handleTrackingClick(transporte.tracking_number)}
                       className="w-full sm:w-auto"
@@ -211,8 +222,8 @@ export function TransportesTab() {
                     </Button>
                   )}
                   <div className="flex gap-2">
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="icon"
                       onClick={() => handleView(transporte)}
                       title="Visualizar"
@@ -222,8 +233,8 @@ export function TransportesTab() {
                     </Button>
                     {!transporte.archived && (
                       <>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="icon"
                           onClick={() => handleEdit(transporte)}
                           title="Editar"
@@ -231,24 +242,26 @@ export function TransportesTab() {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="icon"
                           onClick={() => handleArchive(transporte)}
                           title="Arquivar"
-                          className="h-8 w-8 text-orange-500 hover:text-orange-600"
+                          className="text-warning hover:text-warning/80 h-8 w-8"
+                          disabled={isLoading}
                         >
                           <Archive className="h-4 w-4" />
                         </Button>
                       </>
                     )}
                     {transporte.archived && (
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="icon"
                         onClick={() => handleReactivate(transporte)}
                         title="Reativar"
-                        className="h-8 w-8 text-green-500 hover:text-green-600"
+                        className="text-success hover:text-success/80 h-8 w-8"
+                        disabled={isLoading}
                       >
                         <RotateCcw className="h-4 w-4" />
                       </Button>
@@ -293,13 +306,14 @@ export function TransportesTab() {
               </p>
             )}
             <div className="flex flex-col sm:flex-row gap-2 pt-4">
-              <Button onClick={handleSalvar} className="w-full sm:flex-1">
-                {editingTransporte ? "Atualizar" : "Salvar"}
+              <Button onClick={handleSalvar} className="w-full sm:flex-1" disabled={isLoading}>
+                {isLoading ? (editingTransporte ? "Atualizando..." : "Salvando...") : (editingTransporte ? "Atualizar" : "Salvar")}
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => setDialogOpen(false)}
                 className="w-full sm:flex-1"
+                disabled={isLoading}
               >
                 Cancelar
               </Button>
@@ -336,10 +350,10 @@ export function TransportesTab() {
                   <div>{new Date(viewingTransporte.created_at).toLocaleDateString("pt-BR")}</div>
                 </div>
               </div>
-              
+
               <div className="border-t pt-4">
-                <AttachmentManager 
-                  entityType="transporte" 
+                <AttachmentManager
+                  entityType="transporte"
                   entityId={viewingTransporte.id}
                   title="Anexos do Transporte"
                 />

@@ -263,7 +263,7 @@ export function ItensEncomendaManager({
                 <div
                   key={itemKey}
                   className={`p-5 rounded-xl border transition-all duration-300 ${isFrete
-                    ? 'bg-blue-50/50 border-blue-200 dark:bg-blue-900/10 dark:border-blue-800'
+                    ? 'bg-info/10 border-info/20 dark:bg-info/5 dark:border-info/10'
                     : 'bg-background/40 hover:bg-background/60 border-border/40 hover:border-border/60 shadow-sm'
                     }`}
                 >
@@ -271,14 +271,14 @@ export function ItensEncomendaManager({
                     {isFrete ? (
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                         <div className="md:col-span-1">
-                          <label className="text-xs font-semibold mb-1.5 block text-blue-700 dark:text-blue-300 uppercase tracking-wide">Descrição</label>
-                          <div className="h-10 px-3 py-2 bg-blue-100/50 dark:bg-blue-900/40 rounded-md border border-blue-200 dark:border-blue-700 text-blue-900 dark:text-blue-100 text-sm font-medium flex items-center">
+                          <label className="text-xs font-semibold mb-1.5 block text-info dark:text-info uppercase tracking-wide">Descrição</label>
+                          <div className="h-10 px-3 py-2 bg-info/10 dark:bg-info/5 rounded-md border border-info/20 dark:border-info/10 text-info font-medium flex items-center">
                             FRETE (SP - MRS)
                           </div>
                         </div>
 
                         <div>
-                          <label htmlFor={`peso-${itemKey}`} className="text-xs font-semibold mb-1.5 block text-blue-700 dark:text-blue-300 uppercase tracking-wide">Peso Total (kg)</label>
+                          <label htmlFor={`peso-${itemKey}`} className="text-xs font-semibold mb-1.5 block text-info dark:text-info uppercase tracking-wide">Peso Total (kg)</label>
                           <LocalInput
                             id={`peso-${itemKey}`}
                             type="number"
@@ -286,12 +286,12 @@ export function ItensEncomendaManager({
                             value={item.quantidade}
                             onChange={(val) => atualizarItem(index, "quantidade", val)}
                             placeholder="0"
-                            className="bg-background/80 border-blue-200 focus:border-blue-400 focus:ring-blue-400/20"
+                            className="bg-background/80 border-info/20 focus:border-info focus:ring-info/20"
                           />
                         </div>
 
                         <div>
-                          <label htmlFor={`preco-kg-${itemKey}`} className="text-xs font-semibold mb-1.5 block text-blue-700 dark:text-blue-300 uppercase tracking-wide">Preço/kg (€)</label>
+                          <label htmlFor={`preco-kg-${itemKey}`} className="text-xs font-semibold mb-1.5 block text-info dark:text-info uppercase tracking-wide">Preço/kg (€)</label>
                           <LocalInput
                             id={`preco-kg-${itemKey}`}
                             type="number"
@@ -299,14 +299,14 @@ export function ItensEncomendaManager({
                             value={item.preco_venda || ""}
                             onChange={(val) => atualizarItem(index, "preco_venda", parseFloat(val) || 0)}
                             placeholder="4.50"
-                            className="bg-background/80 border-blue-200 focus:border-blue-400 focus:ring-blue-400/20"
+                            className="bg-background/80 border-info/20 focus:border-info focus:ring-info/20"
                           />
                         </div>
 
                         <div>
-                          <label className="text-xs font-semibold mb-1.5 block text-blue-700 dark:text-blue-300 uppercase tracking-wide">Total Frete</label>
+                          <label className="text-xs font-semibold mb-1.5 block text-info dark:text-info uppercase tracking-wide">Total Frete</label>
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 h-10 px-3 py-2 bg-blue-100/50 dark:bg-blue-900/40 rounded-md border border-blue-200 dark:border-blue-700 text-blue-900 dark:text-blue-100 text-sm font-bold flex items-center justify-end">
+                            <div className="flex-1 h-10 px-3 py-2 bg-info/10 dark:bg-info/5 rounded-md border border-info/20 dark:border-info/10 text-info font-bold flex items-center justify-end">
                               {formatCurrencyEUR(item.subtotal || 0)}
                             </div>
                             {isTransportMode && (
@@ -314,7 +314,7 @@ export function ItensEncomendaManager({
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-10 w-10 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10"
                                 onClick={() => removerItem(index)}
                                 title="Remover frete"
                               >

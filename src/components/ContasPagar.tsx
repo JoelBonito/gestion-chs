@@ -305,9 +305,9 @@ export default function ContasPagar() {
                     <TableCell className="font-medium">
                       <div className="flex flex-col">
                         <span>{conta.numero_encomenda}</span>
-                        <span className="mt-0.5 text-blue-600 font-medium text-xs">
+                        <Badge variant="info" className="mt-0.5">
                           {conta.etiqueta || "Nenhum"}
-                        </span>
+                        </Badge>
                       </div>
                     </TableCell>
 
@@ -350,7 +350,7 @@ export default function ContasPagar() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           onClick={() => handleViewDetails(conta)}
                           title={t("Ver Detalhes")}
@@ -363,7 +363,7 @@ export default function ContasPagar() {
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 title={t("Registrar Pagamento")}
                                 type="button"
@@ -383,7 +383,7 @@ export default function ContasPagar() {
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
                               title={t("Anexar Comprovante")}
                               type="button"
@@ -433,7 +433,7 @@ export default function ContasPagar() {
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <div className="text-sm font-semibold truncate">#{conta.numero_encomenda}</div>
-                      <span className="mt-0.5 text-blue-600 font-medium text-xs">{conta.etiqueta || "Nenhum"}</span>
+                      <Badge variant="info" className="mt-0.5">{conta.etiqueta || "Nenhum"}</Badge>
                     </div>
                     <div className="text-sm text-muted-foreground shrink-0">
                       {new Date(conta.data_criacao).toLocaleDateString()}
@@ -470,13 +470,13 @@ export default function ContasPagar() {
                     )}
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                    <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleViewDetails(conta)}>
+                    <Button variant="ghost" size="sm" className="w-full sm:w-auto" onClick={() => handleViewDetails(conta)}>
                       <Eye className="w-4 h-4 mr-2" /> {t("Ver Detalhes")}
                     </Button>
                     {!isFelipe && (
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                          <Button variant="ghost" size="sm" className="w-full sm:w-auto">
                             <Plus className="w-4 h-4 mr-2" /> {t("Registrar Pagamento")}
                           </Button>
                         </DialogTrigger>
@@ -490,7 +490,7 @@ export default function ContasPagar() {
                     )}
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full sm:w-auto" title={t("Anexar Comprovante")}>
+                        <Button variant="ghost" size="sm" className="w-full sm:w-auto" title={t("Anexar Comprovante")}>
                           <IconWithBadge
                             icon={<Paperclip className="h-4 w-4" />}
                             count={attachmentCounts[conta.id] || 0}

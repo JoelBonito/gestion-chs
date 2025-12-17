@@ -51,9 +51,9 @@ export function EstoqueEditModal({ produto, open, onOpenChange, onSuccess }: Est
     };
 
     const getInputClassName = (valor: number) => {
-        if (valor < 0) return "border-red-500 text-red-600 font-semibold bg-red-50 dark:bg-red-950/20";
-        if (valor < 200) return "border-orange-500 text-orange-600 font-semibold bg-orange-50 dark:bg-orange-950/20";
-        return "border-emerald-500 text-emerald-600 font-semibold bg-emerald-50 dark:bg-emerald-950/20";
+        if (valor < 0) return "border-destructive text-destructive font-semibold bg-destructive/10 dark:bg-destructive/20";
+        if (valor < 200) return "border-warning text-warning font-semibold bg-warning/10 dark:bg-warning/20";
+        return "border-success text-success font-semibold bg-success/10 dark:bg-success/20";
     };
 
     return (

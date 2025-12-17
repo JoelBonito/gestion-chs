@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
+import { cn } from "@/lib/utils";
 import { GlassCard } from "@/components/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -72,14 +73,16 @@ export function ProdutosTable({
         if (action === "delete") setShowDeleteAlert(true);
     };
 
+
+
     const renderEstoqueCell = (valor: number | undefined) => {
         const val = valor ?? 0;
         const isLow = val < 200;
         const isNegative = val < 0;
 
         return (
-            <span className={`font-semibold ${isNegative ? "text-red-600 dark:text-red-400" :
-                isLow ? "text-orange-600 dark:text-orange-400" :
+            <span className={`font-semibold ${isNegative ? "text-destructive" :
+                isLow ? "text-warning" :
                     "text-foreground"
                 }`}>
                 {val}
@@ -94,10 +97,10 @@ export function ProdutosTable({
                     <div className="space-y-4 py-4">
                         {Array.from({ length: 5 }).map((_, i) => (
                             <div key={i} className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-full bg-slate-200 animate-pulse" />
+                                <div className="h-12 w-12 rounded-lg bg-muted animate-pulse" />
                                 <div className="space-y-2 flex-1">
-                                    <div className="h-4 w-[200px] bg-slate-200 animate-pulse rounded" />
-                                    <div className="h-4 w-[150px] bg-slate-200 animate-pulse rounded" />
+                                    <div className="h-4 w-[200px] bg-muted animate-pulse rounded" />
+                                    <div className="h-4 w-[150px] bg-muted animate-pulse rounded" />
                                 </div>
                             </div>
                         ))}
@@ -123,7 +126,8 @@ export function ProdutosTable({
 
     return (
         <>
-            <GlassCard className="overflow-hidden flex flex-col">
+            {/* Desktop View (Table) - Visible only on LG screens and up */}
+            <GlassCard className="hidden lg:flex overflow-hidden flex-col">
                 {/* Header Fixo - FORA do scroll */}
                 <div
                     className="bg-muted/80 dark:bg-muted/40 border-b shadow-sm px-4 py-3"
@@ -150,67 +154,81 @@ export function ProdutosTable({
                         return (
                             <div
                                 key={produto.id}
-                                className="px-4 py-3 border-b hover:bg-muted/30 transition-colors"
-                                style={{ display: 'grid', gridTemplateColumns: gridCols, gap: '8px', alignItems: 'start' }}
+                                className={cn(
+                                    "border-b last:border-0 hover:bg-muted/30 transition-colors px-4 py-3 group",
+                                    !produto.ativo && "opacity-60 bg-muted/10"
+                                )}
+                                style={{ display: 'grid', gridTemplateColumns: gridCols, gap: '8px', alignItems: 'center' }}
                             >
-                                {/* Imagem */}
-                                <div className="pt-1">
-                                    <Avatar className="h-10 w-10 rounded-lg border bg-white shadow-sm">
+                                {/* Células da tabela... (mantendo lógica existente) */}
+                                <div className="relative">
+                                    <Avatar className="h-10 w-10 rounded-lg border bg-white shadow-sm cursor-pointer hover:scale-110 transition-transform" onClick={() => handleAction(produto, "view")}>
                                         <AvatarImage src={produto.imagem_url || ""} alt={produto.nome} className="object-cover" />
-                                        <AvatarFallback className="rounded-lg bg-orange-100 text-orange-600 font-bold text-xs">
+                                        <AvatarFallback className="rounded-lg bg-primary/5 text-primary text-xs font-bold">
                                             {produto.nome.substring(0, 2).toUpperCase()}
                                         </AvatarFallback>
                                     </Avatar>
+                                    {!produto.ativo && (
+                                        <Badge variant="destructive" className="absolute -top-2 -right-2 text-[8px] h-4 px-1">Inativo</Badge>
+                                    )}
                                 </div>
 
-                                {/* Produto - OPÇÃO A: WRAP para todos */}
-                                <div className="flex flex-col min-w-0">
-                                    <span className="font-semibold text-foreground text-sm whitespace-normal break-words leading-tight">
+                                <div className="flex flex-col min-w-0 pr-2">
+                                    <span
+                                        className="font-medium text-sm text-foreground truncate cursor-pointer hover:text-primary transition-colors"
+                                        title={produto.nome}
+                                        onClick={() => handleAction(produto, "view")}
+                                    >
                                         {produto.nome}
                                     </span>
-                                    <span className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{produto.descricao}</span>
+                                    {produto.descricao && (
+                                        <span className="text-xs text-muted-foreground truncate hidden xl:inline-block" title={produto.descricao}>
+                                            {produto.descricao}
+                                        </span>
+                                    )}
                                 </div>
 
-                                {/* Marca / Categoria */}
-                                <div className="flex flex-col min-w-0">
-                                    <span className="font-medium text-sm truncate">{produto.marca || "-"}</span>
-                                    <span className="text-xs text-muted-foreground truncate">{produto.tipo || "-"}</span>
+                                <div className="flex flex-col min-w-0 text-xs">
+                                    <span className="font-medium text-foreground truncate" title={produto.marca}>{produto.marca}</span>
+                                    <span className="text-muted-foreground truncate" title={produto.tipo}>{produto.tipo}</span>
                                 </div>
 
-                                {/* Fornecedor */}
-                                <span className="text-sm whitespace-normal break-words leading-tight">{fornecedorNome}</span>
-
-                                {/* Estoque Garrafas */}
-                                <div className="text-center">
-                                    {isFornecedorProducao ? renderEstoqueCell(produto.estoque_garrafas) : <span className="text-muted-foreground">-</span>}
+                                <div className="min-w-0" title={fornecedorNome}>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs text-muted-foreground truncate block max-w-full">
+                                            {fornecedorNome}
+                                        </span>
+                                    </div>
                                 </div>
 
-                                {/* Estoque Tampas */}
-                                <div className="text-center">
-                                    {isFornecedorProducao ? renderEstoqueCell(produto.estoque_tampas) : <span className="text-muted-foreground">-</span>}
+                                {/* Estoque */}
+                                <div className="text-center text-xs tabular-nums">
+                                    {isFornecedorProducao ? renderEstoqueCell(produto.estoque_garrafas) : <span className="text-muted-foreground/30">—</span>}
+                                </div>
+                                <div className="text-center text-xs tabular-nums">
+                                    {isFornecedorProducao ? renderEstoqueCell(produto.estoque_tampas) : <span className="text-muted-foreground/30">—</span>}
+                                </div>
+                                <div className="text-center text-xs tabular-nums">
+                                    {isFornecedorProducao ? renderEstoqueCell(produto.estoque_rotulos) : <span className="text-muted-foreground/30">—</span>}
                                 </div>
 
-                                {/* Estoque Rótulos */}
-                                <div className="text-center">
-                                    {isFornecedorProducao ? renderEstoqueCell(produto.estoque_rotulos) : <span className="text-muted-foreground">-</span>}
-                                </div>
-
-                                {/* Preço Custo */}
+                                {/* Preços */}
                                 {!hidePrices && (
-                                    <span className="font-medium text-sm text-right">{formatCurrencyEUR(produto.preco_custo)}</span>
+                                    <div className="text-right text-xs tabular-nums font-mono text-muted-foreground">
+                                        {formatCurrencyEUR(produto.preco_custo)}
+                                    </div>
                                 )}
-
-                                {/* Preço Venda */}
                                 {!hidePrices && (
-                                    <span className="font-medium text-sm text-right">{formatCurrencyEUR(produto.preco_venda)}</span>
+                                    <div className="text-right text-xs tabular-nums font-mono font-medium text-foreground">
+                                        {formatCurrencyEUR(produto.preco_venda)}
+                                    </div>
                                 )}
 
                                 {/* Ações */}
-                                <div className="text-right">
+                                <div className="flex justify-end">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                <span className="sr-only">Abrir menu</span>
+                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <MoreHorizontal className="h-4 w-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
@@ -251,6 +269,109 @@ export function ProdutosTable({
                     })}
                 </div>
             </GlassCard>
+
+            {/* Mobile/Tablet View (Cards) - Show on screens smaller than LG */}
+            <div className="lg:hidden space-y-4">
+                {produtos.map((produto) => {
+                    const isFornecedorProducao = (produto as any).fornecedores?.id === FORNECEDOR_PRODUCAO_ID || produto.fornecedor_id === FORNECEDOR_PRODUCAO_ID;
+                    const fornecedorNome = (produto as any).fornecedores?.nome || "-";
+
+                    return (
+                        <GlassCard key={produto.id} className="p-4 space-y-3">
+                            {/* Header: Imagem, Nome e Ações */}
+                            <div className="flex items-start gap-3">
+                                <Avatar className="h-12 w-12 rounded-lg border bg-white shadow-sm flex-shrink-0">
+                                    <AvatarImage src={produto.imagem_url || ""} alt={produto.nome} className="object-cover" />
+                                    <AvatarFallback className="rounded-lg bg-warning/10 text-warning font-bold text-sm">
+                                        {produto.nome.substring(0, 2).toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-semibold text-sm text-foreground line-clamp-2 leading-tight">
+                                        {produto.nome}
+                                    </h4>
+                                    <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-2">
+                                        <span className="font-medium text-foreground/80">{produto.marca}</span>
+                                        <span>•</span>
+                                        <span>{produto.tipo}</span>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                                        {fornecedorNome}
+                                    </div>
+                                </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 -mr-2">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-[160px]">
+                                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                        <DropdownMenuItem onClick={() => handleAction(produto, "view")}>
+                                            <Eye className="mr-2 h-4 w-4" />
+                                            Visualizar
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleAction(produto, "attachments")}>
+                                            <Paperclip className="mr-2 h-4 w-4" />
+                                            Anexos
+                                        </DropdownMenuItem>
+                                        {isFornecedorProducao && (
+                                            <DropdownMenuItem onClick={() => handleAction(produto, "estoque")}>
+                                                <PackageOpen className="mr-2 h-4 w-4" />
+                                                Editar Estoque
+                                            </DropdownMenuItem>
+                                        )}
+                                        {!isCollaborator && !hidePrices && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => handleAction(produto, "edit")}>
+                                                    <Edit className="mr-2 h-4 w-4" />
+                                                    Editar
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => handleAction(produto, "delete")} className="text-destructive focus:text-destructive">
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Excluir
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+
+                            {/* Preços e Estoque */}
+                            <div className="pt-3 border-t grid grid-cols-2 gap-3 text-sm">
+                                {!hidePrices && (
+                                    <div className="space-y-1">
+                                        <span className="text-xs text-muted-foreground uppercase block font-semibold">Preço</span>
+                                        <div className="font-medium">{formatCurrencyEUR(produto.preco_venda)}</div>
+                                        <div className="text-xs text-muted-foreground">Custo: {formatCurrencyEUR(produto.preco_custo)}</div>
+                                    </div>
+                                )}
+
+                                {isFornecedorProducao && (
+                                    <div className="space-y-1">
+                                        <span className="text-xs text-muted-foreground uppercase block font-semibold">Estoque</span>
+                                        <div className="grid grid-cols-3 gap-1 text-center text-xs">
+                                            <div className="bg-muted/50 rounded p-1">
+                                                <div className="font-bold">{produto.estoque_garrafas}</div>
+                                                <div className="text-[10px] text-muted-foreground">Gar.</div>
+                                            </div>
+                                            <div className="bg-muted/50 rounded p-1">
+                                                <div className="font-bold">{produto.estoque_tampas}</div>
+                                                <div className="text-[10px] text-muted-foreground">Tam.</div>
+                                            </div>
+                                            <div className="bg-muted/50 rounded p-1">
+                                                <div className="font-bold">{produto.estoque_rotulos}</div>
+                                                <div className="text-[10px] text-muted-foreground">Rot.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </GlassCard>
+                    );
+                })}
+            </div>
 
             {/* Modais Gerenciados Internamente */}
             {selectedProduto && (

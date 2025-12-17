@@ -83,7 +83,7 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
     <Dialog open={isOpen} onOpenChange={handleDialogOpen}>
       <DialogTrigger asChild>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           className="relative"
           title="Anexar comprovante"

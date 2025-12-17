@@ -59,65 +59,36 @@ export function AppSidebar() {
       name: "Dashboard",
       href: "/dashboard",
       icon: Home,
-      gradient: "from-blue-500 to-purple-600",
-      iconColor: "text-blue-500",
-      borderColor: "border-l-blue-500"
     },
     {
       name: "Produtos",
       href: "/produtos",
       icon: Package,
-      gradient: "from-emerald-500 to-emerald-600",
-      iconColor: "text-emerald-500",
-      borderColor: "border-l-emerald-500"
     },
     {
       name: "Clientes",
       href: "/clientes",
       icon: Users,
-      gradient: "from-pink-500 to-pink-600",
-      iconColor: "text-pink-500",
-      borderColor: "border-l-pink-500"
     },
     {
       name: "Fornecedores",
       href: "/fornecedores",
       icon: Truck,
-      gradient: "from-orange-500 to-orange-600",
-      iconColor: "text-orange-500",
-      borderColor: "border-l-orange-500"
     },
     {
       name: locale === 'fr-FR' ? "Commandes" : "Encomendas",
       href: "/encomendas",
       icon: ClipboardList,
-      gradient: "from-blue-500 to-blue-600",
-      iconColor: "text-blue-500",
-      borderColor: "border-l-blue-500"
-    },
-    {
-      name: locale === 'fr-FR' ? "Production" : "Produção",
-      href: "/producao",
-      icon: Factory,
-      gradient: "from-purple-500 to-purple-600",
-      iconColor: "text-purple-500",
-      borderColor: "border-l-purple-500"
     },
     {
       name: locale === 'fr-FR' ? "Finance" : "Financeiro",
       href: "/financeiro",
       icon: DollarSign,
-      gradient: "from-lime-500 to-lime-600",
-      iconColor: "text-lime-500",
-      borderColor: "border-l-lime-500"
     },
     {
       name: locale === 'fr-FR' ? "Projets" : "Projetos",
       href: "/projetos",
       icon: FolderKanban,
-      gradient: "from-indigo-500 to-indigo-600",
-      iconColor: "text-indigo-500",
-      borderColor: "border-l-indigo-500"
     },
   ];
 
@@ -169,24 +140,24 @@ export function AppSidebar() {
   const filteredNavigation = getFilteredNavigation();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/40 bg-background/60 dark:bg-card/40 backdrop-blur-md [&_[data-sidebar=sidebar]]:!bg-transparent data-[state=collapsed]:w-32">
+    <Sidebar collapsible="icon" className="border-r border-border bg-sidebar">
       <SidebarHeader className={cn("p-4", isCollapsed && "flex items-center justify-center")}>
-        <div className={cn("flex items-center w-full", isCollapsed ? "justify-center" : "justify-between")}>
-          <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
+        <div className={cn("flex flex-col items-center w-full relative transition-all duration-300", isCollapsed ? "justify-center" : "gap-4 pt-2")}>
+          <div className={cn("flex flex-col items-center justify-center transition-all duration-300", isCollapsed ? "gap-0" : "gap-2")}>
             <img
-              src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png"
+              src="/logo-inove.jpg"
               alt="Gestion CHS"
               className={cn(
-                "transition-all duration-300 object-contain",
-                isCollapsed ? "h-16 w-16" : "h-10 w-10"
+                "transition-all duration-300 object-contain rounded-xl shadow-sm",
+                isCollapsed ? "h-10 w-10 mb-2" : "h-24 w-auto hover:scale-105"
               )}
             />
             {!isCollapsed && (
-              <div className="flex flex-col">
-                <span className="text-lg font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+              <div className="flex flex-col items-center text-center">
+                <span className="text-xl font-display font-bold text-blue-950 dark:text-blue-100 tracking-tight">
                   Gestion CHS
                 </span>
-                <span className="text-xs text-muted-foreground">Sistema de Gestão</span>
+                <span className="text-xs text-muted-foreground font-medium">Sistema de Gestão</span>
               </div>
             )}
           </div>
@@ -197,9 +168,9 @@ export function AppSidebar() {
                   variant="ghost"
                   size="icon"
                   onClick={() => toggleSidebar()}
-                  className="h-8 w-8 rounded-lg hover:bg-muted/80 transition-all duration-200"
+                  className="absolute right-0 top-0 h-6 w-6 rounded-md hover:bg-muted/80 text-muted-foreground"
                 >
-                  <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+                  <ChevronLeft className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">Recolher menu</TooltipContent>
@@ -241,22 +212,22 @@ export function AppSidebar() {
                           asChild
                           isActive={isActive}
                           className={cn(
-                            "relative transition-all duration-200 h-12",
-                            isActive && `bg-gradient-to-r from-primary/10 to-primary-glow/10 border-l-4 ${item.borderColor}`,
-                            !isActive && "hover:bg-muted/50",
+                            "relative transition-colors h-12",
+                            isActive && "bg-primary/10 border-l-4 border-l-primary",
+                            !isActive && "hover:bg-muted",
                             isCollapsed && "justify-center"
                           )}
                         >
                           <a href={item.href} className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
                             <div className={cn(
-                              "p-3 rounded-xl transition-all duration-200",
-                              isActive && `bg-gradient-to-br ${item.gradient} shadow-icon`,
+                              "p-2 rounded-lg transition-colors",
+                              isActive && "bg-primary",
                               !isActive && "bg-muted"
                             )}>
                               <Icon className={cn(
                                 "transition-colors",
-                                isCollapsed ? "h-7 w-7" : "h-5 w-5",
-                                isActive ? "text-white" : item.iconColor
+                                isCollapsed ? "h-6 w-6" : "h-5 w-5",
+                                isActive ? "text-white" : "text-muted-foreground"
                               )} />
                             </div>
                             {!isCollapsed && (
@@ -295,7 +266,7 @@ export function AppSidebar() {
             {isCollapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="p-2 rounded-full bg-gradient-to-br from-primary to-primary-glow">
+                  <div className="p-2 rounded-lg bg-primary">
                     <User className="h-5 w-5 text-white" />
                   </div>
                 </TooltipTrigger>
@@ -305,7 +276,7 @@ export function AppSidebar() {
               </Tooltip>
             ) : (
               <>
-                <div className="p-2 rounded-full bg-gradient-to-br from-primary to-primary-glow">
+                <div className="p-2 rounded-lg bg-primary">
                   <User className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-sm font-medium text-foreground truncate flex-1">
@@ -316,12 +287,27 @@ export function AppSidebar() {
           </div>
         )}
 
+        {/* User Profile Section */}
+        {!isCollapsed && user && (
+          <div className="flex items-center gap-3 px-2 py-2 mb-2 rounded-lg bg-muted/50 border border-border/50">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <User className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-medium truncate text-foreground">{user.email}</span>
+              <span className="text-[10px] text-muted-foreground truncate">
+                {hasRole('admin') ? 'Administrador' : isCollaborator ? 'Colaborador' : 'Usuário'}
+              </span>
+            </div>
+          </div>
+        )}
+
         <Tooltip>
           <TooltipTrigger asChild>
             <SidebarMenuButton
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className={cn(
-                "transition-all duration-200 hover:bg-muted h-10",
+                "transition-all duration-200 hover:bg-primary/10 hover:text-primary h-10 mb-1",
                 isCollapsed ? "justify-center w-full" : ""
               )}
             >

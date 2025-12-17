@@ -588,7 +588,7 @@ export default function EncomendaForm({ onSuccess, encomenda, initialData, isEdi
               >
                 {isSubmitting ? (
                   <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
+                    <div className="h-4 w-4 animate-spin rounded-lg border-2 border-white border-t-transparent mr-2" />
                     Salvando...
                   </>
                 ) : (

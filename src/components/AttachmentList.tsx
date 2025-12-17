@@ -16,19 +16,19 @@ interface AttachmentListProps {
   compact?: boolean;
 }
 
-export const AttachmentList: React.FC<AttachmentListProps> = ({ 
-  entityType, 
-  entityId, 
+export const AttachmentList: React.FC<AttachmentListProps> = ({
+  entityType,
+  entityId,
   onChanged,
-  compact = false 
+  compact = false
 }) => {
   const isTransporte = entityType === 'transporte';
   const genericAttachments = useAttachments(entityType, entityId);
   const transporteAttachments = useTransporteAttachments(isTransporte ? entityId : '');
-  
+
   // Use the appropriate hook based on entity type
   const { attachments, isLoading, deleteAttachment } = isTransporte ? transporteAttachments : genericAttachments;
-  
+
   const { hasRole, isHardcodedAdmin } = useUserRole();
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<string>('');
@@ -49,7 +49,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
 
   const formatFileSize = (bytes: number | null) => {
     if (!bytes) return 'Tamanho desconhecido';
-    
+
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
@@ -58,14 +58,14 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
   const downloadFile = async (attachment: any) => {
     try {
       console.log("Downloading attachment:", attachment);
-      
+
       let fileUrl: string;
       if (isTransporte) {
         fileUrl = attachment.url;
       } else {
         fileUrl = attachment.storage_url;
       }
-      
+
       const link = document.createElement('a');
       link.href = fileUrl;
       link.download = isTransporte ? attachment.name : attachment.file_name;
@@ -83,7 +83,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
       const { data } = supabase.storage
         .from('attachments')
         .getPublicUrl(storagePath);
-      
+
       return data.publicUrl;
     } catch (error) {
       console.error('Error getting public URL:', error);
@@ -93,12 +93,12 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
 
   const handlePreview = async (attachment: any) => {
     console.log("Preview attachment:", attachment);
-    
+
     try {
       let fileUrl: string;
       let fileName: string;
       let fileType: string;
-      
+
       if (isTransporte) {
         fileUrl = attachment.url;
         fileName = attachment.name;
@@ -108,13 +108,13 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
         fileName = attachment.file_name;
         fileType = attachment.file_type;
       }
-      
+
       // Para PDFs, abrir em nova aba em vez de modal
       if (fileType?.includes('pdf')) {
         window.open(fileUrl, '_blank', 'noopener,noreferrer');
         return;
       }
-      
+
       setPreviewUrl(fileUrl);
       setPreviewType(fileType);
       setPreviewTitle(fileName);
@@ -142,8 +142,8 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
     if (previewType?.startsWith('image/')) {
       return (
         <div className="flex justify-center">
-          <img 
-            src={previewUrl} 
+          <img
+            src={previewUrl}
             alt={previewTitle}
             className="max-w-full max-h-96 object-contain"
           />
@@ -153,9 +153,9 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
       // PDFs agora abrem em nova aba, mas mantemos este código para casos especiais
       return (
         <div className="text-center p-8">
-          <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
           <p>PDF será aberto em nova aba.</p>
-          <Button 
+          <Button
             onClick={() => window.open(previewUrl, '_blank', 'noopener,noreferrer')}
             className="mt-4"
           >
@@ -167,9 +167,9 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
     } else {
       return (
         <div className="text-center p-8">
-          <File className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <File className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
           <p>Prévia não disponível para este tipo de arquivo.</p>
-          <Button 
+          <Button
             onClick={() => downloadFile({ [isTransporte ? 'url' : 'storage_url']: previewUrl, [isTransporte ? 'name' : 'file_name']: previewTitle })}
             className="mt-4"
           >
@@ -184,7 +184,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
   if (isLoading) {
     return compact ? null : (
       <div className="flex items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-lg h-6 w-6 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -218,7 +218,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
             +{attachments.length - 2}
           </Badge>
         )}
-        
+
         {/* Preview Dialog */}
         <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto" aria-describedby="">
@@ -243,26 +243,26 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-medium text-gray-700">Anexos ({attachments.length})</h3>
-      
+      <h3 className="text-sm font-medium text-muted-foreground">Anexos ({attachments.length})</h3>
+
       {attachments.map((attachment) => (
         <Card key={attachment.id} className="p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 flex-1 min-w-0">
               {getFileIcon(attachment.file_type)}
-              
+
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">
                   {isTransporte ? attachment.name : attachment.file_name}
                 </p>
-                <div className="flex items-center space-x-2 text-xs text-gray-500">
+                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                   <span>{formatFileSize(attachment.file_size)}</span>
                   <span>•</span>
                   <span>{new Date(attachment.created_at).toLocaleDateString('pt-BR')}</span>
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-1">
               <Button
                 variant="ghost"
@@ -273,7 +273,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
               >
                 <Eye className="h-4 w-4" />
               </Button>
-              
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -283,14 +283,14 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
               >
                 <Download className="h-4 w-4" />
               </Button>
-              
+
               {canDelete && (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => handleDelete(attachment)}
                   title="Excluir"
-                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

@@ -53,7 +53,7 @@ export default function Projetos() {
     <OptimizedRoleGuard>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold">{t("Projetos")}</h1>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold">{t("Projetos")}</h1>
           {!isRestrictedUser && (
             <Dialog open={showForm} onOpenChange={setShowForm}>
               <DialogTrigger asChild>
