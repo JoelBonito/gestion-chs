@@ -141,7 +141,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border bg-sidebar">
-      <SidebarHeader className={cn("p-4", isCollapsed && "flex items-center justify-center")}>
+      <SidebarHeader className={cn("p-4 relative", isCollapsed && "flex items-center justify-center")}>
         <div className={cn("flex flex-col items-center w-full relative transition-all duration-300", isCollapsed ? "justify-center" : "gap-4 pt-2")}>
           <div className={cn("flex flex-col items-center justify-center transition-all duration-300", isCollapsed ? "gap-0" : "gap-2")}>
             <img
@@ -161,35 +161,23 @@ export function AppSidebar() {
               </div>
             )}
           </div>
-          {!isCollapsed && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => toggleSidebar()}
-                  className="absolute right-0 top-0 h-6 w-6 rounded-md hover:bg-muted/80 text-muted-foreground"
-                >
-                  <ChevronLeft className="h-3 w-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Recolher menu</TooltipContent>
-            </Tooltip>
-          )}
         </div>
-        {isCollapsed && (
+
+        {!isMobile && (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
+                onClick={toggleSidebar}
+                variant="outline"
                 size="icon"
-                onClick={() => toggleSidebar()}
-                className="mt-2 h-8 w-8 rounded-lg hover:bg-muted/80 transition-all duration-200"
+                className="absolute -right-3 top-8 z-20 h-7 w-7 rounded-full border border-border bg-sidebar shadow-sm hover:bg-accent hover:text-accent-foreground"
               >
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <ChevronLeft className={cn("h-4 w-4 transition-transform duration-200", isCollapsed && "rotate-180")} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">Expandir menu</TooltipContent>
+            <TooltipContent side="right">
+              {isCollapsed ? "Expandir menu" : "Recolher menu"}
+            </TooltipContent>
           </Tooltip>
         )}
       </SidebarHeader>
@@ -257,10 +245,10 @@ export function AppSidebar() {
 
       <SidebarSeparator />
 
-      <SidebarFooter className="p-4 space-y-2">
+      <SidebarFooter className="p-4 space-y-1">
         {user && (
           <div className={cn(
-            "mb-3 transition-all duration-200",
+            "mb-1 transition-all duration-200",
             isCollapsed ? "flex justify-center" : "flex items-center gap-2 p-3 rounded-lg bg-muted/50"
           )}>
             {isCollapsed ? (
@@ -287,32 +275,19 @@ export function AppSidebar() {
           </div>
         )}
 
-        {/* User Profile Section */}
-        {!isCollapsed && user && (
-          <div className="flex items-center gap-3 px-2 py-2 mb-2 rounded-lg bg-muted/50 border border-border/50">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <User className="h-4 w-4 text-primary" />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-medium truncate text-foreground">{user.email}</span>
-              <span className="text-[10px] text-muted-foreground truncate">
-                {hasRole('admin') ? 'Administrador' : isCollaborator ? 'Colaborador' : 'Usuário'}
-              </span>
-            </div>
-          </div>
-        )}
+
 
         <Tooltip>
           <TooltipTrigger asChild>
             <SidebarMenuButton
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className={cn(
-                "transition-all duration-200 hover:bg-primary/10 hover:text-primary h-10 mb-1",
+                "transition-all duration-200 hover:bg-primary/10 hover:text-primary h-10",
                 isCollapsed ? "justify-center w-full" : ""
               )}
             >
               {isCollapsed ? (
-                <div className="p-2 rounded-xl bg-primary/10">
+                <div className="p-2 rounded-lg bg-primary/10">
                   {theme === "dark" ? (
                     <Sun className="h-5 w-5 text-primary" />
                   ) : (
@@ -321,7 +296,7 @@ export function AppSidebar() {
                 </div>
               ) : (
                 <>
-                  <div className="p-2 rounded-xl bg-primary/10">
+                  <div className="p-2 rounded-lg bg-primary/10">
                     {theme === "dark" ? (
                       <Sun className="h-5 w-5 text-primary" />
                     ) : (
@@ -350,12 +325,12 @@ export function AppSidebar() {
               )}
             >
               {isCollapsed ? (
-                <div className="p-2 rounded-xl bg-destructive/10">
+                <div className="p-2 rounded-lg bg-destructive/10">
                   <LogOut className="h-5 w-5 text-destructive" />
                 </div>
               ) : (
                 <>
-                  <div className="p-2 rounded-xl bg-destructive/10">
+                  <div className="p-2 rounded-lg bg-destructive/10">
                     <LogOut className="h-5 w-5 text-destructive" />
                   </div>
                   <span className="font-medium">Sair</span>
