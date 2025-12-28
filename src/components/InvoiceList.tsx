@@ -159,7 +159,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
         </CardHeader>
         <CardContent>
           {/* Tabela apenas no desktop */}
-          <div className="hidden lg:block overflow-x-auto rounded-xl border border-border/40 overflow-hidden bg-popover shadow-sm">
+          <div className="hidden xl:block overflow-x-auto rounded-xl border border-border/40 overflow-hidden bg-popover shadow-sm">
             <Table>
               <TableHeader className="bg-popover border-b border-border/40">
                 <TableRow className="hover:bg-transparent transition-none border-b-0">
@@ -261,7 +261,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
           </div>
 
           {/* Lista em cartões no mobile/tablet */}
-          <div className="lg:hidden space-y-3">
+          <div className="xl:hidden space-y-3">
             {invoices.length === 0 && (
               <Card className="shadow-none border-dashed">
                 <CardContent className="p-6 text-center text-muted-foreground">
@@ -270,7 +270,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
               </Card>
             )}
             {invoices.map((invoice) => (
-              <Card key={invoice.id} className="overflow-hidden bg-card border-border/50">
+              <Card key={invoice.id} className="overflow-hidden bg-popover border-border/50">
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-sm font-semibold">
@@ -294,20 +294,20 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                     )}
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                    <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => setViewingInvoice(invoice)}>
+                    <Button variant="outline" size="sm" className="w-full sm:w-auto bg-sky-500/5 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-200/50 dark:border-sky-800/50" onClick={() => setViewingInvoice(invoice)}>
                       <Eye className="w-4 h-4 mr-2" /> Ver detalhes
                     </Button>
                     {invoice.attachment && (
-                      <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleDownload(invoice)}>
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800/50" onClick={() => handleDownload(invoice)}>
                         <Download className="w-4 h-4 mr-2" /> Download
                       </Button>
                     )}
                     {canEdit && !isRestrictedUser && (
                       <>
-                        <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={() => handleEditClick(invoice)}>
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto bg-amber-500/5 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200/50 dark:border-amber-800/50" onClick={() => handleEditClick(invoice)}>
                           <Edit className="w-4 h-4 mr-2" /> Editar
                         </Button>
-                        <Button variant="outline" size="sm" className="w-full sm:w-auto text-destructive hover:text-destructive" onClick={() => onDelete(invoice)}>
+                        <Button variant="outline" size="sm" className="w-full sm:w-auto bg-red-500/5 hover:bg-red-500/10 text-destructive border-red-200/50 dark:border-red-800/50" onClick={() => onDelete(invoice)}>
                           <Trash2 className="w-4 h-4 mr-2" /> Excluir
                         </Button>
                       </>
@@ -403,7 +403,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
       {/* View Invoice Details Modal */}
       {viewingInvoice && (
         <Dialog open={!!viewingInvoice} onOpenChange={() => setViewingInvoice(null)}>
-          <DialogContent className="w-[95vw] max-w-3xl bg-card border-border/50">
+          <DialogContent className="w-[95vw] max-w-3xl bg-popover border-border/50">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary" />
@@ -411,30 +411,28 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
-              <div className="bg-popover p-4 rounded-xl border border-border/20 shadow-sm">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                  <div className="space-y-1">
-                    <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Data da Fatura</Label>
-                    <p className="text-sm font-semibold">
-                      {new Date(viewingInvoice.invoice_date).toLocaleDateString('pt-BR')}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Data da Fatura</Label>
+                  <p className="text-sm font-semibold">
+                    {new Date(viewingInvoice.invoice_date).toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Valor Total</Label>
+                  <p className="text-lg font-black text-primary">{formatCurrencyEUR(viewingInvoice.amount)}</p>
+                </div>
+                {viewingInvoice.description && (
+                  <div className="space-y-1 col-span-2 md:col-span-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Observações</Label>
+                    <p className="text-sm text-muted-foreground line-clamp-2" title={viewingInvoice.description}>
+                      {viewingInvoice.description}
                     </p>
                   </div>
-                  <div className="space-y-1">
-                    <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Valor Total</Label>
-                    <p className="text-lg font-black text-primary">{formatCurrencyEUR(viewingInvoice.amount)}</p>
-                  </div>
-                  {viewingInvoice.description && (
-                    <div className="space-y-1 col-span-2 md:col-span-1">
-                      <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Observações</Label>
-                      <p className="text-sm text-muted-foreground line-clamp-2" title={viewingInvoice.description}>
-                        {viewingInvoice.description}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
 
-              <div className="bg-popover p-4 rounded-xl border border-border/20 shadow-sm">
+              <div className="">
                 <InvoiceAttachmentManager
                   invoice={viewingInvoice}
                   onUpdate={() => {

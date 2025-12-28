@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/tooltip";
 
 import { GlassCard } from "@/components/GlassCard";
+import { cn } from "@/lib/utils";
 
 interface Transporte {
   id: string;
@@ -211,93 +212,131 @@ export function TransportesTab() {
           </p>
         </GlassCard>
       ) : (
-        filteredTransportes.map((transporte) => (
-          <GlassCard
-            key={transporte.id}
-            className={`relative overflow-hidden bg-card ${transporte.archived ? 'opacity-60' : ''}`}
-            hoverEffect
-          >
-            <div className="p-4 sm:p-5 cursor-pointer" onClick={() => handleView(transporte)}>
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-12 flex-1 min-w-0">
-                  <div className="min-w-0">
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-1">Tracking:</span>
-                    <div className="font-mono font-bold text-sm text-primary truncate">#{transporte.tracking_number}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredTransportes.map((transporte) => (
+            <GlassCard
+              key={transporte.id}
+              className={`relative overflow-hidden bg-card transition-all duration-300 hover:shadow-lg ${transporte.archived ? 'opacity-60' : ''}`}
+              hoverEffect
+            >
+              <div className="p-5 flex flex-col h-full gap-4 cursor-pointer" onClick={() => handleView(transporte)}>
+                <div className="space-y-4">
+                  {/* Cabeçalho do Card: Tracking */}
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0">
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest block mb-1">Tracking Number</span>
+                      <div className="font-mono font-bold text-lg text-primary truncate tracking-tight">
+                        #{transporte.tracking_number}
+                      </div>
+                    </div>
+                    {transporte.archived && (
+                      <Badge variant="destructive" className="shrink-0 text-[10px] uppercase tracking-tighter">
+                        ARQUIVADO
+                      </Badge>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider block mb-1">Referência:</span>
-                    <div className="text-sm font-medium truncate">{transporte.referencia || "—"}</div>
+
+                  {/* Corpo do Card: Referência */}
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest block mb-1">Referência / Info</span>
+                    <div className={cn("text-sm font-medium leading-normal text-foreground/90", !transporte.referencia && "text-muted-foreground italic")}>
+                      {transporte.referencia || "Sem referência definida"}
+                    </div>
                   </div>
-                  {transporte.archived && (
-                    <Badge variant="destructive" className="shrink-0 text-[10px] uppercase tracking-tighter">
-                      ARQUIVADO
-                    </Badge>
-                  )}
                 </div>
 
-                <div className="flex flex-row items-center gap-3 w-full sm:w-auto justify-between sm:justify-start border-t sm:border-t-0 pt-3 sm:pt-0 mt-3 sm:mt-0 border-border/10">
-                  {!transporte.archived && (
+                {/* Rodapé do Card: Ações */}
+                <div className="pt-4 border-t border-border/10 flex items-center justify-between gap-3 mt-auto">
+                  {!transporte.archived ? (
                     <Button
                       size="sm"
                       variant="gradient"
                       onClick={(e) => { e.stopPropagation(); handleTrackingClick(transporte.tracking_number); }}
-                      className="h-8 px-4 text-xs font-semibold active:scale-95 transition-all"
+                      className="h-8 px-4 text-xs font-bold uppercase tracking-wider shadow-sm active:scale-95 transition-all w-full sm:w-auto"
                     >
-                      Tracking
+                      <Truck className="w-3.5 h-3.5 mr-2" />
+                      Rastrear
                     </Button>
-                  )}
+                  ) : <div />}
 
                   <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => { e.stopPropagation(); handleView(transporte); }}
-                      title="Visualizar"
-                      className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 hover:scale-110 active:scale-90 transition-all"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => { e.stopPropagation(); handleView(transporte); }}
+                            className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 active:scale-90 transition-all"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Visualizar Detalhes</p></TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
                     {!transporte.archived && (
                       <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => { e.stopPropagation(); handleEdit(transporte); }}
-                          title="Editar"
-                          className="h-8 w-8 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 hover:scale-110 active:scale-90 transition-all"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => { e.stopPropagation(); handleArchive(transporte); }}
-                          title="Arquivar"
-                          className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 hover:scale-110 active:scale-90 transition-all"
-                          disabled={isLoading}
-                        >
-                          <Archive className="h-4 w-4" />
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => { e.stopPropagation(); handleEdit(transporte); }}
+                                className="h-8 w-8 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 active:scale-90 transition-all"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Editar</p></TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => { e.stopPropagation(); handleArchive(transporte); }}
+                                className="h-8 w-8 text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 active:scale-90 transition-all"
+                                disabled={isLoading}
+                              >
+                                <Archive className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Arquivar</p></TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </>
                     )}
+
                     {transporte.archived && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => { e.stopPropagation(); handleReactivate(transporte); }}
-                        title="Reativar"
-                        className="h-8 w-8 text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 hover:scale-110 active:scale-90 transition-all"
-                        disabled={isLoading}
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => { e.stopPropagation(); handleReactivate(transporte); }}
+                              className="h-8 w-8 text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 active:scale-90 transition-all"
+                              disabled={isLoading}
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Reativar</p></TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </div>
                 </div>
               </div>
-            </div>
-          </GlassCard>
-        ))
+            </GlassCard>
+          ))}
+        </div>
       )}
 
       {/* Dialog para criar/editar transporte */}

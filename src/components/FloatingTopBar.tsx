@@ -174,15 +174,19 @@ export const FloatingTopBar = ({ onMobileMenuClick, isSidebarCollapsed = false }
                     {actions && <div className="h-6 w-px bg-[var(--border)] mx-1" />}
 
                     {/* Notification Toggle */}
-                    <NotificationToggle />
+                    <div className="hidden md:block">
+                        <NotificationToggle />
+                    </div>
 
                     {/* Theme Switcher Pill */}
-                    <ThemeSwitcherPill size="sm" />
+                    <div className="hidden md:block">
+                        <ThemeSwitcherPill size="sm" />
+                    </div>
 
-                    <div className="h-6 w-px bg-[var(--border)] mx-1" />
+                    <div className="hidden md:block h-6 w-px bg-[var(--border)] mx-1" />
 
                     {/* User Profile Dropdown / Trigger */}
-                    <div className="relative">
+                    <div className="hidden md:block relative">
                         <button
                             onClick={() => setIsProfileOpen(!isProfileOpen)}
                             className={cn(
@@ -194,7 +198,7 @@ export const FloatingTopBar = ({ onMobileMenuClick, isSidebarCollapsed = false }
                             <div className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold uppercase shadow-sm transition-colors">
                                 {initials}
                             </div>
-                            <div className="hidden md:block text-left">
+                            <div className="text-left">
                                 <p className="text-sm font-bold text-[var(--foreground)] leading-none mb-1">
                                     {formattedName}
                                 </p>
@@ -202,7 +206,7 @@ export const FloatingTopBar = ({ onMobileMenuClick, isSidebarCollapsed = false }
                                     {displaySubtitle}
                                 </p>
                             </div>
-                            <ChevronDown className={cn("hidden md:block h-3.5 w-3.5 text-[var(--text-secondary)]/70 transition-transform ml-1", isProfileOpen && "rotate-180")} />
+                            <ChevronDown className={cn("h-3.5 w-3.5 text-[var(--text-secondary)]/70 transition-transform ml-1", isProfileOpen && "rotate-180")} />
                         </button>
 
                         {/* Profile Dropdown Menu */}

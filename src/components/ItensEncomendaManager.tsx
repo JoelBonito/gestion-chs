@@ -278,7 +278,7 @@ export function ItensEncomendaManager({
         ) : (
           <>
             {/* Desktop View: Tabela */}
-            <div className="hidden md:block rounded-lg border border-border/40 overflow-hidden">
+            <div className="hidden xl:block rounded-lg border border-border/40 overflow-hidden">
               <table className="w-full text-sm bg-[#ffffff] dark:bg-[#252a36]">
                 <thead className="bg-[#f9fafb] dark:bg-[#1c202a] border-b border-border/40">
                   <tr>
@@ -391,7 +391,7 @@ export function ItensEncomendaManager({
             </div>
 
             {/* Mobile View: Cards Simplificados */}
-            <div className="md:hidden space-y-4">
+            <div className="xl:hidden space-y-4">
               {itens.map((item, index) => {
                 const itemKey = item.tempId || item.id || `fallback-${index}-mob`;
                 const isFrete = isFreteItem(item);

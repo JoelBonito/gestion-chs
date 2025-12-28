@@ -224,7 +224,7 @@ export default function EncomendasFinanceiro({
 
         <CardContent className="px-4 sm:px-6">
           {/* Tabela apenas no desktop */}
-          <div className="hidden lg:block overflow-x-auto rounded-xl border border-border/40 overflow-hidden bg-popover shadow-sm">
+          <div className="hidden xl:block overflow-x-auto rounded-xl border border-border/40 overflow-hidden bg-popover shadow-sm">
             <Table>
               <TableHeader className="bg-popover border-b border-border/40">
                 <TableRow className="hover:bg-transparent transition-none border-b-0">
@@ -313,7 +313,7 @@ export default function EncomendasFinanceiro({
           </div>
 
           {/* Lista em cartões no mobile/tablet */}
-          <div className="lg:hidden space-y-3">
+          <div className="xl:hidden space-y-3">
             {encomendas.length === 0 && (
               <Card className="shadow-none border-dashed">
                 <CardContent className="p-6 text-center text-muted-foreground">
@@ -324,7 +324,7 @@ export default function EncomendasFinanceiro({
             {encomendas.map((e) => (
               <Card
                 key={e.id}
-                className="overflow-hidden bg-card border-border/50 cursor-pointer active:scale-[0.98] transition-all"
+                className="overflow-hidden bg-popover border-border/50 cursor-pointer active:scale-[0.98] transition-all"
                 onClick={() => handleViewDetails(e)}
               >
                 <CardContent className="p-4 space-y-2">
@@ -369,15 +369,22 @@ export default function EncomendasFinanceiro({
                     )}
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 pt-1" onClick={(ev) => ev.stopPropagation()}>
-                    <Button variant="ghost" size="sm" className="w-full sm:w-auto" onClick={() => handleViewDetails(e)}>
+                    <Button variant="ghost" size="sm" className="w-full sm:w-auto bg-sky-500/5 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200/30 dark:border-sky-800/30" onClick={() => handleViewDetails(e)}>
                       <Eye className="w-4 h-4 mr-2" /> {tr("Visualizar detalhes")}
                     </Button>
                     {!isHam && (
-                      <Button variant="ghost" size="sm" className="w-full sm:w-auto" onClick={() => { setSelectedEncomenda(e); setShowPagamentoForm(true); }}>
+                      <Button variant="ghost" size="sm" className="w-full sm:w-auto bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200/30 dark:border-emerald-800/30" onClick={() => { setSelectedEncomenda(e); setShowPagamentoForm(true); }}>
                         <Plus className="w-4 h-4 mr-2" /> {tr("Registrar pagamento")}
                       </Button>
                     )}
-                    <FinancialAttachmentButton entityType="receivable" entityId={e.id} title={tr("Anexar Comprovante")} onChanged={handleAttachmentChange} />
+                    <FinancialAttachmentButton
+                      entityType="receivable"
+                      entityId={e.id}
+                      title={tr("Anexar Comprovante")}
+                      onChanged={handleAttachmentChange}
+                      showLabel={true}
+                      className="w-full sm:w-auto bg-purple-500/5 hover:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200/30 dark:border-purple-800/30"
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -407,7 +414,7 @@ export default function EncomendasFinanceiro({
       {/* Dialog: Detalhes + Anexos */}
       {selectedEncomenda && (
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border" aria-describedby="">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-popover border-border" aria-describedby="">
             <DialogHeader className="border-b pb-4 mb-4">
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 <Eye className="h-5 w-5 text-primary" />
@@ -420,61 +427,59 @@ export default function EncomendasFinanceiro({
 
             <div className="space-y-6">
               {/* Detalhes da encomenda - Camada 3 (Destaque sobre Camada 2) */}
-              <div className="bg-popover rounded-xl border border-border/20 p-6 shadow-sm">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Encomenda:")}</span>
-                    <p className="text-sm font-semibold flex items-center gap-2">
-                      #{selectedEncomenda.numero_encomenda}
-                      {selectedEncomenda.etiqueta && (
-                        <Badge variant="info">{selectedEncomenda.etiqueta}</Badge>
-                      )}
-                    </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Encomenda:")}</span>
+                  <div className="text-sm font-semibold flex items-center gap-2">
+                    #{selectedEncomenda.numero_encomenda}
+                    {selectedEncomenda.etiqueta && (
+                      <Badge variant="info">{selectedEncomenda.etiqueta}</Badge>
+                    )}
                   </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Cliente:")}</span>
-                    <p className="text-sm font-semibold">{selectedEncomenda.cliente_nome}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Data Produção:")}</span>
-                    <p className="text-sm font-semibold italic">
-                      {formatDate(selectedEncomenda.data_producao_estimada)}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Valor Itens:")}</span>
-                    <p className="text-sm font-bold">
-                      €{(selectedEncomenda.valor_total - selectedEncomenda.valor_frete).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Valor Frete:")}</span>
-                    <p className="text-sm font-bold">
-                      {formatCurrencyEUR(selectedEncomenda.valor_frete)}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Total:")}</span>
-                    <p className="text-sm font-black text-primary">
-                      {formatCurrencyEUR(selectedEncomenda.valor_total)}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Recebido:")}</span>
-                    <p className="text-sm font-bold text-success">
-                      {formatCurrencyEUR(selectedEncomenda.valor_pago)}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Saldo:")}</span>
-                    <p className="text-sm font-black text-warning">
-                      {formatCurrencyEUR(selectedEncomenda.saldo_devedor)}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Pagamentos:")}</span>
-                    <p className="text-sm font-semibold">{selectedEncomenda.total_pagamentos}</p>
-                  </div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Cliente:")}</span>
+                  <p className="text-sm font-semibold">{selectedEncomenda.cliente_nome}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Data Produção:")}</span>
+                  <p className="text-sm font-semibold italic">
+                    {formatDate(selectedEncomenda.data_producao_estimada)}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Valor Itens:")}</span>
+                  <p className="text-sm font-bold">
+                    €{(selectedEncomenda.valor_total - selectedEncomenda.valor_frete).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Valor Frete:")}</span>
+                  <p className="text-sm font-bold">
+                    {formatCurrencyEUR(selectedEncomenda.valor_frete)}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Total:")}</span>
+                  <p className="text-sm font-black text-primary">
+                    {formatCurrencyEUR(selectedEncomenda.valor_total)}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Recebido:")}</span>
+                  <p className="text-sm font-bold text-success">
+                    {formatCurrencyEUR(selectedEncomenda.valor_pago)}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Saldo:")}</span>
+                  <p className="text-sm font-black text-warning">
+                    {formatCurrencyEUR(selectedEncomenda.saldo_devedor)}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Pagamentos:")}</span>
+                  <p className="text-sm font-semibold">{selectedEncomenda.total_pagamentos}</p>
                 </div>
               </div>
 

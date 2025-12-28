@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Package, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
@@ -27,13 +28,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 export default function Produtos() {
   const { user } = useAuth();
@@ -255,8 +251,8 @@ export default function Produtos() {
           </DialogContent>
         </Dialog>
 
-        {/* Tabela - Cor Camada 2 Integral com Linhas Separadoras */}
-        <div className="rounded-2xl border border-border/30 bg-card shadow-2xl overflow-hidden">
+        {/* Tabela - Desktop (Hidden on Mobile/Tablet) */}
+        <div className="hidden xl:block rounded-2xl border border-border/30 bg-card shadow-2xl overflow-x-auto">
           <Table className="bg-card">
             <TableHeader className="bg-card border-b border-border">
               <TableRow className="hover:bg-transparent border-none">
@@ -407,6 +403,111 @@ export default function Produtos() {
               )}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Mobile / Tablet View (Cards) */}
+        <div className="xl:hidden flex flex-col gap-4 pb-20">
+          {loading ? (
+            <div className="text-center py-12 text-muted-foreground">
+              Carregando produtos...
+            </div>
+          ) : filteredProdutos.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground bg-card rounded-xl border border-border/30">
+              Nenhum produto encontrado.
+            </div>
+          ) : (
+            filteredProdutos.map((produto) => {
+              const isFornecedorProducao = (produto as any).fornecedores?.id === FORNECEDOR_PRODUCAO_ID || produto.fornecedor_id === FORNECEDOR_PRODUCAO_ID;
+              const fornecedorNome = (produto as any).fornecedores?.nome || "-";
+
+              return (
+                <div
+                  key={produto.id}
+                  className={cn(
+                    "bg-card rounded-xl border border-border/30 shadow-sm p-5 flex flex-col gap-5 active:scale-[0.99] transition-transform",
+                    !produto.ativo && "opacity-60 grayscale"
+                  )}
+                  onClick={() => handleView(produto)}
+                >
+                  {/* Header: Nome + Ações */}
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1 space-y-2">
+                      <div className="font-bold text-base sm:text-lg text-foreground uppercase leading-tight">
+                        {produto.nome}
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold bg-muted/50 px-2 py-1 rounded-md text-muted-foreground uppercase border border-border/20">
+                          {produto.marca}
+                        </span>
+                        <span className="text-xs text-muted-foreground uppercase">
+                          {produto.tipo}
+                        </span>
+                      </div>
+                    </div>
+                    <div onClick={(e) => e.stopPropagation()} className="scale-110 origin-top-right">
+                      <ProdutoActions
+                        produto={produto}
+                        onEdit={() => handleEdit(produto)}
+                        onView={() => handleView(produto)}
+                        onRefresh={fetchProdutos}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Fornecedor */}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground border-b border-border/10 pb-4">
+                    <Truck className="h-4 w-4 text-muted-foreground/70" />
+                    <span className="uppercase truncate tracking-wide">{fornecedorNome}</span>
+                  </div>
+
+                  {/* Dados: Estoque e Preços */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Estoques */}
+                    <div className="bg-muted/20 rounded-xl p-3 border border-border/10 flex flex-col justify-between">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 text-center border-b border-border/10 pb-2">
+                        Estoque
+                      </span>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { label: 'Garrafa', val: produto.estoque_garrafas },
+                          { label: 'Tampa', val: produto.estoque_tampas },
+                          { label: 'Rótulo', val: produto.estoque_rotulos }
+                        ].map((e, i) => (
+                          <div key={i} className="flex flex-col items-center justify-center p-1">
+                            <span className={cn("text-base sm:text-lg font-bold leading-none mb-1", !isFornecedorProducao ? "text-muted-foreground/30" : (e.val || 0) < 100 ? "text-amber-500" : "text-emerald-500")}>
+                              {isFornecedorProducao ? (e.val ?? "-") : "-"}
+                            </span>
+                            <span className="text-[10px] sm:text-xs text-muted-foreground/80 uppercase text-center leading-tight">{e.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Preços */}
+                    {!hidePrices && (
+                      <div className="bg-muted/20 rounded-xl p-3 border border-border/10 flex flex-col justify-between text-right">
+                        <div>
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-2 border-b border-border/10 pb-2">
+                            Valor de Venda
+                          </span>
+                          <span className="text-lg sm:text-xl font-bold text-primary block">
+                            {formatCurrencyEUR(produto.preco_venda)}
+                          </span>
+                        </div>
+                        {produto.preco_custo > 0 && (
+                          <div className="mt-2 pt-2 border-t border-border/5">
+                            <span className="text-[10px] text-muted-foreground uppercase">
+                              Custo: <span className="font-medium text-foreground/70">{formatCurrencyEUR(produto.preco_custo)}</span>
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
 
       </PageContainer>

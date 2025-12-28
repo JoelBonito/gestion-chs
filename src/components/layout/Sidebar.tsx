@@ -22,6 +22,12 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { ThemeSwitcherPill } from '@/components/ui/theme-switcher';
+// import { NotificationToggle } from '@/components/NotificationToggle'; // Notification is tricky in sidebar, lets skip for now or add simple
+import { LogOut, User as UserIcon } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 // =============================================================================
 // Navigation Items Configuration
@@ -343,6 +349,44 @@ const SidebarContent = ({
                     </div>
                 ))}
             </nav>
+
+            {/* Mobile Only: Profile & Settings Section */}
+            {mobile && (
+                <div className="px-6 py-4 border-t border-[var(--border)] bg-[var(--surface-elevated)]/50 space-y-4">
+                    {/* User Info & Logout */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold uppercase shadow-sm">
+                                { /* Hardcoded initials logic matching TopBar for consistency or use hook if available inside SidebarContent */}
+                                JO
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-[var(--foreground)] leading-none mb-1">Joel Bonito</p>
+                                <p className="text-[10px] text-[var(--text-secondary)]">Proprietário</p>
+                            </div>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={async () => {
+                                await supabase.auth.signOut();
+                                window.location.href = '/login';
+                            }}
+                            className="text-destructive hover:bg-destructive/10"
+                        >
+                            <LogOut className="h-5 w-5" />
+                        </Button>
+                    </div>
+
+                    {/* Settings Grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="col-span-2 flex items-center justify-between p-2 rounded-lg bg-[var(--surface)] border border-[var(--border)]">
+                            <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider pl-1">Tema</span>
+                            <ThemeSwitcherPill size="sm" />
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Footer - Powered by */}
             <div className={cn(

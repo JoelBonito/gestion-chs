@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 
 import EncomendaForm from "@/components/EncomendaForm";
 import EncomendaView from "@/components/EncomendaView";
+import { EncomendaCard } from "@/components/encomendas/EncomendaCard";
 import { EncomendaActions } from "@/components/EncomendaActions";
 import { EncomendaStatusFilter } from "@/components/EncomendaStatusFilter";
 import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
@@ -453,175 +454,25 @@ export default function Encomendas() {
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {filteredEncomendas.map((e, index) => (
-                  <GlassCard
+                  <EncomendaCard
                     key={`${e.id}-${user?.email || 'loading'}`}
-                    className="relative p-0 overflow-hidden bg-card"
-                    hoverEffect
-                  >
-                    {/* Ações Absolutas - Padrão Projetos */}
-                    <div className="absolute top-4 right-4 z-10" onClick={(ev) => ev.stopPropagation()}>
-                      <EncomendaActions
-                        encomenda={e as any}
-                        onView={() => setSelectedEncomendaForView(e)}
-                        onEdit={() => setSelectedEncomendaForEdit(e)}
-                        onDelete={handleDelete}
-                        onTransport={() => setTransportDialogOpen(true)}
-                        canEditOrders={canEdit() && !isCollaborator && !readOnlyOrders}
-                      />
-                    </div>
-                    <div className="p-4 sm:p-5 cursor-pointer" onClick={() => setSelectedEncomendaForView(e)}>
-                      {/* Header: ID, Tag, Data e Status - Tudo em uma linha */}
-                      <div className="flex items-center justify-between gap-2 mb-3 pr-10">
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <span className="text-base sm:text-lg font-bold font-mono text-primary shrink-0">
-                            #{e.numero_encomenda}
-                          </span>
-                          {e.etiqueta && (
-                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-[10px] sm:text-xs px-1.5 py-0 shrink-0 uppercase tracking-wide font-bold">
-                              {e.etiqueta}
-                            </Badge>
-                          )}
-                          <span className="text-[10px] sm:text-xs text-muted-foreground shrink-0 hidden xs:inline">
-                            {formatDate(e.data_criacao)}
-                          </span>
-                        </div>
-
-                        {/* Status - Flexível */}
-                        <div className="shrink-0 min-w-max flex justify-end">
-                          {isHam ? (
-                            <Badge variant="outline" className="w-full justify-center py-0.5 text-[10px] sm:text-xs">
-                              {getStatusLabel(e.status)}
-                            </Badge>
-                          ) : (
-                            <EncomendaStatusSelect
-                              encomendaId={e.id}
-                              currentStatus={e.status}
-                              numeroEncomenda={e.numero_encomenda}
-                              onStatusChange={handleStatusChange}
-                            />
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Cliente e Fornecedor + Ações Rápidas - Layout Horizontal Compacto */}
-                      <div className="flex items-center justify-between gap-4 py-2 border-y border-border/30 text-xs sm:text-sm">
-                        <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-4 min-w-0 flex-1">
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-muted-foreground shrink-0">{t.client}:</span>
-                            <span className="font-medium truncate" title={e.clientes?.nome ?? e.cliente_nome ?? ""}>
-                              {e.clientes?.nome ?? e.cliente_nome ?? "—"}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-muted-foreground shrink-0">{t.supplier}:</span>
-                            <span className="font-medium truncate" title={e.fornecedores?.nome ?? e.fornecedor_nome ?? ""}>
-                              {e.fornecedores?.nome ?? e.fornecedor_nome ?? "—"}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Ações Rápidas - Agora Alinhadas com Cliente/Fornecedor */}
-                        <div className="flex items-center gap-1 shrink-0 ml-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(ev) => { ev.stopPropagation(); setSelectedEncomendaForView(e); }}
-                            title="Visualizar"
-                            className="h-8 w-8 text-muted-foreground hover:text-cyan-500 hover:bg-cyan-500/10 hover:scale-110 active:scale-90 transition-all"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-
-                          {(canEdit() && !isCollaborator && !readOnlyOrders) && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(ev) => { ev.stopPropagation(); setSelectedEncomendaForEdit(e); }}
-                              title="Editar"
-                              className="h-8 w-8 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 hover:scale-110 active:scale-90 transition-all"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Rodapé: Datas, Peso, Financeiro e Ações */}
-                      <div className="flex flex-wrap items-end justify-between gap-3 pt-3 text-xs sm:text-sm">
-
-                        {/* Grupo Esquerdo: Datas e Peso */}
-                        <div className="flex flex-wrap items-center gap-4 sm:gap-6 py-1">
-                          {/* Data Produção */}
-                          <div className={cn("flex flex-col", !e.data_producao_estimada && "opacity-50")}>
-                            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">{t.productionDate}</span>
-                            {canEditProductionUI ? (
-                              <DatePickerPopover
-                                variant="inline"
-                                value={e.data_producao_estimada ? new Date(e.data_producao_estimada) : undefined}
-                                onChange={(d) => handleDateUpdate(e.id, "data_producao_estimada", d ? format(d, "yyyy-MM-dd") : "")}
-                              />
-                            ) : (
-                              <span className="font-medium">{e.data_producao_estimada ? formatDate(e.data_producao_estimada) : "—"}</span>
-                            )}
-                          </div>
-
-                          {/* Data Entrega */}
-                          <div className={cn("flex flex-col", !e.data_envio_estimada && "opacity-50")}>
-                            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">{t.deliveryDate}</span>
-                            {canEditDeliveryUI ? (
-                              <DatePickerPopover
-                                variant="inline"
-                                value={e.data_envio_estimada ? new Date(e.data_envio_estimada) : undefined}
-                                onChange={(d) => handleDateUpdate(e.id, "data_envio_estimada", d ? format(d, "yyyy-MM-dd") : "")}
-                              />
-                            ) : (
-                              <span className="font-medium">{e.data_envio_estimada ? formatDate(e.data_envio_estimada) : "—"}</span>
-                            )}
-                          </div>
-
-                          {/* Peso */}
-                          <div className="flex flex-col">
-                            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">{t.grossWeight}</span>
-                            <div className="flex items-center gap-1.5">
-                              <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span className="font-medium">
-                                {((e as any).peso_bruto || 0).toLocaleString('pt-PT', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kg
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Grupo Direito: Financeiro e Ações */}
-                        <div className="flex items-center gap-4 sm:gap-6 ml-auto">
-                          {!hidePrices && (
-                            <>
-                              {/* Lucro (Comissão) */}
-                              {!isFelipe && (
-                                <div className="flex flex-col items-end">
-                                  <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">Comissão</span>
-                                  <div className="flex items-center gap-1 text-success text-xs sm:text-sm">
-                                    <TrendingUp className="h-3.5 w-3.5" />
-                                    <span className="font-bold">{formatCurrency(e.commission_amount || 0)}</span>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Total */}
-                              <div className="flex flex-col items-end ml-4 sm:ml-8">
-                                <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">Total</span>
-                                <span className="font-bold text-sm sm:text-base text-foreground leading-none">
-                                  {formatCurrency(isFelipe ? e.valor_total_custo || 0 : e.valor_total)}
-                                </span>
-                              </div>
-                            </>
-                          )}
-
-                        </div>
-                      </div>
-                    </div>
-                  </GlassCard>
+                    encomenda={e}
+                    onView={() => setSelectedEncomendaForView(e)}
+                    onEdit={() => setSelectedEncomendaForEdit(e)}
+                    onDelete={handleDelete}
+                    onTransport={() => setTransportDialogOpen(true)}
+                    onStatusChange={handleStatusChange}
+                    onDateUpdate={handleDateUpdate}
+                    canEditOrders={canEdit() && !isCollaborator && !readOnlyOrders}
+                    canEditProduction={canEditProductionUI}
+                    canEditDelivery={canEditDeliveryUI}
+                    hidePrices={hidePrices}
+                    isHam={isHam}
+                    t={t}
+                    formatCurrency={isFelipe ? ((val) => formatCurrency(val)) : formatCurrency}
+                    formatDate={formatDate}
+                    pesoTransporte={(e as any).peso_bruto || 0}
+                  />
                 ))}
               </div>
             )}

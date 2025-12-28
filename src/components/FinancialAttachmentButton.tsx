@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { cn } from "@/lib/utils";
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Paperclip, Upload } from 'lucide-react';
@@ -14,13 +15,17 @@ interface FinancialAttachmentButtonProps {
   entityType: 'receivable' | 'payable' | 'financeiro';
   title?: string;
   onChanged?: () => void;
+  className?: string;
+  showLabel?: boolean;
 }
 
 export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps> = ({
   entityId,
   entityType,
   title = "Anexar Comprovante",
-  onChanged
+  onChanged,
+  className,
+  showLabel
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [attachmentCount, setAttachmentCount] = useState(0);
@@ -85,7 +90,7 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
         <Button
           variant="ghost"
           size="sm"
-          className="relative"
+          className={cn("relative gap-2", className)}
           title="Anexar comprovante"
           type="button"
           onMouseEnter={() => !hasLoadedCount && loadAttachmentCount()}
@@ -94,6 +99,7 @@ export const FinancialAttachmentButton: React.FC<FinancialAttachmentButtonProps>
             icon={<Paperclip className="h-4 w-4" />}
             count={hasLoadedCount ? attachmentCount : 0}
           />
+          {showLabel && <span>Anexos</span>}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl">

@@ -263,7 +263,7 @@ export default function ContasPagar() {
 
         <CardContent className="px-4 sm:px-6">
           {/* Tabela apenas no desktop */}
-          <div className="hidden lg:block overflow-x-auto rounded-xl border border-border/40 overflow-hidden bg-popover shadow-sm">
+          <div className="hidden xl:block overflow-x-auto rounded-xl border border-border/40 overflow-hidden bg-popover shadow-sm">
             <Table>
               <TableHeader className="bg-popover border-b border-border/40">
                 <TableRow className="hover:bg-transparent transition-none border-b-0">
@@ -411,7 +411,7 @@ export default function ContasPagar() {
           </div>
 
           {/* Lista em cartões no mobile/tablet */}
-          <div className="lg:hidden space-y-3">
+          <div className="xl:hidden space-y-3">
             {contas.length === 0 && (
               <Card className="shadow-none border-dashed">
                 <CardContent className="p-6 text-center text-muted-foreground">
@@ -422,7 +422,7 @@ export default function ContasPagar() {
             {contas.map((conta) => (
               <Card
                 key={conta.id}
-                className="overflow-hidden bg-card border-border/50 cursor-pointer active:scale-[0.98] transition-all"
+                className="overflow-hidden bg-popover border-border/50 cursor-pointer active:scale-[0.98] transition-all"
                 onClick={() => handleViewDetails(conta)}
               >
                 <CardContent className="p-4 space-y-2">
@@ -467,14 +467,14 @@ export default function ContasPagar() {
                     )}
                   </div>
                   <div className="flex flex-col sm:flex-row gap-2 pt-1" onClick={(ev) => ev.stopPropagation()}>
-                    <Button variant="ghost" size="sm" className="w-full sm:w-auto" onClick={() => handleViewDetails(conta)}>
+                    <Button variant="ghost" size="sm" className="w-full sm:w-auto bg-sky-500/5 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200/30 dark:border-sky-800/30" onClick={() => handleViewDetails(conta)}>
                       <Eye className="w-4 h-4 mr-2" /> {t("Ver Detalhes")}
                     </Button>
                     {!isFelipe && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full sm:w-auto"
+                        className="w-full sm:w-auto bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200/30 dark:border-emerald-800/30"
                         onClick={() => {
                           setSelectedConta(conta);
                           setShowPaymentForm(true);
@@ -485,7 +485,7 @@ export default function ContasPagar() {
                     )}
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="w-full sm:w-auto" title={t("Anexar Comprovante")}>
+                        <Button variant="ghost" size="sm" className="w-full sm:w-auto bg-purple-500/5 hover:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200/30 dark:border-purple-800/30" title={t("Anexar Comprovante")}>
                           <IconWithBadge
                             icon={<Paperclip className="h-4 w-4" />}
                             count={attachmentCounts[conta.id] || 0}
@@ -543,7 +543,7 @@ export default function ContasPagar() {
       {/* Dialog: Detalhes + Anexos */}
       {selectedConta && (
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border" aria-describedby="">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-popover border-border" aria-describedby="">
             <DialogHeader className="border-b pb-4 mb-4">
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 <Eye className="h-5 w-5 text-primary" />
@@ -556,47 +556,45 @@ export default function ContasPagar() {
 
             <div className="space-y-6">
               {/* Detalhes da conta - Camada 3 (Destaque sobre Camada 2) */}
-              <div className="bg-popover rounded-xl border border-border/20 p-6 shadow-sm">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Pedido")}:</span>
-                    <p className="text-sm font-semibold flex items-center gap-2">
-                      #{selectedConta.numero_encomenda}
-                      {selectedConta.etiqueta && (
-                        <Badge variant="info">{selectedConta.etiqueta}</Badge>
-                      )}
-                    </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Pedido")}:</span>
+                  <div className="text-sm font-semibold flex items-center gap-2">
+                    #{selectedConta.numero_encomenda}
+                    {selectedConta.etiqueta && (
+                      <Badge variant="info">{selectedConta.etiqueta}</Badge>
+                    )}
                   </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Fornecedor")}:</span>
-                    <p className="text-sm font-semibold">{selectedConta.fornecedores?.nome || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Fornecedor")}:</span>
+                  <p className="text-sm font-semibold">{selectedConta.fornecedores?.nome || 'N/A'}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Data")}:</span>
+                  <p className="text-sm font-semibold italic">
+                    {new Date(selectedConta.data_criacao).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Status")}:</span>
+                  <div>
+                    <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">
+                      {selectedConta.status}
+                    </Badge>
                   </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Data")}:</span>
-                    <p className="text-sm font-semibold italic">
-                      {new Date(selectedConta.data_criacao).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Status")}:</span>
-                    <div>
-                      <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">
-                        {selectedConta.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Valor Total")}:</span>
-                    <p className="text-sm font-bold">{formatCurrencyEUR(selectedConta.valor_total_custo)}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Valor Pago")}:</span>
-                    <p className="text-sm font-bold text-success">{formatCurrencyEUR(selectedConta.valor_pago_fornecedor)}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Saldo")}:</span>
-                    <p className="text-sm font-black text-warning">{formatCurrencyEUR(selectedConta.saldo_devedor_fornecedor)}</p>
-                  </div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Valor Total")}:</span>
+                  <p className="text-sm font-bold">{formatCurrencyEUR(selectedConta.valor_total_custo)}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Valor Pago")}:</span>
+                  <p className="text-sm font-bold text-success">{formatCurrencyEUR(selectedConta.valor_pago_fornecedor)}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Saldo")}:</span>
+                  <p className="text-sm font-black text-warning">{formatCurrencyEUR(selectedConta.saldo_devedor_fornecedor)}</p>
                 </div>
               </div>
 

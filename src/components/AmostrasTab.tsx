@@ -287,7 +287,7 @@ export function AmostrasTab() {
       </div>
 
       {/* Desktop Table View */}
-      <Card className="hidden lg:block border border-border/10 bg-card overflow-hidden">
+      <Card className="hidden xl:block border border-border/10 bg-card overflow-hidden">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
@@ -458,7 +458,7 @@ export function AmostrasTab() {
       </Card>
 
       {/* Mobile Cards View */}
-      <div className="lg:hidden space-y-3">
+      <div className="xl:hidden space-y-3">
         {amostras.length === 0 ? (
           <Card>
             <CardContent className="p-6 text-center">
