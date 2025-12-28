@@ -1,11 +1,12 @@
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useTopBarActions } from "@/context/TopBarActionsContext";
 
 interface PageContainerProps {
     children: ReactNode;
-    title?: string;
-    subtitle?: string;
+    title?: string; // Mantido para compatibilidade, mas ignorado visualmente (já está na TopBar)
+    subtitle?: string; // Subtitle might be useful, but user said "remove title from content". I'll keep subtitle optionally if passed? User said remove title.
     actions?: ReactNode;
     className?: string;
 }
@@ -17,34 +18,30 @@ export function PageContainer({
     actions,
     className
 }: PageContainerProps) {
+    const { setActions } = useTopBarActions();
+
+    // Teleport actions to TopBar
+    useEffect(() => {
+        setActions(actions || null);
+        return () => setActions(null);
+    }, [actions, setActions]);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className={cn("w-full min-h-[calc(100vh-4rem)] p-3 xs:p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6", className)}
+            className={cn("w-full min-h-[calc(100vh-4rem)] p-4 sm:p-6 lg:p-8 space-y-6", className)}
         >
-            {(title || actions) && (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
-                    <div className="space-y-0.5 sm:space-y-1 min-w-0">
-                        {title && (
-                            <h1 className="text-xl xs:text-2xl sm:text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent truncate">
-                                {title}
-                            </h1>
-                        )}
-                        {subtitle && (
-                            <p className="text-muted-foreground text-xs sm:text-sm truncate">
-                                {subtitle}
-                            </p>
-                        )}
-                    </div>
-                    {actions && (
-                        <div className="flex items-center gap-2 flex-wrap shrink-0">
-                            {actions}
-                        </div>
-                    )}
-                </div>
-            )}
+            {/* 
+               Header removed as per user request. 
+               Title is in TopBar. 
+               Actions are teleported to TopBar.
+            */}
+
+            {/* If subtitle exists, maybe we show it? User didn't explicitly ban subtitle, but said 'retirar o titulo do conteudo'. 
+                Usually subtitles go with titles. I'll hide it for now to be safe and clean. 
+            */}
 
             {children}
         </motion.div>

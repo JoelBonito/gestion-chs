@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useLocale } from '@/contexts/LocaleContext';
-import { Save, X } from 'lucide-react';
+import { Save, X, Loader2 } from 'lucide-react';
 import { ProjetoAttachmentManager } from '@/components/ProjetoAttachmentManager';
 
 import { Projeto } from '@/types/projeto';
@@ -101,7 +101,7 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <Card>
+      <Card className="border border-border bg-popover shadow-sm">
         <CardHeader>
           <CardTitle>{t("Nome do Projeto")}</CardTitle>
         </CardHeader>
@@ -114,6 +114,7 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
               onChange={(e) => setNome(e.target.value)}
               placeholder={t("Digite o nome do projeto")}
               required
+              className="uppercase font-bold bg-accent border-border/40 focus:ring-primary/20"
             />
           </div>
           <div>
@@ -124,12 +125,13 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
               onChange={(e) => setObservacoes(e.target.value)}
               placeholder={t("Digite as observações do projeto")}
               rows={4}
+              className="bg-accent border-border/40 focus:ring-primary/20 resize-none"
             />
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border border-border bg-popover shadow-sm">
         <CardHeader>
           <CardTitle>{t("Anexos")}</CardTitle>
         </CardHeader>
@@ -143,12 +145,16 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
       </Card>
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onSuccess} disabled={loading}>
+        <Button type="button" variant="cancel" className="bg-popover border-border/40" onClick={onSuccess} disabled={loading}>
           <X className="w-4 h-4 mr-2" />
           {t("Cancelar")}
         </Button>
-        <Button type="submit" disabled={loading}>
-          <Save className="w-4 h-4 mr-2" />
+        <Button type="submit" variant="gradient" disabled={loading}>
+          {loading ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4 mr-2" />
+          )}
           {loading ? (projeto ? t("Atualizando...") : t("Criando...")) : t("Salvar")}
         </Button>
       </div>

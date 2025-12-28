@@ -38,11 +38,9 @@ export function AIAssistantChat() {
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
+          variant="gradient"
           className={cn(
             "fixed bottom-6 right-6 h-14 w-14 rounded-lg shadow-elegant",
-            "bg-gradient-to-br from-blue-500 to-purple-600",
-            "hover:shadow-glow hover:scale-110",
-            "transition-all duration-300",
             "z-50 p-0"
           )}
         >
@@ -61,9 +59,9 @@ export function AIAssistantChat() {
           )}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border/50 bg-gradient-to-r from-blue-500/10 to-purple-600/10 shrink-0">
+          <div className="flex items-center justify-between p-4 border-b border-border/50 bg-accent/20 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-glow">
+              <div className="h-10 w-10 rounded-lg bg-[var(--btn-gradient-from)] flex items-center justify-center shadow-lg shadow-[var(--btn-shadow)]">
                 <MessageSquare className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -96,9 +94,9 @@ export function AIAssistantChat() {
                   setIsOpen(false);
                   setIsFullScreen(false); // Reseta full screen ao fechar
                 }}
-                className="h-8 w-8 rounded-lg hover:bg-muted/50 hover:bg-red-500/10 hover:text-red-500"
+                className="h-8 w-8 rounded-full hover:bg-red-500/10 hover:text-red-500 hover:rotate-90 transition-all duration-300 group"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 transition-transform" />
               </Button>
             </div>
           </div>
@@ -125,7 +123,7 @@ export function AIAssistantChat() {
                     className={cn(
                       "max-w-[85%] rounded-2xl px-4 py-3 shadow-sm", // Aumentei largura máx para 85% para caber tabela
                       msg.role === 'user'
-                        ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white"
+                        ? "bg-gradient-to-r from-[var(--btn-gradient-from)] to-[var(--btn-gradient-to)] text-white"
                         : "bg-muted text-foreground overflow-hidden" // overflow-hidden para tabelas
                     )}
                   >
@@ -160,12 +158,8 @@ export function AIAssistantChat() {
                 onClick={handleSend}
                 disabled={!inputValue.trim() || isLoading}
                 size="icon"
-                className={cn(
-                  "h-11 w-11 rounded-lg shrink-0",
-                  "bg-gradient-to-br from-blue-500 to-purple-600",
-                  "hover:shadow-glow hover:scale-105",
-                  "transition-all duration-200"
-                )}
+                variant="gradient"
+                className="h-11 w-11 rounded-lg shrink-0"
               >
                 <Send className="h-4 w-4 text-white" />
               </Button>

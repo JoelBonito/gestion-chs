@@ -2,34 +2,58 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Trash2, Edit } from 'lucide-react';
+import { Trash2, Edit, Eye, Archive, RefreshCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logActivity } from '@/utils/activityLogger';
 import { archiveCliente, reactivateCliente } from '@/lib/soft-delete-actions';
+import { cn } from '@/lib/utils';
 
-interface Cliente {
-  id: string;
-  nome: string;
-  email?: string;
-  telefone?: string;
-  endereco?: string;
-  active: boolean;
-}
+import { Cliente } from '@/types/database';
 
 interface ClienteActionsProps {
   cliente: Cliente;
   onEdit: (cliente: Cliente) => void;
+  onView: (cliente: Cliente) => void;
   onRefresh: () => void;
 }
 
-export function ClienteActions({ cliente, onEdit, onRefresh }: ClienteActionsProps) {
+export function ClienteActions({ cliente, onEdit, onView, onRefresh }: ClienteActionsProps) {
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleView = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onView(cliente);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit(cliente);
+  };
+
+  const handleArchive = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsLoading(true);
+    try {
+      if (cliente.active) {
+        await archiveCliente(cliente.id);
+        toast.success('Cliente arquivado com sucesso');
+      } else {
+        await reactivateCliente(cliente.id);
+        toast.success('Cliente reativado com sucesso');
+      }
+      onRefresh();
+    } catch (error) {
+      console.error('Erro ao alternar status do cliente:', error);
+      toast.error('Erro ao processar solicitação');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleDelete = async () => {
     setIsLoading(true);
     try {
-      // Hard delete para casos específicos (apenas admin)
       const { error } = await supabase
         .from('clientes')
         .delete()
@@ -55,35 +79,60 @@ export function ClienteActions({ cliente, onEdit, onRefresh }: ClienteActionsPro
   };
 
   return (
-    <div className="flex gap-2 pt-2">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="flex-1"
-        onClick={() => onEdit(cliente)}
+    <div className="flex items-center gap-2 pt-2 border-t border-border/30">
+      {/* Visualizar */}
+      <button
+        onClick={handleView}
+        className="p-2 rounded-full bg-transparent text-muted-foreground hover:bg-nav-dashboard/10 hover:text-nav-dashboard hover:scale-110 transition-all"
+        title="Visualizar"
+      >
+        <Eye className="h-4 w-4" />
+      </button>
+
+      {/* Editar */}
+      <button
+        onClick={handleEdit}
+        className="p-2 rounded-full bg-transparent text-muted-foreground hover:bg-nav-finance/10 hover:text-nav-finance hover:scale-110 transition-all"
+        title="Editar"
         disabled={isLoading}
       >
-        <Edit className="h-3 w-3 mr-1" />
-        Editar
-      </Button>
+        <Edit className="h-4 w-4" />
+      </button>
 
+      {/* Arquivar / Reativar */}
+      <button
+        onClick={handleArchive}
+        className={cn(
+          "p-2 rounded-full hover:scale-110 transition-all",
+          cliente.active
+            ? "bg-transparent text-muted-foreground hover:bg-amber-500/10 hover:text-amber-500"
+            : "bg-transparent text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-500"
+        )}
+        title={cliente.active ? "Arquivar" : "Reativar"}
+        disabled={isLoading}
+      >
+        {cliente.active ? <Archive className="h-4 w-4" /> : <RefreshCcw className="h-4 w-4" />}
+      </button>
+
+      <div className="flex-1" />
+
+      {/* Deletar permanentemente */}
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          <button
+            className="p-2 rounded-full bg-transparent text-muted-foreground hover:bg-error/10 hover:text-error hover:scale-110 transition-all"
+            title="Excluir Permanentemente"
             disabled={isLoading}
           >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+            <Trash2 className="h-4 w-4" />
+          </button>
         </AlertDialogTrigger>
-        <AlertDialogContent>
+        <AlertDialogContent className="bg-card border-none shadow-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o cliente "{cliente.nome}"?
-              Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir permanentemente o cliente "{cliente.nome}"?
+              Esta ação não pode ser desfeita e removerá todos os dados arquivados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -93,7 +142,7 @@ export function ClienteActions({ cliente, onEdit, onRefresh }: ClienteActionsPro
               disabled={isLoading}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
             >
-              {isLoading ? 'Excluindo...' : 'Excluir'}
+              Excluir permanentemente
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -17,7 +17,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onDismiss })
   };
 
   return (
-    <Card className="fixed bottom-4 left-4 right-4 z-50 shadow-lg border-primary/20 bg-background/95 backdrop-blur-sm">
+    <Card className="fixed bottom-4 left-4 right-4 z-50 shadow-lg border-primary/20 bg-background/95 dark:bg-[#252a36] backdrop-blur-sm">
       <CardContent className="p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -34,6 +34,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onDismiss })
           <div className="flex gap-2">
             <Button
               size="sm"
+              variant="gradient"
               onClick={handleInstall}
               className="text-xs"
             >
@@ -43,9 +44,9 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onDismiss })
               size="sm"
               variant="ghost"
               onClick={onDismiss}
-              className="text-xs p-2"
+              className="text-xs p-2 rounded-full hover:bg-red-500/10 hover:text-red-500 hover:rotate-90 transition-all duration-300 group"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4 transition-transform" />
             </Button>
           </div>
         </div>

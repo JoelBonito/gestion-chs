@@ -129,8 +129,44 @@ export default function EncomendaView({ encomendaId }: Props) {
 
   useEffect(() => {
     if (!id) return;
-    fetchEncomenda();
-    fetchItens();
+
+    const loadAllData = async () => {
+      try {
+        setLoading(true);
+        setLoadingItens(true);
+
+        // Dispara ambas em paralelo
+        const [encomendaRes, itensRes] = await Promise.all([
+          supabase
+            .from("encomendas")
+            .select(`*, clientes(nome), fornecedores(nome)`)
+            .eq("id", id)
+            .single(),
+          supabase
+            .from("itens_encomenda")
+            .select(`id, quantidade, preco_unitario, preco_custo, produtos(nome)`)
+            .eq("encomenda_id", id)
+        ]);
+
+        if (encomendaRes.error) throw encomendaRes.error;
+        if (itensRes.error) throw itensRes.error;
+
+        const dataEnc = encomendaRes.data as Encomenda;
+        setEncomenda(dataEnc);
+        setJoelValue(dataEnc.observacoes_joel ?? "");
+        setFelipeValue(dataEnc.observacoes_felipe ?? "");
+
+        setItens((itensRes.data || []) as ItemEncomenda[]);
+      } catch (e) {
+        console.error(e);
+        toast.error(isHam ? "Erreur lors du chargement" : "Erro ao carregar dados da encomenda");
+      } finally {
+        setLoading(false);
+        setLoadingItens(false);
+      }
+    };
+
+    loadAllData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -191,16 +227,55 @@ export default function EncomendaView({ encomendaId }: Props) {
   const handleDownloadPDF = async () => {
     if (!contentRef.current || !encomenda) return;
 
+    const toastId = toast.loading("Gerando PDF...");
+
     try {
       const canvas = await html2canvas(contentRef.current, {
         scale: 2,
         useCORS: true,
-        allowTaint: true
+        allowTaint: true,
+        backgroundColor: "#ffffff",
+        onclone: (clonedDoc) => {
+          const root = clonedDoc.documentElement;
+          root.classList.remove("dark");
+          root.classList.add("light");
+
+          const style = clonedDoc.createElement("style");
+          style.innerHTML = `
+            :root {
+              --background: #f9fafb !important;
+              --foreground: #111827 !important;
+              --card: #f1f2f4 !important;
+              --card-foreground: #111827 !important;
+              --popover: #f9fafb !important;
+              --popover-foreground: #111827 !important;
+              --primary: #457b77 !important;
+              --primary-foreground: #FFFFFF !important;
+              --secondary: #f1f2f4 !important;
+              --secondary-foreground: #111827 !important;
+              --muted: #f1f2f4 !important;
+              --muted-foreground: #6B7280 !important;
+              --accent: #f1f2f4 !important;
+              --accent-foreground: #111827 !important;
+              --destructive: #ef4444 !important;
+              --destructive-foreground: #fafafa !important;
+              --border: #e5e7eb !important;
+              --input: #e5e7eb !important;
+              --ring: #457b77 !important;
+              --radius: 0.5rem !important;
+            }
+            body {
+              background-color: #ffffff !important;
+              color: #111827 !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        }
       });
+
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
 
-      // Definir margens de 20mm
       const margin = 20;
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -210,7 +285,6 @@ export default function EncomendaView({ encomendaId }: Props) {
       const imgProps = pdf.getImageProperties(imgData);
       const pdfHeight = (imgProps.height * usableWidth) / imgProps.width;
 
-      // Se a imagem for muito alta, ajusta para caber na área útil
       if (pdfHeight > usableHeight) {
         const ratio = usableHeight / pdfHeight;
         pdf.addImage(imgData, "PNG", margin, margin, usableWidth * ratio, usableHeight);
@@ -219,10 +293,10 @@ export default function EncomendaView({ encomendaId }: Props) {
       }
 
       pdf.save(`Encomenda-${encomenda.numero_encomenda}.pdf`);
-      toast.success("PDF baixado com sucesso!");
+      toast.success("PDF baixado com sucesso!", { id: toastId });
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
-      toast.error("Erro ao gerar PDF");
+      toast.error("Erro ao gerar PDF: Cores incompatíveis", { id: toastId });
     }
   };
 
@@ -237,7 +311,8 @@ export default function EncomendaView({ encomendaId }: Props) {
         <div className="flex justify-end">
           <Button
             onClick={handleDownloadPDF}
-            className="mb-4"
+            className="mb-4 bg-[#457b77] hover:bg-[#457b77]/90 dark:bg-primary text-white border-0"
+            variant="gradient"
           >
             <Download className="mr-2 h-4 w-4" />
             Baixar PDF
@@ -251,38 +326,42 @@ export default function EncomendaView({ encomendaId }: Props) {
           <div className="text-xl font-semibold">
             {t.order} #{encomenda.numero_encomenda}
           </div>
-          <div className="text-sm text-muted-foreground">
-            {t.createdOn} {encomenda.data_criacao ? formatDate(encomenda.data_criacao) : "—"}
+          <div className="text-sm text-gray-500 dark:text-[#94a2b8]">
+            {t.createdOn} <span className="text-gray-900 dark:text-white font-medium">{encomenda.data_criacao ? formatDate(encomenda.data_criacao) : "—"}</span>
           </div>
           {encomenda.etiqueta ? (
-            <div className="inline-block rounded bg-muted px-2 py-0.5 text-xs">{t.label}: {encomenda.etiqueta}</div>
+            <div className="mt-1">
+              <span className="inline-flex items-center rounded-md border border-transparent bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-2.5 py-0.5 text-xs font-semibold shadow hover:bg-blue-100 dark:hover:bg-blue-900/40 uppercase tracking-wider">
+                {encomenda.etiqueta}
+              </span>
+            </div>
           ) : null}
         </section>
 
         {/* Meta */}
-        <section className="space-y-4">
+        <section className="space-y-4 bg-popover p-4 rounded-xl">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm text-muted-foreground">{t.client}</div>
-              <div className="font-semibold">{encomenda.clientes?.nome ?? "—"}</div>
+            <div className="bg-accent p-3 rounded-md border border-border/40">
+              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t.client}</div>
+              <div className="font-semibold text-gray-900 dark:text-white">{encomenda.clientes?.nome ?? "—"}</div>
             </div>
-            <div>
-              <div className="text-sm text-muted-foreground">{t.supplier}</div>
-              <div className="font-semibold">{encomenda.fornecedores?.nome ?? "—"}</div>
+            <div className="bg-accent p-3 rounded-md border border-border/40">
+              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t.supplier}</div>
+              <div className="font-semibold text-gray-900 dark:text-white">{encomenda.fornecedores?.nome ?? "—"}</div>
             </div>
           </div>
 
           {/* Datas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="text-sm text-muted-foreground">{t.productionDate}</div>
-              <div className="font-semibold">
+            <div className="bg-accent p-3 rounded-md border border-border/40">
+              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t.productionDate}</div>
+              <div className="font-semibold text-gray-900 dark:text-white">
                 {encomenda.data_producao_estimada ? formatDate(encomenda.data_producao_estimada) : "—"}
               </div>
             </div>
-            <div>
-              <div className="text-sm text-muted-foreground">{t.deliveryDate}</div>
-              <div className="font-semibold">
+            <div className="bg-accent p-3 rounded-md border border-border/40">
+              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t.deliveryDate}</div>
+              <div className="font-semibold text-gray-900 dark:text-white">
                 {encomenda.data_envio_estimada ? formatDate(encomenda.data_envio_estimada) : "—"}
               </div>
             </div>
@@ -291,27 +370,27 @@ export default function EncomendaView({ encomendaId }: Props) {
           {/* Totais - para Rosa esconder subtotal, valor pago e lucro estimado */}
           {!isRosa && (
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <div>
-                <div className="text-sm text-muted-foreground">
+              <div className="bg-accent p-3 rounded-md border border-border/40">
+                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
                   {isFelipe ? t.totalCost : t.subtotalItems}
                 </div>
-                <div className="font-semibold">
+                <div className="font-semibold text-gray-900 dark:text-white">
                   {formatCurrencyEUR(isFelipe ? subtotalCusto : subtotalVenda)}
                 </div>
               </div>
 
               {/* Pago — NÃO mostrar para Felipe */}
               {!isFelipe && (
-                <div>
-                  <div className="text-sm text-muted-foreground">{t.paid}</div>
-                  <div className="font-semibold">{formatCurrencyEUR(encomenda.valor_pago ?? 0)}</div>
+                <div className="bg-accent p-3 rounded-md border border-border/40">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t.paid}</div>
+                  <div className="font-semibold text-gray-900 dark:text-white">{formatCurrencyEUR(encomenda.valor_pago ?? 0)}</div>
                 </div>
               )}
 
               {/* Lucro estimado — oculto para Felipe e Ham */}
               {!(isFelipe || isHam) && (
-                <div>
-                  <div className="text-sm text-muted-foreground">{t.estProfit}</div>
+                <div className="bg-accent p-3 rounded-md border border-border/40">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t.estProfit}</div>
                   <div
                     className={cn(
                       "font-semibold",
@@ -325,8 +404,8 @@ export default function EncomendaView({ encomendaId }: Props) {
 
               {/* % Lucro — mostrar apenas para jbento1@gmail.com e admin@admin.com */}
               {(email === "jbento1@gmail.com" || email === "admin@admin.com") && (
-                <div>
-                  <div className="text-sm text-muted-foreground">% Lucro</div>
+                <div className="bg-accent p-3 rounded-md border border-border/40">
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">% Lucro</div>
                   <div className={cn("font-semibold", percentLucro >= 0 ? "text-success" : "text-destructive")}>
                     {percentLucro.toFixed(2)}%
                   </div>
@@ -338,7 +417,7 @@ export default function EncomendaView({ encomendaId }: Props) {
 
         {/* Observações - esconder para Ham e Rosa */}
         {!isHam && !isRosa && (
-          <section className="space-y-4">
+          <section className="space-y-4 bg-popover p-4 rounded-xl">
             {/* Observações Joel */}
             <div className="mt-6">
               <div className="flex items-center justify-between mb-1">
@@ -353,7 +432,7 @@ export default function EncomendaView({ encomendaId }: Props) {
               {editingJoel ? (
                 <div className="space-y-2">
                   <textarea
-                    className="w-full rounded-md border p-2 text-sm"
+                    className="w-full rounded-md border border-border/40 p-2 text-sm bg-accent transition-colors focus:ring-2 focus:ring-primary/20 outline-none"
                     rows={3}
                     value={joelValue}
                     onChange={(e) => setJoelValue(e.target.value)}
@@ -374,19 +453,20 @@ export default function EncomendaView({ encomendaId }: Props) {
                         }
                       }}
                       size="sm"
+                      variant="gradient"
                       className="h-8"
                     >
                       <Save className="w-3 h-3 mr-1" />
                       Salvar
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant="cancel"
                       size="sm"
                       onClick={() => {
                         setJoelValue(encomenda?.observacoes_joel ?? "");
                         setEditingJoel(false);
                       }}
-                      className="h-8"
+                      className="h-8 bg-accent hover:bg-accent/80 border-none text-foreground"
                     >
                       <X className="w-3 h-3 mr-1" />
                       Cancelar
@@ -394,7 +474,7 @@ export default function EncomendaView({ encomendaId }: Props) {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
+                <div className="rounded-md bg-accent border border-border/40 p-3 whitespace-pre-wrap">
                   {encomenda.observacoes_joel || "—"}
                 </div>
               )}
@@ -414,7 +494,7 @@ export default function EncomendaView({ encomendaId }: Props) {
               {editingFelipe ? (
                 <div className="space-y-2">
                   <textarea
-                    className="w-full rounded-md border p-2 text-sm"
+                    className="w-full rounded-md border border-border/40 p-2 text-sm bg-accent transition-colors focus:ring-2 focus:ring-primary/20 outline-none"
                     rows={3}
                     value={felipeValue}
                     onChange={(e) => setFelipeValue(e.target.value)}
@@ -435,19 +515,20 @@ export default function EncomendaView({ encomendaId }: Props) {
                         }
                       }}
                       size="sm"
+                      variant="gradient"
                       className="h-8"
                     >
                       <Save className="w-3 h-3 mr-1" />
                       Salvar
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant="cancel"
                       size="sm"
                       onClick={() => {
                         setFelipeValue(encomenda?.observacoes_felipe ?? "");
                         setEditingFelipe(false);
                       }}
-                      className="h-8"
+                      className="h-8 bg-accent hover:bg-accent/80 border-none text-foreground"
                     >
                       <X className="w-3 h-3 mr-1" />
                       Cancelar
@@ -455,7 +536,7 @@ export default function EncomendaView({ encomendaId }: Props) {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-md bg-muted/40 p-3 whitespace-pre-wrap">
+                <div className="rounded-md bg-accent border border-border/40 p-3 whitespace-pre-wrap">
                   {encomenda.observacoes_felipe || "—"}
                 </div>
               )}
@@ -464,7 +545,7 @@ export default function EncomendaView({ encomendaId }: Props) {
         )}
 
         {/* Itens */}
-        <section>
+        <section className="bg-popover p-5 rounded-xl border border-border/50">
           <h3 className="text-base font-semibold mb-3">{t.items}</h3>
 
           {loadingItens ? (
@@ -472,18 +553,18 @@ export default function EncomendaView({ encomendaId }: Props) {
           ) : itens.length === 0 ? (
             <div className="py-6 text-center text-muted-foreground">{t.noItems}</div>
           ) : (
-            <div className="overflow-x-auto rounded-md border">
-              <table className="w-full border-collapse text-sm">
+            <div className="overflow-x-auto rounded-lg border border-border/30">
+              <table className="w-full border-collapse text-sm bg-accent">
                 <thead>
-                  <tr className="bg-muted/50">
-                    <th className="px-3 py-2 text-left font-medium">{t.product}</th>
-                    <th className="px-3 py-2 text-right font-medium">{t.qty}</th>
+                  <tr className="bg-accent text-muted-foreground border-b border-border dark:border-white/10">
+                    <th className="px-4 py-3 text-left font-semibold uppercase text-[10px] tracking-wider">{t.product}</th>
+                    <th className="px-4 py-3 text-right font-semibold uppercase text-[10px] tracking-wider">{t.qty}</th>
                     {/* Preço de venda visível para todos, exceto Felipe e Rosa */}
-                    {!isFelipe && !hidePrices && <th className="px-3 py-2 text-right font-medium">{t.unitPrice}</th>}
+                    {!isFelipe && !hidePrices && <th className="px-4 py-3 text-right font-semibold uppercase text-[10px] tracking-wider">{t.unitPrice}</th>}
                     {/* CUSTO: esconder para Ham e Rosa; mostrar para Felipe e para usuários normais */}
-                    {!isHam && !hidePrices && <th className="px-3 py-2 text-right font-medium">{t.unitCost}</th>}
+                    {!isHam && !hidePrices && <th className="px-4 py-3 text-right font-semibold uppercase text-[10px] tracking-wider">{t.unitCost}</th>}
                     {!hidePrices && (
-                      <th className="px-3 py-2 text-right font-medium">
+                      <th className="px-4 py-3 text-right font-semibold uppercase text-[10px] tracking-wider">
                         {isFelipe ? t.totalCostFooter : t.total}
                       </th>
                     )}
@@ -498,20 +579,20 @@ export default function EncomendaView({ encomendaId }: Props) {
                     const totalCusto = q * pc;
 
                     return (
-                      <tr key={item.id} className="border-t">
-                        <td className="px-3 py-2">{item.produtos?.nome ?? "—"}</td>
-                        <td className="px-3 py-2 text-right">{q}</td>
+                      <tr key={item.id} className="border-b border-border dark:border-white/10 bg-accent hover:bg-accent/80 transition-colors">
+                        <td className="px-4 py-3 uppercase font-medium">{item.produtos?.nome ?? "—"}</td>
+                        <td className="px-4 py-3 text-right tabular-nums">{q}</td>
                         {/* Preço de venda */}
                         {!isFelipe && !hidePrices && (
-                          <td className="px-3 py-2 text-right">{formatCurrencyEUR(pu)}</td>
+                          <td className="px-4 py-3 text-right tabular-nums">{formatCurrencyEUR(pu)}</td>
                         )}
                         {/* Custo */}
                         {!isHam && !hidePrices && (
-                          <td className="px-3 py-2 text-right">{formatCurrencyEUR(pc)}</td>
+                          <td className="px-4 py-3 text-right tabular-nums">{formatCurrencyEUR(pc)}</td>
                         )}
                         {/* Total */}
                         {!hidePrices && (
-                          <td className="px-3 py-2 text-right font-medium">
+                          <td className="px-4 py-3 text-right font-bold tabular-nums">
                             {formatCurrencyEUR(isFelipe ? totalCusto : totalVenda)}
                           </td>
                         )}
@@ -522,13 +603,13 @@ export default function EncomendaView({ encomendaId }: Props) {
                 {/* Footer de totais */}
                 {!hidePrices && (
                   <tfoot>
-                    <tr className="bg-muted/50 border-t-2">
-                      <td className="px-3 py-2 font-semibold" colSpan={isFelipe || hidePrices ? 1 : 2}>
+                    <tr className="bg-accent border-t-2 border-border dark:border-white/10">
+                      <td className="px-4 py-4 font-bold text-foreground" colSpan={isFelipe || hidePrices ? 1 : 2}>
                         {isFelipe ? t.totalCostFooter : t.subtotalFooter}
                       </td>
-                      {!isFelipe && !hidePrices && <td></td>}
-                      {!isHam && !hidePrices && <td></td>}
-                      <td className="px-3 py-2 text-right font-semibold">
+                      {!isFelipe && !hidePrices && <td className="px-4 py-4"></td>}
+                      {!isHam && !hidePrices && <td className="px-4 py-4"></td>}
+                      <td className="px-4 py-4 text-right font-black text-base text-foreground tabular-nums">
                         {formatCurrencyEUR(isFelipe ? subtotalCusto : subtotalVenda)}
                       </td>
                     </tr>

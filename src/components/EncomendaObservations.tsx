@@ -15,11 +15,11 @@ interface EncomendaObservationsProps {
   canEdit?: boolean;
 }
 
-export function EncomendaObservations({ 
-  encomendaId, 
-  observacoes = '', 
-  onUpdate, 
-  canEdit = false 
+export function EncomendaObservations({
+  encomendaId,
+  observacoes = '',
+  onUpdate,
+  canEdit = false
 }: EncomendaObservationsProps) {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
@@ -28,7 +28,7 @@ export function EncomendaObservations({
 
   const handleSave = async () => {
     if (!canEdit) return;
-    
+
     try {
       setIsSaving(true);
       const { error } = await supabase
@@ -37,7 +37,7 @@ export function EncomendaObservations({
         .eq('id', encomendaId);
 
       if (error) throw error;
-      
+
       // Enviar notificação por email baseada no usuário
       if (editValue && editValue.trim() !== observacoes?.trim()) {
         try {
@@ -47,10 +47,10 @@ export function EncomendaObservations({
             .select("numero_encomenda, etiqueta")
             .eq("id", encomendaId)
             .single();
-          
+
           if (encomenda) {
             const userEmail = user?.email;
-            
+
             // Determinar destinatários baseado no usuário que fez a observação
             if (userEmail === 'msilva.lipe@gmail.com') {
               // Observação do Lipe - enviar para Felipe
@@ -73,7 +73,7 @@ export function EncomendaObservations({
           // Não exibir erro de email para não atrapalhar o fluxo principal
         }
       }
-      
+
       setIsEditing(false);
       onUpdate();
       toast.success('Observações atualizadas com sucesso!');
@@ -118,6 +118,7 @@ export function EncomendaObservations({
             <div className="flex gap-2">
               <Button
                 size="sm"
+                variant="gradient"
                 onClick={handleSave}
                 disabled={isSaving}
               >

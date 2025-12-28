@@ -11,17 +11,18 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileMenu } from "./MobileMenu";
+import { cn } from "@/lib/utils";
 import { isLimitedNav } from "@/lib/permissions";
-import { 
-  LayoutDashboard, 
-  Package, 
-  Users, 
-  Factory, 
-  ShoppingCart, 
-  CreditCard,
+import {
+  Home,
+  Package,
+  Users,
+  Truck,
+  ClipboardList,
+  DollarSign,
   LogOut,
   User,
-  Folder
+  FolderKanban
 } from "lucide-react";
 
 export function HorizontalNav() {
@@ -48,53 +49,53 @@ export function HorizontalNav() {
   };
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Produtos", href: "/produtos", icon: Package },
-    { name: "Clientes", href: "/clientes", icon: Users },
-    { name: "Fornecedores", href: "/fornecedores", icon: Factory },
-    { name: locale === 'fr-FR' ? "Commandes" : "Encomendas", href: "/encomendas", icon: ShoppingCart },
-    { name: locale === 'fr-FR' ? "Projets" : "Projetos", href: "/projetos", icon: Folder },
-    { name: locale === 'fr-FR' ? "Finance" : "Financeiro", href: "/financeiro", icon: CreditCard },
+    { name: "Dashboard", href: "/dashboard", icon: Home, color: "text-nav-dashboard", bg: "bg-nav-dashboard/10" },
+    { name: "Produtos", href: "/produtos", icon: Package, color: "text-nav-projects", bg: "bg-nav-projects/10" },
+    { name: "Clientes", href: "/clientes", icon: Users, color: "text-nav-clients", bg: "bg-nav-clients/10" },
+    { name: "Fornecedores", href: "/fornecedores", icon: Truck, color: "text-nav-finance", bg: "bg-nav-finance/10" },
+    { name: locale === 'fr-FR' ? "Commandes" : "Encomendas", href: "/encomendas", icon: ClipboardList, color: "text-nav-reports", bg: "bg-nav-reports/10" },
+    { name: locale === 'fr-FR' ? "Projets" : "Projetos", href: "/projetos", icon: FolderKanban, color: "text-nav-projects", bg: "bg-nav-projects/10" },
+    { name: locale === 'fr-FR' ? "Finance" : "Financeiro", href: "/financeiro", icon: DollarSign, color: "text-nav-finance", bg: "bg-nav-finance/10" },
   ];
 
   // Filter navigation based on user role
   const getFilteredNavigation = () => {
     const userEmail = user?.email;
     const isHardcodedAdmin = userEmail === 'jbento1@gmail.com' || userEmail === 'admin@admin.com';
-    
+
     // Rosa - navegação limitada apenas para Produtos e Encomendas
     if (isLimitedNav(user)) {
-      return navigation.filter(item => 
-        item.href === '/produtos' || 
+      return navigation.filter(item =>
+        item.href === '/produtos' ||
         item.href === '/encomendas'
       );
     }
-    
+
     // Hardcoded admins have full access
     if (isHardcodedAdmin) {
       return navigation;
     }
-    
+
     if (isRestrictedFR) {
       console.log('[FR-Restricted] nav limited to orders/finance');
-      return navigation.filter(item => 
-        item.href === '/encomendas' || 
+      return navigation.filter(item =>
+        item.href === '/encomendas' ||
         item.href === '/financeiro' ||
-        item.href === '/projetos'                       
+        item.href === '/projetos'
       );
     }
-    
+
     if (isCollaborator) {
-      return navigation.filter(item => 
-        item.href === '/produtos' || 
-        item.href === '/encomendas' || 
+      return navigation.filter(item =>
+        item.href === '/produtos' ||
+        item.href === '/encomendas' ||
         item.href === '/financeiro'
       );
     }
-    
+
     // Filter projetos tab for specific users only
     const allowedProjectsEmails = ['jbento1@gmail.com', 'admin@admin.com', 'ham@admin.com'];
-    
+
     return navigation.filter(item => {
       if (item.href === '/projetos') {
         return userEmail && allowedProjectsEmails.includes(userEmail);
@@ -112,12 +113,12 @@ export function HorizontalNav() {
           <div className="flex items-center space-x-4">
             {/* Mobile Menu Button */}
             {(isMobile) && <MobileMenu />}
-            
+
             {/* Logo and Brand */}
             <Link to={isLimitedNav(user) ? "/encomendas" : isRestrictedFR ? "/encomendas" : isCollaborator ? "/produtos" : "/dashboard"} className="flex items-center space-x-3">
-              <img 
-                src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png" 
-                alt="Gestion CHS Logo" 
+              <img
+                src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png"
+                alt="Gestion CHS Logo"
                 className="h-8 w-auto"
               />
               <span className="hidden sm:inline-block text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
@@ -125,26 +126,34 @@ export function HorizontalNav() {
               </span>
             </Link>
           </div>
-            
+
           {/* Desktop Navigation - Hidden on Mobile/Tablet */}
           {!isMobile && (
             <div className="flex space-x-1">
               {filteredNavigation.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.href;
-                
+
                 return (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    className={cn(
+                      "flex items-center px-4 py-2 text-sm font-medium rounded-xl transition-all duration-300 gap-3 group",
                       isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                    }`}
+                        ? "bg-accent/50 text-foreground"
+                        : "text-muted-foreground hover:bg-accent/30 hover:text-foreground"
+                    )}
                   >
-                    <Icon className="mr-2 h-4 w-4" />
-                    {item.name}
+                    <div className={cn(
+                      "p-2 rounded-full shrink-0 transition-all duration-500 flex items-center justify-center",
+                      (item as any).bg,
+                      (item as any).color,
+                      isActive && "scale-110 shadow-lg"
+                    )}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <span>{item.name}</span>
                   </Link>
                 );
               })}
@@ -161,7 +170,7 @@ export function HorizontalNav() {
                   {user.email}
                 </span>
               </div>
-              
+
               {/* Logout Button */}
               <Button
                 variant="ghost"

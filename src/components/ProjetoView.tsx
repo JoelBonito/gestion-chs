@@ -92,7 +92,7 @@ export function ProjetoView({ projeto, onEdit, onSuccess, onClose }: ProjetoView
       </div>
 
       <div className="space-y-6">
-        <Card>
+        <Card className="border border-border bg-popover shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
@@ -108,7 +108,7 @@ export function ProjetoView({ projeto, onEdit, onSuccess, onClose }: ProjetoView
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-border bg-popover shadow-sm">
           <CardHeader>
             <CardTitle>{t("Anexos")}</CardTitle>
           </CardHeader>

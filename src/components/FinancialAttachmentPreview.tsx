@@ -187,7 +187,7 @@ export const FinancialAttachmentPreview: React.FC<FinancialAttachmentPreviewProp
       {/* Preview Modal */}
       {previewModal && (
         <Dialog open={!!previewModal} onOpenChange={() => setPreviewModal(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogContent className="max-w-4xl max-h-[90vh] p-0 bg-accent border-border/50">
             <DialogHeader className="p-4 pb-0 border-b">
               <DialogTitle className="text-lg font-medium truncate">
                 {previewModal.fileName}
@@ -197,7 +197,7 @@ export const FinancialAttachmentPreview: React.FC<FinancialAttachmentPreviewProp
               </DialogDescription>
             </DialogHeader>
             <div className="p-4">
-              <div className="bg-muted rounded-lg overflow-hidden border">
+              <div className="bg-accent rounded-lg overflow-hidden border border-border/20 shadow-inner">
                 {previewModal.type === 'image' ? (
                   <img
                     src={previewModal.url}

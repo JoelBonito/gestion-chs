@@ -20,12 +20,20 @@ export function AuthGuard({ children, redirectTo = '/login' }: AuthGuardProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-muted-foreground">Carregando autenticação…</p>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <p className="text-muted-foreground text-sm">Validando sessão...</p>
+          <button
+            onClick={() => {
+              localStorage.clear();
+              window.location.href = '/login';
+            }}
+            className="text-xs text-primary hover:underline mt-4"
+          >
+            Demorando muito? Sair
+          </button>
+        </div>
       </div>
     );
   }

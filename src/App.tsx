@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -7,25 +7,29 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthGuard } from "@/components/AuthGuard";
 import { FactoryGuard } from "@/components/FactoryGuard";
 import { FelipeGuard } from "@/components/FelipeGuard";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { AppLayout } from "@/layouts/AppLayout";
 import { MobileMenu } from "@/components/MobileMenu";
 import { LocaleProvider } from "@/contexts/LocaleContext";
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { AIAssistantChat } from "@/components/AIAssistantChat";
 import { usePWA } from "@/hooks/usePWA";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Produtos from "./pages/Produtos";
-import Clientes from "./pages/Clientes";
-import Fornecedores from "./pages/Fornecedores";
-import Encomendas from "./pages/Encomendas";
-import { default as Projetos } from "./pages/Projetos";
-import Producao from "./pages/Producao";
-import Financeiro from "./pages/Financeiro";
-import NotFound from "./pages/NotFound";
+import { TopBarActionsProvider } from "@/context/TopBarActionsContext";
+import { PageLoader } from "@/components/ui/loading";
+import { UserRoleProvider } from "@/contexts/UserRoleContext";
+
+// Lazy loaded pages para otimização de bundle
+const Index = lazy(() => import("./pages/Index"));
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Produtos = lazy(() => import("./pages/Produtos"));
+const Clientes = lazy(() => import("./pages/Clientes"));
+const Fornecedores = lazy(() => import("./pages/Fornecedores"));
+const Encomendas = lazy(() => import("./pages/Encomendas"));
+const Projetos = lazy(() => import("./pages/Projetos"));
+const Producao = lazy(() => import("./pages/Producao"));
+const Financeiro = lazy(() => import("./pages/Financeiro"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Create QueryClient instance outside component to avoid recreating on re-renders
 const queryClient = new QueryClient({
@@ -54,29 +58,25 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <LocaleProvider>
-          <Toaster />
-          <OfflineIndicator />
-          <AIAssistantChat />
-          {showInstallPrompt && isInstallable && (
-            <PWAInstallPrompt onDismiss={() => setShowInstallPrompt(false)} />
-          )}
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route
-                path="*"
-                element={
-                  <AuthGuard>
-                    <SidebarProvider defaultOpen={true}>
-                      <div className="min-h-screen flex w-full bg-background dark:bg-background">
-                        <AppSidebar />
-                        <SidebarInset>
-                          <header className="flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-xl px-6 xl:hidden">
-                            <SidebarTrigger className="ml-0" />
-                          </header>
-                          <main className="flex-1 overflow-auto">
-                            <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        <UserRoleProvider>
+          <LocaleProvider>
+            <TopBarActionsProvider>
+              <Toaster />
+              <OfflineIndicator />
+              <AIAssistantChat />
+              {showInstallPrompt && isInstallable && (
+                <PWAInstallPrompt onDismiss={() => setShowInstallPrompt(false)} />
+              )}
+              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route
+                      path="*"
+                      element={
+                        <AuthGuard>
+                          <AppLayout>
+                            <Suspense fallback={<PageLoader />}>
                               <Routes>
                                 <Route path="/" element={
                                   <FelipeGuard>
@@ -106,17 +106,17 @@ const App = () => {
                                 <Route path="/welcome" element={<Index />} />
                                 <Route path="*" element={<NotFound />} />
                               </Routes>
-                            </div>
-                          </main>
-                        </SidebarInset>
-                      </div>
-                    </SidebarProvider>
-                  </AuthGuard>
-                }
-              />
-            </Routes>
-          </BrowserRouter>
-        </LocaleProvider>
+                            </Suspense>
+                          </AppLayout>
+                        </AuthGuard>
+                      }
+                    />
+                  </Routes>
+                </Suspense>
+              </BrowserRouter>
+            </TopBarActionsProvider>
+          </LocaleProvider>
+        </UserRoleProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

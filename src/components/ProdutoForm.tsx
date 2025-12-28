@@ -1,60 +1,67 @@
 import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { AttachmentManager } from "@/components/AttachmentManager";
-import { useToast } from "@/hooks/use-toast";
-import { Save, X } from "lucide-react";
-import { FornecedorFormDialog } from "@/components/FornecedorFormDialog";
+import { Loader2, Save, X, Plus, Package, Truck, Info, Euro } from "lucide-react";
+import { Produto } from "@/types/database";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
+import { cn } from "@/lib/utils";
 
-interface Fornecedor {
-  id: string;
-  nome: string;
-}
+// Schema de Validação
+const produtoSchema = z.object({
+  nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  marca: z.string().min(1, "Marca é obrigatória"),
+  tipo: z.string().min(1, "Tipo é obrigatório"),
+  fornecedor_id: z.string().optional(),
+  size_weight: z.coerce.number().min(0, "Peso deve ser positivo"),
+  preco_custo: z.coerce.number().min(0, "Preço de custo deve ser positivo"),
+  preco_venda: z.coerce.number().min(0, "Preço de venda deve ser positivo"),
+  descricao: z.string().optional().nullable(),
+  ativo: z.boolean().default(true),
+  imagem_url: z.string().optional().nullable(),
+});
 
-interface ProdutoFormData {
-  nome: string;
-  marca: string;
-  tipo: string;
-  peso?: number;
-  preco_compra?: number;
-  preco_venda?: number;
-  fornecedor_id?: string;
-  ativo: boolean;
-}
+type ProdutoFormValues = z.infer<typeof produtoSchema>;
 
 interface ProdutoFormProps {
   onSuccess?: () => void;
-  produto?: any;
+  produto?: Produto | null;
   isEditing?: boolean;
 }
 
-// Tipos serão gerenciados dinamicamente
+const SectionStyles = "bg-popover border border-border/20 rounded-xl p-5 mb-4 hover:border-primary/50 transition-all duration-300 shadow-sm";
+const LabelStyles = "text-[10px] font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-2 mb-1.5";
+const InputStyles = "bg-accent border-border/50 text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all h-10";
 
-export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFormProps) => {
-  const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
-  const [tipos, setTipos] = useState<string[]>([]);
-  const [novoTipo, setNovoTipo] = useState("");
-  const [mostrarNovoTipo, setMostrarNovoTipo] = useState(false);
+export function ProdutoForm({ onSuccess, produto, isEditing = false }: ProdutoFormProps) {
   const [loading, setLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+  const [fornecedores, setFornecedores] = useState<{ id: string; nome: string }[]>([]);
+  const [tipos, setTipos] = useState<string[]>([]);
+  const [isNewType, setIsNewType] = useState(false);
   const { isCollaborator } = useIsCollaborator();
 
-  const [formData, setFormData] = useState<ProdutoFormData>({
-    nome: produto?.nome || "",
-    marca: produto?.marca || "",
-    tipo: produto?.tipo || "",
-    peso: produto?.size_weight || undefined,
-    preco_compra: produto?.preco_custo || undefined,
-    preco_venda: produto?.preco_venda || undefined,
-    fornecedor_id: produto?.fornecedor_id || "",
-    ativo: produto?.ativo ?? true
+  const form = useForm<ProdutoFormValues>({
+    resolver: zodResolver(produtoSchema) as any,
+    defaultValues: {
+      nome: produto?.nome || "",
+      marca: produto?.marca || "",
+      tipo: produto?.tipo || "",
+      fornecedor_id: produto?.fornecedor_id || undefined,
+      size_weight: produto?.size_weight || 0,
+      preco_custo: produto?.preco_custo || 0,
+      preco_venda: produto?.preco_venda || 0,
+      descricao: produto?.descricao || "",
+      ativo: produto?.ativo ?? true,
+      imagem_url: produto?.imagem_url || "",
+    },
   });
 
   useEffect(() => {
@@ -62,373 +69,301 @@ export const ProdutoForm = ({ onSuccess, produto, isEditing = false }: ProdutoFo
     fetchTipos();
   }, []);
 
-  const handleInputChange = (field: keyof ProdutoFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
   const fetchFornecedores = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("fornecedores")
-        .select("id, nome")
-        .eq("active", true)
-        .order("nome");
+    const { data, error } = await supabase
+      .from("fornecedores")
+      .select("id, nome")
+      .eq("active", true);
 
-      if (error) throw error;
-      setFornecedores(data || []);
-    } catch (error) {
-      console.error("Erro ao carregar fornecedores:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar fornecedores",
-        variant: "destructive",
-      });
+    if (error) {
+      toast.error("Erro ao carregar fornecedores");
+      return;
     }
+    setFornecedores(data || []);
   };
 
   const fetchTipos = async () => {
+    const { data, error } = await supabase
+      .from("produtos")
+      .select("tipo");
+
+    if (error) return;
+    const uniqueTipos = Array.from(new Set(data.map(p => p.tipo))).filter(Boolean);
+    setTipos(uniqueTipos);
+  };
+
+  const onSubmit = async (values: ProdutoFormValues) => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("produtos")
-        .select("tipo")
-        .not("tipo", "is", null);
+      const payload: any = {
+        nome: values.nome,
+        marca: values.marca,
+        tipo: values.tipo,
+        size_weight: Number(values.size_weight) || 0,
+        preco_custo: Number(values.preco_custo) || 0,
+        preco_venda: Number(values.preco_venda) || 0,
+        ativo: values.ativo,
+        descricao: values.descricao || null,
+        imagem_url: values.imagem_url || null,
+      };
 
-      if (error) throw error;
-      
-      // Extrair tipos únicos
-      const tiposUnicos = [...new Set(data?.map(p => p.tipo) || [])].sort();
-      setTipos(tiposUnicos);
-    } catch (error) {
-      console.error("Erro ao carregar tipos:", error);
-    }
-  };
-
-  const handleAdicionarTipo = () => {
-    if (novoTipo.trim() && !tipos.includes(novoTipo.trim())) {
-      const tipoAtualizado = novoTipo.trim();
-      setTipos([...tipos, tipoAtualizado].sort());
-      setFormData(prev => ({ ...prev, tipo: tipoAtualizado }));
-      setNovoTipo("");
-      setMostrarNovoTipo(false);
-    }
-  };
-
-  const handleFornecedorCriado = (novoFornecedor: { id: string; nome: string }) => {
-    setFornecedores(prev => [...prev, novoFornecedor].sort((a, b) => a.nome.localeCompare(b.nome)));
-    setFormData(prev => ({ ...prev, fornecedor_id: novoFornecedor.id }));
-  };
-
-  const resetForm = () => {
-    setFormData({
-      nome: "",
-      marca: "",
-      tipo: "",
-      peso: undefined,
-      preco_compra: undefined,
-      preco_venda: undefined,
-      fornecedor_id: "",
-      ativo: true
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.nome || !formData.marca || !formData.tipo) {
-      toast({
-        title: "Erro",
-        description: "Nome, marca e tipo são obrigatórios",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      let produto_id = produto?.id;
-
-      if (isEditing) {
-        const { data, error } = await supabase
-          .from("produtos")
-          .update({
-            nome: formData.nome,
-            marca: formData.marca,
-            tipo: formData.tipo,
-            preco_custo: formData.preco_compra || 0,
-            preco_venda: formData.preco_venda || 0,
-            size_weight: formData.peso || 0,
-            fornecedor_id: formData.fornecedor_id,
-            ativo: formData.ativo
-          })
-          .eq("id", produto.id)
-          .select()
-          .single();
-
-        if (error) throw error;
-        produto_id = data.id;
-        toast({
-          title: "Sucesso",
-          description: "Produto atualizado com sucesso!",
-        });
-      } else {
-        const { data, error } = await supabase
-          .from("produtos")
-          .insert([{
-            nome: formData.nome,
-            marca: formData.marca,
-            tipo: formData.tipo,
-            preco_custo: formData.preco_compra || 0,
-            preco_venda: formData.preco_venda || 0,
-            size_weight: formData.peso || 0,
-            fornecedor_id: formData.fornecedor_id,
-            ativo: formData.ativo
-          }])
-          .select()
-          .single();
-
-        if (error) throw error;
-        produto_id = data.id;
-        toast({
-          title: "Sucesso",
-          description: "Produto criado com sucesso!",
-        });
+      if (values.fornecedor_id) {
+        payload.fornecedor_id = values.fornecedor_id;
       }
 
+      if (isEditing && produto) {
+        const { error } = await supabase
+          .from("produtos")
+          .update(payload)
+          .eq("id", produto.id);
+        if (error) throw error;
+        toast.success("Produto atualizado com sucesso");
+      } else {
+        const { error } = await supabase
+          .from("produtos")
+          .insert(payload);
+        if (error) throw error;
+        toast.success("Produto criado com sucesso");
+      }
       onSuccess?.();
     } catch (error: any) {
       console.error("Erro ao salvar produto:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao salvar produto: " + error.message,
-        variant: "destructive",
-      });
+      toast.error(error.message || "Erro ao salvar produto");
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-h-[80vh] overflow-y-auto">
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl mx-auto p-4">
-      {/* Informações do Produto */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Informações do Produto</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="nome">Nome do Produto *</Label>
-            <Input
-              id="nome"
-              value={formData.nome}
-              onChange={(e) => handleInputChange("nome", e.target.value)}
-              placeholder="Nome do produto"
-              required
-            />
-          </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="space-y-4">
+          {/* Seção 1: Identificação Básica */}
+          <div className={SectionStyles}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="nome"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={LabelStyles}><Package className="w-3 h-3" /> Nome do Produto</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Ex: Chapa de Aço" className={cn(InputStyles, "uppercase font-bold")} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div className="space-y-2">
-            <Label htmlFor="marca">Marca *</Label>
-            <Input
-              id="marca"
-              value={formData.marca}
-              onChange={(e) => handleInputChange("marca", e.target.value)}
-              placeholder="Marca do produto"
-              required
-            />
-          </div>
+              <FormField
+                control={form.control}
+                name="marca"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={LabelStyles}>Marca / Fabricante</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Ex: Gerdau" className={cn(InputStyles, "uppercase")} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div className="space-y-2">
-            <Label htmlFor="tipo">Tipo *</Label>
-            {!mostrarNovoTipo ? (
-              <div className="flex gap-2">
-                <Select
-                  value={formData.tipo}
-                  onValueChange={(value) => {
-                    if (value === "novo") {
-                      setMostrarNovoTipo(true);
-                    } else {
-                      handleInputChange("tipo", value);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tipos.map((tipo) => (
-                      <SelectItem key={tipo} value={tipo}>
-                        {tipo}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="novo">+ Novo Tipo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <Input
-                  value={novoTipo}
-                  onChange={(e) => setNovoTipo(e.target.value)}
-                  placeholder="Digite o novo tipo"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAdicionarTipo();
-                    }
-                  }}
-                />
-                <Button 
-                  type="button" 
-                  onClick={handleAdicionarTipo}
-                  disabled={!novoTipo.trim()}
-                >
-                  Adicionar
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => {
-                    setMostrarNovoTipo(false);
-                    setNovoTipo("");
-                  }}
-                >
-                  Cancelar
-                </Button>
-              </div>
-            )}
-          </div>
+              <FormField
+                control={form.control}
+                name="tipo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={LabelStyles}>Tipo / Categoria</FormLabel>
+                    <FormControl>
+                      {isNewType ? (
+                        <div className="flex gap-2">
+                          <Input
+                            {...field}
+                            placeholder="Digite o novo tipo..."
+                            className={cn(InputStyles, "flex-1")}
+                            autoFocus
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setIsNewType(false);
+                              field.onChange(produto?.tipo || "");
+                            }}
+                            className="h-10 w-10 shrink-0 border border-border/20 bg-popover hover:bg-muted"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Select
+                          onValueChange={(val) => {
+                            if (val === "ADD_NEW") {
+                              setIsNewType(true);
+                              field.onChange("");
+                            } else {
+                              field.onChange(val);
+                            }
+                          }}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger className={InputStyles}>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover border-border/20">
+                            <SelectItem
+                              value="ADD_NEW"
+                              className="font-bold text-primary focus:text-primary focus:bg-primary/10"
+                            >
+                              <Plus className="w-3 h-3 mr-2 inline" />
+                              Adicionar novo tipo...
+                            </SelectItem>
+                            {tipos.map((t) => (
+                              <SelectItem key={t} value={t}>{t}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <div className="space-y-2">
-            <Label htmlFor="fornecedor">Fornecedor</Label>
-            <div className="flex gap-2">
-              <Select
-                value={formData.fornecedor_id}
-                onValueChange={(value) => handleInputChange("fornecedor_id", value)}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Selecione o fornecedor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {fornecedores.map((fornecedor) => (
-                    <SelectItem key={fornecedor.id} value={fornecedor.id}>
-                      {fornecedor.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FornecedorFormDialog onFornecedorCreated={handleFornecedorCriado} />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="peso">Peso (g)</Label>
-            <Input
-              id="peso"
-              type="number"
-              step="0.01"
-              value={formData.peso || ""}
-              onChange={(e) => handleInputChange("peso", e.target.value ? parseFloat(e.target.value) : undefined)}
-              placeholder="Ex: 250"
-            />
-          </div>
-
-          <div className="space-y-2 flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="ativo"
-              checked={formData.ativo}
-              onChange={(e) => handleInputChange("ativo", e.target.checked)}
-              className="rounded border-gray-300"
-            />
-            <Label htmlFor="ativo">Produto ativo</Label>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Preços */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Preços</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="preco_compra">Preço de Compra (€) *</Label>
-            <Input
-              id="preco_compra"
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.preco_compra || ""}
-              onChange={(e) => handleInputChange("preco_compra", e.target.value ? parseFloat(e.target.value) : undefined)}
-              placeholder="0,00"
-              required
-            />
-          </div>
-
-          {!isCollaborator && (
-            <div className="space-y-2">
-              <Label htmlFor="preco_venda">Preço de Venda (€) *</Label>
-              <Input
-                id="preco_venda"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.preco_venda || ""}
-                onChange={(e) => handleInputChange("preco_venda", e.target.value ? parseFloat(e.target.value) : undefined)}
-                placeholder="0,00"
-                required
+              <FormField
+                control={form.control}
+                name="fornecedor_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={LabelStyles}><Truck className="w-3 h-3" /> Fornecedor Principal</FormLabel>
+                    <FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <SelectTrigger className={InputStyles}>
+                          <SelectValue placeholder="Selecione o fornecedor" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-popover border-border/20">
+                          {fornecedores.map((f) => (
+                            <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
 
-      {/* Anexos */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Anexos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {produto?.id && (
-            <AttachmentManager
-              entityType="produto"
-              entityId={produto.id}
-              onChanged={() => {
-                console.log("ProdutoForm - Attachment changed, triggering success callback");
-                onSuccess?.();
-              }}
-            />
-          )}
-          {!produto?.id && (
-            <p className="text-sm text-gray-500">
-              Salve o produto primeiro para adicionar anexos
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          {/* Seção 2: Financeiro e Peso */}
+          <div className={SectionStyles}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="preco_custo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={LabelStyles}><Euro className="w-3 h-3" /> Preço Custo</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.01" className={cn(InputStyles, "tabular-nums")} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-      {/* Botões */}
-      <div className="flex justify-end gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => onSuccess?.()}
-          disabled={isSubmitting}
-        >
-          <X className="w-4 h-4 mr-2" />
-          Cancelar
-        </Button>
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-        >
-          <Save className="w-4 h-4 mr-2" />
-          {isSubmitting ? "Salvando..." : isEditing ? "Salvar" : "Criar"}
-        </Button>
-      </div>
-    </form>
-    </div>
+              <FormField
+                control={form.control}
+                name="preco_venda"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={cn(LabelStyles, "text-primary")}><Euro className="w-3 h-3 text-primary" /> Preço Venda</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.01" className={cn(InputStyles, "tabular-nums border-primary/20 text-primary")} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="size_weight"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={LabelStyles}>Peso (g)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="number" step="0.01" className={cn(InputStyles, "tabular-nums")} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+
+          {/* Seção 3: Status e Descrição */}
+          <div className={SectionStyles}>
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="ativo"
+                render={({ field }) => (
+                  <FormItem className="flex items-center justify-between rounded-lg border border-border/10 p-2.5 bg-popover/30">
+                    <FormLabel className="m-0 cursor-pointer text-xs font-bold uppercase text-muted-foreground tracking-wider">Status Ativo</FormLabel>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="descricao"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={LabelStyles}><Info className="w-3 h-3" /> Descrição / Notas</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} value={field.value || ""} placeholder="Informações adicionais..." className={cn(InputStyles, "min-h-[80px] resize-none")} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center pt-2">
+          <Button
+            type="button"
+            variant="cancel"
+            onClick={() => onSuccess?.()}
+          >
+            <X className="w-4 h-4 mr-2" /> Cancelar
+          </Button>
+
+          <Button
+            type="submit"
+            variant="gradient"
+            disabled={loading}
+            className="px-8"
+          >
+            {loading ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            {isEditing ? "Atualizar Produto" : "Criar Produto"}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
-};
+}

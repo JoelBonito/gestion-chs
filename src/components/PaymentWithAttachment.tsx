@@ -36,7 +36,7 @@ export const PaymentWithAttachment: React.FC<PaymentWithAttachmentProps> = ({
             Confirmar Pagamento
           </DialogTitle>
         </DialogHeader>
-        
+
         <Tabs defaultValue="payment" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="payment">Pagamento</TabsTrigger>
@@ -49,19 +49,19 @@ export const PaymentWithAttachment: React.FC<PaymentWithAttachmentProps> = ({
                 Confirme o pagamento desta encomenda. Você pode anexar um comprovante na aba "Comprovante".
               </p>
             </div>
-            
+
             <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setIsOpen(false)}>
+              <Button variant="cancel" onClick={() => setIsOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handlePaymentConfirm}>
+              <Button variant="gradient" onClick={handlePaymentConfirm}>
                 Confirmar Pagamento
               </Button>
             </div>
           </TabsContent>
 
           <TabsContent value="attachment" className="space-y-4">
-            <AttachmentManager 
+            <AttachmentManager
               entityType="pagamento"
               entityId={encomendaId}
               title="Comprovante de Pagamento"

@@ -11,19 +11,37 @@ export function useAuth() {
     let mounted = true;
 
     // Get initial user - só seta loading=false quando isso terminar
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (mounted) {
-        setUser(user);
-        setLoading(false);
+    const initAuth = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          // Se der erro (ex: refresh token inválido), limpamos o usuário
+          // console.error("Erro ao carregar usuário inicial:", error);
+          if (mounted) setUser(null);
+        } else {
+          if (mounted) setUser(user);
+        }
+      } catch (error) {
+        // Erro catastrófico
+        console.error("Erro crítico de auth:", error);
+        if (mounted) setUser(null);
+      } finally {
+        if (mounted) setLoading(false);
       }
-    });
+    };
 
-    // Listen for auth changes - NÃO seta loading aqui
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    initAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (mounted) {
         setUser(session?.user ?? null);
-        // Só seta loading=false se já tiver terminado o getUser inicial
-        // (que já setou loading=false)
+
+        // Se for SIGN_OUT, garantir loading false
+        if (event === 'SIGNED_OUT') {
+          setLoading(false);
+          // Limpar query cache se necessário, mas aqui só lidamos com auth state
+        }
       }
     });
 

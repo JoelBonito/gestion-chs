@@ -135,7 +135,7 @@ export function EstoqueEditModal({ produto, open, onOpenChange, onSuccess }: Est
                     <DialogFooter>
                         <Button
                             type="button"
-                            variant="outline"
+                            variant="cancel"
                             onClick={() => onOpenChange(false)}
                             disabled={isSubmitting}
                         >
@@ -143,8 +143,8 @@ export function EstoqueEditModal({ produto, open, onOpenChange, onSuccess }: Est
                         </Button>
                         <Button
                             type="submit"
+                            variant="gradient"
                             disabled={isSubmitting}
-                            className="bg-primary hover:bg-primary/90"
                         >
                             {isSubmitting ? (
                                 "Salvando..."

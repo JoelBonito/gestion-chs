@@ -8,6 +8,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { Store, Mail, Phone, MapPin, Info, Save, X, Loader2, User } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const fornecedorSchema = z.object({
   nome: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -15,6 +17,7 @@ const fornecedorSchema = z.object({
   telefone: z.string().optional(),
   endereco: z.string().optional(),
   contato: z.string().optional(),
+  observacoes: z.string().optional(),
 });
 
 type FornecedorFormData = z.infer<typeof fornecedorSchema>;
@@ -26,6 +29,7 @@ interface Fornecedor {
   telefone?: string;
   endereco?: string;
   contato?: string;
+  observacoes?: string;
 }
 
 interface FornecedorFormProps {
@@ -33,6 +37,13 @@ interface FornecedorFormProps {
   initialData?: Fornecedor | null;
   isEditing?: boolean;
 }
+
+
+
+
+const SectionStyles = "bg-popover border border-border/20 rounded-xl p-5 mb-4 hover:border-primary/50 transition-all duration-300 shadow-sm";
+const LabelStyles = "text-[10px] font-bold uppercase text-muted-foreground tracking-wider flex items-center gap-2 mb-1.5";
+const InputStyles = "bg-accent border-border/50 text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all h-10";
 
 export function FornecedorForm({ onSuccess, initialData, isEditing = false }: FornecedorFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,27 +56,28 @@ export function FornecedorForm({ onSuccess, initialData, isEditing = false }: Fo
       telefone: "",
       endereco: "",
       contato: "",
+      observacoes: "",
     },
   });
 
   useEffect(() => {
     if (initialData) {
-      // Se tem dados iniciais, sempre preenche (seja para editar ou duplicar)
       form.reset({
         nome: initialData.nome || "",
         email: initialData.email || "",
         telefone: initialData.telefone || "",
         endereco: initialData.endereco || "",
         contato: initialData.contato || "",
+        observacoes: (initialData as any).observacoes || "",
       });
     } else {
-      // Se não tem dados iniciais, limpa o formulário
       form.reset({
         nome: "",
         email: "",
         telefone: "",
         endereco: "",
         contato: "",
+        observacoes: "",
       });
     }
   }, [form, initialData]);
@@ -82,6 +94,7 @@ export function FornecedorForm({ onSuccess, initialData, isEditing = false }: Fo
             telefone: data.telefone || null,
             endereco: data.endereco || null,
             contato: data.contato || null,
+            observacoes: data.observacoes || null,
           })
           .eq("id", initialData.id);
 
@@ -97,6 +110,7 @@ export function FornecedorForm({ onSuccess, initialData, isEditing = false }: Fo
             telefone: data.telefone || null,
             endereco: data.endereco || null,
             contato: data.contato || null,
+            observacoes: data.observacoes || null,
           }])
           .select()
           .single();
@@ -117,83 +131,110 @@ export function FornecedorForm({ onSuccess, initialData, isEditing = false }: Fo
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="nome"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome *</FormLabel>
-              <FormControl>
-                <Input placeholder="Digite o nome do fornecedor" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input placeholder="Digite o email" type="email" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className={SectionStyles}>
+          <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="nome"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}>Nome / Razão Social *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: FABRICA DE VIDROS SA" {...field} className={cn(InputStyles, "uppercase font-bold")} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <FormField
-          control={form.control}
-          name="telefone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Telefone</FormLabel>
-              <FormControl>
-                <Input placeholder="Digite o telefone" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={LabelStyles}><Mail className="w-3 h-3" /> Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="contato@fornecedor.com" type="email" {...field} className={InputStyles} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        <FormField
-          control={form.control}
-          name="contato"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Pessoa de Contato</FormLabel>
-              <FormControl>
-                <Input placeholder="Nome da pessoa de contato" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+              <FormField
+                control={form.control}
+                name="telefone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={LabelStyles}><Phone className="w-3 h-3" /> Telefone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+351 000 000 000" {...field} className={InputStyles} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-        <FormField
-          control={form.control}
-          name="endereco"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Endereço</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Digite o endereço completo" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            <FormField
+              control={form.control}
+              name="contato"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}>Gestor de Conta / Contato</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Nome do representante comercial" {...field} className={cn(InputStyles, "uppercase")} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (isEditing ? "Salvando..." : "Cadastrando...") : (isEditing ? "Salvar Alterações" : "Cadastrar Fornecedor")}
-        </Button>
+            <FormField
+              control={form.control}
+              name="endereco"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}><MapPin className="w-3 h-3" /> Endereço da Sede</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Morada completa do fornecedor..." {...field} className={cn(InputStyles, "min-h-[80px] resize-none")} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="observacoes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}>Notas e Condições</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Prazos, condições de pagamento ou notas gerais..."
+                      className={cn(InputStyles, "min-h-[80px] resize-none")}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-2">
+          <Button type="button" variant="cancel" onClick={() => onSuccess?.()}>
+            <X className="w-4 h-4 mr-2" /> Cancelar
+          </Button>
+          <Button type="submit" variant="gradient" disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            {isEditing ? "Salvar Alterações" : "Cadastrar Fornecedor"}
+          </Button>
+        </div>
       </form>
     </Form>
   );

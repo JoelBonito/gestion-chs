@@ -7,13 +7,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Eye, Download, Edit, Trash2, FileText, ExternalLink, Paperclip } from 'lucide-react';
+import { Eye, Download, Edit, Trash2, FileText, ExternalLink, Paperclip, Plus } from 'lucide-react';
 import { Invoice } from '@/types/invoice';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { InvoiceAttachmentManager } from './InvoiceAttachmentManager';
 import { formatCurrencyEUR } from '@/lib/utils/currency';
+import { useLocale } from '@/contexts/LocaleContext';
 
 interface InvoiceListProps {
   invoices: Invoice[];
@@ -21,6 +22,7 @@ interface InvoiceListProps {
   onDelete: (invoice: Invoice) => void;
   onRefresh: () => void;
   isLoading?: boolean;
+  onAddNew?: () => void;
 }
 
 export const InvoiceList: React.FC<InvoiceListProps> = ({
@@ -28,10 +30,12 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   onUpdate,
   onDelete,
   onRefresh,
-  isLoading = false
+  isLoading = false,
+  onAddNew
 }) => {
   const { hasRole } = useUserRole();
   const { user } = useAuth();
+  const { locale } = useLocale();
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
   const [editFormData, setEditFormData] = useState({
@@ -43,7 +47,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
     url: string;
     fileName: string;
   } | null>(null);
-  
+
   const canEdit = hasRole('admin') || hasRole('finance');
   const isRestrictedUser = user?.email?.toLowerCase() === "ham@admin.com";
 
@@ -82,7 +86,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
 
   const handlePreview = (invoice: Invoice) => {
     if (!invoice.attachment?.storage_path) return;
-    
+
     const publicUrl = getPublicUrl(invoice.attachment.storage_path);
     setPreviewModal({
       url: publicUrl,
@@ -92,9 +96,9 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
 
   const handleDownload = async (invoice: Invoice) => {
     if (!invoice.attachment?.storage_path) return;
-    
+
     const publicUrl = getPublicUrl(invoice.attachment.storage_path);
-    
+
     try {
       const response = await fetch(publicUrl);
       const blob = await response.blob();
@@ -127,19 +131,38 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
 
   return (
     <>
-      <Card className="shadow-card">
+      <Card className="shadow-card bg-card border-border/50">
         <CardHeader>
-          <CardTitle>Lista de Faturas</CardTitle>
-          <CardDescription>
-            {invoices.length} fatura{invoices.length !== 1 ? 's' : ''} encontrada{invoices.length !== 1 ? 's' : ''}
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                {locale === 'fr-FR' ? 'Factures' : 'Faturas'}
+              </CardTitle>
+              <CardDescription>
+                {invoices.length} {locale === 'fr-FR'
+                  ? `facture${invoices.length !== 1 ? 's' : ''} trouvée${invoices.length !== 1 ? 's' : ''}`
+                  : `fatura${invoices.length !== 1 ? 's' : ''} encontrada${invoices.length !== 1 ? 's' : ''}`
+                }
+              </CardDescription>
+            </div>
+            {onAddNew && canEdit && !isRestrictedUser && (
+              <Button
+                onClick={onAddNew}
+                className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2 transition-all active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                {locale === 'fr-FR' ? 'Nouvelle Facture' : 'Nova Fatura'}
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {/* Tabela apenas no desktop */}
-          <div className="hidden lg:block overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto rounded-xl border border-border/40 overflow-hidden bg-popover shadow-sm">
             <Table>
-              <TableHeader>
-                <TableRow>
+              <TableHeader className="bg-popover border-b border-border/40">
+                <TableRow className="hover:bg-transparent transition-none border-b-0">
                   <TableHead>Data</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Descrição</TableHead>
@@ -149,7 +172,11 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
               </TableHeader>
               <TableBody>
                 {invoices.map((invoice) => (
-                  <TableRow key={invoice.id} className="hover:bg-muted/50">
+                  <TableRow
+                    key={invoice.id}
+                    className="bg-popover hover:bg-muted/30 transition-colors border-b border-border dark:border-white/5 last:border-0 cursor-pointer group"
+                    onClick={() => setViewingInvoice(invoice)}
+                  >
                     <TableCell className="font-medium">
                       {new Date(invoice.invoice_date).toLocaleDateString('pt-BR')}
                     </TableCell>
@@ -176,8 +203,9 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setViewingInvoice(invoice)}
+                          onClick={(e) => { e.stopPropagation(); setViewingInvoice(invoice); }}
                           title="Ver detalhes"
+                          className="hover:text-primary hover:bg-primary/10 transition-colors"
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -186,8 +214,9 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDownload(invoice)}
+                            onClick={(e) => { e.stopPropagation(); handleDownload(invoice); }}
                             title="Download"
+                            className="hover:text-primary hover:bg-primary/10 transition-colors"
                           >
                             <Download className="w-4 h-4" />
                           </Button>
@@ -198,8 +227,9 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleEditClick(invoice)}
+                              onClick={(e) => { e.stopPropagation(); handleEditClick(invoice); }}
                               title="Editar"
+                              className="hover:text-primary hover:bg-primary/10 transition-colors"
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
@@ -207,8 +237,8 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => onDelete(invoice)}
+                              className="text-destructive hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-95"
+                              onClick={(e) => { e.stopPropagation(); onDelete(invoice); }}
                               title="Excluir"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -240,7 +270,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
               </Card>
             )}
             {invoices.map((invoice) => (
-              <Card key={invoice.id} className="overflow-hidden">
+              <Card key={invoice.id} className="overflow-hidden bg-card border-border/50">
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-sm font-semibold">
@@ -303,13 +333,16 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
       {/* Edit Modal */}
       {editingInvoice && (
         <Dialog open={!!editingInvoice} onOpenChange={() => setEditingInvoice(null)}>
-          <DialogContent className="w-[95vw] max-w-md" >
+          <DialogContent className="w-[95vw] max-w-md bg-card border-border/50" >
             <DialogHeader>
-              <DialogTitle>Editar Fatura</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <Edit className="h-5 w-5 text-primary" />
+                Editar Fatura
+              </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleEditSubmit} className="space-y-4">
+            <form onSubmit={handleEditSubmit} className="space-y-4 pt-2">
               <div className="space-y-2">
-                <Label htmlFor="edit_date">Data da Fatura</Label>
+                <Label htmlFor="edit_date" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Data da Fatura</Label>
                 <Input
                   id="edit_date"
                   type="date"
@@ -317,37 +350,48 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                   onChange={(e) => setEditFormData(prev => ({ ...prev, invoice_date: e.target.value }))}
                   required
                   max={new Date().toISOString().split('T')[0]}
+                  className="bg-popover border-border/40 font-semibold h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit_amount">Valor</Label>
-                <Input
-                  id="edit_amount"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={editFormData.amount || ''}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-                  required
-                />
+                <Label htmlFor="edit_amount" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Valor</Label>
+                <div className="relative group">
+                  <Input
+                    id="edit_amount"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={editFormData.amount || ''}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                    required
+                    className="pl-8 bg-popover border-border/40 font-semibold h-11"
+                  />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">€</span>
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit_description">Descrição</Label>
+                <Label htmlFor="edit_description" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Descrição</Label>
                 <Textarea
                   id="edit_description"
                   value={editFormData.description}
                   onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
                   rows={3}
+                  className="bg-popover border-border/40 resize-none py-2.5"
                 />
               </div>
 
-              <div className="flex gap-2">
-                <Button type="submit" className="flex-1">
-                  Salvar
+              <div className="flex gap-3 pt-2">
+                <Button type="submit" variant="gradient" className="flex-1 h-12 text-base font-bold">
+                  Salvar Alterações
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setEditingInvoice(null)}>
+                <Button
+                  type="button"
+                  variant="cancel"
+                  onClick={() => setEditingInvoice(null)}
+                  className="flex-1 h-12 font-semibold bg-popover border-border/40"
+                >
                   Cancelar
                 </Button>
               </div>
@@ -359,40 +403,46 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
       {/* View Invoice Details Modal */}
       {viewingInvoice && (
         <Dialog open={!!viewingInvoice} onOpenChange={() => setViewingInvoice(null)}>
-          <DialogContent className="w-[95vw] max-w-3xl">
+          <DialogContent className="w-[95vw] max-w-3xl bg-card border-border/50">
             <DialogHeader>
-              <DialogTitle>Detalhes da Fatura</DialogTitle>
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Detalhes da Fatura
+              </DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Data da Fatura</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(viewingInvoice.invoice_date).toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
-                <div>
-                  <Label>Valor</Label>
-                  <p className="text-sm font-semibold">{formatCurrencyEUR(viewingInvoice.amount)}</p>
+            <div className="space-y-4 pt-2">
+              <div className="bg-popover p-4 rounded-xl border border-border/20 shadow-sm">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Data da Fatura</Label>
+                    <p className="text-sm font-semibold">
+                      {new Date(viewingInvoice.invoice_date).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Valor Total</Label>
+                    <p className="text-lg font-black text-primary">{formatCurrencyEUR(viewingInvoice.amount)}</p>
+                  </div>
+                  {viewingInvoice.description && (
+                    <div className="space-y-1 col-span-2 md:col-span-1">
+                      <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Observações</Label>
+                      <p className="text-sm text-muted-foreground line-clamp-2" title={viewingInvoice.description}>
+                        {viewingInvoice.description}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
-              
-              {viewingInvoice.description && (
-                <div>
-                  <Label>Observações</Label>
-                  <div className="bg-muted p-3 rounded-md">
-                    <p className="text-sm whitespace-pre-wrap">{viewingInvoice.description}</p>
-                  </div>
-                </div>
-              )}
-              
-              <InvoiceAttachmentManager 
-                invoice={viewingInvoice} 
-                onUpdate={() => {
-                  onRefresh();
-                  setViewingInvoice(null);
-                }} 
-              />
+
+              <div className="bg-popover p-4 rounded-xl border border-border/20 shadow-sm">
+                <InvoiceAttachmentManager
+                  invoice={viewingInvoice}
+                  onUpdate={() => {
+                    onRefresh();
+                    setViewingInvoice(null);
+                  }}
+                />
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -401,7 +451,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
       {/* Preview Modal */}
       {previewModal && (
         <Dialog open={!!previewModal} onOpenChange={() => setPreviewModal(null)}>
-          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] p-0">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] p-0 bg-background border-border/50">
             <DialogHeader className="p-4 pb-0 border-b">
               <DialogTitle className="text-lg font-medium truncate">
                 {previewModal.fileName}

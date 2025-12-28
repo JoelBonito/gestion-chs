@@ -160,10 +160,31 @@ export default function Financeiro() {
       )}
 
       <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as TabKey)} className="space-y-6">
-        <TabsList className="bg-background/40 p-1 border border-border/40 backdrop-blur-sm h-12 rounded-xl">
-          {!hideVendas && <TabsTrigger value="encomendas" className="rounded-lg h-10 px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary font-medium transition-all">{t("Vendas")}</TabsTrigger>}
-          {!hideCompras && <TabsTrigger value="pagar" className="rounded-lg h-10 px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary font-medium transition-all">{t("Compras")}</TabsTrigger>}
-          {!hideFaturas && <TabsTrigger value="faturas" className="rounded-lg h-10 px-4 data-[state=active]:bg-primary/10 data-[state=active]:text-primary font-medium transition-all">{t("Faturas")}</TabsTrigger>}
+        <TabsList className="bg-transparent p-0 border-b border-border/40 w-full justify-start rounded-none h-auto gap-8">
+          {!hideVendas && (
+            <TabsTrigger
+              value="encomendas"
+              className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary pb-4 px-0 font-semibold transition-all hover:text-primary/80"
+            >
+              {t("Vendas")}
+            </TabsTrigger>
+          )}
+          {!hideCompras && (
+            <TabsTrigger
+              value="pagar"
+              className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary pb-4 px-0 font-semibold transition-all hover:text-primary/80"
+            >
+              {t("Compras")}
+            </TabsTrigger>
+          )}
+          {!hideFaturas && (
+            <TabsTrigger
+              value="faturas"
+              className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary pb-4 px-0 font-semibold transition-all hover:text-primary/80"
+            >
+              {t("Faturas")}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {!hideVendas && (

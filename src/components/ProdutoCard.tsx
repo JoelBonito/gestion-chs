@@ -37,7 +37,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
 
   return (
     <>
-      <div className="border rounded-lg p-4 space-y-3 hover:shadow-md transition-shadow">
+      <div className="bg-card border border-border/10 rounded-xl p-4 space-y-3 hover:shadow-md hover:border-primary/50 transition-all duration-300">
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <h3 className="font-semibold text-lg">{produto.nome}</h3>
@@ -47,7 +47,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
             {produto.ativo ? "Ativo" : "Inativo"}
           </Badge>
         </div>
-        
+
         <div className="space-y-1">
           {!hidePrices && (
             <div className="font-bold text-lg">{formatCurrencyEUR(produto.preco_venda)}</div>
@@ -69,19 +69,19 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
           >
             <Eye className="h-4 w-4" />
           </Button>
-          
+
           <Button
             variant="ghost"
             size="icon"
             onClick={handleAttachments}
             className="h-8 w-8"
           >
-            <IconWithBadge 
+            <IconWithBadge
               icon={<Paperclip className="h-4 w-4" />}
               count={attachments?.length || 0}
             />
           </Button>
-          
+
           {!isCollaborator && !hidePrices && (
             <Button
               variant="ghost"
@@ -100,7 +100,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </AlertDialogTrigger>
-              <AlertDialogContent>
+              <AlertDialogContent className="bg-card border-none shadow-2xl">
                 <AlertDialogHeader>
                   <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
                   <AlertDialogDescription>
@@ -108,7 +108,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogCancel className="bg-popover border-border/20">Cancelar</AlertDialogCancel>
                   <AlertDialogAction onClick={() => onDelete(produto.id)}>Excluir</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -119,7 +119,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
 
       {/* Modal de Visualização */}
       <Dialog open={showView} onOpenChange={setShowView}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-background border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle>Visualizar Produto</DialogTitle>
             <DialogDescription>Detalhes do produto selecionado.</DialogDescription>
@@ -130,7 +130,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
 
       {/* Modal de Anexos */}
       <Dialog open={showAttachments} onOpenChange={setShowAttachments}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl bg-background border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle>Anexos do Produto</DialogTitle>
             <DialogDescription>Adicione, visualize e remova arquivos do produto.</DialogDescription>
@@ -147,7 +147,7 @@ export default function ProdutoCard({ produto, onUpdate, onDelete, onToggleActiv
 
       {/* Modal de Edição */}
       <Dialog open={showEdit} onOpenChange={setShowEdit}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl bg-background border-none shadow-2xl">
           <DialogHeader>
             <DialogTitle>Editar Produto</DialogTitle>
             <DialogDescription>Atualize as informações do produto.</DialogDescription>

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { TrendingDown, Eye, Plus } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import PagamentoForm from "@/components/PagamentoForm";
@@ -195,7 +197,7 @@ export default function EncomendasFinanceiro({
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-card">
+      <Card className="shadow-card bg-card border-border/50">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -207,27 +209,25 @@ export default function EncomendasFinanceiro({
                 {tr("Encomendas com saldo devedor de clientes")}
               </CardDescription>
             </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
+            <div className="flex items-center space-x-3 bg-muted/30 px-3 py-1.5 rounded-xl border border-border/30 shadow-inner group">
+              <Switch
                 id="show-completed-receivable"
                 checked={localShowCompleted}
-                onChange={(e) => setLocalShowCompleted(e.target.checked)}
-                className="rounded"
+                onCheckedChange={setLocalShowCompleted}
               />
-              <label htmlFor="show-completed-receivable" className="text-sm">
+              <Label htmlFor="show-completed-receivable" className="text-xs font-semibold uppercase tracking-wider cursor-pointer">
                 {tr("Mostrar Concluídos")}
-              </label>
+              </Label>
             </div>
           </div>
         </CardHeader>
 
         <CardContent className="px-4 sm:px-6">
           {/* Tabela apenas no desktop */}
-          <div className="hidden lg:block overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto rounded-xl border border-border/40 overflow-hidden bg-popover shadow-sm">
             <Table>
-              <TableHeader>
-                <TableRow>
+              <TableHeader className="bg-popover border-b border-border/40">
+                <TableRow className="hover:bg-transparent transition-none border-b-0">
                   <TableHead>{tr("Nº Encomenda")}</TableHead>
                   <TableHead>{tr("Cliente")}</TableHead>
                   <TableHead>{tr("Data Produção")}</TableHead>
@@ -240,10 +240,14 @@ export default function EncomendasFinanceiro({
               </TableHeader>
               <TableBody>
                 {encomendas.map((encomenda) => (
-                  <TableRow key={encomenda.id}>
+                  <TableRow
+                    key={encomenda.id}
+                    className="bg-popover hover:bg-muted/30 transition-colors border-b border-border dark:border-white/5 cursor-pointer group last:border-0"
+                    onClick={() => handleViewDetails(encomenda)}
+                  >
                     <TableCell className="font-medium">
                       <div className="flex flex-col">
-                        <span>{encomenda.numero_encomenda}</span>
+                        <span className="group-hover:text-primary transition-colors">{encomenda.numero_encomenda}</span>
                         {encomenda.etiqueta && (
                           <Badge variant="info" className="mt-0.5">
                             {encomenda.etiqueta}
@@ -270,7 +274,8 @@ export default function EncomendasFinanceiro({
                           variant="link"
                           size="sm"
                           className="h-auto p-0 text-primary underline"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setSelectedPaymentEncomenda(encomenda);
                             setShowPaymentDetails(true);
                           }}
@@ -283,11 +288,11 @@ export default function EncomendasFinanceiro({
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleViewDetails(encomenda)} title={tr("Visualizar detalhes")} type="button">
+                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); handleViewDetails(encomenda); }} title={tr("Visualizar detalhes")} type="button" className="hover:text-primary hover:bg-primary/10 transition-colors">
                           <Eye className="w-4 h-4" />
                         </Button>
                         {!isHam && (
-                          <Button variant="ghost" size="sm" onClick={() => { setSelectedEncomenda(encomenda); setShowPagamentoForm(true); }} title={tr("Registrar pagamento")} type="button">
+                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedEncomenda(encomenda); setShowPagamentoForm(true); }} title={tr("Registrar pagamento")} type="button" className="hover:text-primary hover:bg-primary/10 transition-colors">
                             <Plus className="w-4 h-4" />
                           </Button>
                         )}
@@ -317,7 +322,11 @@ export default function EncomendasFinanceiro({
               </Card>
             )}
             {encomendas.map((e) => (
-              <Card key={e.id} className="overflow-hidden">
+              <Card
+                key={e.id}
+                className="overflow-hidden bg-card border-border/50 cursor-pointer active:scale-[0.98] transition-all"
+                onClick={() => handleViewDetails(e)}
+              >
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
@@ -347,7 +356,8 @@ export default function EncomendasFinanceiro({
                     {e.total_pagamentos > 0 ? (
                       <button
                         className="text-primary underline cursor-pointer"
-                        onClick={() => {
+                        onClick={(ev) => {
+                          ev.stopPropagation();
                           setSelectedPaymentEncomenda(e);
                           setShowPaymentDetails(true);
                         }}
@@ -358,7 +368,7 @@ export default function EncomendasFinanceiro({
                       tr("Nenhum")
                     )}
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                  <div className="flex flex-col sm:flex-row gap-2 pt-1" onClick={(ev) => ev.stopPropagation()}>
                     <Button variant="ghost" size="sm" className="w-full sm:w-auto" onClick={() => handleViewDetails(e)}>
                       <Eye className="w-4 h-4 mr-2" /> {tr("Visualizar detalhes")}
                     </Button>
@@ -379,11 +389,14 @@ export default function EncomendasFinanceiro({
       {/* Dialog: Registrar Pagamento — NÃO renderiza para ham */}
       {!isHam && selectedEncomenda && (
         <Dialog open={showPagamentoForm} onOpenChange={setShowPagamentoForm}>
-          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="">
-            <DialogHeader>
-              <DialogTitle>{tr("Registrar Pagamento")}</DialogTitle>
-              <DialogDescription className="sr-only">
+          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border" aria-describedby="">
+            <DialogHeader className="border-b pb-4 mb-4">
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Plus className="h-5 w-5 text-primary" />
                 {tr("Registrar Pagamento")}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Associe um novo pagamento à encomenda selecionada.
               </DialogDescription>
             </DialogHeader>
             <PagamentoForm onSuccess={handlePagamentoSuccess} encomendas={[selectedEncomenda]} />
@@ -394,89 +407,91 @@ export default function EncomendasFinanceiro({
       {/* Dialog: Detalhes + Anexos */}
       {selectedEncomenda && (
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="">
-            <DialogHeader>
-              <DialogTitle>{tr("Detalhes da Conta a Receber")}</DialogTitle>
-              <DialogDescription className="sr-only">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border" aria-describedby="">
+            <DialogHeader className="border-b pb-4 mb-4">
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Eye className="h-5 w-5 text-primary" />
                 {tr("Detalhes da Conta a Receber")}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Confira todas as informações financeiras desta venda.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-6">
-              {/* Detalhes da encomenda */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">{tr("Encomenda:")}</label>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedEncomenda.numero_encomenda}
-                    {selectedEncomenda.etiqueta && (
-                      <>
-                        {" "}
-                        — <Badge variant="info">{selectedEncomenda.etiqueta}</Badge>
-                      </>
-                    )}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">{tr("Cliente:")}</label>
-                  <p className="text-sm text-muted-foreground">{selectedEncomenda.cliente_nome}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">{tr("Data Produção:")}</label>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(selectedEncomenda.data_producao_estimada)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">{tr("Valor Produtos:")}</label>
-                  <p className="text-sm text-muted-foreground">
-                    €
-                    {formatCurrencyEUR(selectedEncomenda.valor_total - selectedEncomenda.valor_frete)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">{tr("Valor Frete:")}</label>
-                  <p className="text-sm text-muted-foreground">
-                    {formatCurrencyEUR(selectedEncomenda.valor_frete)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">{tr("Total:")}</label>
-                  <p className="text-sm font-semibold">
-                    {formatCurrencyEUR(selectedEncomenda.valor_total)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">{tr("Valor Recebido:")}</label>
-                  <p className="text-sm text-success">
-                    {formatCurrencyEUR(selectedEncomenda.valor_pago)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">{tr("Saldo:")}</label>
-                  <p className="text-sm font-semibold text-warning">
-                    {formatCurrencyEUR(selectedEncomenda.saldo_devedor)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">{tr("Quantidade de Pagamentos:")}</label>
-                  <p className="text-sm text-muted-foreground">{selectedEncomenda.total_pagamentos}</p>
+              {/* Detalhes da encomenda - Camada 3 (Destaque sobre Camada 2) */}
+              <div className="bg-popover rounded-xl border border-border/20 p-6 shadow-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Encomenda:")}</span>
+                    <p className="text-sm font-semibold flex items-center gap-2">
+                      #{selectedEncomenda.numero_encomenda}
+                      {selectedEncomenda.etiqueta && (
+                        <Badge variant="info">{selectedEncomenda.etiqueta}</Badge>
+                      )}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Cliente:")}</span>
+                    <p className="text-sm font-semibold">{selectedEncomenda.cliente_nome}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Data Produção:")}</span>
+                    <p className="text-sm font-semibold italic">
+                      {formatDate(selectedEncomenda.data_producao_estimada)}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Valor Itens:")}</span>
+                    <p className="text-sm font-bold">
+                      €{(selectedEncomenda.valor_total - selectedEncomenda.valor_frete).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Valor Frete:")}</span>
+                    <p className="text-sm font-bold">
+                      {formatCurrencyEUR(selectedEncomenda.valor_frete)}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Total:")}</span>
+                    <p className="text-sm font-black text-primary">
+                      {formatCurrencyEUR(selectedEncomenda.valor_total)}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Recebido:")}</span>
+                    <p className="text-sm font-bold text-success">
+                      {formatCurrencyEUR(selectedEncomenda.valor_pago)}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Saldo:")}</span>
+                    <p className="text-sm font-black text-warning">
+                      {formatCurrencyEUR(selectedEncomenda.saldo_devedor)}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{tr("Pagamentos:")}</span>
+                    <p className="text-sm font-semibold">{selectedEncomenda.total_pagamentos}</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Itens da encomenda */}
+              {/* Itens da encomenda - Camada Interna (Automático pelo Card do componente) */}
               <OrderItemsView encomendaId={selectedEncomenda.id} />
 
-              {/* Anexos */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">{tr("Comprovantes e Anexos")}</h3>
+              {/* Anexos - Camada 3 (Destaque) */}
+              <div className="border-t border-border/40 pt-6">
                 <AttachmentManager
                   entityType="receivable"
                   entityId={selectedEncomenda.id}
                   title={tr("Comprovantes de Recebimento")}
                   onChanged={handleAttachmentChange}
+                  useTertiaryLayer={true}
                 />
               </div>
+
             </div>
           </DialogContent>
         </Dialog>

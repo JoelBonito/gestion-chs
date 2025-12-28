@@ -48,13 +48,13 @@ interface EncomendaViewCustoProps {
 
 const getStatusColor = (status: StatusEncomenda) => {
   switch (status) {
-    case "NOVO PEDIDO": return "bg-muted-foreground";
-    case "MATÉRIA PRIMA": return "bg-warning";
-    case "PRODUÇÃO": return "bg-info";
-    case "EMBALAGENS": return "bg-yellow-500";
-    case "TRANSPORTE": return "bg-purple-500";
-    case "ENTREGUE": return "bg-success";
-    default: return "bg-muted-foreground";
+    case "NOVO PEDIDO": return "bg-blue-600";
+    case "MATÉRIA PRIMA": return "bg-orange-500";
+    case "PRODUÇÃO": return "bg-sky-500";
+    case "EMBALAGENS": return "bg-emerald-500";
+    case "TRANSPORTE": return "bg-purple-600";
+    case "ENTREGUE": return "bg-green-600";
+    default: return "bg-slate-500";
   }
 };
 

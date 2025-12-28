@@ -26,10 +26,10 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
     url: string;
     fileName: string;
   } | null>(null);
-  
+
   const { uploadFile, isUploading } = useSupabaseStorage();
   const { hasRole } = useUserRole();
-  
+
   const canManage = hasRole('admin') || hasRole('finance');
 
   const getPublicUrl = (storagePath: string) => {
@@ -59,7 +59,7 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
 
     try {
       console.log('InvoiceAttachmentManager - Iniciando upload');
-      
+
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
         throw new Error("Usuário não autenticado");
@@ -68,9 +68,9 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
       const date = new Date(invoice.invoice_date);
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
-      
+
       const result = await uploadFile(
-        selectedFile, 
+        selectedFile,
         `faturas/${year}/${month}`,
         `invoice-${invoice.id}-${Date.now()}`
       );
@@ -176,7 +176,7 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
 
   const handlePreview = () => {
     if (!invoice.attachment) return;
-    
+
     const publicUrl = getPublicUrl(invoice.attachment.storage_path);
     setPreviewModal({
       url: publicUrl,
@@ -186,9 +186,9 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
 
   const handleDownload = async () => {
     if (!invoice.attachment) return;
-    
+
     const publicUrl = getPublicUrl(invoice.attachment.storage_path);
-    
+
     try {
       const response = await fetch(publicUrl);
       const blob = await response.blob();
@@ -209,7 +209,7 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
 
   return (
     <>
-      <Card className="mt-4">
+      <Card className="mt-4 bg-card border-border/30 shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Paperclip className="h-5 w-5" />
@@ -219,7 +219,7 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
         <CardContent>
           {invoice.attachment ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-popover rounded-lg border border-border/20 shadow-sm transition-all hover:border-primary/30">
                 <div className="flex items-center gap-3">
                   <FileText className="h-6 w-6 text-red-500" />
                   <div>
@@ -230,27 +230,40 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="sm" onClick={handlePreview} title="Visualizar">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handlePreview}
+                    title="Visualizar"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 hover:scale-110 active:scale-90 transition-all"
+                  >
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => window.open(getPublicUrl(invoice.attachment!.storage_path), '_blank')}
                     title="Abrir em nova aba"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 hover:scale-110 active:scale-90 transition-all"
                   >
                     <ExternalLink className="w-4 h-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={handleDownload} title="Download">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDownload}
+                    title="Download"
+                    className="h-8 w-8 text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 hover:scale-110 active:scale-90 transition-all"
+                  >
                     <Download className="w-4 h-4" />
                   </Button>
                   {canManage && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-destructive hover:text-destructive"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={handleRemoveAttachment}
                       title="Remover anexo"
+                      className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 hover:scale-110 active:scale-90 transition-all"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -270,7 +283,7 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
                       Adicionar Anexo
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="bg-card border-border/50">
                     <DialogHeader>
                       <DialogTitle>Adicionar Anexo à Fatura</DialogTitle>
                     </DialogHeader>
@@ -287,7 +300,7 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
                           Apenas arquivos PDF até 10MB são permitidos.
                         </p>
                       </div>
-                      
+
                       {selectedFile && (
                         <div className="p-3 bg-muted/30 rounded-lg">
                           <div className="flex items-center gap-2">
@@ -296,12 +309,13 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
                           </div>
                         </div>
                       )}
-                      
+
                       <div className="flex gap-2">
-                        <Button 
-                          onClick={handleUpload} 
+                        <Button
+                          onClick={handleUpload}
                           disabled={!selectedFile || isUploading}
-                          className="flex-1"
+                          variant="gradient"
+                          className="w-full"
                         >
                           {isUploading ? (
                             <>
@@ -315,7 +329,7 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
                             </>
                           )}
                         </Button>
-                        <Button variant="outline" onClick={() => setIsUploadOpen(false)}>
+                        <Button variant="cancel" onClick={() => setIsUploadOpen(false)}>
                           Cancelar
                         </Button>
                       </div>
@@ -331,7 +345,7 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
       {/* Preview Modal */}
       {previewModal && (
         <Dialog open={!!previewModal} onOpenChange={() => setPreviewModal(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogContent className="max-w-4xl max-h-[90vh] p-0 bg-accent border-border/50">
             <DialogHeader className="p-4 pb-0 border-b">
               <DialogTitle className="text-lg font-medium truncate">
                 {previewModal.fileName}

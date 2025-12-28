@@ -27,7 +27,7 @@ export function FornecedorFormDialog({ onFornecedorCreated }: FornecedorFormDial
           Novo Fornecedor
         </Button>
       </DialogTrigger>
-      <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto bg-card border-none shadow-2xl">
         <DialogHeader>
           <DialogTitle>Novo Fornecedor</DialogTitle>
           <DialogDescription>

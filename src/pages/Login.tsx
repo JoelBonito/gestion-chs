@@ -69,13 +69,18 @@ export default function Login() {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <div className="rounded-xl border border-border bg-card p-8 shadow-sm">
+        <div className="rounded-xl border border-border bg-[var(--surface-elevated)] p-8 shadow-sm">
           <div className="flex flex-col items-center text-center mb-8 space-y-2">
-            <div className="mb-4">
+            <div className="mb-6 h-24 w-full flex items-center justify-center relative">
               <img
-                src="/logo-inove.jpg"
+                src="/chs-logo-light.png"
                 alt="Gestion CHS"
-                className="h-16 w-auto rounded-xl shadow-sm mx-auto"
+                className="h-24 w-auto object-contain dark:hidden transition-transform hover:scale-105"
+              />
+              <img
+                src="/chs-logo-dark.png"
+                alt="Gestion CHS"
+                className="h-24 w-auto object-contain hidden dark:block transition-transform hover:scale-105"
               />
             </div>
             <h1 className="text-3xl font-display font-bold tracking-tight">Bem-vindo</h1>
@@ -118,6 +123,7 @@ export default function Login() {
 
             <Button
               type="submit"
+              variant="gradient"
               className="w-full h-11 text-base font-medium"
               disabled={isLoading}
             >

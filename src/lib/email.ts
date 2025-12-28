@@ -1,29 +1,14 @@
-import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 export async function sendEmail(to: string[], subject: string, html: string) {
   try {
-    console.log(`⚠️ Email sending is currently SUSPENDED. Would have sent to: ${to.join(", ")}`);
+    // Email sending is currently SUSPENDED (enable when ready)
+    logger.info(`📧 Email would have been sent to: ${to.join(", ")} - Subject: ${subject}`);
     return { success: true, message: "Email sending suspended" };
-
-    /*
-    const { data, error } = await supabase.functions.invoke('send-email', {
-      body: {
-        to,
-        subject,
-        html,
-      },
-    });
-    */
-
-    if (error) {
-      throw error;
-    }
-
-    console.log(`✅ Email enviado para: ${to.join(", ")}`);
-    return data;
   } catch (error) {
-    console.error("❌ Erro ao enviar e-mail:", error);
+    logger.error("❌ Erro ao enviar e-mail:", error);
     // Não propaga o erro para não interromper fluxos principais
+    return { success: false, message: "Error sending email" };
   }
 }
 

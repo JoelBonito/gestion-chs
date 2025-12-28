@@ -1,28 +1,23 @@
-
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { sendEmail, emailTemplates, emailRecipients } from "@/lib/email";
+import { PushNotifications } from "@/lib/push-notifications";
+import { formatCurrencyEUR } from "@/lib/utils/currency";
 
 const pagamentoFornecedorSchema = z.object({
   valor_pagamento: z.string().min(1, "Valor é obrigatório"),
   forma_pagamento: z.string().min(1, "Forma de pagamento é obrigatória"),
-  data_pagamento: z.date(),
+  data_pagamento: z.string().min(1, "Data é obrigatória"),
   observacoes: z.string().optional(),
 });
 
@@ -49,14 +44,14 @@ export default function PagamentoFornecedorForm({ onSuccess, conta }: PagamentoF
   const {
     register,
     handleSubmit,
-    setValue,
-    watch,
+    control,
     reset,
     formState: { errors },
   } = useForm<PagamentoFornecedorFormData>({
     resolver: zodResolver(pagamentoFornecedorSchema),
     defaultValues: {
-      data_pagamento: new Date(),
+      data_pagamento: new Date().toISOString().split('T')[0],
+      forma_pagamento: "transferencia",
     },
   });
 
@@ -70,7 +65,7 @@ export default function PagamentoFornecedorForm({ onSuccess, conta }: PagamentoF
           encomenda_id: conta.encomenda_id,
           valor_pagamento: parseFloat(data.valor_pagamento),
           forma_pagamento: data.forma_pagamento,
-          data_pagamento: format(data.data_pagamento, "yyyy-MM-dd"),
+          data_pagamento: data.data_pagamento,
           observacoes: data.observacoes,
         });
 
@@ -86,8 +81,13 @@ export default function PagamentoFornecedorForm({ onSuccess, conta }: PagamentoF
         );
       } catch (emailError) {
         console.error("Erro ao enviar email de notificação:", emailError);
-        // Não exibir erro de email para não atrapalhar o fluxo principal
       }
+
+      // Enviar push notification
+      PushNotifications.pagamentoEfetuado(
+        parseFloat(data.valor_pagamento),
+        conta.fornecedores?.nome
+      ).catch(() => { });
 
       toast({
         title: "Pagamento ao fornecedor lançado com sucesso!",
@@ -108,113 +108,112 @@ export default function PagamentoFornecedorForm({ onSuccess, conta }: PagamentoF
   };
 
   return (
-    <Card className="shadow-card">
-      <CardHeader>
-        <CardTitle>Lançar Pagamento ao Fornecedor</CardTitle>
-        <CardDescription>
-          Registre um pagamento para o fornecedor da encomenda {conta.numero_encomenda}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="p-3 bg-muted/30 rounded-lg space-y-1 mb-4">
-          <p className="text-sm font-medium">Detalhes da Encomenda:</p>
-          <p className="text-sm text-muted-foreground">
-            Fornecedor: {conta.fornecedores?.nome || 'N/A'}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Valor Total (Custo): €{conta.valor_total_custo.toFixed(2)}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Valor Pago: €{conta.valor_pago_fornecedor.toFixed(2)}
-          </p>
-          <p className="text-sm font-semibold text-warning">
-            Saldo Devedor: €{conta.saldo_devedor_fornecedor.toFixed(2)}
-          </p>
+    <div className="space-y-6">
+      <div className="p-4 bg-popover rounded-xl border border-border/20 shadow-sm space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="space-y-1">
+            <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Fornecedor:</span>
+            <p className="text-sm font-semibold truncate" title={conta.fornecedores?.nome || 'N/A'}>
+              {conta.fornecedores?.nome || 'N/A'}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Total Custo:</span>
+            <p className="text-sm font-bold">{formatCurrencyEUR(conta.valor_total_custo)}</p>
+          </div>
+          <div className="space-y-1">
+            <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Pago:</span>
+            <p className="text-sm font-bold text-success">{formatCurrencyEUR(conta.valor_pago_fornecedor)}</p>
+          </div>
+          <div className="space-y-1">
+            <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Saldo:</span>
+            <p className="text-sm font-black text-warning">{formatCurrencyEUR(conta.saldo_devedor_fornecedor)}</p>
+          </div>
         </div>
+      </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
           <div className="space-y-2">
-            <Label htmlFor="valor_pagamento">Valor do Pagamento</Label>
-            <Input
-              id="valor_pagamento"
-              type="number"
-              step="0.01"
-              placeholder="0,00"
-              {...register("valor_pagamento")}
+            <Label htmlFor="valor_pagamento" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Valor do Pagamento</Label>
+            <div className="relative group">
+              <Input
+                id="valor_pagamento"
+                type="number"
+                step="0.01"
+                placeholder="0,00"
+                className="pl-8 h-11 bg-popover border-border/40 font-semibold transition-all focus:ring-primary/20"
+                {...register("valor_pagamento")}
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">€</span>
+            </div>
+            {errors.valor_pagamento && <span className="text-xs text-red-500 font-medium tracking-tight">{errors.valor_pagamento.message}</span>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="forma_pagamento" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Forma de Pagamento</Label>
+            <Controller
+              name="forma_pagamento"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger className="h-11 bg-popover border-border/40 font-semibold transition-all focus:ring-primary/20">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border/40">
+                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                    <SelectItem value="transferencia">Transferência</SelectItem>
+                    <SelectItem value="cartao">Cartão</SelectItem>
+                    <SelectItem value="cheque">Cheque</SelectItem>
+                    <SelectItem value="pix">MB Way / PIX</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             />
-            {errors.valor_pagamento && (
-              <p className="text-sm text-destructive">{errors.valor_pagamento.message}</p>
-            )}
+            {errors.forma_pagamento && <span className="text-xs text-red-500 font-medium tracking-tight">{errors.forma_pagamento.message}</span>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="forma_pagamento">Forma de Pagamento</Label>
-            <Select onValueChange={(value) => setValue("forma_pagamento", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a forma de pagamento" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
-                <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
-                <SelectItem value="pix">PIX</SelectItem>
-                <SelectItem value="transferencia">Transferência Bancária</SelectItem>
-                <SelectItem value="boleto">Boleto</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.forma_pagamento && (
-              <p className="text-sm text-destructive">{errors.forma_pagamento.message}</p>
-            )}
+            <Label htmlFor="data_pagamento" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Data do Pagamento</Label>
+            <Input
+              id="data_pagamento"
+              type="date"
+              className="h-11 bg-popover border-border/40 font-semibold transition-all focus:ring-primary/20"
+              {...register("data_pagamento")}
+            />
+            {errors.data_pagamento && <span className="text-xs text-red-500 font-medium tracking-tight">{errors.data_pagamento.message}</span>}
           </div>
 
           <div className="space-y-2">
-            <Label>Data do Pagamento</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !watch("data_pagamento") && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {watch("data_pagamento")
-                    ? format(watch("data_pagamento"), "PPP", { locale: ptBR })
-                    : "Selecione uma data"
-                  }
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={watch("data_pagamento")}
-                  onSelect={(date) => date && setValue("data_pagamento", date)}
-                  locale={ptBR}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="observacoes">Observações (Opcional)</Label>
+            <Label htmlFor="observacoes" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Observações</Label>
             <Textarea
               id="observacoes"
-              placeholder="Observações sobre o pagamento..."
+              placeholder="Ex: Pagamento parcial referente à entrada..."
+              className="min-h-[44px] bg-popover border-border/40 resize-none py-2.5 transition-all focus:ring-primary/20"
               {...register("observacoes")}
             />
           </div>
+        </div>
 
+        <div className="flex gap-3 pt-2">
           <Button
             type="submit"
-            className="w-full"
+            className="flex-1 h-12 text-base font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
             disabled={isLoading}
           >
-            {isLoading ? "Lançando..." : "Lançar Pagamento"}
+            {isLoading ? "Processando..." : "Lançar Pagamento"}
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+          <Button
+            type="button"
+            variant="cancel"
+            className="flex-1 h-12 font-semibold bg-popover border-border/40"
+            onClick={onSuccess}
+            disabled={isLoading}
+          >
+            Cancelar
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }

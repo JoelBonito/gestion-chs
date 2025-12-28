@@ -10,7 +10,7 @@ import { useLocale } from '@/contexts/LocaleContext';
 export const Invoices: React.FC = () => {
   const [showNewInvoiceDialog, setShowNewInvoiceDialog] = useState(false);
   const { locale, isRestrictedFR } = useLocale();
-  
+
   const {
     invoices,
     isLoading,
@@ -32,43 +32,24 @@ export const Invoices: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">
-            {locale === 'fr-FR' ? 'Factures' : 'Faturas'}
-          </h2>
-          <p className="text-muted-foreground">
-            {locale === 'fr-FR' ? 'Gérer vos factures et documents' : 'Gerencie suas faturas e documentos'}
-          </p>
-        </div>
-        {!isRestrictedFR && (
-          <Button 
-            onClick={() => setShowNewInvoiceDialog(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            {locale === 'fr-FR' ? 'Nouvelle Facture' : 'Nova Fatura'}
-          </Button>
-        )}
-      </div>
-
       <InvoiceList
         invoices={invoices}
         onUpdate={updateInvoice}
         onDelete={deleteInvoice}
         onRefresh={refetch}
         isLoading={isLoading}
+        onAddNew={() => setShowNewInvoiceDialog(true)}
       />
 
       <Dialog open={showNewInvoiceDialog} onOpenChange={setShowNewInvoiceDialog}>
-        <DialogContent className="w-[95vw] max-w-2xl">
+        <DialogContent className="w-[95vw] max-w-2xl bg-card border-border/50">
           <DialogHeader>
             <DialogTitle>{locale === 'fr-FR' ? 'Nouvelle Facture' : 'Nova Fatura'}</DialogTitle>
             <DialogDescription>
               {locale === 'fr-FR' ? 'Remplissez les informations pour créer une nouvelle facture.' : 'Preencha os dados para criar uma nova fatura.'}
             </DialogDescription>
           </DialogHeader>
-          <InvoiceForm 
+          <InvoiceForm
             onSubmit={handleCreateInvoice}
             isSubmitting={isCreating}
           />

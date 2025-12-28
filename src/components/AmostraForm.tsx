@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { Calendar, CalendarIcon } from "lucide-react";
+import { Calendar, CalendarIcon, FileText, User, Package, Palette, Droplets, Wind, Plus, Info, Check, Save, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -132,7 +132,6 @@ export function AmostraForm({ amostra, onSuccess }: AmostraFormProps) {
       };
 
       if (amostra) {
-        // Update existing amostra
         const { error } = await supabase
           .from("amostras")
           .update(formattedData)
@@ -141,7 +140,6 @@ export function AmostraForm({ amostra, onSuccess }: AmostraFormProps) {
         if (error) throw error;
         toast.success("Amostra atualizada com sucesso!");
       } else {
-        // Create new amostra
         const { error } = await supabase
           .from("amostras")
           .insert([formattedData]);
@@ -159,259 +157,316 @@ export function AmostraForm({ amostra, onSuccess }: AmostraFormProps) {
     }
   };
 
+  const InputStyles = "bg-accent border-border/40 text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 transition-all";
+  const LabelStyles = "text-xs font-bold uppercase text-muted-foreground tracking-wider mb-2 block";
+  const SectionStyles = "bg-popover border border-border/40 p-5 rounded-2xl shadow-sm mb-6 hover:border-border/60 transition-all duration-300";
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="data"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Data</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "dd/MM/yyyy")
-                        ) : (
-                          <span>Selecionar data</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-          <FormField
-            control={form.control}
-            name="referencia"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Referência</FormLabel>
-                <FormControl>
-                  <Input placeholder="Digite a referência" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        {/* Seção 1: Identificação */}
+        <div className={SectionStyles}>
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-tight">Identificação da Amostra</h3>
+          </div>
 
-          <FormField
-            control={form.control}
-            name="cliente_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Cliente</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <FormField
+              control={form.control}
+              name="data"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel className={LabelStyles}>Data de Criação</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="ghost"
+                          className={cn(
+                            InputStyles,
+                            "w-full h-11 pl-3 text-left font-bold border border-border/10 hover:bg-muted/50 dark:hover:bg-[#1c202a] transition-all uppercase text-xs tracking-widest",
+                            !field.value && "text-slate-500"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "dd/MM/yyyy")
+                          ) : (
+                            <span>Selecionar data</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 text-slate-400" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-popover border-border/10 shadow-xl" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="referencia"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}>Referência</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar cliente" />
-                    </SelectTrigger>
+                    <Input placeholder="Ex: LINHA DETOX V2" {...field} className={cn(InputStyles, "uppercase font-bold h-11")} />
                   </FormControl>
-                  <SelectContent>
-                    {clientes.map((cliente) => (
-                      <SelectItem key={cliente.id} value={cliente.id}>
-                        {cliente.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="projeto"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Projeto</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nome do projeto" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="tipo_produto"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tipo de Produto</FormLabel>
-                <FormControl>
-                  <Input placeholder="Tipo do produto" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="cor"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Cor</FormLabel>
-                <FormControl>
-                  <Input placeholder="Cor do produto" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="textura"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Textura</FormLabel>
-                <FormControl>
-                  <Input placeholder="Textura do produto" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="fragrancia"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Fragrância</FormLabel>
-                <FormControl>
-                  <Input placeholder="Fragrância do produto" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="quantidade_amostras"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Quantidade de Amostras</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min="1"
-                    placeholder="1"
-                    {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="data_envio"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Data de Envio</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
+            <FormField
+              control={form.control}
+              name="cliente_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}>Cliente</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                     <FormControl>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "dd/MM/yyyy")
-                        ) : (
-                          <span>Selecionar data</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
+                      <SelectTrigger className={cn(InputStyles, "h-11 uppercase font-medium")}>
+                        <SelectValue placeholder="Selecionar cliente" />
+                      </SelectTrigger>
                     </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarComponent
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      initialFocus
-                      className="pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                    <SelectContent className="bg-popover border-border/10 text-foreground">
+                      {clientes.map((cliente) => (
+                        <SelectItem key={cliente.id} value={cliente.id} className="uppercase font-medium focus:bg-accent focus:text-accent-foreground">
+                          {cliente.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="projeto"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}>Projeto</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: CRONOGRAMA CAPILAR" {...field} className={cn(InputStyles, "uppercase font-bold h-11")} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
-        <FormField
-          control={form.control}
-          name="ingredientes_adicionais"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Ingredientes Adicionais</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Descreva os ingredientes adicionais"
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Seção 2: Especificações Técnicas */}
+        <div className={SectionStyles}>
+          <div className="flex items-center gap-2 mb-4">
+            <Package className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-tight">Especificações Técnicas</h3>
+          </div>
 
-        <FormField
-          control={form.control}
-          name="observacoes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Observações</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Observações adicionais"
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <FormField
+              control={form.control}
+              name="tipo_produto"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}>Tipo de Produto</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: SHAMPOO, MÁSCARA" {...field} className={cn(InputStyles, "uppercase font-medium h-11")} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <div className="flex justify-end gap-4">
-          <Button type="submit" disabled={loading}>
-            {loading ? "Salvando..." : "Salvar"}
+            <FormField
+              control={form.control}
+              name="cor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}>Cor</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Palette className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <Input placeholder="Cor do produto" {...field} className={cn(InputStyles, "pl-10 h-11")} />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="textura"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}>Textura</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Droplets className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <Input placeholder="Textura do produto" {...field} className={cn(InputStyles, "pl-10 h-11")} />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="fragrancia"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}>Fragrância</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Wind className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                      <Input placeholder="Fragrância do produto" {...field} className={cn(InputStyles, "pl-10 h-11")} />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Seção 3: Logística e Obs */}
+        <div className={SectionStyles}>
+          <div className="flex items-center gap-2 mb-4">
+            <Info className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-bold text-foreground uppercase tracking-tight">Logística e Notas</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+            <FormField
+              control={form.control}
+              name="quantidade_amostras"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}>Qtd. Amostras</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="1"
+                      className={cn(InputStyles, "h-11")}
+                      {...field}
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="data_envio"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel className={LabelStyles}>Previsão de Envio</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant="ghost"
+                          className={cn(
+                            InputStyles,
+                            "w-full h-11 pl-3 text-left font-bold border border-border/10 hover:bg-muted/50 dark:hover:bg-[#1c202a] transition-all uppercase text-xs tracking-widest",
+                            !field.value && "text-slate-500"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "dd/MM/yyyy")
+                          ) : (
+                            <span>Selecionar data</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 text-slate-400" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-popover border-border/10 shadow-xl" align="start">
+                      <CalendarComponent
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="ingredientes_adicionais"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}>Ingredientes Adicionais</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Descreva os ingredientes extras..."
+                      className={cn(InputStyles, "resize-none h-20")}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="observacoes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={LabelStyles}>Observações Gerais</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Notas importantes sobre esta amostra..."
+                      className={cn(InputStyles, "resize-none h-20")}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4">
+          <Button
+            type="button"
+            variant="cancel"
+            className="border-transparent"
+            onClick={() => onSuccess()}
+          >
+            <X className="w-4 h-4 mr-2" /> Cancelar
+          </Button>
+          <Button
+            type="submit"
+            disabled={loading}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-8 uppercase text-xs tracking-widest transition-all active:scale-95"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+            {amostra ? "Salvar Alterações" : "Criar Amostra"}
           </Button>
         </div>
       </form>

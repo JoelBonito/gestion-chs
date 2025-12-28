@@ -7,6 +7,7 @@ import { useAttachments } from '@/hooks/useAttachments';
 import { useTransporteAttachments } from '@/hooks/useTransporteAttachments';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AttachmentListProps {
@@ -14,13 +15,15 @@ interface AttachmentListProps {
   entityId: string;
   onChanged?: () => void;
   compact?: boolean;
+  useTertiaryLayer?: boolean;
 }
 
 export const AttachmentList: React.FC<AttachmentListProps> = ({
   entityType,
   entityId,
   onChanged,
-  compact = false
+  compact = false,
+  useTertiaryLayer = false
 }) => {
   const isTransporte = entityType === 'transporte';
   const genericAttachments = useAttachments(entityType, entityId);
@@ -221,7 +224,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
 
         {/* Preview Dialog */}
         <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto" aria-describedby="">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto bg-accent border-border/50" aria-describedby="">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between">
                 <span>{previewTitle}</span>
@@ -229,8 +232,9 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
                   variant="ghost"
                   size="icon"
                   onClick={() => setPreviewUrl(null)}
+                  className="rounded-full hover:bg-red-500/10 hover:text-red-500 hover:rotate-90 transition-all duration-300 group"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4 transition-transform" />
                 </Button>
               </DialogTitle>
             </DialogHeader>
@@ -242,67 +246,81 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
   }
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-medium text-muted-foreground">Anexos ({attachments.length})</h3>
+    <div className="space-y-3">
 
       {attachments.map((attachment) => (
-        <Card key={attachment.id} className="p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 flex-1 min-w-0">
+        <div
+          key={attachment.id}
+          className={`group relative flex items-center justify-between p-3 rounded-xl border border-border/40 transition-all duration-200 ${useTertiaryLayer
+            ? 'bg-accent hover:bg-accent/80 shadow-sm'
+            : 'bg-accent/20 hover:bg-accent/40'
+            }`}
+        >
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <div className="p-2 rounded-lg bg-background text-muted-foreground group-hover:text-primary transition-colors">
               {getFileIcon(attachment.file_type)}
+            </div>
 
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {isTransporte ? attachment.name : attachment.file_name}
-                </p>
-                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                  <span>{formatFileSize(attachment.file_size)}</span>
-                  <span>•</span>
-                  <span>{new Date(attachment.created_at).toLocaleDateString('pt-BR')}</span>
-                </div>
+            <div className="flex-1 min-w-0">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors cursor-help max-w-[180px] sm:max-w-[320px] md:max-w-[420px]">
+                      {isTransporte ? attachment.name : attachment.file_name}
+                    </p>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" align="start" className="max-w-[300px] break-all">
+                    {isTransporte ? attachment.name : attachment.file_name}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <div className="flex items-center space-x-2 text-[10px] text-muted-foreground uppercase font-medium tracking-tight">
+                <span>{formatFileSize(attachment.file_size)}</span>
+                <span className="opacity-30">•</span>
+                <span>{new Date(attachment.created_at).toLocaleDateString('pt-BR')}</span>
               </div>
             </div>
-
-            <div className="flex items-center space-x-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handlePreview(attachment)}
-                title="Visualizar"
-                className="h-8 w-8"
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => downloadFile(attachment)}
-                title="Baixar"
-                className="h-8 w-8"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-
-              {canDelete && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDelete(attachment)}
-                  title="Excluir"
-                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
           </div>
-        </Card>
+
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handlePreview(attachment)}
+              title="Visualizar"
+              className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 hover:scale-110 active:scale-90 transition-all"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => downloadFile(attachment)}
+              title="Baixar"
+              className="h-8 w-8 text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 hover:scale-110 active:scale-90 transition-all"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+
+            {canDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDelete(attachment)}
+                title="Excluir"
+                className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 hover:scale-110 active:scale-90 transition-all"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
       ))}
 
       {/* Preview Dialog */}
       <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto" aria-describedby="">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto bg-accent border-border/50" aria-describedby="">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>{previewTitle}</span>
@@ -310,8 +328,9 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={() => setPreviewUrl(null)}
+                className="rounded-full hover:bg-red-500/10 hover:text-red-500 hover:rotate-90 transition-all duration-300 group"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 transition-transform" />
               </Button>
             </DialogTitle>
           </DialogHeader>

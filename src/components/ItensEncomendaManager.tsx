@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Plus, Box, Package, Euro } from "lucide-react";
+import { Trash2, Plus, Box, Package, Euro, Save, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/GlassCard";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export interface ItemEncomenda {
   id?: string;
@@ -34,6 +36,8 @@ interface ItensEncomendaManagerProps {
   onItensChange: (itens: ItemEncomenda[]) => void;
   onValorTotalChange: (valor: number) => void;
   isTransportMode?: boolean;
+  onCancel?: () => void;
+  isSubmitting?: boolean;
 }
 
 // Componente de Input isolado que gerencia estado local
@@ -48,10 +52,11 @@ interface LocalInputProps {
   disabled?: boolean;
   className?: string;
   id?: string;
-  debounce?: boolean; // Novo prop para controlar debounce
+  debounce?: boolean;
+  inputMode?: "numeric" | "decimal" | "text";
 }
 
-const LocalInput = memo(({ value, onChange, type = "text", step, min, placeholder, disabled, className, id, debounce = false }: LocalInputProps) => {
+const LocalInput = memo(({ value, onChange, type = "text", step, min, placeholder, disabled, className, id, debounce = false, inputMode }: LocalInputProps) => {
   const [localValue, setLocalValue] = useState(String(value ?? ""));
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isFocusedRef = useRef(false);
@@ -59,9 +64,14 @@ const LocalInput = memo(({ value, onChange, type = "text", step, min, placeholde
   // Sincronizar com valor externo apenas quando NÃO está focado
   useEffect(() => {
     if (!isFocusedRef.current) {
-      setLocalValue(String(value ?? ""));
+      if (inputMode === "decimal" && value !== undefined && value !== null && value !== "") {
+        const val = Number(value);
+        setLocalValue(val.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      } else {
+        setLocalValue(String(value ?? ""));
+      }
     }
-  }, [value]);
+  }, [value, inputMode]);
 
   const handleFocus = () => {
     isFocusedRef.current = true;
@@ -90,9 +100,20 @@ const LocalInput = memo(({ value, onChange, type = "text", step, min, placeholde
 
   const handleBlur = () => {
     isFocusedRef.current = false;
-    // Propaga imediatamente ao perder foco
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
+    }
+
+    let finalValue = localValue;
+    if (inputMode === "decimal" && localValue) {
+      // Normalizar para o pai (trocar , por . para o Number)
+      const normalized = localValue.replace(/\./g, '').replace(',', '.');
+      const num = parseFloat(normalized);
+      if (!isNaN(num)) {
+        setLocalValue(num.toLocaleString('pt-PT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        onChange(String(num));
+        return;
+      }
     }
     onChange(localValue);
   };
@@ -110,6 +131,7 @@ const LocalInput = memo(({ value, onChange, type = "text", step, min, placeholde
       onKeyDown={handleKeyDown}
       placeholder={placeholder}
       disabled={disabled}
+      inputMode={inputMode}
       className={className}
     />
   );
@@ -121,7 +143,9 @@ export function ItensEncomendaManager({
   itens,
   onItensChange,
   onValorTotalChange,
-  isTransportMode = false
+  isTransportMode = false,
+  onCancel,
+  isSubmitting = false
 }: ItensEncomendaManagerProps) {
   const [produtos, setProdutos] = useState<Produto[]>([]);
 
@@ -224,8 +248,8 @@ export function ItensEncomendaManager({
   };
 
   return (
-    <GlassCard className="p-6">
-      <div className="flex items-center justify-between mb-6 border-b border-border/40 pb-4">
+    <GlassCard className="p-6 bg-[#f1f2f4] dark:bg-[#1c202a] border-border/50">
+      <div className="flex items-center justify-between mb-6 border-b border-border/10 pb-4">
         <div className="flex items-center gap-2">
           <Box className="h-5 w-5 text-primary" />
           <h3 className="font-semibold text-lg">Itens da Encomenda</h3>
@@ -233,10 +257,10 @@ export function ItensEncomendaManager({
         {!isTransportMode && (
           <Button
             type="button"
-            variant="outline"
+            variant="gradient"
             size="sm"
             onClick={adicionarItem}
-            className="flex items-center gap-2 bg-primary/10 hover:bg-primary/20 text-primary border-primary/20"
+            className="flex items-center gap-2 active:scale-95 transition-all shadow-md bg-[#457b77] hover:bg-[#457b77]/90 dark:bg-primary text-white border-0"
           >
             <Plus className="h-4 w-4" />
             Adicionar Item
@@ -247,201 +271,222 @@ export function ItensEncomendaManager({
       <div className="space-y-6">
         {itens.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed border-border/50 rounded-xl bg-muted/20">
-            <Package className="h-12 w-12 mb-4 opacity-50" />
-            <p className="text-center font-medium">
-              Nenhum item adicionado.
-            </p>
-            {!isTransportMode && <p className="text-sm opacity-70">Clique em "Adicionar Item" para começar.</p>}
+            <Package className="h-12 w-12 opacity-50 mb-3" />
+            <p>Nenhum item adicionado</p>
+            <p className="text-sm opacity-70">Clique em "Adicionar Item" para começar</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {itens.map((item, index) => {
-              const itemKey = item.tempId || item.id || `fallback-${index}`;
-              const isFrete = isFreteItem(item);
+          <>
+            {/* Desktop View: Tabela */}
+            <div className="hidden md:block rounded-lg border border-border/40 overflow-hidden">
+              <table className="w-full text-sm bg-[#ffffff] dark:bg-[#252a36]">
+                <thead className="bg-[#f9fafb] dark:bg-[#1c202a] border-b border-border/40">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[35%]">Produto</th>
+                    <th className="px-4 py-3 text-right font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[10%]">Qtd.</th>
+                    <th className="px-4 py-3 text-right font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[10%]">Peso Un.</th>
+                    <th className="px-4 py-3 text-right font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[12%]">Custo (€)</th>
+                    <th className="px-4 py-3 text-right font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[12%]">Venda (€)</th>
+                    <th className="px-4 py-3 text-right font-semibold text-muted-foreground uppercase text-[10px] tracking-wider w-[15%]">Subtotal</th>
+                    <th className="px-4 py-3 text-center w-[6%]"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/10">
+                  {itens.map((item, index) => {
+                    const itemKey = item.tempId || item.id || `fallback-${index}`;
+                    const isFrete = isFreteItem(item);
 
-              return (
-                <div
-                  key={itemKey}
-                  className={`p-5 rounded-xl border transition-all duration-300 ${isFrete
-                    ? 'bg-info/10 border-info/20 dark:bg-info/5 dark:border-info/10'
-                    : 'bg-background/40 hover:bg-background/60 border-border/40 hover:border-border/60 shadow-sm'
-                    }`}
-                >
-                  <div className="space-y-4">
-                    {isFrete ? (
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                        <div className="md:col-span-1">
-                          <label className="text-xs font-semibold mb-1.5 block text-info dark:text-info uppercase tracking-wide">Descrição</label>
-                          <div className="h-10 px-3 py-2 bg-info/10 dark:bg-info/5 rounded-md border border-info/20 dark:border-info/10 text-info font-medium flex items-center">
-                            FRETE (SP - MRS)
-                          </div>
-                        </div>
-
-                        <div>
-                          <label htmlFor={`peso-${itemKey}`} className="text-xs font-semibold mb-1.5 block text-info dark:text-info uppercase tracking-wide">Peso Total (kg)</label>
+                    return (
+                      <tr key={itemKey} className="group hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-2">
+                          {isFrete ? (
+                            <div className="h-9 px-3 py-2 bg-info/10 dark:bg-info/5 rounded-md border border-info/20 text-info font-medium flex items-center text-xs">
+                              FRETE (SP - MRS)
+                            </div>
+                          ) : (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="w-full">
+                                    <Select
+                                      value={item.produto_id}
+                                      onValueChange={(value) => atualizarItem(index, "produto_id", value)}
+                                      disabled={isTransportMode}
+                                    >
+                                      <SelectTrigger className="bg-[#f9fafb] dark:bg-[#2d3342] h-9 border-border/40 focus:border-primary/50 text-xs font-medium uppercase">
+                                        <SelectValue placeholder="Selecione..." />
+                                      </SelectTrigger>
+                                      <SelectContent className="bg-[#ffffff] dark:bg-[#2d3342] border-border/40 max-h-[300px]">
+                                        {produtos.map((p) => (
+                                          <SelectItem key={p.id} value={p.id} className="text-xs cursor-pointer focus:bg-[#f1f2f4] dark:focus:bg-[#1c202a] uppercase">
+                                            {p.nome} - {p.marca}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </TooltipTrigger>
+                                {item.produto_nome && (
+                                  <TooltipContent side="top" className="max-w-[300px] break-words">
+                                    <p className="font-semibold uppercase text-xs">{item.produto_nome}</p>
+                                  </TooltipContent>
+                                )}
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </td>
+                        <td className="px-4 py-2">
                           <LocalInput
-                            id={`peso-${itemKey}`}
-                            type="number"
-                            step="0.001"
+                            type="text"
+                            inputMode="numeric"
                             value={item.quantidade}
                             onChange={(val) => atualizarItem(index, "quantidade", val)}
                             placeholder="0"
-                            className="bg-background/80 border-info/20 focus:border-info focus:ring-info/20"
+                            className="bg-[#f9fafb] dark:bg-[#2d3340] h-9 text-right text-xs w-16 ml-auto"
                           />
-                        </div>
-
-                        <div>
-                          <label htmlFor={`preco-kg-${itemKey}`} className="text-xs font-semibold mb-1.5 block text-info dark:text-info uppercase tracking-wide">Preço/kg (€)</label>
+                        </td>
+                        <td className="px-4 py-2 text-right text-xs text-muted-foreground">
+                          {isFrete ? "-" : (item.peso_produto ? `${item.peso_produto}g` : "0g")}
+                        </td>
+                        <td className="px-4 py-2">
                           <LocalInput
-                            id={`preco-kg-${itemKey}`}
-                            type="number"
-                            step="0.01"
-                            value={item.preco_venda || ""}
-                            onChange={(val) => atualizarItem(index, "preco_venda", parseFloat(val) || 0)}
-                            placeholder="4.50"
-                            className="bg-background/80 border-info/20 focus:border-info focus:ring-info/20"
+                            type="text"
+                            inputMode="decimal"
+                            value={item.preco_custo || ""}
+                            onChange={(val) => atualizarItem(index, "preco_custo", val)}
+                            placeholder="0.00"
+                            className="bg-[#f9fafb] dark:bg-[#2d3340] h-9 text-right text-xs w-24 ml-auto"
+                            disabled={isTransportMode}
                           />
-                        </div>
+                        </td>
+                        <td className="px-4 py-2">
+                          <LocalInput
+                            type="text"
+                            inputMode="decimal"
+                            value={item.preco_venda || ""}
+                            onChange={(val) => atualizarItem(index, "preco_venda", val)}
+                            placeholder="0.00"
+                            className="bg-[#f9fafb] dark:bg-[#2d3340] h-9 text-right text-xs w-24 ml-auto"
+                          />
+                        </td>
+                        <td className="px-4 py-2 text-right font-medium text-xs text-primary">
+                          {formatCurrencyEUR(item.subtotal || 0)}
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100"
+                            onClick={() => removerItem(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
+            {/* Mobile View: Cards Simplificados */}
+            <div className="md:hidden space-y-4">
+              {itens.map((item, index) => {
+                const itemKey = item.tempId || item.id || `fallback-${index}-mob`;
+                const isFrete = isFreteItem(item);
+                return (
+                  <div key={itemKey} className="bg-[#ffffff] dark:bg-[#252a36] p-4 rounded-lg border border-border/40 shadow-sm relative">
+                    <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removerItem(index)}><Trash2 className="h-4 w-4" /></Button>
+                    <div className="space-y-3 pr-8">
+                      <div>
+                        <label className="text-[10px] uppercase text-muted-foreground font-bold block mb-1">Produto</label>
+                        {isFrete ? (
+                          <div className="text-sm font-medium text-info">FRETE (SP - MRS)</div>
+                        ) : (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="w-full">
+                                  <Select value={item.produto_id} onValueChange={(v) => atualizarItem(index, "produto_id", v)} disabled={isTransportMode}>
+                                    <SelectTrigger className="h-9 text-xs bg-[#f9fafb] dark:bg-[#2d3342] border-border/40 uppercase"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                                    <SelectContent className="bg-[#ffffff] dark:bg-[#2d3342] border-border/40">
+                                      {produtos.map(p => <SelectItem key={p.id} value={p.id} className="text-xs uppercase">{p.nome} - {p.marca}</SelectItem>)}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </TooltipTrigger>
+                              {item.produto_nome && (
+                                <TooltipContent side="top" className="max-w-[250px] break-words">
+                                  <p className="font-semibold uppercase text-xs">{item.produto_nome}</p>
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
                         <div>
-                          <label className="text-xs font-semibold mb-1.5 block text-info dark:text-info uppercase tracking-wide">Total Frete</label>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-10 px-3 py-2 bg-info/10 dark:bg-info/5 rounded-md border border-info/20 dark:border-info/10 text-info font-bold flex items-center justify-end">
-                              {formatCurrencyEUR(item.subtotal || 0)}
-                            </div>
-                            {isTransportMode && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => removerItem(index)}
-                                title="Remover frete"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
+                          <label className="text-[10px] uppercase text-muted-foreground font-bold block mb-1">Qtd ({isFrete ? 'Kg' : 'Un'})</label>
+                          <LocalInput type="text" inputMode={isFrete ? "decimal" : "numeric"} value={item.quantidade} onChange={(v) => atualizarItem(index, "quantidade", v)} className="h-9 text-xs bg-[#f9fafb] dark:bg-[#2d3342] w-full" />
+                        </div>
+                        <div>
+                          <label className="text-[10px] uppercase text-muted-foreground font-bold block mb-1">Custo (€)</label>
+                          <LocalInput type="text" inputMode="decimal" value={item.preco_custo || ""} onChange={(v) => atualizarItem(index, "preco_custo", v)} className="h-9 text-xs bg-[#f9fafb] dark:bg-[#2d3342] w-full" disabled={isTransportMode} />
+                        </div>
+                        <div>
+                          <label className="text-[10px] uppercase text-muted-foreground font-bold block mb-1">Venda (€)</label>
+                          <LocalInput type="text" inputMode="decimal" value={item.preco_venda || ""} onChange={(v) => atualizarItem(index, "preco_venda", v)} className="h-9 text-xs bg-[#f9fafb] dark:bg-[#2d3342] w-full" />
                         </div>
                       </div>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-1 md:grid-cols-[1fr,120px] gap-4">
-                          <div>
-                            <label htmlFor={`produto-${itemKey}`} className="text-xs font-semibold mb-1.5 block text-muted-foreground uppercase tracking-wide">Produto *</label>
-                            <Select
-                              value={item.produto_id}
-                              onValueChange={(value) => atualizarItem(index, "produto_id", value)}
-                              disabled={isTransportMode}
-                            >
-                              <SelectTrigger id={`produto-${itemKey}`} className="bg-background/50 h-10">
-                                <SelectValue placeholder="Selecione um produto" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {produtos.map((produto) => (
-                                  <SelectItem key={produto.id} value={produto.id}>
-                                    {produto.nome} - {produto.marca} - {produto.tipo}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <label htmlFor={`qtd-${itemKey}`} className="text-xs font-semibold mb-1.5 block text-muted-foreground uppercase tracking-wide">Qtd. *</label>
-                            <LocalInput
-                              id={`qtd-${itemKey}`}
-                              type="number"
-                              step="1"
-                              min="0"
-                              value={item.quantidade}
-                              onChange={(val) => atualizarItem(index, "quantidade", val)}
-                              placeholder="0"
-                              disabled={!isTransportMode && item.produto_id === ""}
-                              className="bg-background/50 h-10"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
-                          <div>
-                            <label className="text-xs font-semibold mb-1.5 block text-muted-foreground uppercase tracking-wide">Peso Un.</label>
-                            <div className="h-10 px-3 py-2 bg-muted/50 rounded-md border border-border/50 text-muted-foreground text-sm flex items-center">
-                              {item.peso_produto ? `${item.peso_produto}g` : "0g"}
-                            </div>
-                          </div>
-
-                          <div>
-                            <label htmlFor={`custo-${itemKey}`} className="text-xs font-semibold mb-1.5 block text-muted-foreground uppercase tracking-wide">Custo (€)</label>
-                            <LocalInput
-                              id={`custo-${itemKey}`}
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={item.preco_custo || ""}
-                              onChange={(val) => atualizarItem(index, "preco_custo", parseFloat(val) || 0)}
-                              placeholder="0.00"
-                              disabled={isTransportMode}
-                              className="bg-background/50 h-10"
-                            />
-                          </div>
-
-                          <div>
-                            <label htmlFor={`venda-${itemKey}`} className="text-xs font-semibold mb-1.5 block text-muted-foreground uppercase tracking-wide">Venda (€)</label>
-                            <LocalInput
-                              id={`venda-${itemKey}`}
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={item.preco_venda || ""}
-                              onChange={(val) => atualizarItem(index, "preco_venda", parseFloat(val) || 0)}
-                              placeholder="0.00"
-                              disabled={isTransportMode}
-                              className="bg-background/50 h-10"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-xs font-semibold mb-1.5 block text-muted-foreground uppercase tracking-wide">Subtotal</label>
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 h-10 px-3 py-2 bg-primary/5 rounded-md border border-primary/20 text-primary font-semibold text-sm flex items-center">
-                                <Euro className="h-3.5 w-3.5 mr-1 opacity-70" />
-                                {formatCurrencyEUR(item.subtotal || 0)}
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-10 w-10 text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors"
-                                onClick={() => removerItem(index)}
-                                title="Remover item"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
+                      <div className="flex justify-between items-center bg-[#f1f2f4] dark:bg-[#1c202a] p-2 rounded text-xs border border-border/20">
+                        <span className="font-semibold text-muted-foreground">SUBTOTAL</span>
+                        <span className="font-bold text-primary">{formatCurrencyEUR(item.subtotal || 0)}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          </>
         )}
 
-        {itens.length > 0 && (
-          <div className="flex justify-end pt-4 border-t border-border/40">
-            <div className="bg-primary/10 px-6 py-3 rounded-xl border border-primary/20">
-              <span className="text-sm text-muted-foreground mr-2">Valor Total:</span>
-              <span className="text-xl font-bold text-primary">
+
+        {(itens.length > 0 || onCancel) && (
+          <div className="flex flex-col sm:flex-row justify-between items-center pt-6 border-t border-border/40 gap-4">
+            <div className="flex gap-3 order-2 sm:order-1">
+              {onCancel && (
+                <Button
+                  type="button"
+                  variant="cancel"
+                  className="h-10"
+                  onClick={onCancel}
+                  disabled={isSubmitting}
+                >
+                  <X className="w-4 h-4 mr-2" /> Cancelar
+                </Button>
+              )}
+              <Button
+                type="submit"
+                variant="gradient"
+                className="bg-[#457b77] hover:bg-[#457b77]/90 dark:bg-primary text-white border-0 h-10"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                Salvar
+              </Button>
+            </div>
+
+            <div className="bg-[#ffffff] dark:bg-[#252a36] px-6 py-2.5 rounded-xl border border-border shadow-sm flex items-center gap-3 order-1 sm:order-2">
+              <span className="text-sm font-medium text-gray-500 dark:text-[#9CA3AF] uppercase tracking-wider">Valor Total:</span>
+              <span className="text-2xl font-bold text-primary">
                 {formatCurrencyEUR(itens.reduce((total, item) => total + (item.subtotal || 0), 0))}
               </span>
             </div>
           </div>
         )}
       </div>
-    </GlassCard>
+    </GlassCard >
   );
 }
 

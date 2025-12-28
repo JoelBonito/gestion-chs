@@ -197,7 +197,7 @@ export default function Frete() {
         {canEdit && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto">
+              <Button variant="gradient" className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 <span className="hidden sm:inline">Nova Taxa</span>
                 <span className="sm:hidden">Nova</span>
@@ -254,10 +254,10 @@ export default function Frete() {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  <Button variant="cancel" onClick={() => setDialogOpen(false)}>
                     Cancelar
                   </Button>
-                  <Button onClick={handleCreateRate}>
+                  <Button variant="gradient" onClick={handleCreateRate}>
                     Criar Taxa
                   </Button>
                 </div>
@@ -268,7 +268,7 @@ export default function Frete() {
       </div>
 
       {/* Search */}
-      <Card className="shadow-card">
+      <Card className="shadow-card bg-card">
         <CardContent className="pt-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -276,14 +276,14 @@ export default function Frete() {
               placeholder="Buscar por origem, destino ou número da encomenda..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 bg-background dark:bg-popover"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Freight Rates */}
-      <Card className="shadow-card">
+      <Card className="shadow-card bg-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Truck className="h-5 w-5" />
@@ -297,7 +297,7 @@ export default function Frete() {
           <div className="overflow-x-auto">
             <div className="min-w-[600px]">
               <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted">
                   <TableRow>
                     <TableHead>Origem</TableHead>
                     <TableHead>Destino</TableHead>
@@ -308,20 +308,20 @@ export default function Frete() {
                 </TableHeader>
                 <TableBody>
                   {loading ? (
-                    <TableRow>
+                    <TableRow className="bg-background dark:bg-popover">
                       <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8">
                         Carregando taxas...
                       </TableCell>
                     </TableRow>
                   ) : filteredRates.length === 0 ? (
-                    <TableRow>
+                    <TableRow className="bg-background dark:bg-popover">
                       <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8 text-muted-foreground">
                         Nenhuma taxa encontrada
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredRates.map((rate) => (
-                      <TableRow key={rate.id}>
+                      <TableRow key={rate.id} className="bg-background dark:bg-popover border-border/10">
                         <TableCell className="font-medium">{rate.origin}</TableCell>
                         <TableCell>{rate.destination}</TableCell>
                         <TableCell>{rate.currency} {rate.rate_per_kg.toFixed(2)}</TableCell>

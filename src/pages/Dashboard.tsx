@@ -9,9 +9,24 @@ import { RoleBasedGuard } from "@/components/RoleBasedGuard";
 import { useAuth } from "@/hooks/useAuth";
 import { Home, ClipboardList, DollarSign, Truck, Package, Factory, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect } from "react";
+import { useTopBarActions } from "@/context/TopBarActionsContext";
+import { cn } from "@/lib/utils";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { setActions } = useTopBarActions();
+
+  // Teleport System Status to TopBar
+  useEffect(() => {
+    setActions(
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-border">
+        <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+        <span className="text-xs font-medium text-foreground">Sistema Operacional</span>
+      </div>
+    );
+    return () => setActions(null);
+  }, [setActions]);
 
   // Animation variants
   const container = {
@@ -188,46 +203,31 @@ export default function Dashboard() {
     };
 
     // Status color mapping for Badge
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      'NOVO PEDIDO': 'secondary',
-      'PRODUÇÃO': 'default',
-      'MATÉRIA PRIMA': 'outline',
-      'EMBALAGENS': 'outline',
-      'TRANSPORTE': 'default',
-      'ENTREGUE': 'default',
+    const getStatusStyle = (status: string) => {
+      switch (status) {
+        case 'NOVO PEDIDO': return { variant: 'default' as const, className: 'bg-blue-600 hover:bg-blue-700' };
+        case 'PRODUÇÃO': return { variant: 'default' as const, className: 'bg-sky-500 hover:bg-sky-600' };
+        case 'MATÉRIA PRIMA': return { variant: 'default' as const, className: 'bg-orange-500 hover:bg-orange-600' };
+        case 'EMBALAGENS': return { variant: 'default' as const, className: 'bg-emerald-500 hover:bg-emerald-600' };
+        case 'TRANSPORTE': return { variant: 'outline' as const, className: 'border-purple-500 text-purple-600 dark:text-purple-400' };
+        case 'ENTREGUE': return { variant: 'secondary' as const, className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' };
+        default: return { variant: 'secondary' as const, className: '' };
+      }
     };
+
+    const style = getStatusStyle(status);
 
     return {
       label: getStatusLabel(status) || 'N/A',
-      variant: variants[status] || 'secondary'
+      variant: style.variant,
+      className: style.className
     };
   };
 
   return (
     <RoleBasedGuard>
       <div className="min-h-screen w-full bg-background dark:bg-background">
-        <div className="p-6 sm:p-8 max-w-7xl mx-auto space-y-8 sm:space-y-12">
-
-          {/* Hero Section - Stitch v5.0 */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4"
-          >
-            <div>
-              <h1 className="text-4xl sm:text-5xl font-display font-bold tracking-tight text-foreground">
-                Dashboard
-              </h1>
-              <p className="text-muted-foreground mt-2 text-lg">
-                Visão geral da sua operação em tempo real
-              </p>
-            </div>
-            <div className="flex items-center gap-2 bg-surface px-4 py-2 rounded-lg border border-border">
-              <div className="h-2 w-2 rounded-lg bg-success animate-pulse" />
-              <span className="text-sm font-medium text-muted-foreground">Sistema Operacional</span>
-            </div>
-          </motion.div>
+        <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
 
           {/* Main Stats Grid with Stagger Animation */}
           <motion.div
@@ -236,19 +236,19 @@ export default function Dashboard() {
             animate="show"
             className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5"
           >
-            <motion.div variants={item}>
+            <motion.div variants={item} className="h-full">
               <StatCard title="Encomendas Ativas" value={encomendasAtivas.toString()} subtitle="Em andamento" icon={<ClipboardList className="w-5 h-5" />} variant="info" />
             </motion.div>
-            <motion.div variants={item}>
+            <motion.div variants={item} className="h-full">
               <StatCard title="A Receber" value={formatCurrencyEUR(aReceber)} subtitle="Dos clientes" icon={<DollarSign className="w-5 h-5" />} variant="success" />
             </motion.div>
-            <motion.div variants={item}>
+            <motion.div variants={item} className="h-full">
               <StatCard title="A Pagar" value={formatCurrencyEUR(aPagar)} subtitle="Aos fornecedores" icon={<Truck className="w-5 h-5" />} variant="warning" />
             </motion.div>
-            <motion.div variants={item}>
+            <motion.div variants={item} className="h-full">
               <StatCard title="Comissões (Mês)" value={formatCurrencyEUR(comissoesMensais)} subtitle="Lucro Atual" icon={<TrendingUp className="w-5 h-5" />} variant="default" />
             </motion.div>
-            <motion.div variants={item}>
+            <motion.div variants={item} className="h-full">
               <StatCard title="Comissões (Ano)" value={formatCurrencyEUR(comissoesAnuais)} subtitle="Acumulado 2025" icon={<Factory className="w-5 h-5" />} variant="default" />
             </motion.div>
           </motion.div>
@@ -272,7 +272,7 @@ export default function Dashboard() {
                     title={`${mes}`}
                     value={formatCurrencyEUR(comissoesPorMes[i] || 0)}
                     subtitle={i < new Date().getMonth() ? "Finalizado" : "Projetado"}
-                    className={comissoesPorMes[i] > 0 ? "border-success/20 bg-success/10" : "opacity-70"}
+                    className={comissoesPorMes[i] > 0 ? "" : "opacity-70"}
                   />
                 </motion.div>
               ))}
@@ -291,7 +291,7 @@ export default function Dashboard() {
                       subtitle={isFinalizado ? "Finalizado" : "Futuro"}
                       className={
                         isFinalizado
-                          ? (comissoesPorMes[monthIndex] > 0 ? "border-success/20 bg-success/10" : "opacity-70")
+                          ? (comissoesPorMes[monthIndex] > 0 ? "" : "opacity-70")
                           : "opacity-60"
                       }
                     />
@@ -310,7 +310,7 @@ export default function Dashboard() {
           >
             {/* Encomendas em Progresso */}
             <motion.div variants={item} className="h-full">
-              <Card className="h-full">
+              <Card className="h-full border-[var(--border)] bg-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Package className="w-5 h-5 text-primary" />
@@ -329,7 +329,7 @@ export default function Dashboard() {
                       <motion.div
                         key={order.id}
                         whileHover={{ x: 4 }}
-                        className="flex items-center justify-between p-3 rounded-xl bg-background/50 border hover:border-primary/20 transition-colors"
+                        className="flex items-center justify-between p-3 rounded-xl bg-popover border border-border/50 hover:border-primary/40 transition-all duration-300 shadow-sm"
                       >
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
@@ -340,7 +340,7 @@ export default function Dashboard() {
                           </p>
                         </div>
                         <div className="text-right flex flex-col items-end gap-1">
-                          <Badge variant={status.variant} className="text-[10px] px-2 py-0.5 h-5 whitespace-nowrap">
+                          <Badge variant={status.variant} className={cn("text-[10px] px-2 py-0.5 h-5 whitespace-nowrap", status.className)}>
                             {status.label}
                           </Badge>
                           <span className="text-xs font-medium text-muted-foreground block">
@@ -356,7 +356,7 @@ export default function Dashboard() {
 
             {/* Pagamentos a Receber */}
             <motion.div variants={item} className="h-full">
-              <Card className="h-full border-success/30">
+              <Card className="h-full border-[var(--border)] bg-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-success">
                     <DollarSign className="w-5 h-5" />
@@ -373,7 +373,7 @@ export default function Dashboard() {
                     <motion.div
                       key={payment.id}
                       whileHover={{ x: 4 }}
-                      className="flex items-center justify-between p-3 rounded-xl bg-card/60 dark:bg-background/40 border border-success/20 dark:border-success/10 hover:bg-card/80 transition-all shadow-sm"
+                      className="flex items-center justify-between p-3 rounded-xl bg-popover border border-success/20 dark:border-success/10 hover:border-success/40 transition-all shadow-sm"
                     >
                       <div className="space-y-1">
                         <span className="font-bold text-success text-sm">
@@ -396,7 +396,7 @@ export default function Dashboard() {
 
             {/* Pagamentos a Fazer */}
             <motion.div variants={item} className="h-full">
-              <Card className="h-full border-warning/30">
+              <Card className="h-full border-[var(--border)] bg-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-warning">
                     <Truck className="w-5 h-5" />
@@ -413,7 +413,7 @@ export default function Dashboard() {
                     <motion.div
                       key={payment.id}
                       whileHover={{ x: 4 }}
-                      className="flex items-center justify-between p-3 rounded-xl bg-card/60 dark:bg-background/40 border border-warning/20 dark:border-warning/10 hover:bg-card/80 transition-all shadow-sm"
+                      className="flex items-center justify-between p-3 rounded-xl bg-popover border border-warning/20 dark:border-warning/10 hover:border-warning/40 transition-all shadow-sm"
                     >
                       <div className="space-y-1">
                         <span className="font-bold text-warning text-sm">

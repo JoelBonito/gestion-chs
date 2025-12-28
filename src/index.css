@@ -1,315 +1,291 @@
-/* Inove AI Design System - Stitch v5.0 Typography */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
 
-/* Cosmetic Hair Shop inspired design system */
+/* Forçar Tailwind v4 a usar a classe .dark ao invés de prefers-color-scheme */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* ===== MAPEAR UTILITÁRIOS PARA VARIÁVEIS DINÂMICAS ===== */
+  /* Isso permite que o Tailwind gere classes como bg-card que mudam com o tema */
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+
+  /* ===== BRAND COLORS ===== */
+  --color-brand-teal: #457b77;
+
+  /* ===== FONTS ===== */
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Noto Sans", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* ===== BORDER RADIUS ===== */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-full: 9999px;
+
+  --radius: 0.5rem;
+
+  /* ===== NAVIGATION COLORS ===== */
+  --color-nav-dashboard: #3b82f6;
+  --color-nav-projects: #f59e0b;
+  --color-nav-clients: #10b981;
+  --color-nav-finance: #059669;
+  --color-nav-reports: #8b5cf6;
+  --color-nav-settings: #64748b;
+  --color-nav-bugs: #f43f5e;
+}
 
 @layer base {
   :root {
-    /* Base colors - Pure white background with subtle gradients */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
+    /* ===== SISTEMA DE CAMADAS ESTRITO - LIGHT MODE ===== */
+    /* Camada 1: Fundo Geral = #f9fafb */
+    /* Camada 2: Cards/Sidebar = #f1f2f4 */
+    /* Camada 3: Inputs/Popovers = #f9fafb */
+    /* Camada 4: Hover/Acentos = #ffffff */
 
-    /* Card system - Clean white with floating shadows */
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    --background: #f9fafb;
+    --foreground: #111827;
 
-    /* Popover system */
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
+    --card: #f1f2f4;
+    --card-foreground: #111827;
 
-    /* Primary brand - Vibrant blue-purple gradient */
-    --primary: 243 75% 59%;
-    --primary-foreground: 0 0% 100%;
-    --primary-light: 258 85% 75%;
-    --primary-dark: 258 95% 48%;
-    --primary-glow: 258 80% 80%;
+    --popover: #f9fafb;
+    --popover-foreground: #111827;
 
-    /* Secondary - Pink-magenta gradient */
-    --secondary: 330 81% 60%;
-    --secondary-foreground: 0 0% 100%;
+    --primary: #457b77;
+    --primary-foreground: #FFFFFF;
 
-    /* Muted - Light gray for subtle text */
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --secondary: #f1f2f4;
+    --secondary-foreground: #111827;
 
-    /* Accent colors for icons */
-    --accent: 250 100% 97%;
-    --accent-foreground: 258 89% 66%;
+    --muted: #f1f2f4;
+    --muted-foreground: #6B7280;
 
-    /* Icon gradients - vibrant colors */
-    --icon-blue: 220 90% 56%;
-    --icon-purple: 270 90% 60%;
-    --icon-pink: 330 81% 60%;
-    --icon-green: 142 76% 46%;
-    --icon-orange: 25 95% 53%;
-    --icon-emerald: 160 84% 39%;
-    --icon-lime: 84 81% 44%;
-    --icon-indigo: 243 75% 59%;
+    --accent: #ffffff;
+    --accent-foreground: #111827;
 
-    /* Success - Vibrant emerald green */
-    --success: 142 76% 46%;
-    --success-foreground: 0 0% 100%;
+    --border: #e0e7e6;
+    --input: #f9fafb;
+    --ring: #457b77;
 
-    /* Warning - Vibrant orange */
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
+    --surface: #f1f2f4;
+    --surface-elevated: #f1f2f4;
 
-    /* Info - Blue */
-    --info: 220 90% 56%;
-    --info-foreground: 0 0% 100%;
+    --btn-gradient-from: #457b77;
+    --btn-gradient-to: #3d6b67;
+    --btn-shadow: rgba(69, 123, 119, 0.2);
 
-    /* Glassmorphism tokens */
-    --glass-bg: 0 0% 100% / 0.8;
-    --glass-border: 0 0% 100% / 0.2;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --error: #EF4444;
+    --info: #3B82F6;
 
-    /* Destructive - Vibrant red */
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-
-    /* Form elements - minimal borders */
-    --border: 0 0% 90%;
-    --input: 0 0% 96%;
-    --ring: 243 75% 59%;
-
-    /* Sidebar - Pure white */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 243 75% 59%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 96%;
-    --sidebar-accent-foreground: 0 0% 9%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 243 75% 59%;
-
-    /* Vibrant gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(243 75% 59%), hsl(270 90% 60%));
-    --gradient-secondary: linear-gradient(135deg, hsl(330 81% 60%), hsl(25 95% 53%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 46%), hsl(160 84% 39%));
-    --gradient-warning: linear-gradient(135deg, hsl(38 92% 50%), hsl(25 95% 53%));
-    --gradient-blue: linear-gradient(135deg, hsl(220 90% 56%), hsl(243 75% 59%));
-    --gradient-purple: linear-gradient(135deg, hsl(270 90% 60%), hsl(280 90% 65%));
-    --gradient-pink: linear-gradient(135deg, hsl(330 81% 60%), hsl(340 82% 65%));
-    --gradient-green: linear-gradient(135deg, hsl(142 76% 46%), hsl(160 84% 39%));
-    --gradient-orange: linear-gradient(135deg, hsl(25 95% 53%), hsl(38 92% 50%));
-    --gradient-emerald: linear-gradient(135deg, hsl(160 84% 39%), hsl(142 76% 46%));
-    --gradient-lime: linear-gradient(135deg, hsl(84 81% 44%), hsl(142 76% 46%));
-    --gradient-indigo: linear-gradient(135deg, hsl(243 75% 59%), hsl(258 90% 66%));
-    --gradient-hero: linear-gradient(135deg, hsl(0 0% 100%), hsl(243 75% 59% / 0.03));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(0 0% 99%));
-
-    /* Floating shadows - modern elevated effect */
-    --shadow-float: 0 8px 30px rgba(79, 70, 229, 0.12);
-    --shadow-float-hover: 0 12px 40px rgba(79, 70, 229, 0.18);
-    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04);
-    --shadow-icon: 0 4px 16px rgba(79, 70, 229, 0.15);
-    --shadow-elevated: 0 8px 30px rgba(0, 0, 0, 0.08);
-    --shadow-button: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-hover: 0 10px 40px rgba(79, 70, 229, 0.2);
-    --shadow-elegant: 0 8px 30px rgba(79, 70, 229, 0.12);
-
-    /* Stitch v5.0 Radius Tokens */
     --radius: 0.5rem;
-    --chart-1: 234 89% 73%;
-    --chart-2: 255 91% 76%;
-    --chart-3: 270 95% 75%;
-    --chart-4: 238 83% 66%;
-    --chart-5: 0 0% 45%;
-    --sidebar: 0 0% 98%;
-    /* Stitch v5.0 Typography */
-    --font-display: 'Space Grotesk', sans-serif;
-    --font-body: 'Noto Sans', sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
-    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
-    --tracking-normal: 0em;
-    --spacing: 0.25rem;
+
+    /* Sidebar */
+    --sidebar-background: #f1f2f4;
+    --sidebar-foreground: #6B7280;
+    --sidebar-primary: #457b77;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #e0e7e6;
+    --sidebar-accent-foreground: #457b77;
+    --sidebar-active: #e0e7e6;
+    --sidebar-border: #e0e7e6;
+    --sidebar-ring: #457b77;
   }
 
   .dark {
-    /* Dark mode - Two-Tone Navy Blue Theme */
-    /* Tone 1: Deep Navy Background */
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    /* ===== SISTEMA DE CAMADAS ESTRITO - DARK MODE ===== */
+    /* Camada 1: Fundo = #13151a */
+    /* Camada 2: Cards/Sidebar = #1c202a */
+    /* Camada 3: Inputs/Popovers = #2d3342 */
+    /* Camada 4: Hover/Acentos = #252a36 */
 
-    /* Tone 2: Lighter Navy for Cards/Surfaces */
-    --card: 222 47% 20%;
-    --card-foreground: 210 40% 98%;
+    --background: #13151a;
+    --foreground: #FFFFFF;
 
-    --popover: 222 47% 20%;
-    --popover-foreground: 210 40% 98%;
+    --card: #1c202a;
+    --card-foreground: #FFFFFF;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
-    --primary-light: 213 94% 68%;
-    --primary-dark: 221 83% 53%;
+    --popover: #252a36;
+    --popover-foreground: #FFFFFF;
 
-    --secondary: 222 47% 20%;
-    --secondary-foreground: 210 40% 98%;
+    --primary: #06b6d4;
+    --primary-foreground: #FFFFFF;
 
-    --muted: 222 47% 20%;
-    --muted-foreground: 215 20% 65%;
+    --secondary: #1c202a;
+    --secondary-foreground: #FFFFFF;
 
-    --accent: 222 47% 20%;
-    --accent-foreground: 210 40% 98%;
+    --muted: #1c202a;
+    --muted-foreground: #94a3b8;
 
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: #2d3342;
+    --accent-foreground: #FFFFFF;
 
-    --border: 222 47% 25%;
-    --input: 222 47% 20%;
-    --ring: 224 76% 48%;
+    --border: #2d3342;
+    --input: #2d3342;
+    --ring: #06b6d4;
 
-    /* Sidebar - Intermediate Tone */
-    --sidebar-background: 222 47% 13%;
-    --sidebar-foreground: 213 31% 91%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 20%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 47% 25%;
-    --sidebar-ring: 217 91% 60%;
+    --surface: #1c202a;
+    --surface-elevated: #252a36;
 
-    /* Charts */
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --btn-gradient-from: #06b6d4;
+    --btn-gradient-to: #0891b2;
+    --btn-shadow: rgba(6, 182, 212, 0.2);
 
-    --sidebar: 222 47% 11%;
+    --sidebar-background: #1c202a;
+    --sidebar-foreground: #94a3b8;
+    --sidebar-primary: #06b6d4;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #2d3342;
+    --sidebar-active: #2d3342;
+    --sidebar-accent-foreground: #06b6d4;
+    --sidebar-border: #2d3342;
+    --sidebar-ring: #06b6d4;
+  }
 
-    /* Shadows - softer for dark mode */
-    --shadow-2xs: 0 1px 1px 0px hsl(0 0% 0% / 0.5);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.5);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.3);
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.3);
-    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -1px hsl(0 0% 0% / 0.3);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.3), 0 4px 6px -2px hsl(0 0% 0% / 0.3);
-    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.3), 0 8px 10px -6px hsl(0 0% 0% / 0.3);
-    --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.5);
-
-    /* Glass - High opacity for two-tone effect */
-    --glass-bg: 222 47% 20% / 0.8;
-    --glass-border: 210 40% 98% / 0.1;
+  html {
+    scroll-behavior: smooth;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: var(--border);
   }
 
   body {
-    @apply bg-background text-foreground font-body;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body);
     font-feature-settings: "rlig" 1, "calt" 1;
-    font-weight: 400;
   }
 
-  /* Stitch v5.0 Typography Classes */
-  .font-display {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 500;
-  }
-
-  .font-body {
-    font-family: 'Noto Sans', sans-serif;
-    font-weight: 400;
-  }
-
-  .font-mono {
-    font-family: 'JetBrains Mono', monospace;
-  }
-
-  /* Elegant button improvements */
-  button {
-    @apply transition-all duration-300 ease-out;
-  }
-
-  /* Card improvements */
-  .shadow-card {
-    box-shadow: var(--shadow-card);
-  }
-
-  .shadow-elevated {
-    box-shadow: var(--shadow-elevated);
-  }
-
-  .shadow-button {
-    box-shadow: var(--shadow-button);
-  }
-
-  .shadow-hover {
-    box-shadow: var(--shadow-hover);
-  }
-
-  .shadow-elegant {
-    box-shadow: var(--shadow-elegant);
-  }
-
-  /* Smooth transitions */
-  .transition-elegant {
-    @apply transition-all duration-300 ease-out;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display tracking-tight;
   }
 }
 
-@layer components {
-
-  /* Elegant button variants */
-  .btn-elegant {
-    @apply px-6 py-3 rounded-xl font-medium transition-elegant shadow-button hover:shadow-hover;
+@layer utilities {
+  .glass {
+    @apply bg-[var(--surface)]/40 backdrop-blur-md border border-[var(--border)];
   }
 
-  .btn-primary {
-    @apply btn-elegant bg-gradient-primary text-primary-foreground hover:shadow-hover;
+  /* Scrollbar customizada */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
   }
 
-  .btn-secondary {
-    @apply btn-elegant bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
   }
 
-  /* Elegant cards */
-  .card-elegant {
-    @apply bg-gradient-card text-card-foreground rounded-2xl shadow-card hover:shadow-elevated transition-elegant;
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-[var(--border)] rounded-full;
   }
 
-  /* Elegant inputs */
-  .input-elegant {
-    @apply px-4 py-3 rounded-xl border border-border bg-input text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-ring focus:border-transparent transition-elegant;
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-[var(--muted-foreground)];
   }
 
-  /* Gradient backgrounds */
-  .bg-gradient-primary {
-    background: var(--gradient-primary);
+  /* Hide scrollbar but keep functionality */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 
-  .bg-gradient-hero {
-    background: var(--gradient-hero);
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
-  .bg-gradient-card {
-    background: var(--gradient-card);
+  /* Tabs Scroll Fade Indicators */
+  .tabs-scroll-container {
+    position: relative;
   }
 
-  .bg-gradient-secondary {
-    background: var(--gradient-secondary);
+  .tabs-scroll-container::before,
+  .tabs-scroll-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 24px;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.2s ease;
   }
-}
 
-@layer base {
-  * {
-    @apply border-border;
+  .tabs-scroll-container::before {
+    left: 0;
+    background: linear-gradient(to right, var(--surface), transparent);
   }
 
-  body {
-    @apply bg-background text-foreground;
+  .tabs-scroll-container::after {
+    right: 0;
+    background: linear-gradient(to left, var(--surface), transparent);
+  }
+
+  .tabs-scroll-container.show-fade-left::before {
+    opacity: 1;
+  }
+
+  .tabs-scroll-container.show-fade-right::after {
+    opacity: 1;
+  }
+
+  /* Utility to remove number input spinners */
+  .no-spinner::-webkit-inner-spin-button,
+  .no-spinner::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0;
+  }
+
+  .no-spinner {
+    -moz-appearance: textfield !important;
+    appearance: none !important;
   }
 }

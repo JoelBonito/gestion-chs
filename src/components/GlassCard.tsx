@@ -31,8 +31,8 @@ export function GlassCard({
         <CardWrapper
             whileHover={hoverEffect ? { y: -2, transition: { duration: 0.2 } } : undefined}
             className={cn(
-                "border-none shadow-lg bg-[hsl(var(--glass-bg))] backdrop-blur-sm border border-[hsl(var(--glass-border))] transition-all duration-300 overflow-hidden",
-                hoverEffect && "hover:shadow-xl hover:bg-white/90 dark:hover:bg-card/60",
+                "border border-[var(--border)] bg-card transition-all duration-300 overflow-hidden",
+                hoverEffect && "hover:border-primary/30",
                 className
             )}
         >

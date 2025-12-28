@@ -59,36 +59,50 @@ export function AppSidebar() {
       name: "Dashboard",
       href: "/dashboard",
       icon: Home,
+      color: "text-nav-dashboard",
+      bg: "bg-nav-dashboard/10",
     },
     {
       name: "Produtos",
       href: "/produtos",
       icon: Package,
+      color: "text-nav-projects",
+      bg: "bg-nav-projects/10",
     },
     {
       name: "Clientes",
       href: "/clientes",
       icon: Users,
+      color: "text-nav-clients",
+      bg: "bg-nav-clients/10",
     },
     {
       name: "Fornecedores",
       href: "/fornecedores",
       icon: Truck,
+      color: "text-nav-finance",
+      bg: "bg-nav-finance/10",
     },
     {
       name: locale === 'fr-FR' ? "Commandes" : "Encomendas",
       href: "/encomendas",
       icon: ClipboardList,
+      color: "text-nav-reports",
+      bg: "bg-nav-reports/10",
     },
     {
       name: locale === 'fr-FR' ? "Finance" : "Financeiro",
       href: "/financeiro",
       icon: DollarSign,
+      color: "text-nav-finance",
+      bg: "bg-nav-finance/10",
     },
     {
       name: locale === 'fr-FR' ? "Projets" : "Projetos",
       href: "/projetos",
       icon: FolderKanban,
+      color: "text-nav-projects",
+      bg: "bg-nav-projects/10",
     },
   ];
 
@@ -141,15 +155,15 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border bg-sidebar">
-      <SidebarHeader className={cn("p-4 relative", isCollapsed && "flex items-center justify-center")}>
-        <div className={cn("flex flex-col items-center w-full relative transition-all duration-300", isCollapsed ? "justify-center" : "gap-4 pt-2")}>
+      <SidebarHeader className={cn("py-5 px-4 relative", isCollapsed && "flex items-center justify-center")}>
+        <div className={cn("flex flex-col items-center w-full relative transition-all duration-300", isCollapsed ? "justify-center" : "gap-4 pt-3")}>
           <div className={cn("flex flex-col items-center justify-center transition-all duration-300", isCollapsed ? "gap-0" : "gap-2")}>
             <img
               src="/logo-inove.jpg"
               alt="Gestion CHS"
               className={cn(
                 "transition-all duration-300 object-contain rounded-xl shadow-sm",
-                isCollapsed ? "h-10 w-10 mb-2" : "h-24 w-auto hover:scale-105"
+                isCollapsed ? "h-10 w-10 mb-3" : "h-24 w-auto hover:scale-105"
               )}
             />
             {!isCollapsed && (
@@ -200,28 +214,23 @@ export function AppSidebar() {
                           asChild
                           isActive={isActive}
                           className={cn(
-                            "relative transition-colors h-12",
-                            isActive && "bg-primary/10 border-l-4 border-l-primary",
-                            !isActive && "hover:bg-muted",
+                            "relative transition-all duration-300 h-14 group",
+                            isActive && "bg-[var(--sidebar-active)]",
                             isCollapsed && "justify-center"
                           )}
                         >
-                          <a href={item.href} className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
+                          <a href={item.href} className={cn("flex items-center gap-3 w-full", isCollapsed && "justify-center")}>
                             <div className={cn(
-                              "p-2 rounded-lg transition-colors",
-                              isActive && "bg-primary",
-                              !isActive && "bg-muted"
+                              "p-2.5 rounded-full shadow-sm shrink-0 transition-all duration-500 flex items-center justify-center",
+                              item.bg,
+                              item.color
                             )}>
-                              <Icon className={cn(
-                                "transition-colors",
-                                isCollapsed ? "h-6 w-6" : "h-5 w-5",
-                                isActive ? "text-white" : "text-muted-foreground"
-                              )} />
+                              <Icon className="h-4 w-4" />
                             </div>
                             {!isCollapsed && (
                               <span className={cn(
-                                "font-medium transition-colors",
-                                isActive ? "text-foreground" : "text-muted-foreground"
+                                "font-medium transition-all duration-300",
+                                isActive ? "text-foreground translate-x-1" : "text-muted-foreground group-hover:translate-x-1"
                               )}>
                                 {item.name}
                               </span>
@@ -245,105 +254,45 @@ export function AppSidebar() {
 
       <SidebarSeparator />
 
-      <SidebarFooter className="p-4 space-y-1">
+      <SidebarFooter className="p-4 space-y-4">
         {user && (
           <div className={cn(
-            "mb-1 transition-all duration-200",
-            isCollapsed ? "flex justify-center" : "flex items-center gap-2 p-3 rounded-lg bg-muted/50"
+            "p-3 rounded-xl bg-accent/30 border border-border/50",
+            isCollapsed && "p-1 bg-transparent border-transparent"
           )}>
-            {isCollapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="p-2 rounded-lg bg-primary">
-                    <User className="h-5 w-5 text-white" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="font-medium">
-                  {user.email}
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <>
-                <div className="p-2 rounded-lg bg-primary">
-                  <User className="h-5 w-5 text-white" />
+            <div className={cn(
+              "flex items-center gap-3",
+              isCollapsed && "justify-center"
+            )}>
+              <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold uppercase shrink-0">
+                {user.email?.substring(0, 2).toUpperCase()}
+              </div>
+              {!isCollapsed && (
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-bold text-foreground truncate">
+                    {user.email?.split('@')[0]}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground truncate">
+                    {user.email}
+                  </span>
                 </div>
-                <span className="text-sm font-medium text-foreground truncate flex-1">
-                  {user.email}
-                </span>
-              </>
-            )}
+              )}
+            </div>
           </div>
         )}
 
-
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <SidebarMenuButton
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className={cn(
-                "transition-all duration-200 hover:bg-primary/10 hover:text-primary h-10",
-                isCollapsed ? "justify-center w-full" : ""
-              )}
-            >
-              {isCollapsed ? (
-                <div className="p-2 rounded-lg bg-primary/10">
-                  {theme === "dark" ? (
-                    <Sun className="h-5 w-5 text-primary" />
-                  ) : (
-                    <Moon className="h-5 w-5 text-primary" />
-                  )}
-                </div>
-              ) : (
-                <>
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    {theme === "dark" ? (
-                      <Sun className="h-5 w-5 text-primary" />
-                    ) : (
-                      <Moon className="h-5 w-5 text-primary" />
-                    )}
-                  </div>
-                  <span className="font-medium">{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>
-                </>
-              )}
-            </SidebarMenuButton>
-          </TooltipTrigger>
-          {isCollapsed && (
-            <TooltipContent side="right" className="font-medium">
-              {theme === "dark" ? "Modo Claro" : "Modo Escuro"}
-            </TooltipContent>
-          )}
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <SidebarMenuButton
-              onClick={handleLogout}
-              className={cn(
-                "transition-all duration-200 hover:bg-destructive/10 hover:text-destructive h-10",
-                isCollapsed ? "justify-center w-full" : ""
-              )}
-            >
-              {isCollapsed ? (
-                <div className="p-2 rounded-lg bg-destructive/10">
-                  <LogOut className="h-5 w-5 text-destructive" />
-                </div>
-              ) : (
-                <>
-                  <div className="p-2 rounded-lg bg-destructive/10">
-                    <LogOut className="h-5 w-5 text-destructive" />
-                  </div>
-                  <span className="font-medium">Sair</span>
-                </>
-              )}
-            </SidebarMenuButton>
-          </TooltipTrigger>
-          {isCollapsed && (
-            <TooltipContent side="right" className="font-medium">
-              Sair
-            </TooltipContent>
-          )}
-        </Tooltip>
+        <div className="pt-2 border-t border-border/50">
+          <SidebarMenuButton
+            onClick={handleLogout}
+            className={cn(
+              "transition-all duration-200 hover:bg-destructive/10 hover:text-destructive h-10 rounded-lg",
+              isCollapsed ? "justify-center" : ""
+            )}
+          >
+            <LogOut className="h-5 w-5 shrink-0" />
+            {!isCollapsed && <span className="font-medium">Sair da Conta</span>}
+          </SidebarMenuButton>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

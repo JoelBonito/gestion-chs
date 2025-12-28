@@ -124,12 +124,12 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
         {canManage && (
           <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="gradient" size="sm">
                 <Upload className="w-4 h-4 mr-2" />
                 Adicionar
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md bg-card border-border/50">
               <DialogHeader>
                 <DialogTitle>Adicionar Anexo</DialogTitle>
               </DialogHeader>
@@ -141,7 +141,12 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
                     Apenas arquivos até 10MB são permitidos.
                   </p>
                 </div>
-                <Button onClick={handleUpload} disabled={!selectedFile || isUploading} className="w-full">
+                <Button
+                  onClick={handleUpload}
+                  disabled={!selectedFile || isUploading}
+                  variant="gradient"
+                  className="w-full"
+                >
                   {isUploading ? 'Enviando...' : 'Enviar'}
                 </Button>
               </div>
@@ -153,21 +158,26 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
       {attachments.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum anexo encontrado</p>
       ) : (
-        <div className="divide-y border rounded-md">
+        <div className="space-y-2">
           {attachments.map(att => (
-            <div key={att.id} className="flex items-center justify-between p-2">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-red-500" />
-                <span className="text-sm">{att.file_name}</span>
+            <div key={att.id} className="flex items-center justify-between p-3 bg-accent border border-border/40 rounded-xl shadow-sm transition-all hover:border-primary/30 group">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-red-500/10 dark:bg-red-500/20">
+                  <FileText className="h-5 w-5 text-red-500" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium line-clamp-1">{att.file_name}</span>
+                  <span className="text-xs text-muted-foreground">{(att.file_size / 1024).toFixed(1)} KB</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" onClick={() => setPreviewModal({ url: getPublicUrl(att.storage_path), fileName: att.file_name })}>
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewModal({ url: getPublicUrl(att.storage_path), fileName: att.file_name })}>
                   <Eye className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => window.open(getPublicUrl(att.storage_path), '_blank')}>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => window.open(getPublicUrl(att.storage_path), '_blank')}>
                   <ExternalLink className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={async () => {
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={async () => {
                   const response = await fetch(getPublicUrl(att.storage_path));
                   const blob = await response.blob();
                   const url = window.URL.createObjectURL(blob);
@@ -180,7 +190,7 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
                   <Download className="h-4 w-4" />
                 </Button>
                 {canManage && (
-                  <Button variant="ghost" size="icon" onClick={() => handleRemove(att)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemove(att)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 )}
@@ -192,7 +202,7 @@ export const ProjetoAttachmentManager: React.FC<ProjetoAttachmentManagerProps> =
 
       {previewModal && (
         <Dialog open={!!previewModal} onOpenChange={() => setPreviewModal(null)}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-3xl bg-accent border-border/50">
             <DialogHeader>
               <DialogTitle>{previewModal.fileName}</DialogTitle>
             </DialogHeader>

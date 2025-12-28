@@ -33,10 +33,7 @@ export function EncomendaStatusFilter({ selectedStatus, onStatusChange }: Encome
   ];
 
   return (
-    <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2 w-full">
-      <Label htmlFor="status-filter" className="text-xs xs:text-sm whitespace-nowrap shrink-0">
-        {isHamAdmin ? "Filtrer:" : "Status:"}
-      </Label>
+    <div className="flex items-center w-full xs:w-auto">
       <Select value={selectedStatus} onValueChange={onStatusChange}>
         <SelectTrigger id="status-filter" className="w-full xs:w-auto xs:min-w-[140px]">
           <SelectValue placeholder="Selecione" />

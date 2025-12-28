@@ -12,9 +12,9 @@ interface OrderItem {
   preco_custo: number;
   subtotal: number;
   produto_id: string;
-  produtos?: { 
-    nome: string; 
-    marca: string; 
+  produtos?: {
+    nome: string;
+    marca: string;
     tipo: string;
   };
 }
@@ -28,7 +28,7 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
   const [items, setItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { isCollaborator } = useIsCollaborator();
-  
+
   // Se for colaborador, sempre mostrar preços de custo
   const shouldShowCostPrices = showCostPrices || isCollaborator;
 
@@ -63,7 +63,7 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
 
   if (loading) {
     return (
-      <Card>
+      <Card className="bg-popover border-border/50">
         <CardContent className="p-4 text-center">
           <p className="text-muted-foreground">Carregando itens...</p>
         </CardContent>
@@ -73,7 +73,7 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
 
   if (items.length === 0) {
     return (
-      <Card>
+      <Card className="bg-popover border-border/50">
         <CardHeader>
           <CardTitle>Itens da Encomenda</CardTitle>
         </CardHeader>
@@ -85,57 +85,58 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Itens da Encomenda</CardTitle>
+    <Card className="bg-popover border-border/30 overflow-hidden shadow-none">
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg font-bold flex items-center gap-2">
+          Itens da Encomenda
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
+        <div className="overflow-hidden rounded-xl border border-border/40 bg-accent shadow-sm">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Produto</TableHead>
-                <TableHead>Quantidade</TableHead>
-                {shouldShowCostPrices ? <TableHead>Preço Custo</TableHead> : <TableHead>Preço Unitário</TableHead>}
-                <TableHead>Subtotal</TableHead>
+            <TableHeader className="bg-muted/50 border-b border-border/40">
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="font-bold">Produto</TableHead>
+                <TableHead className="font-bold">Marca</TableHead>
+                <TableHead className="font-bold">Tipo</TableHead>
+                <TableHead className="text-right font-bold">Qtd</TableHead>
+                <TableHead className="text-right font-bold">{shouldShowCostPrices ? 'Custo Un.' : 'Preço Un.'}</TableHead>
+                <TableHead className="text-right font-bold">Subtotal</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    {item.produtos ? (
-                      <div>
-                        <p className="font-medium">{item.produtos.nome}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.produtos.marca} - {item.produtos.tipo}
-                        </p>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">Produto não encontrado</span>
-                    )}
+                <TableRow key={item.id} className="bg-popover hover:bg-muted/30 transition-colors border-b border-border dark:border-white/5 last:border-0">
+                  <TableCell className="font-semibold text-sm uppercase">
+                    {item.produtos?.nome || "—"}
                   </TableCell>
-                  <TableCell>{item.quantidade}</TableCell>
-                  <TableCell>
-                    {formatCurrencyEUR(shouldShowCostPrices ? (item.preco_custo || 0) : item.preco_unitario)}
+                  <TableCell className="text-muted-foreground text-sm">
+                    {item.produtos?.marca || "—"}
                   </TableCell>
-                  <TableCell className="font-semibold">
-                    {formatCurrencyEUR(shouldShowCostPrices 
+                  <TableCell className="text-muted-foreground text-xs uppercase">
+                    {item.produtos?.tipo || "—"}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-sm">{item.quantidade}</TableCell>
+                  <TableCell className="text-right tabular-nums text-sm">
+                    {formatCurrencyEUR(shouldShowCostPrices ? (item.preco_custo || 0) : (item.preco_unitario || 0))}
+                  </TableCell>
+                  <TableCell className="text-right font-bold tabular-nums text-sm">
+                    {formatCurrencyEUR(shouldShowCostPrices
                       ? (item.quantidade * (item.preco_custo || 0))
-                      : item.subtotal)}
+                      : (item.subtotal || 0))}
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
-        
-        <div className="mt-4 pt-4 border-t">
-          <div className="flex justify-end">
+
+        <div className="mt-6 pt-4 border-t border-border/40">
+          <div className="flex justify-end pr-2">
             <div className="text-right">
-              <p className="text-sm text-muted-foreground">Total dos Itens:</p>
-              <p className="text-lg font-semibold">
-                {formatCurrencyEUR(shouldShowCostPrices 
+              <p className="text-xs uppercase font-bold text-muted-foreground tracking-wider mb-1">Total dos Itens:</p>
+              <p className="text-xl font-black text-primary">
+                {formatCurrencyEUR(shouldShowCostPrices
                   ? items.reduce((sum, item) => sum + (item.quantidade * (item.preco_custo || 0)), 0)
                   : items.reduce((sum, item) => sum + item.subtotal, 0))}
               </p>

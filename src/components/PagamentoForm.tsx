@@ -16,6 +16,7 @@ import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PushNotifications } from "@/lib/push-notifications";
 
 const pagamentoSchema = z.object({
   encomenda_id: z.string().min(1, "Selecione uma encomenda"),
@@ -76,6 +77,12 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
 
       if (error) throw error;
 
+      // Enviar push notification
+      PushNotifications.pagamentoRecebido(
+        parseFloat(data.valor_pagamento),
+        selectedEncomenda?.cliente_nome
+      ).catch(() => { });
+
       toast({
         title: "Pagamento lançado com sucesso!",
         description: "O pagamento foi registrado e o saldo foi atualizado.",
@@ -95,22 +102,16 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
   };
 
   return (
-    <Card className="shadow-card">
-      <CardHeader>
-        <CardTitle>Lançar Pagamento</CardTitle>
-        <CardDescription>
-          Registre um pagamento associado a uma encomenda específica
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="space-y-4">
+      <div className="space-y-4">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="encomenda_id">Encomenda</Label>
+            <Label htmlFor="encomenda_id" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Encomenda</Label>
             <Select
               value={selectedEncomendaId}
               onValueChange={(value) => setValue("encomenda_id", value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-popover border-border/40 font-semibold h-11">
                 <SelectValue placeholder="Selecione uma encomenda" />
               </SelectTrigger>
               <SelectContent>
@@ -123,70 +124,78 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
               </SelectContent>
             </Select>
             {errors.encomenda_id && (
-              <p className="text-sm text-destructive">{errors.encomenda_id.message}</p>
+              <p className="text-sm text-destructive font-medium">{errors.encomenda_id.message}</p>
             )}
           </div>
 
           {selectedEncomenda && (
-            <div className="p-3 bg-muted/30 rounded-lg space-y-1">
-              <p className="text-sm font-medium">Detalhes da Encomenda:</p>
-              <p className="text-sm text-muted-foreground">
-                Cliente: {selectedEncomenda.cliente_nome}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Valor Total: €{selectedEncomenda.valor_total.toFixed(2)}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Valor Pago: €{selectedEncomenda.valor_pago.toFixed(2)}
-              </p>
-              <p className="text-sm font-semibold text-warning">
-                Saldo Devedor: €{selectedEncomenda.saldo_devedor.toFixed(2)}
-              </p>
+            <div className="p-4 bg-popover rounded-xl border border-border/20 shadow-sm space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Cliente:</span>
+                  <p className="text-sm font-semibold">{selectedEncomenda.cliente_nome}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Total:</span>
+                  <p className="text-sm font-bold">€{selectedEncomenda.valor_total.toFixed(2)}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Pago:</span>
+                  <p className="text-sm font-bold text-success">€{selectedEncomenda.valor_pago.toFixed(2)}</p>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Saldo:</span>
+                  <p className="text-sm font-black text-warning">€{selectedEncomenda.saldo_devedor.toFixed(2)}</p>
+                </div>
+              </div>
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label htmlFor="valor_pagamento">Valor do Pagamento</Label>
-            <Input
-              id="valor_pagamento"
-              type="number"
-              step="0.01"
-              placeholder="0,00"
-              {...register("valor_pagamento")}
-            />
-            {errors.valor_pagamento && (
-              <p className="text-sm text-destructive">{errors.valor_pagamento.message}</p>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="valor_pagamento" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Valor do Pagamento</Label>
+              <Input
+                id="valor_pagamento"
+                type="number"
+                step="0.01"
+                placeholder="0,00"
+                {...register("valor_pagamento")}
+                className="bg-popover border-border/40 font-semibold"
+              />
+              {errors.valor_pagamento && (
+                <p className="text-sm text-destructive font-medium">{errors.valor_pagamento.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="forma_pagamento" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Forma de Pagamento</Label>
+              <Select onValueChange={(value) => setValue("forma_pagamento", value)}>
+                <SelectTrigger className="bg-popover border-border/40 font-semibold">
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
+                  <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
+                  <SelectItem value="pix">PIX / MBWay</SelectItem>
+                  <SelectItem value="transferencia">Transferência Bancária</SelectItem>
+                  <SelectItem value="boleto">Boleto</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.forma_pagamento && (
+                <p className="text-sm text-destructive font-medium">{errors.forma_pagamento.message}</p>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="forma_pagamento">Forma de Pagamento</Label>
-            <Select onValueChange={(value) => setValue("forma_pagamento", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a forma de pagamento" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
-                <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
-                <SelectItem value="pix">PIX</SelectItem>
-                <SelectItem value="transferencia">Transferência Bancária</SelectItem>
-                <SelectItem value="boleto">Boleto</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.forma_pagamento && (
-              <p className="text-sm text-destructive">{errors.forma_pagamento.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label>Data do Pagamento</Label>
+            <Label className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Data do Pagamento</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "w-full justify-start text-left font-semibold bg-popover border-border/40",
                     !watch("data_pagamento") && "text-muted-foreground"
                   )}
                 >
@@ -197,7 +206,7 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
                   }
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={watch("data_pagamento")}
@@ -210,23 +219,36 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="observacoes">Observações (Opcional)</Label>
+            <Label htmlFor="observacoes" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Observações (Opcional)</Label>
             <Textarea
               id="observacoes"
               placeholder="Observações sobre o pagamento..."
               {...register("observacoes")}
+              className="bg-popover border-border/40 min-h-[80px]"
             />
           </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? "Lançando..." : "Lançar Pagamento"}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 pt-2">
+            <Button
+              type="submit"
+              className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold"
+              disabled={isLoading}
+            >
+              {isLoading ? "Lançando..." : "Registrar Pagamento"}
+            </Button>
+            {onSuccess && (
+              <Button
+                type="button"
+                variant="cancel"
+                onClick={onSuccess}
+                className="font-semibold bg-popover border-border/40"
+              >
+                Cancelar
+              </Button>
+            )}
+          </div>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

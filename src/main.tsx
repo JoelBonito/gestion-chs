@@ -5,18 +5,7 @@ import App from './App.tsx'
 import './index.css'
 import { ThemeProvider } from 'next-themes'
 
-// Register Service Worker for PWA
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then((registration) => {
-        console.log('SW registered: ', registration);
-      })
-      .catch((registrationError) => {
-        console.log('SW registration failed: ', registrationError);
-      });
-  });
-}
+// O registro do Service Worker agora é gerenciado pelo vite-plugin-pwa automaticamente
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

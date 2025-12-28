@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Search, Edit3, Save, X } from 'lucide-react';
+import { Search, Edit, Save, X, Package, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
+import { GlassCard } from '@/components/GlassCard';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface Encomenda {
   id: string;
@@ -23,6 +25,18 @@ interface EditingState {
   field: 'observacoes_joel' | 'observacoes_felipe';
   value: string;
 }
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "NOVO PEDIDO": return "bg-blue-600 border-transparent";
+    case "MATÉRIA PRIMA": return "bg-orange-500 border-transparent";
+    case "PRODUÇÃO": return "bg-sky-500 border-transparent";
+    case "EMBALAGENS": return "bg-emerald-500 border-transparent";
+    case "TRANSPORTE": return "bg-purple-600 border-transparent";
+    case "ENTREGUE": return "bg-green-600 border-transparent";
+    default: return "bg-slate-500 border-transparent";
+  }
+};
 
 export function TarefasTab() {
   const [encomendas, setEncomendas] = useState<Encomenda[]>([]);
@@ -143,29 +157,27 @@ export function TarefasTab() {
     return (
       <div className="space-y-4">
         <div className="flex gap-4">
-          <Skeleton className="h-10 flex-1 max-w-sm" />
+          <Skeleton className="h-12 w-full max-w-sm rounded-xl" />
         </div>
         {Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <Skeleton className="h-6 w-24" />
-                  <Skeleton className="h-4 w-16" />
+          <GlassCard key={i} className="p-6">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <Skeleton className="h-7 w-32 rounded-lg" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <Skeleton className="h-3 w-28 rounded" />
+                  <Skeleton className="h-24 w-full rounded-xl" />
                 </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div>
-                    <Skeleton className="h-4 w-24 mb-2" />
-                    <Skeleton className="h-20 w-full" />
-                  </div>
-                  <div>
-                    <Skeleton className="h-4 w-24 mb-2" />
-                    <Skeleton className="h-20 w-full" />
-                  </div>
+                <div className="space-y-3">
+                  <Skeleton className="h-3 w-28 rounded" />
+                  <Skeleton className="h-24 w-full rounded-xl" />
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </GlassCard>
         ))}
       </div>
     );
@@ -173,149 +185,165 @@ export function TarefasTab() {
 
   return (
     <div className="space-y-4">
-      {/* Campo de busca */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Buscar por número ou etiqueta..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Barra de Ferramentas - Busca */}
+      <GlassCard className="p-4 bg-card">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Buscar por número ou etiqueta..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 h-10 bg-input border-border/40 focus:ring-primary/20 text-foreground"
+          />
+        </div>
+      </GlassCard>
 
-      {/* Lista de encomendas */}
-      <div className="space-y-4">
+      {/* Lista de Tarefas (Encomendas Ativas) */}
+      <div className="grid grid-cols-1 gap-4">
         {filteredEncomendas.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center text-muted-foreground">
-              {searchTerm ? 'Nenhuma encomenda encontrada para sua busca.' : 'Nenhuma encomenda encontrada.'}
-            </CardContent>
-          </Card>
+          <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-xl border border-dashed border-border/50">
+            <ClipboardList className="h-12 w-12 text-muted-foreground mb-4 opacity-30" />
+            <h3 className="text-lg font-medium text-muted-foreground">
+              {searchTerm ? 'Nenhuma encomenda encontrada.' : 'Sem tarefas pendentes no momento.'}
+            </h3>
+          </div>
         ) : (
           filteredEncomendas.map((encomenda) => (
-            <Card key={encomenda.id} className="overflow-hidden">
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  {/* Cabeçalho da encomenda */}
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
-                    <div className="space-y-2">
-                      <h3 className="font-bold text-lg text-primary-dark">#{encomenda.numero_encomenda}</h3>
-                      {encomenda.etiqueta && (
-                        <Badge variant="info">
-                          {encomenda.etiqueta}
-                        </Badge>
+            <GlassCard key={encomenda.id} className="p-0 overflow-hidden bg-card" hoverEffect>
+              <div className="p-5 space-y-6">
+                {/* Cabeçalho do Card */}
+                <div className="flex items-center justify-between gap-3 border-b border-border/10 pb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl font-bold font-mono text-primary">
+                      #{encomenda.numero_encomenda}
+                    </span>
+                    {encomenda.etiqueta && (
+                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5">
+                        {encomenda.etiqueta}
+                      </Badge>
+                    )}
+                  </div>
+                  <Badge className={cn("text-white text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 shadow-sm", getStatusColor(encomenda.status))}>
+                    {encomenda.status}
+                  </Badge>
+                </div>
+
+                {/* Grid de Observações (Tarefas) */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Seção Joel */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between min-h-[32px]">
+                      <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest opacity-70">
+                        Instruções (Joel)
+                      </label>
+                      {isJoel && editing?.id !== encomenda.id && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleEdit(encomenda.id, 'observacoes_joel')}
+                          className="h-8 w-8 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 hover:scale-110 active:scale-90 transition-all"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       )}
                     </div>
+
+                    {editing?.id === encomenda.id && editing.field === 'observacoes_joel' ? (
+                      <div className="space-y-3">
+                        <Textarea
+                          value={editing.value}
+                          onChange={(e) => setEditing(prev => prev ? { ...prev, value: e.target.value } : null)}
+                          placeholder="Digite as instruções..."
+                          className="min-h-[120px] bg-input border-border/50 focus:border-primary/50 text-sm leading-relaxed text-foreground"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="gradient"
+                            onClick={handleSave}
+                            className="h-9 px-4 active:scale-95 transition-all"
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            Salvar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="cancel"
+                            onClick={handleCancel}
+                            className="h-9 px-4"
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-xl bg-accent border border-border/10 min-h-[120px] text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+                        {encomenda.observacoes_joel || (
+                          <span className="text-muted-foreground/40 italic">Sem instruções registradas pelo Joel.</span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Seções de observações */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Observações Joel */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-sm text-muted-foreground">
-                          Observações Joel
-                        </h4>
-                        {isJoel && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(encomenda.id, 'observacoes_joel')}
-                            disabled={editing?.id === encomenda.id}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-
-                      {editing?.id === encomenda.id && editing.field === 'observacoes_joel' ? (
-                        <div className="space-y-2">
-                          <Textarea
-                            value={editing.value}
-                            onChange={(e) => setEditing(prev => prev ? { ...prev, value: e.target.value } : null)}
-                            placeholder="Digite as observações de Joel..."
-                            className="min-h-[80px] resize-none"
-                          />
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={handleSave}>
-                              <Save className="h-4 w-4 mr-1" />
-                              Salvar
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={handleCancel}>
-                              <X className="h-4 w-4 mr-1" />
-                              Cancelar
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-3 bg-muted/50 rounded-md min-h-[80px] text-sm whitespace-pre-wrap">
-                          {encomenda.observacoes_joel || (
-                            <span className="text-muted-foreground italic">
-                              Sem observações
-                            </span>
-                          )}
-                        </div>
+                  {/* Seção Felipe */}
+                  <div className="space-y-3 lg:border-l border-border/10 lg:pl-8">
+                    <div className="flex items-center justify-between min-h-[32px]">
+                      <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest opacity-70">
+                        Feedback de Produção (Felipe)
+                      </label>
+                      {isFelipe && editing?.id !== encomenda.id && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleEdit(encomenda.id, 'observacoes_felipe')}
+                          className="h-8 w-8 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 hover:scale-110 active:scale-90 transition-all"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       )}
                     </div>
 
-                    {/* Observações Felipe */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-sm text-muted-foreground">
-                          Observações Felipe
-                        </h4>
-                        {isFelipe && (
+                    {editing?.id === encomenda.id && editing.field === 'observacoes_felipe' ? (
+                      <div className="space-y-3">
+                        <Textarea
+                          value={editing.value}
+                          onChange={(e) => setEditing(prev => prev ? { ...prev, value: e.target.value } : null)}
+                          placeholder="Digite o feedback..."
+                          className="min-h-[120px] bg-input border-border/50 focus:border-primary/50 text-sm leading-relaxed text-foreground"
+                        />
+                        <div className="flex gap-2">
                           <Button
                             size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(encomenda.id, 'observacoes_felipe')}
-                            disabled={editing?.id === encomenda.id}
-                            className="h-8 w-8 p-0"
+                            variant="gradient"
+                            onClick={handleSave}
+                            className="h-9 px-4 active:scale-95 transition-all"
                           >
-                            <Edit3 className="h-4 w-4" />
+                            <Save className="h-4 w-4 mr-2" />
+                            Salvar
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="cancel"
+                            onClick={handleCancel}
+                            className="h-9 px-4"
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-xl bg-accent border border-border/10 min-h-[120px] text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+                        {encomenda.observacoes_felipe || (
+                          <span className="text-muted-foreground/40 italic">Sem feedback registrado pelo Felipe.</span>
                         )}
                       </div>
-
-                      {editing?.id === encomenda.id && editing.field === 'observacoes_felipe' ? (
-                        <div className="space-y-2">
-                          <Textarea
-                            value={editing.value}
-                            onChange={(e) => setEditing(prev => prev ? { ...prev, value: e.target.value } : null)}
-                            placeholder="Digite as observações de Felipe..."
-                            className="min-h-[80px] resize-none"
-                          />
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={handleSave}>
-                              <Save className="h-4 w-4 mr-1" />
-                              Salvar
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={handleCancel}>
-                              <X className="h-4 w-4 mr-1" />
-                              Cancelar
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="p-3 bg-muted/50 rounded-md min-h-[80px] text-sm whitespace-pre-wrap">
-                          {encomenda.observacoes_felipe || (
-                            <span className="text-muted-foreground italic">
-                              Sem observações
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </GlassCard>
           ))
         )}
       </div>

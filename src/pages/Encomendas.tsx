@@ -41,6 +41,7 @@ import { isLimitedNav, shouldHidePrices, isReadonlyOrders, ROSA_ALLOWED_SUPPLIER
 import { PageContainer } from "@/components/PageContainer";
 import { GlassCard } from "@/components/GlassCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DatePickerPopover } from "@/components/ui/date-picker-popover";
 
 type StatusEncomenda = "NOVO PEDIDO" | "MATÉRIA PRIMA" | "PRODUÇÃO" | "EMBALAGENS" | "TRANSPORTE" | "ENTREGUE";
 type StatusFilter = StatusEncomenda | "TODOS";
@@ -263,23 +264,16 @@ export default function Encomendas() {
     fetchEncomendas();
   }, [fetchEncomendas]);
 
-  const [userDataCached, setUserDataCached] = useState(false);
-
   useEffect(() => {
     // Aguarda autenticação antes de carregar dados
-    if (authLoading) {
-      return;
+    if (authLoading) return;
+
+    if (user?.email) {
+      setUserEmail(user.email);
     }
 
-    if (!userDataCached) {
-      supabase.auth.getUser().then(({ data }) => {
-        const fetchedEmail = data.user?.email ?? null;
-        setUserEmail(fetchedEmail);
-        setUserDataCached(true);
-      });
-    }
     fetchEncomendas();
-  }, [userDataCached, authLoading]);
+  }, [user, authLoading, fetchEncomendas]);
 
   const handleDateUpdate = async (
     encomendaId: string,
@@ -332,7 +326,7 @@ export default function Encomendas() {
     <div className="flex items-center gap-2">
       {canEdit() && !readOnlyOrders && (
         <Button
-          className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
+          variant="gradient"
           onClick={() => setDialogOpen(true)}
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -354,10 +348,10 @@ export default function Encomendas() {
         <button
           onClick={() => setActiveTab("encomendas")}
           className={cn(
-            "px-3 xs:px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
+            "px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
             activeTab === "encomendas"
               ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/10"
+              : "border-transparent text-muted-foreground hover:text-primary/80"
           )}
         >
           {t.orders}
@@ -366,10 +360,10 @@ export default function Encomendas() {
           <button
             onClick={() => setActiveTab("transportes")}
             className={cn(
-              "px-3 xs:px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
+              "px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
               activeTab === "transportes"
                 ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/10"
+                : "border-transparent text-muted-foreground hover:text-primary/80"
             )}
           >
             {isHam ? "Transport" : "Transporte"}
@@ -379,10 +373,10 @@ export default function Encomendas() {
           <button
             onClick={() => setActiveTab("tarefas")}
             className={cn(
-              "px-3 xs:px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
+              "px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
               activeTab === "tarefas"
                 ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/10"
+                : "border-transparent text-muted-foreground hover:text-primary/80"
             )}
           >
             Tarefas
@@ -392,10 +386,10 @@ export default function Encomendas() {
           <button
             onClick={() => setActiveTab("amostras")}
             className={cn(
-              "px-3 xs:px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
+              "px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
               activeTab === "amostras"
                 ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/10"
+                : "border-transparent text-muted-foreground hover:text-primary/80"
             )}
           >
             Amostras
@@ -409,27 +403,35 @@ export default function Encomendas() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
-          {/* Filtros - Responsivo */}
-          <div className="flex flex-col gap-3 p-3 sm:p-4 rounded-xl bg-white/60 dark:bg-card/40 backdrop-blur-sm border shadow-sm">
-            {/* Linha 1: Busca */}
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          {/* Barra de Pesquisa e Filtros - Unificada */}
+          <div className="flex flex-col lg:flex-row items-center gap-4 bg-card p-3 rounded-xl border border-border shadow-sm">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t.searchPlaceholder}
+                className="pl-10 h-10 w-full bg-input border-border/40 text-foreground"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 bg-white dark:bg-black/20 border-border/50 w-full"
               />
             </div>
 
-            {/* Linha 2: Status Filter + Toggle */}
-            <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-3">
-              <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+              <div className="w-full sm:w-auto sm:border-l border-border/50 sm:pl-2 h-10 flex items-center">
                 <EncomendaStatusFilter selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} />
               </div>
-              <div className="flex items-center justify-end gap-2 shrink-0">
-                <Switch id="show-completed" checked={showCompleted} onCheckedChange={setShowCompleted} />
-                <Label htmlFor="show-completed" className="text-xs sm:text-sm cursor-pointer whitespace-nowrap">{t.showDelivered}</Label>
+
+              <div className="flex items-center gap-3 px-3 border-l border-border/50 h-6 shrink-0 ml-auto sm:ml-0">
+                <Switch
+                  id="show-completed"
+                  checked={showCompleted}
+                  onCheckedChange={setShowCompleted}
+                />
+                <Label
+                  htmlFor="show-completed"
+                  className="cursor-pointer text-sm font-medium whitespace-nowrap text-foreground dark:text-white"
+                >
+                  {t.showDelivered}
+                </Label>
               </div>
             </div>
           </div>
@@ -441,9 +443,9 @@ export default function Encomendas() {
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}
               </div>
             ) : filteredEncomendas.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center bg-white/40 dark:bg-card/20 rounded-xl border border-dashed">
+              <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-xl border border-dashed border-border/50 shadow-sm">
                 <Package className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
-                <h3 className="text-lg font-medium">{t.noOrders}</h3>
+                <h3 className="text-lg font-medium text-foreground">{t.noOrders}</h3>
                 <p className="text-muted-foreground text-sm max-w-sm mt-1">
                   Tente ajustar os filtros ou crie uma nova encomenda.
                 </p>
@@ -451,16 +453,31 @@ export default function Encomendas() {
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {filteredEncomendas.map((e, index) => (
-                  <GlassCard key={`${e.id}-${user?.email || 'loading'}`} className="p-0 overflow-hidden" hoverEffect>
-                    <div className="p-4 sm:p-5">
+                  <GlassCard
+                    key={`${e.id}-${user?.email || 'loading'}`}
+                    className="relative p-0 overflow-hidden bg-card"
+                    hoverEffect
+                  >
+                    {/* Ações Absolutas - Padrão Projetos */}
+                    <div className="absolute top-4 right-4 z-10" onClick={(ev) => ev.stopPropagation()}>
+                      <EncomendaActions
+                        encomenda={e as any}
+                        onView={() => setSelectedEncomendaForView(e)}
+                        onEdit={() => setSelectedEncomendaForEdit(e)}
+                        onDelete={handleDelete}
+                        onTransport={() => setTransportDialogOpen(true)}
+                        canEditOrders={canEdit() && !isCollaborator && !readOnlyOrders}
+                      />
+                    </div>
+                    <div className="p-4 sm:p-5 cursor-pointer" onClick={() => setSelectedEncomendaForView(e)}>
                       {/* Header: ID, Tag, Data e Status - Tudo em uma linha */}
-                      <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center justify-between gap-2 mb-3 pr-10">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <span className="text-base sm:text-lg font-bold font-mono text-primary shrink-0">
                             #{e.numero_encomenda}
                           </span>
                           {e.etiqueta && (
-                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-[10px] sm:text-xs px-1.5 py-0 shrink-0">
+                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-[10px] sm:text-xs px-1.5 py-0 shrink-0 uppercase tracking-wide font-bold">
                               {e.etiqueta}
                             </Badge>
                           )}
@@ -469,8 +486,8 @@ export default function Encomendas() {
                           </span>
                         </div>
 
-                        {/* Status - Compacto */}
-                        <div className="shrink-0 w-[120px] sm:w-[140px]">
+                        {/* Status - Flexível */}
+                        <div className="shrink-0 min-w-max flex justify-end">
                           {isHam ? (
                             <Badge variant="outline" className="w-full justify-center py-0.5 text-[10px] sm:text-xs">
                               {getStatusLabel(e.status)}
@@ -486,21 +503,48 @@ export default function Encomendas() {
                         </div>
                       </div>
 
-                      {/* Cliente e Fornecedor - Layout Horizontal Compacto */}
-                      <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-4 py-2 border-y border-border/30 text-xs sm:text-sm">
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <span className="text-muted-foreground shrink-0">{t.client}:</span>
-                          <span className="font-medium truncate" title={e.clientes?.nome ?? e.cliente_nome ?? ""}>
-                            {e.clientes?.nome ?? e.cliente_nome ?? "—"}
-                          </span>
+                      {/* Cliente e Fornecedor + Ações Rápidas - Layout Horizontal Compacto */}
+                      <div className="flex items-center justify-between gap-4 py-2 border-y border-border/30 text-xs sm:text-sm">
+                        <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-4 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-muted-foreground shrink-0">{t.client}:</span>
+                            <span className="font-medium truncate" title={e.clientes?.nome ?? e.cliente_nome ?? ""}>
+                              {e.clientes?.nome ?? e.cliente_nome ?? "—"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-muted-foreground shrink-0">{t.supplier}:</span>
+                            <span className="font-medium truncate" title={e.fornecedores?.nome ?? e.fornecedor_nome ?? ""}>
+                              {e.fornecedores?.nome ?? e.fornecedor_nome ?? "—"}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <span className="text-muted-foreground shrink-0">{t.supplier}:</span>
-                          <span className="font-medium truncate" title={e.fornecedores?.nome ?? e.fornecedor_nome ?? ""}>
-                            {e.fornecedores?.nome ?? e.fornecedor_nome ?? "—"}
-                          </span>
+
+                        {/* Ações Rápidas - Agora Alinhadas com Cliente/Fornecedor */}
+                        <div className="flex items-center gap-1 shrink-0 ml-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(ev) => { ev.stopPropagation(); setSelectedEncomendaForView(e); }}
+                            title="Visualizar"
+                            className="h-8 w-8 text-muted-foreground hover:text-cyan-500 hover:bg-cyan-500/10 hover:scale-110 active:scale-90 transition-all"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+
+                          {(canEdit() && !isCollaborator && !readOnlyOrders) && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(ev) => { ev.stopPropagation(); setSelectedEncomendaForEdit(e); }}
+                              title="Editar"
+                              className="h-8 w-8 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 hover:scale-110 active:scale-90 transition-all"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
                         </div>
                       </div>
 
@@ -508,27 +552,16 @@ export default function Encomendas() {
                       <div className="flex flex-wrap items-end justify-between gap-3 pt-3 text-xs sm:text-sm">
 
                         {/* Grupo Esquerdo: Datas e Peso */}
-                        <div className="flex flex-wrap items-center gap-3 sm:gap-5">
+                        <div className="flex flex-wrap items-center gap-4 sm:gap-6 py-1">
                           {/* Data Produção */}
                           <div className={cn("flex flex-col", !e.data_producao_estimada && "opacity-50")}>
-                            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold">{t.productionDate}</span>
+                            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">{t.productionDate}</span>
                             {canEditProductionUI ? (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <button className="flex items-center gap-1 hover:text-primary font-medium transition-colors text-left group text-xs sm:text-sm">
-                                    <span>{e.data_producao_estimada ? formatDate(e.data_producao_estimada) : "—"}</span>
-                                    <Edit className="h-2.5 w-2.5 opacity-0 group-hover:opacity-50" />
-                                  </button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                  <Calendar
-                                    mode="single"
-                                    selected={e.data_producao_estimada ? new Date(e.data_producao_estimada) : undefined}
-                                    onSelect={(d) => handleDateUpdate(e.id, "data_producao_estimada", d ? format(d, "yyyy-MM-dd") : "")}
-                                    initialFocus
-                                  />
-                                </PopoverContent>
-                              </Popover>
+                              <DatePickerPopover
+                                variant="inline"
+                                value={e.data_producao_estimada ? new Date(e.data_producao_estimada) : undefined}
+                                onChange={(d) => handleDateUpdate(e.id, "data_producao_estimada", d ? format(d, "yyyy-MM-dd") : "")}
+                              />
                             ) : (
                               <span className="font-medium">{e.data_producao_estimada ? formatDate(e.data_producao_estimada) : "—"}</span>
                             )}
@@ -536,69 +569,55 @@ export default function Encomendas() {
 
                           {/* Data Entrega */}
                           <div className={cn("flex flex-col", !e.data_envio_estimada && "opacity-50")}>
-                            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold">{t.deliveryDate}</span>
+                            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">{t.deliveryDate}</span>
                             {canEditDeliveryUI ? (
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <button className="flex items-center gap-1 hover:text-primary font-medium transition-colors text-left group text-xs sm:text-sm">
-                                    <span>{e.data_envio_estimada ? formatDate(e.data_envio_estimada) : "—"}</span>
-                                    <Edit className="h-2.5 w-2.5 opacity-0 group-hover:opacity-50" />
-                                  </button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                  <Calendar
-                                    mode="single"
-                                    selected={e.data_envio_estimada ? new Date(e.data_envio_estimada) : undefined}
-                                    onSelect={(d) => handleDateUpdate(e.id, "data_envio_estimada", d ? format(d, "yyyy-MM-dd") : "")}
-                                    initialFocus
-                                  />
-                                </PopoverContent>
-                              </Popover>
+                              <DatePickerPopover
+                                variant="inline"
+                                value={e.data_envio_estimada ? new Date(e.data_envio_estimada) : undefined}
+                                onChange={(d) => handleDateUpdate(e.id, "data_envio_estimada", d ? format(d, "yyyy-MM-dd") : "")}
+                              />
                             ) : (
                               <span className="font-medium">{e.data_envio_estimada ? formatDate(e.data_envio_estimada) : "—"}</span>
                             )}
                           </div>
 
                           {/* Peso */}
-                          <div className="flex items-center gap-1.5" title={t.grossWeight}>
-                            <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="font-medium">
-                              {((e as any).peso_bruto || 0).toLocaleString('pt-PT', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kg
-                            </span>
+                          <div className="flex flex-col">
+                            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">{t.grossWeight}</span>
+                            <div className="flex items-center gap-1.5">
+                              <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="font-medium">
+                                {((e as any).peso_bruto || 0).toLocaleString('pt-PT', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kg
+                              </span>
+                            </div>
                           </div>
                         </div>
 
                         {/* Grupo Direito: Financeiro e Ações */}
-                        <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+                        <div className="flex items-center gap-4 sm:gap-6 ml-auto">
                           {!hidePrices && (
                             <>
-                              {/* Lucro - Hidden on very small screens */}
+                              {/* Lucro (Comissão) */}
                               {!isFelipe && (
-                                <div className="hidden sm:flex items-center gap-1 text-success text-xs" title="Lucro Estimado">
-                                  <TrendingUp className="h-3 w-3" />
-                                  <span className="font-medium">{formatCurrency(e.commission_amount || 0)}</span>
+                                <div className="flex flex-col items-end">
+                                  <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">Comissão</span>
+                                  <div className="flex items-center gap-1 text-success text-xs sm:text-sm">
+                                    <TrendingUp className="h-3.5 w-3.5" />
+                                    <span className="font-bold">{formatCurrency(e.commission_amount || 0)}</span>
+                                  </div>
                                 </div>
                               )}
 
                               {/* Total */}
-                              <div className="flex flex-col items-end">
-                                <span className="text-[9px] uppercase text-muted-foreground font-semibold leading-none">Total</span>
-                                <span className="font-bold text-sm sm:text-base text-foreground leading-tight">
+                              <div className="flex flex-col items-end ml-4 sm:ml-8">
+                                <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">Total</span>
+                                <span className="font-bold text-sm sm:text-base text-foreground leading-none">
                                   {formatCurrency(isFelipe ? e.valor_total_custo || 0 : e.valor_total)}
                                 </span>
                               </div>
                             </>
                           )}
 
-                          {/* Ações */}
-                          <EncomendaActions
-                            encomenda={e as any}
-                            onView={() => setSelectedEncomendaForView(e)}
-                            onEdit={() => setSelectedEncomendaForEdit(e)}
-                            onDelete={handleDelete}
-                            onTransport={() => setTransportDialogOpen(true)}
-                            canEditOrders={canEdit() && !isCollaborator && !readOnlyOrders}
-                          />
                         </div>
                       </div>
                     </div>
@@ -654,7 +673,7 @@ export default function Encomendas() {
 
       {/* View Dialog */}
       <Dialog open={!!selectedEncomendaForView} onOpenChange={(open) => !open && setSelectedEncomendaForView(null)}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-card">
           <DialogHeader>
             <DialogTitle>{t.viewOrder} #{selectedEncomendaForView?.numero_encomenda}</DialogTitle>
             <DialogDescription></DialogDescription>

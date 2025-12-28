@@ -23,5 +23,27 @@ export interface Produto {
 export interface Fornecedor {
   id: string;
   nome: string;
+  email?: string | null;
+  telefone?: string | null;
+  endereco?: string | null;
+  contato?: string | null;
+  observacoes?: string | null;
   active: boolean;
+  catalog_url?: string | null;
+  catalog_file?: string | null;
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export interface Cliente {
+  id: string;
+  nome: string;
+  email?: string | null;
+  telefone?: string | null;
+  endereco?: string | null;
+  contato?: string | null;
+  observacoes?: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at?: string | null;
 }

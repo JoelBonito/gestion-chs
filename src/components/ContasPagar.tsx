@@ -13,6 +13,9 @@ import PagamentoFornecedorForm from "@/components/PagamentoFornecedorForm";
 import { AttachmentManager } from "@/components/AttachmentManager";
 import { IconWithBadge } from "@/components/ui/icon-with-badge";
 import { PaymentDetailsModal } from "@/components/PaymentDetailsModal";
+import { OrderItemsView } from "@/components/OrderItemsView";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface ContaPagar {
   id: string;
@@ -36,10 +39,10 @@ export default function ContasPagar() {
   const [selectedConta, setSelectedConta] = useState<ContaPagar | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [attachmentCounts, setAttachmentCounts] = useState<Record<string, number>>({});
-  const [orderItems, setOrderItems] = useState<any[]>([]);
   const [paymentCounts, setPaymentCounts] = useState<Record<string, number>>({});
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [selectedPaymentConta, setSelectedPaymentConta] = useState<ContaPagar | null>(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
   const { toast } = useToast();
 
   const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
@@ -142,10 +145,9 @@ export default function ContasPagar() {
     });
   };
 
-  const handleViewDetails = async (conta: ContaPagar) => {
+  const handleViewDetails = (conta: ContaPagar) => {
     setSelectedConta(conta);
     setShowDetails(true);
-    await fetchOrderItems(conta.id);
   };
 
   const handleAttachmentChange = () => {
@@ -177,27 +179,6 @@ export default function ContasPagar() {
       setAttachmentCounts(counts);
     } catch (error) {
       console.error('Error loading attachment counts:', error);
-    }
-  };
-
-  const fetchOrderItems = async (encomendaId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('itens_encomenda')
-        .select(`
-          id,
-          quantidade,
-          preco_custo,
-          preco_unitario,
-          produtos ( nome, marca, tipo )
-        `)
-        .eq('encomenda_id', encomendaId);
-
-      if (error) throw error;
-      setOrderItems(data || []);
-    } catch (error) {
-      console.error('Error loading order items:', error);
-      setOrderItems([]);
     }
   };
 
@@ -255,7 +236,7 @@ export default function ContasPagar() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <Card className="shadow-card">
+      <Card className="shadow-card bg-card border-border/50">
         <CardHeader className="px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
@@ -267,27 +248,25 @@ export default function ContasPagar() {
                 {t("Encomendas com saldo devedor para fornecedores")}
               </CardDescription>
             </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
+            <div className="flex items-center space-x-3 bg-muted/30 px-3 py-1.5 rounded-xl border border-border/30 shadow-inner group">
+              <Switch
                 id="show-completed-payable"
                 checked={showCompleted}
-                onChange={(e) => setShowCompleted(e.target.checked)}
-                className="rounded"
+                onCheckedChange={setShowCompleted}
               />
-              <label htmlFor="show-completed-payable" className="text-sm">
+              <Label htmlFor="show-completed-payable" className="text-xs font-semibold uppercase tracking-wider cursor-pointer">
                 {t("Mostrar Concluídos")}
-              </label>
+              </Label>
             </div>
           </div>
         </CardHeader>
 
         <CardContent className="px-4 sm:px-6">
           {/* Tabela apenas no desktop */}
-          <div className="hidden lg:block overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto rounded-xl border border-border/40 overflow-hidden bg-popover shadow-sm">
             <Table>
-              <TableHeader>
-                <TableRow>
+              <TableHeader className="bg-popover border-b border-border/40">
+                <TableRow className="hover:bg-transparent transition-none border-b-0">
                   <TableHead>{t("Pedido")}</TableHead>
                   <TableHead>{t("Fornecedor")}</TableHead>
                   <TableHead>Data Criação</TableHead>
@@ -301,10 +280,14 @@ export default function ContasPagar() {
 
               <TableBody>
                 {contas.map((conta) => (
-                  <TableRow key={conta.id}>
+                  <TableRow
+                    key={conta.id}
+                    className="bg-popover hover:bg-muted/30 transition-colors border-b border-border dark:border-white/5 cursor-pointer group last:border-0"
+                    onClick={() => handleViewDetails(conta)}
+                  >
                     <TableCell className="font-medium">
                       <div className="flex flex-col">
-                        <span>{conta.numero_encomenda}</span>
+                        <span className="group-hover:text-primary transition-colors">{conta.numero_encomenda}</span>
                         <Badge variant="info" className="mt-0.5">
                           {conta.etiqueta || "Nenhum"}
                         </Badge>
@@ -335,7 +318,8 @@ export default function ContasPagar() {
                           variant="link"
                           size="sm"
                           className="h-auto p-0 text-primary underline"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setSelectedPaymentConta(conta);
                             setShowPaymentDetails(true);
                           }}
@@ -352,56 +336,64 @@ export default function ContasPagar() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleViewDetails(conta)}
+                          onClick={(e) => { e.stopPropagation(); handleViewDetails(conta); }}
                           title={t("Ver Detalhes")}
                           type="button"
+                          className="hover:text-primary hover:bg-primary/10 transition-colors"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
 
                         {!isFelipe && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            title={t("Registrar Pagamento")}
+                            type="button"
+                            className="hover:text-primary hover:bg-primary/10 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedConta(conta);
+                              // Aqui precisamos de uma forma de abrir o modal de pagamento
+                              // Como estava dentro de um DialogTrigger, vamos mudar a lógica para usar estado
+                              setShowPaymentForm(true);
+                            }}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        )}
+
+                        <div onClick={(e) => e.stopPropagation()}>
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                title={t("Registrar Pagamento")}
+                                title={t("Anexar Comprovante")}
                                 type="button"
                               >
-                                <Plus className="h-4 w-4" />
+                                <IconWithBadge
+                                  icon={<Paperclip className="h-4 w-4" />}
+                                  count={attachmentCounts[conta.id] || 0}
+                                />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
-                              <PagamentoFornecedorForm
-                                conta={{ ...conta, encomenda_id: conta.id }}
-                                onSuccess={handlePaymentSuccess}
+                            <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-background border-border" aria-describedby="">
+                              <DialogHeader className="border-b pb-4 mb-4">
+                                <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                                  <Paperclip className="h-5 w-5 text-primary" />
+                                  {t("Anexar Comprovante")}
+                                </DialogTitle>
+                              </DialogHeader>
+                              <AttachmentManager
+                                entityType="payable"
+                                entityId={conta.id}
+                                title={t("Anexar Comprovante")}
+                                onChanged={handleAttachmentChange}
                               />
                             </DialogContent>
                           </Dialog>
-                        )}
-
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              title={t("Anexar Comprovante")}
-                              type="button"
-                            >
-                              <IconWithBadge
-                                icon={<Paperclip className="h-4 w-4" />}
-                                count={attachmentCounts[conta.id] || 0}
-                              />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="">
-                            <AttachmentManager
-                              entityType="payable"
-                              entityId={conta.id}
-                              title={t("Anexar Comprovante")}
-                            />
-                          </DialogContent>
-                        </Dialog>
+                        </div>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -428,7 +420,11 @@ export default function ContasPagar() {
               </Card>
             )}
             {contas.map((conta) => (
-              <Card key={conta.id} className="overflow-hidden">
+              <Card
+                key={conta.id}
+                className="overflow-hidden bg-card border-border/50 cursor-pointer active:scale-[0.98] transition-all"
+                onClick={() => handleViewDetails(conta)}
+              >
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
@@ -458,7 +454,8 @@ export default function ContasPagar() {
                     {paymentCounts[conta.id] > 0 ? (
                       <button
                         className="text-primary underline cursor-pointer"
-                        onClick={() => {
+                        onClick={(ev) => {
+                          ev.stopPropagation();
                           setSelectedPaymentConta(conta);
                           setShowPaymentDetails(true);
                         }}
@@ -469,24 +466,22 @@ export default function ContasPagar() {
                       'Nenhum'
                     )}
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                  <div className="flex flex-col sm:flex-row gap-2 pt-1" onClick={(ev) => ev.stopPropagation()}>
                     <Button variant="ghost" size="sm" className="w-full sm:w-auto" onClick={() => handleViewDetails(conta)}>
                       <Eye className="w-4 h-4 mr-2" /> {t("Ver Detalhes")}
                     </Button>
                     {!isFelipe && (
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="sm" className="w-full sm:w-auto">
-                            <Plus className="w-4 h-4 mr-2" /> {t("Registrar Pagamento")}
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
-                          <PagamentoFornecedorForm
-                            conta={{ ...conta, encomenda_id: conta.id }}
-                            onSuccess={handlePaymentSuccess}
-                          />
-                        </DialogContent>
-                      </Dialog>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full sm:w-auto"
+                        onClick={() => {
+                          setSelectedConta(conta);
+                          setShowPaymentForm(true);
+                        }}
+                      >
+                        <Plus className="w-4 h-4 mr-2" /> {t("Registrar Pagamento")}
+                      </Button>
                     )}
                     <Dialog>
                       <DialogTrigger asChild>
@@ -498,17 +493,18 @@ export default function ContasPagar() {
                           <span className="ml-2">Anexos</span>
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
-                        <DialogHeader>
-                          <DialogTitle>{t("Anexar Comprovante")}</DialogTitle>
-                          <DialogDescription className="sr-only">
+                      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-background border-border" aria-describedby={undefined}>
+                        <DialogHeader className="border-b pb-4 mb-4">
+                          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                            <Paperclip className="h-5 w-5 text-primary" />
                             {t("Anexar Comprovante")}
-                          </DialogDescription>
+                          </DialogTitle>
                         </DialogHeader>
                         <AttachmentManager
                           entityType="payable"
                           entityId={conta.id}
                           title={t("Anexar Comprovante")}
+                          onChanged={handleAttachmentChange}
                         />
                       </DialogContent>
                     </Dialog>
@@ -520,111 +516,103 @@ export default function ContasPagar() {
         </CardContent>
       </Card>
 
+      {/* Dialog: Registrar Pagamento Fornecedor */}
+      {!isFelipe && selectedConta && (
+        <Dialog open={showPaymentForm} onOpenChange={setShowPaymentForm}>
+          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border" aria-describedby="">
+            <DialogHeader className="border-b pb-4 mb-4">
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Plus className="h-5 w-5 text-primary" />
+                {t("Registrar Pagamento")}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Registre um novo pagamento para o fornecedor deste pedido.
+              </DialogDescription>
+            </DialogHeader>
+            <PagamentoFornecedorForm
+              conta={{ ...selectedConta, encomenda_id: selectedConta.id }}
+              onSuccess={() => {
+                handlePaymentSuccess();
+                setShowPaymentForm(false);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Dialog: Detalhes + Anexos */}
       {selectedConta && (
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="">
-            <DialogHeader>
-              <DialogTitle>{t("Detalhes da Conta a Pagar")}</DialogTitle>
-              <DialogDescription className="sr-only">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border" aria-describedby="">
+            <DialogHeader className="border-b pb-4 mb-4">
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Eye className="h-5 w-5 text-primary" />
                 {t("Detalhes da Conta a Pagar")}
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Confira todas as informações financeiras desta compra.
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-6">
-              {/* Detalhes da conta */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Encomenda:</label>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedConta.numero_encomenda}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Fornecedor:</label>
-                  <p className="text-sm text-muted-foreground">{selectedConta.fornecedores?.nome || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Data Criação:</label>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(selectedConta.data_criacao).toLocaleDateString()}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Status:</label>
-                  <p className="text-sm text-muted-foreground">
-                    <Badge variant="outline">{selectedConta.status}</Badge>
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Valor Total:</label>
-                  <p className="text-sm font-semibold">
-                    {formatCurrencyEUR(selectedConta.valor_total_custo)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Valor Pago:</label>
-                  <p className="text-sm text-success">
-                    {formatCurrencyEUR(selectedConta.valor_pago_fornecedor)}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Saldo Devedor:</label>
-                  <p className="text-sm font-semibold text-warning">
-                    {formatCurrencyEUR(selectedConta.saldo_devedor_fornecedor)}
-                  </p>
+              {/* Detalhes da conta - Camada 3 (Destaque sobre Camada 2) */}
+              <div className="bg-popover rounded-xl border border-border/20 p-6 shadow-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Pedido")}:</span>
+                    <p className="text-sm font-semibold flex items-center gap-2">
+                      #{selectedConta.numero_encomenda}
+                      {selectedConta.etiqueta && (
+                        <Badge variant="info">{selectedConta.etiqueta}</Badge>
+                      )}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Fornecedor")}:</span>
+                    <p className="text-sm font-semibold">{selectedConta.fornecedores?.nome || 'N/A'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Data")}:</span>
+                    <p className="text-sm font-semibold italic">
+                      {new Date(selectedConta.data_criacao).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Status")}:</span>
+                    <div>
+                      <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">
+                        {selectedConta.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Valor Total")}:</span>
+                    <p className="text-sm font-bold">{formatCurrencyEUR(selectedConta.valor_total_custo)}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Valor Pago")}:</span>
+                    <p className="text-sm font-bold text-success">{formatCurrencyEUR(selectedConta.valor_pago_fornecedor)}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Saldo")}:</span>
+                    <p className="text-sm font-black text-warning">{formatCurrencyEUR(selectedConta.saldo_devedor_fornecedor)}</p>
+                  </div>
                 </div>
               </div>
 
               {/* Itens da Encomenda */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">Itens da Encomenda</h3>
-                {orderItems.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Produto</TableHead>
-                          <TableHead>Marca</TableHead>
-                          <TableHead>Tipo</TableHead>
-                          <TableHead className="text-right">Quantidade</TableHead>
-                          <TableHead className="text-right">Preço Custo</TableHead>
-                          <TableHead className="text-right">Subtotal Custo</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {orderItems.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-medium">
-                              {item.produtos?.nome || 'N/A'}
-                            </TableCell>
-                            <TableCell>{item.produtos?.marca || 'N/A'}</TableCell>
-                            <TableCell>{item.produtos?.tipo || 'N/A'}</TableCell>
-                            <TableCell className="text-right">{item.quantidade}</TableCell>
-                            <TableCell className="text-right font-semibold">
-                              {formatCurrencyEUR(item.preco_custo)}
-                            </TableCell>
-                            <TableCell className="text-right font-semibold">
-                              {formatCurrencyEUR(item.quantidade * item.preco_custo)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Nenhum item encontrado</p>
-                )}
+              <div className="pt-2">
+                <OrderItemsView encomendaId={selectedConta.id} showCostPrices={true} />
               </div>
 
-              {/* Anexos */}
-              <div className="border-t pt-6">
-                <h3 className="text-lg font-medium mb-4">{t("Comprovantes e Anexos")}</h3>
+              {/* Anexos - Camada 3 (Destaque) */}
+              <div className="border-t border-border/40 pt-6">
                 <AttachmentManager
                   entityType="payable"
                   entityId={selectedConta.id}
-                  title={t("Comprovantes de Pagamento")}
+                  title={t("Comprovantes e Anexos")}
                   onChanged={handleAttachmentChange}
+                  useTertiaryLayer={true}
                 />
               </div>
             </div>

@@ -66,7 +66,7 @@ export function MultiSelect({
                     role="combobox"
                     aria-expanded={open}
                     className={cn(
-                        "w-full justify-between bg-white dark:bg-background/50 border-none shadow-inner hover:bg-muted/50",
+                        "w-full justify-between bg-background dark:bg-popover border-none shadow-sm hover:bg-muted/50 transition-colors",
                         className
                     )}
                 >
@@ -82,7 +82,7 @@ export function MultiSelect({
                                 >
                                     {label}
                                     <X
-                                        className="ml-1 h-3 w-3 cursor-pointer hover:text-destructive"
+                                        className="ml-1 h-3 w-3 cursor-pointer hover:text-red-500 hover:scale-125 transition-all"
                                         onClick={(e) => handleRemove(selected[idx], e)}
                                     />
                                 </Badge>

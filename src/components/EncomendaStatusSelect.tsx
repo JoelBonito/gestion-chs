@@ -10,6 +10,7 @@ import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { sendEmail, emailTemplates, emailRecipients } from "@/lib/email";
+import { PushNotifications } from "@/lib/push-notifications";
 
 type StatusEncomenda = "NOVO PEDIDO" | "MATÉRIA PRIMA" | "PRODUÇÃO" | "EMBALAGENS" | "TRANSPORTE" | "ENTREGUE";
 
@@ -45,13 +46,13 @@ const getStatusLabel = (status: StatusEncomenda, isHamAdmin: boolean): string =>
 
 const getStatusColor = (status: StatusEncomenda) => {
   switch (status) {
-    case "NOVO PEDIDO": return "bg-muted-foreground";
-    case "MATÉRIA PRIMA": return "bg-warning";
-    case "PRODUÇÃO": return "bg-info";
-    case "EMBALAGENS": return "bg-yellow-500";
-    case "TRANSPORTE": return "bg-purple-500";
-    case "ENTREGUE": return "bg-success";
-    default: return "bg-muted-foreground";
+    case "NOVO PEDIDO": return "bg-blue-600"; // Azul vibrante para novos pedidos
+    case "MATÉRIA PRIMA": return "bg-orange-500"; // Laranja para aviso/espera
+    case "PRODUÇÃO": return "bg-sky-500"; // Azul claro para produção
+    case "EMBALAGENS": return "bg-emerald-500"; // Verde esmeralda para diferenciação
+    case "TRANSPORTE": return "bg-purple-600";
+    case "ENTREGUE": return "bg-green-600";
+    default: return "bg-slate-500";
   }
 };
 
@@ -80,7 +81,7 @@ const getStatusWithIcon = (status: StatusEncomenda, isHamAdmin: boolean) => {
           <TooltipTrigger asChild>
             <Info className="w-3 h-3 cursor-pointer" />
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent side="bottom" align="end">
             <p>{tooltip}</p>
           </TooltipContent>
         </Tooltip>
@@ -144,6 +145,9 @@ export function EncomendaStatusSelect({
         // Não exibir erro de email para não atrapalhar o fluxo principal
       }
 
+      // Enviar push notification
+      PushNotifications.statusAlterado(numeroEncomenda, newStatus).catch(() => { });
+
       toast.success(`Status da encomenda ${numeroEncomenda} atualizado para ${newStatus}`);
       onStatusChange();
     } catch (error) {
@@ -160,8 +164,8 @@ export function EncomendaStatusSelect({
       onValueChange={handleStatusChange}
       disabled={isUpdating || !canChangeStatus}
     >
-      <SelectTrigger className="w-auto border-none p-0 h-auto">
-        <Badge className={`${getStatusColor(currentStatus)} text-white ${canChangeStatus ? 'hover:opacity-80 cursor-pointer' : 'opacity-60'}`}>
+      <SelectTrigger className="w-auto border-none p-0 h-auto ring-0 focus:ring-0">
+        <Badge className={`${getStatusColor(currentStatus)} text-white min-w-[155px] whitespace-nowrap justify-center py-1.5 ${canChangeStatus ? 'hover:brightness-110 cursor-pointer active:scale-95' : 'opacity-70'} transition-all duration-200 shadow-sm uppercase text-[10px] tracking-wider font-bold`}>
           {isUpdating ? (isHamAdmin ? "Mise à jour..." : "Atualizando...") : getStatusWithIcon(currentStatus, isHamAdmin)}
         </Badge>
       </SelectTrigger>

@@ -94,100 +94,97 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   }
 
   return (
-    <div className="p-6">
-      <form onSubmit={handleSubmit} className="space-y-4" aria-describedby="invoice-form-description">
-        <div className="grid gap-4 md:grid-cols-2">
+    <div className="space-y-6 pt-2">
+      <form onSubmit={handleSubmit} className="space-y-6" aria-describedby="invoice-form-description">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
           <div className="space-y-2">
-            <Label htmlFor="invoice_date">Data da Fatura</Label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Label htmlFor="invoice_date" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Data da Fatura</Label>
+            <div className="relative group">
+              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors h-4 w-4" />
               <Input
                 id="invoice_date"
                 type="date"
                 value={formData.invoice_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, invoice_date: e.target.value }))}
-                className="pl-10"
+                className="pl-10 h-11 bg-popover border-border/40 font-semibold transition-all focus:ring-primary/20"
                 required
                 max={new Date().toISOString().split('T')[0]}
-                aria-describedby="invoice-date-help"
               />
             </div>
-            <p id="invoice-date-help" className="text-xs text-muted-foreground">
-              A data não pode ser futura.
-            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="amount">Valor da Fatura</Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.01"
-              min="0.01"
-              value={formData.amount || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-              placeholder="0.00"
-              required
-              aria-describedby="amount-help"
-            />
-            <p id="amount-help" className="text-xs text-muted-foreground">
-              Informe o valor total da fatura em euros.
-            </p>
+            <Label htmlFor="amount" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Valor da Fatura</Label>
+            <div className="relative group">
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={formData.amount || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                placeholder="0.00"
+                className="pl-8 h-11 bg-popover border-border/40 font-semibold transition-all focus:ring-primary/20"
+                required
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">€</span>
+            </div>
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description">Descrição (Opcional)</Label>
+          <Label htmlFor="description" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Descrição (Opcional)</Label>
           <Textarea
             id="description"
             value={formData.description}
             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
             placeholder="Descrição da fatura..."
-            rows={3}
+            rows={2}
+            className="min-h-[44px] bg-popover border-border/40 resize-none py-2.5 transition-all focus:ring-primary/20"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="file">Documento PDF (Opcional)</Label>
-          <div className="flex items-center gap-2">
+          <Label htmlFor="file" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Documento PDF (Opcional)</Label>
+          <div className="flex flex-col sm:flex-row gap-3">
             <Input
               id="file"
               type="file"
               accept=".pdf"
               onChange={handleFileChange}
-              className="flex-1"
-              aria-describedby="file-help"
+              className="flex-1 h-11 bg-popover border-border/40 transition-all file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
             />
             {selectedFile && (
-              <div className="flex items-center gap-1 text-sm text-success">
+              <div className="flex items-center gap-2 px-3 py-2 bg-success/10 text-success rounded-lg text-xs font-semibold border border-success/20">
                 <Upload className="h-4 w-4" />
-                {selectedFile.name}
+                <span className="truncate max-w-[150px]">{selectedFile.name}</span>
               </div>
             )}
           </div>
-          <p id="file-help" className="text-xs text-muted-foreground">
-            Anexe um arquivo PDF até 10MB. Você pode adicionar o anexo depois se preferir.
+          <p className="text-[10px] text-muted-foreground leading-relaxed italic">
+            * Anexe um arquivo PDF até 10MB.
           </p>
         </div>
 
-        <Button 
-          type="submit" 
-          disabled={isSubmitting}
-          className="w-full"
-          aria-label="Salvar fatura"
-        >
-          {isSubmitting ? (
-            <>
-              <Upload className="w-4 h-4 mr-2 animate-spin" />
-              Salvando...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              Salvar Fatura
-            </>
-          )}
-        </Button>
+        <div className="pt-2">
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full h-12 text-base font-bold bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
+          >
+            {isSubmitting ? (
+              <>
+                <Upload className="w-5 h-5 mr-2 animate-spin" />
+                Salvando Fatura...
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5 mr-2" />
+                Salvar Fatura
+              </>
+            )}
+          </Button>
+        </div>
       </form>
     </div>
   );

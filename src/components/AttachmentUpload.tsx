@@ -20,9 +20,9 @@ interface AttachmentUploadProps {
   compact?: boolean;
 }
 
-export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({ 
-  entityType, 
-  entityId, 
+export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
+  entityType,
+  entityId,
   onUploadSuccess,
   compact = false
 }) => {
@@ -30,7 +30,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
   const { uploadFile, isUploading, uploadProgress } = useSupabaseStorage();
   const { hasRole, isHardcodedAdmin } = useUserRole();
   const { isCollaborator } = useIsCollaborator();
-  
+
   // Check if user can upload files
   const canUpload = isHardcodedAdmin || hasRole('admin') || hasRole('ops') || hasRole('factory') || hasRole('finance') || isCollaborator;
 
@@ -81,19 +81,25 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
           multiple={false}
         />
-        
-        <Button 
+
+        <Button
           type="button"
           onClick={handleFileSelect}
           disabled={isUploading}
-          variant="ghost"
-          size="icon"
-          title="Anexar arquivo"
+          size="sm"
+          variant="gradient"
+          className="h-8 gap-1.5 text-[10px] uppercase font-bold tracking-wider active:scale-95 transition-all shadow-sm"
         >
           {isUploading ? (
-            <Upload className="h-4 w-4 animate-spin" />
+            <>
+              <Upload className="h-3 w-3 animate-spin" />
+              <span>Enviando...</span>
+            </>
           ) : (
-            <Paperclip className="h-4 w-4" />
+            <>
+              <Paperclip className="h-3 w-3" />
+              <span>Adicionar</span>
+            </>
           )}
         </Button>
       </div>
@@ -110,24 +116,24 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
         accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
         multiple={false}
       />
-      
-      <Button 
+
+      <Button
         type="button"
         onClick={handleFileSelect}
         disabled={isUploading}
-        variant="outline"
-        size="sm"
-        className="w-full"
+        size="md"
+        variant="gradient"
+        className="px-6 h-9 text-xs uppercase font-bold tracking-widest active:scale-95 transition-all shadow-md"
       >
         {isUploading ? (
           <>
             <Upload className="w-4 h-4 mr-2 animate-spin" />
-            Enviando para Supabase...
+            <span>Enviando...</span>
           </>
         ) : (
           <>
             <Paperclip className="w-4 h-4 mr-2" />
-            Anexar Arquivo
+            <span>Anexar Arquivo</span>
           </>
         )}
       </Button>
