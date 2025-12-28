@@ -111,7 +111,7 @@ export function MobileMenu() {
         <SheetHeader className="space-y-3">
           <div className="flex items-center space-x-3">
             <img
-              src="/lovable-uploads/634e6285-ffdf-4457-8136-8a0d8840bdd6.png"
+              src="/logo-inove.jpg"
               alt="Gestion CHS Logo"
               className="h-8 w-auto"
             />
