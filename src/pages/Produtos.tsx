@@ -291,7 +291,12 @@ export default function Produtos() {
                 <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider py-4 pl-6 w-[28%]">{t("Produto")}</TableHead>
 
                 {/* Marca Categoria */}
-                <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider py-4 w-[16%]">{t("Marca Categoria")}</TableHead>
+                <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider py-4 w-[16%]">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="leading-tight">{t("Marca")}</span>
+                    <span className="leading-tight">{t("Categoria")}</span>
+                  </div>
+                </TableHead>
 
                 {/* Fornecedor */}
                 <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider py-4 w-[18%]">{t("Fornecedor")}</TableHead>
@@ -302,26 +307,26 @@ export default function Produtos() {
                 {/* Colunas Condicionais de Preço */}
                 {!isHam && !hidePrices && (
                   <>
-                    <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider text-right py-4 leading-none w-[9%]">
-                      <div className="flex flex-col items-end">
-                        <span>{t("Preço")}</span>
-                        <span className="text-[9px] opacity-70">{t("Custo")}</span>
+                    <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider text-right py-4 w-[9%]">
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className="leading-tight">{t("Preço")}</span>
+                        <span className="leading-tight">{t("Custo")}</span>
                       </div>
                     </TableHead>
-                    <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider text-right py-4 leading-none w-[9%]">
-                      <div className="flex flex-col items-end">
-                        <span>{t("Preço")}</span>
-                        <span className="text-[9px] opacity-70">{t("Venda")}</span>
+                    <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider text-right py-4 w-[9%]">
+                      <div className="flex flex-col items-end gap-0.5">
+                        <span className="leading-tight">{t("Preço")}</span>
+                        <span className="leading-tight">{t("Venda")}</span>
                       </div>
                     </TableHead>
                   </>
                 )}
 
                 {isHam && (
-                  <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider text-right py-4 leading-none w-[12%]">
-                    <div className="flex flex-col items-end">
-                      <span>{t("Preço")}</span>
-                      <span className="text-[9px] opacity-70">{t("Venda")}</span>
+                  <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider text-right py-4 w-[12%]">
+                    <div className="flex flex-col items-end gap-0.5">
+                      <span className="leading-tight">{t("Preço")}</span>
+                      <span className="leading-tight">{t("Venda")}</span>
                     </div>
                   </TableHead>
                 )}
