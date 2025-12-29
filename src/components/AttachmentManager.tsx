@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { sendEmail, emailTemplates, emailRecipients } from '@/lib/email';
 import { Paperclip } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AttachmentManagerProps {
   entityType: string;
@@ -32,6 +33,24 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  const isHam = user?.email?.toLowerCase() === 'ham@admin.com';
+  const lang: 'pt' | 'fr' = isHam ? 'fr' : 'pt';
+
+  const t = (k: string) => {
+    const d: Record<string, { pt: string, fr: string }> = {
+      'Documentos & Anexos': { pt: 'Documentos & Anexos', fr: 'Documents & Annexes' },
+      'Anexos': { pt: 'Anexos', fr: 'Annexes' },
+      'Anexos do Transporte': { pt: 'Anexos do Transporte', fr: 'Pièces jointes du Transport' },
+      'Erro ao carregar anexos': { pt: 'Erro ao carregar anexos', fr: 'Erreur lors du chargement des annexes' },
+      'Anexo adicionado': { pt: 'Anexo adicionado', fr: 'Annexe ajoutée' },
+      'Erro ao anexar arquivo': { pt: 'Erro ao anexar arquivo', fr: 'Erreur lors de l’ajout de l’annexe' }
+    };
+    return d[k]?.[lang] || k;
+  };
+
+  const displayTitle = title === "Anexos" ? t("Anexos") : t(title);
 
   const handleUploadSuccess = useMemo(() => async (fileData: {
     file_name: string;
@@ -245,7 +264,7 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
         <div className="flex items-center gap-2">
           <Paperclip className="h-4 w-4 text-primary" />
           <h3 className="text-xs uppercase font-bold text-muted-foreground tracking-wider">
-            Documentos & Anexos
+            {displayTitle}
           </h3>
         </div>
         <AttachmentUpload

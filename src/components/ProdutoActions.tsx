@@ -31,6 +31,8 @@ export function ProdutoActions({ produto, onEdit, onView, onRefresh, className }
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const { isCollaborator } = useIsCollaborator();
   const { user } = useAuth();
+  const isHam = user?.email?.toLowerCase() === "ham@admin.com";
+  const isRestricted = isCollaborator || isHam;
 
   const handleView = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -99,6 +101,21 @@ export function ProdutoActions({ produto, onEdit, onView, onRefresh, className }
     }
   };
 
+  if (isHam) {
+    return (
+      <div className={cn("flex items-center justify-center py-1", className)}>
+        <Button
+          variant="ghost"
+          className="h-8 w-8 p-0 group hover:bg-primary/10 hover:text-primary transition-colors"
+          onClick={handleView}
+          title="Visualizar"
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("flex items-center justify-center py-1", className)}>
       <DropdownMenu>
@@ -117,7 +134,7 @@ export function ProdutoActions({ produto, onEdit, onView, onRefresh, className }
             Visualizar
           </DropdownMenuItem>
 
-          {!isCollaborator && (
+          {!isRestricted && (
             <DropdownMenuItem
               onClick={handleEdit}
               className="cursor-pointer hover:text-blue-400 hover:bg-blue-400/10 focus:text-blue-400 focus:bg-blue-400/10 transition-colors py-2"
@@ -127,7 +144,7 @@ export function ProdutoActions({ produto, onEdit, onView, onRefresh, className }
             </DropdownMenuItem>
           )}
 
-          {!isCollaborator && (
+          {!isRestricted && (
             <DropdownMenuItem
               onClick={handleArchive}
               className="cursor-pointer hover:text-orange-500 hover:bg-orange-500/10 focus:text-orange-500 focus:bg-orange-500/10 transition-colors py-2"
@@ -144,7 +161,7 @@ export function ProdutoActions({ produto, onEdit, onView, onRefresh, className }
             </DropdownMenuItem>
           )}
 
-          {!isCollaborator && (
+          {!isRestricted && (
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();

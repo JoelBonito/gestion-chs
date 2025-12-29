@@ -49,6 +49,8 @@ export function PaymentDetailsModal({
       "Nenhum pagamento encontrado": { pt: "Nenhum pagamento encontrado", fr: "Aucun paiement trouvé" },
       "Carregando...": { pt: "Carregando...", fr: "Chargement..." },
       "Fechar": { pt: "Fechar", fr: "Fermer" },
+      "Total Acumulado:": { pt: "Total Acumulado:", fr: "Total cumulé :" },
+      "Total:": { pt: "Total:", fr: "Total :" },
     };
     return dict[k]?.[lang] ?? k;
   };
@@ -144,7 +146,7 @@ export function PaymentDetailsModal({
               {/* Total Desk */}
               <div className="p-4 border-t border-border/40 bg-muted/20">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Total Acumulado:</span>
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Total Acumulado:")}</span>
                   <span className="font-black text-xl text-success">
                     {formatCurrencyEUR(payments.reduce((sum, p) => sum + p.valor_pagamento, 0))}
                   </span>
@@ -181,7 +183,7 @@ export function PaymentDetailsModal({
             {/* Total Mobile */}
             <div className="md:hidden border-t border-border/40 pt-4 px-2">
               <div className="flex justify-between items-center">
-                <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Total:</span>
+                <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Total:")}</span>
                 <span className="font-black text-xl text-success">
                   {formatCurrencyEUR(payments.reduce((sum, p) => sum + p.valor_pagamento, 0))}
                 </span>

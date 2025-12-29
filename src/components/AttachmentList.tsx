@@ -9,6 +9,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AttachmentListProps {
   entityType: string;
@@ -32,13 +33,33 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
   // Use the appropriate hook based on entity type
   const { attachments, isLoading, deleteAttachment } = isTransporte ? transporteAttachments : genericAttachments;
 
-  const { hasRole, isHardcodedAdmin } = useUserRole();
+  const { canEdit } = useUserRole();
+  const { user } = useAuth();
+  const isHam = user?.email?.toLowerCase() === 'ham@admin.com';
+  const lang: 'pt' | 'fr' = isHam ? 'fr' : 'pt';
+
+  const t = (k: string) => {
+    const d: Record<string, { pt: string, fr: string }> = {
+      'Nenhum anexo encontrado': { pt: 'Nenhum anexo encontrado', fr: 'Aucune pièce jointe trouvée' },
+      'Visualizar': { pt: 'Visualizar', fr: 'Voir' },
+      'Baixar': { pt: 'Baixar', fr: 'Télécharger' },
+      'Excluir': { pt: 'Excluir', fr: 'Supprimer' },
+      'Tamanho desconhecido': { pt: 'Tamanho desconhecido', fr: 'Taille inconnue' },
+      'Tem certeza que deseja excluir este anexo?': { pt: 'Tem certeza que deseja excluir este anexo?', fr: 'Êtes-vous sûr de vouloir supprimer cette pièce jointe ?' },
+      'PDF será aberto em nova aba.': { pt: 'PDF será aberto em nova aba.', fr: 'Le PDF s\'ouvrira dans um nouvel onglet.' },
+      'Abrir PDF': { pt: 'Abrir PDF', fr: 'Ouvrir le PDF' },
+      'Prévia não disponível para este tipo de arquivo.': { pt: 'Prévia não disponível para este tipo de arquivo.', fr: 'Aperçu non disponible pour ce type de fichier.' },
+      'Baixar Arquivo': { pt: 'Baixar Arquivo', fr: 'Télécharger le fichier' }
+    };
+    return d[k]?.[lang] || k;
+  };
+
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<string>('');
   const [previewTitle, setPreviewTitle] = useState<string>('');
 
   // Check if user can delete files
-  const canDelete = isHardcodedAdmin || hasRole('admin') || hasRole('ops') || hasRole('factory') || hasRole('finance');
+  const canDelete = canEdit();
 
   const getFileIcon = (fileType: string) => {
     if (fileType?.startsWith('image/')) {
@@ -51,7 +72,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
   };
 
   const formatFileSize = (bytes: number | null) => {
-    if (!bytes) return 'Tamanho desconhecido';
+    if (!bytes) return t('Tamanho desconhecido');
 
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
@@ -127,7 +148,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
   };
 
   const handleDelete = async (attachment: any) => {
-    if (!window.confirm('Tem certeza que deseja excluir este anexo?')) {
+    if (!window.confirm(t('Tem certeza que deseja excluir este anexo?'))) {
       return;
     }
 
@@ -157,13 +178,13 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
       return (
         <div className="text-center p-8">
           <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-          <p>PDF será aberto em nova aba.</p>
+          <p>{t('PDF será aberto em nova aba.')}</p>
           <Button
             onClick={() => window.open(previewUrl, '_blank', 'noopener,noreferrer')}
             className="mt-4"
           >
             <ExternalLink className="w-4 h-4 mr-2" />
-            Abrir PDF
+            {t('Abrir PDF')}
           </Button>
         </div>
       );
@@ -171,13 +192,13 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
       return (
         <div className="text-center p-8">
           <File className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-          <p>Prévia não disponível para este tipo de arquivo.</p>
+          <p>{t('Prévia não disponível para este tipo de arquivo.')}</p>
           <Button
             onClick={() => downloadFile({ [isTransporte ? 'url' : 'storage_url']: previewUrl, [isTransporte ? 'name' : 'file_name']: previewTitle })}
             className="mt-4"
           >
             <Download className="w-4 h-4 mr-2" />
-            Baixar Arquivo
+            {t('Baixar Arquivo')}
           </Button>
         </div>
       );
@@ -196,7 +217,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
     return compact ? null : (
       <div className="text-center p-4 text-muted-foreground">
         <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">Nenhum anexo encontrado</p>
+        <p className="text-sm">{t('Nenhum anexo encontrado')}</p>
       </div>
     );
   }
@@ -277,7 +298,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
               <div className="flex items-center space-x-2 text-[10px] text-muted-foreground uppercase font-medium tracking-tight">
                 <span>{formatFileSize(attachment.file_size)}</span>
                 <span className="opacity-30">•</span>
-                <span>{new Date(attachment.created_at).toLocaleDateString('pt-BR')}</span>
+                <span>{new Date(attachment.created_at).toLocaleDateString(isHam ? 'fr-FR' : 'pt-BR')}</span>
               </div>
             </div>
           </div>
@@ -287,7 +308,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
               variant="ghost"
               size="icon"
               onClick={() => handlePreview(attachment)}
-              title="Visualizar"
+              title={t("Visualizar")}
               className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 hover:scale-110 active:scale-90 transition-all"
             >
               <Eye className="h-4 w-4" />
@@ -297,7 +318,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
               variant="ghost"
               size="icon"
               onClick={() => downloadFile(attachment)}
-              title="Baixar"
+              title={t("Baixar")}
               className="h-8 w-8 text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 hover:scale-110 active:scale-90 transition-all"
             >
               <Download className="h-4 w-4" />
@@ -308,7 +329,7 @@ export const AttachmentList: React.FC<AttachmentListProps> = ({
                 variant="ghost"
                 size="icon"
                 onClick={() => handleDelete(attachment)}
-                title="Excluir"
+                title={t("Excluir")}
                 className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 hover:scale-110 active:scale-90 transition-all"
               >
                 <Trash2 className="h-4 w-4" />

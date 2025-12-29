@@ -105,7 +105,7 @@ export default function Clientes() {
   );
 
   return (
-    <OptimizedRoleGuard>
+    <OptimizedRoleGuard blockHam={true}>
       <PageContainer
         title="Clientes"
         subtitle="Gerencie seus distribuidores e parceiros"

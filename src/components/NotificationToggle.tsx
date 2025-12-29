@@ -20,8 +20,28 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { PushNotifications } from '@/lib/push-notifications';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 export function NotificationToggle() {
+    const { user } = useAuth();
+    const isHam = user?.email?.toLowerCase() === 'ham@admin.com';
+    const lang: 'pt' | 'fr' = isHam ? 'fr' : 'pt';
+
+    const t = (k: string) => {
+        const d: Record<string, { pt: string, fr: string }> = {
+            'Carregando...': { pt: 'Carregando...', fr: 'Chargement...' },
+            'Notificações bloqueadas pelo navegador': { pt: 'Notificações bloqueadas pelo navegador', fr: 'Notifications bloquées par le navigateur' },
+            'Notificações ativas': { pt: 'Notificações ativas', fr: 'Notifications actives' },
+            'Ativar notificações': { pt: 'Ativar notificações', fr: 'Activer les notifications' },
+            'Enviando notificação de teste...': { pt: 'Enviando notificação de teste...', fr: 'Envoi d\'une notification de test...' },
+            'Notificação enviada!': { pt: 'Notificação enviada!', fr: 'Notification envoyée !' },
+            'Erro ao enviar: ': { pt: 'Erro ao enviar: ', fr: 'Erreur lors de l\'envoi : ' },
+            'Testar Notificação': { pt: 'Testar Notificação', fr: 'Tester la notification' },
+            'Desativar': { pt: 'Desativar', fr: 'Désactiver' }
+        };
+        return d[k]?.[lang] || k;
+    };
+
     const {
         isSupported,
         isSubscribed,

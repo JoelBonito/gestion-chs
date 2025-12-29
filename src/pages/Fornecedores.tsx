@@ -102,7 +102,7 @@ export default function Fornecedores() {
   );
 
   return (
-    <OptimizedRoleGuard>
+    <OptimizedRoleGuard blockHam={true}>
       <PageContainer
         title="Fornecedores"
         subtitle="Gerencie suas fábricas e parceiros de produção"

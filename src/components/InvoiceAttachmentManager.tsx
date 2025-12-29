@@ -10,6 +10,7 @@ import { useSupabaseStorage } from '@/hooks/useSupabaseStorage';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 interface InvoiceAttachmentManagerProps {
   invoice: Invoice;
@@ -20,6 +21,36 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
   invoice,
   onUpdate
 }) => {
+  const { user } = useAuth();
+  const isHam = user?.email?.toLowerCase() === "ham@admin.com";
+
+  // i18n
+  const lang: "pt" | "fr" = isHam ? "fr" : "pt";
+  const t = (k: string) => {
+    const d: Record<string, { pt: string, fr: string }> = {
+      "Anexos": { pt: "Anexos", fr: "Pièces jointes" },
+      "Envio de Documentos": { pt: "Envio de Documentos", fr: "Envoi de documents" },
+      "Selecione um arquivo PDF para anexar a esta fatura.": { pt: "Selecione um arquivo PDF para anexar a esta fatura.", fr: "Sélectionnez un fichier PDF à joindre à cette facture." },
+      "Somente arquivos PDF até 10MB": { pt: "Somente arquivos PDF até 10MB", fr: "Uniquement les fichiers PDF jusqu'à 10 Mo" },
+      "Enviando...": { pt: "Enviando...", fr: "Envoi en cours..." },
+      "Enviar Anexo": { pt: "Enviar Anexo", fr: "Envoyer la pièce jointe" },
+      "Cancelar": { pt: "Cancelar", fr: "Annuler" },
+      "Abrir em nova aba": { pt: "Abrir em nova aba", fr: "Ouvrir dans un nouvel onglet" },
+      "Documento": { pt: "Documento", fr: "Document" },
+      "Visualizar": { pt: "Visualizar", fr: "Visualiser" },
+      "Download": { pt: "Download", fr: "Télécharger" },
+      "Excluir": { pt: "Excluir", fr: "Supprimer" },
+      "Apenas arquivos PDF são permitidos.": { pt: "Apenas arquivos PDF são permitidos.", fr: "Seuls les fichiers PDF sont autorisés." },
+      "Arquivo muito grande. Máximo permitido: 10MB": { pt: "Arquivo muito grande. Máximo permitido: 10MB", fr: "Fichier trop volumineux. Maximum autorisé : 10 Mo" },
+      "Erro ao deletar anexo": { pt: "Erro ao deletar anexo", fr: "Erreur lors de la suppression de la pièce jointe" },
+      "Anexo deletado com sucesso": { pt: "Anexo deletado com sucesso", fr: "Pièce jointe supprimée avec succès" },
+      "Confirmar Exclusão": { pt: "Confirmar Exclusão", fr: "Confirmer la suppression" },
+      "Tem certeza que deseja excluir este anexo?": { pt: "Tem certeza que deseja excluir este anexo?", fr: "Êtes-vous sûr de vouloir supprimer cette pièce jointe ?" },
+      "Anexo adicionado com sucesso!": { pt: "Anexo adicionado com sucesso!", fr: "Pièce jointe ajoutée avec succès !" },
+      "Nenhum anexo encontrado": { pt: "Nenhum anexo encontrado", fr: "Aucune pièce jointe trouvée" }
+    };
+    return d[k]?.[lang] || k;
+  };
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewModal, setPreviewModal] = useState<{
@@ -28,9 +59,8 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
   } | null>(null);
 
   const { uploadFile, isUploading } = useSupabaseStorage();
-  const { hasRole } = useUserRole();
-
-  const canManage = hasRole('admin') || hasRole('finance');
+  const { canEdit } = useUserRole();
+  const canManage = canEdit();
 
   const getPublicUrl = (storagePath: string) => {
     const { data } = supabase.storage.from('attachments').getPublicUrl(storagePath);
@@ -42,12 +72,12 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
     if (!file) return;
 
     if (file.type !== 'application/pdf') {
-      alert('Apenas arquivos PDF são permitidos.');
+      alert(t('Apenas arquivos PDF são permitidos.'));
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) { // 10MB
-      alert('Arquivo muito grande. Máximo permitido: 10MB');
+      alert(t('Arquivo muito grande. Máximo permitido: 10MB'));
       return;
     }
 
@@ -115,21 +145,21 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
         throw updateError;
       }
 
-      toast.success('Anexo adicionado com sucesso!');
+      toast.success(t('Anexo adicionado com sucesso!'));
       setSelectedFile(null);
       setIsUploadOpen(false);
       onUpdate();
 
     } catch (error: any) {
       console.error('Erro no upload:', error);
-      toast.error(`Erro ao adicionar anexo: ${error.message}`);
+      toast.error(error.message || t("Erro ao fazer upload"));
     }
   };
 
-  const handleRemoveAttachment = async () => {
+  const handleDelete = async () => {
     if (!invoice.attachment || !canManage) return;
 
-    if (!confirm('Tem certeza que deseja remover este anexo?')) {
+    if (!confirm(t('Tem certeza que deseja excluir este anexo?'))) {
       return;
     }
 
@@ -165,12 +195,12 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
         throw updateError;
       }
 
-      toast.success('Anexo removido com sucesso!');
+      toast.success(t('Anexo deletado com sucesso'));
       onUpdate();
 
     } catch (error: any) {
       console.error('Erro ao remover anexo:', error);
-      toast.error(`Erro ao remover anexo: ${error.message}`);
+      toast.error(t('Erro ao deletar anexo'));
     }
   };
 
@@ -211,31 +241,31 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
     <>
       <Card className="mt-4 bg-card border-border/30 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Paperclip className="h-5 w-5" />
-            Anexo da Fatura
+          <CardTitle className="text-sm font-bold uppercase tracking-wider flex items-center gap-2">
+            <Paperclip className="h-4 w-4 text-primary" />
+            {t("Anexos")}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           {invoice.attachment ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-popover rounded-lg border border-border/20 shadow-sm transition-all hover:border-primary/30">
-                <div className="flex items-center gap-3">
-                  <FileText className="h-6 w-6 text-red-500" />
-                  <div>
-                    <p className="font-medium text-sm">{invoice.attachment.file_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      PDF
-                    </p>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <FileText className="h-5 w-5 text-red-500 shrink-0" />
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="text-sm font-semibold truncate">{invoice.attachment.file_name}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase">{t("Documento")}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={handlePreview}
-                    title="Visualizar"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 hover:scale-110 active:scale-90 transition-all"
+                    onClick={() => setPreviewModal({
+                      url: getPublicUrl(invoice.attachment!.storage_path),
+                      fileName: invoice.attachment!.file_name
+                    })}
+                    title={t("Visualizar")}
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
@@ -243,17 +273,7 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
                     variant="ghost"
                     size="sm"
                     onClick={() => window.open(getPublicUrl(invoice.attachment!.storage_path), '_blank')}
-                    title="Abrir em nova aba"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10 hover:scale-110 active:scale-90 transition-all"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDownload}
-                    title="Download"
-                    className="h-8 w-8 text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 hover:scale-110 active:scale-90 transition-all"
+                    title={t("Download")}
                   >
                     <Download className="w-4 h-4" />
                   </Button>
@@ -261,9 +281,9 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={handleRemoveAttachment}
-                      title="Remover anexo"
-                      className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 hover:scale-110 active:scale-90 transition-all"
+                      className="text-destructive hover:text-red-600 hover:bg-destructive/10"
+                      onClick={handleDelete}
+                      title={t("Excluir")}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -272,32 +292,38 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
               </div>
             </div>
           ) : (
-            <div className="text-center py-6">
-              <Paperclip className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground mb-4">Esta fatura não possui anexo</p>
+            <div className="text-center py-6 px-4 border-2 border-dashed border-border/50 rounded-xl">
+              <Paperclip className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground italic">{t("Nenhum anexo encontrado")}</p>
               {canManage && (
                 <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline">
+                    <Button variant="outline" size="sm" className="mt-4">
                       <Upload className="w-4 h-4 mr-2" />
-                      Adicionar Anexo
+                      {t("Enviar Anexo")}
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="bg-card border-border/50">
+                  <DialogContent className="sm:max-w-md bg-popover border-border/50">
                     <DialogHeader>
-                      <DialogTitle>Adicionar Anexo à Fatura</DialogTitle>
+                      <DialogTitle className="flex items-center gap-2">
+                        <Upload className="h-5 w-5 text-primary" />
+                        {t("Envio de Documentos")}
+                      </DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="attachment_file">Arquivo PDF</Label>
+                    <div className="space-y-4 pt-4">
+                      <div className="grid w-full items-center gap-2">
+                        <Label htmlFor="file-upload" className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
+                          {t("Selecione um arquivo PDF para anexar a esta fatura.")}
+                        </Label>
                         <Input
-                          id="attachment_file"
+                          id="file-upload"
                           type="file"
                           accept=".pdf"
                           onChange={handleFileChange}
+                          className="bg-background/50 border-border/40"
                         />
-                        <p className="text-xs text-muted-foreground">
-                          Apenas arquivos PDF até 10MB são permitidos.
+                        <p className="text-[10px] text-muted-foreground italic">
+                          {t("Somente arquivos PDF até 10MB")}
                         </p>
                       </div>
 
@@ -320,17 +346,17 @@ export const InvoiceAttachmentManager: React.FC<InvoiceAttachmentManagerProps> =
                           {isUploading ? (
                             <>
                               <Upload className="w-4 h-4 mr-2 animate-spin" />
-                              Enviando...
+                              {t("Enviando...")}
                             </>
                           ) : (
                             <>
                               <Upload className="w-4 h-4 mr-2" />
-                              Enviar Anexo
+                              {t("Enviar Anexo")}
                             </>
                           )}
                         </Button>
                         <Button variant="cancel" onClick={() => setIsUploadOpen(false)}>
-                          Cancelar
+                          {t("Cancelar")}
                         </Button>
                       </div>
                     </div>

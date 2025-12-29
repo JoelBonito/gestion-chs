@@ -34,11 +34,33 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   }, []);
 
   // Permissão: admin role OU finance role OU e-mails autorizados
+  const isRestrictedUser = userEmail?.toLowerCase() === "ham@admin.com";
   const canCreate =
-    hasRole('admin') ||
-    hasRole('finance') ||
-    userEmail?.toLowerCase() === "admin@admin.com" ||
-    userEmail?.toLowerCase() === "jbento1@gmail.com";
+    (hasRole('admin') ||
+      hasRole('finance') ||
+      userEmail?.toLowerCase() === "admin@admin.com" ||
+      userEmail?.toLowerCase() === "jbento1@gmail.com") && !isRestrictedUser;
+
+  // i18n
+  const lang: "pt" | "fr" = isRestrictedUser ? "fr" : "pt";
+  const t = (k: string) => {
+    const d: Record<string, { pt: string, fr: string }> = {
+      "Data da Fatura": { pt: "Data da Fatura", fr: "Date de la facture" },
+      "Valor da Fatura": { pt: "Valor da Fatura", fr: "Montant de la facture" },
+      "Descrição (Opcional)": { pt: "Descrição (Opcional)", fr: "Description (Optionnel)" },
+      "Descrição da fatura...": { pt: "Descrição da fatura...", fr: "Description de la facture..." },
+      "Documento PDF (Opcional)": { pt: "Documento PDF (Opcional)", fr: "Document PDF (Optionnel)" },
+      "A data da fatura não pode ser futura.": { pt: "A data da fatura não pode ser futura.", fr: "La date de la facture ne peut pas être future." },
+      "O valor deve ser maior que zero.": { pt: "O valor deve ser maior que zero.", fr: "La valeur doit être supérieure à zéro." },
+      "Apenas arquivos PDF são permitidos.": { pt: "Apenas arquivos PDF são permitidos.", fr: "Seuls les fichiers PDF sont autorisés." },
+      "Arquivo muito grande. Máximo permitido: 10MB": { pt: "Arquivo muito grande. Máximo permitido: 10MB", fr: "Fichier trop volumineux. Maximum autorisé : 10 Mo" },
+      "Você não tem permissão para criar faturas.": { pt: "Você não tem permissão para criar faturas.", fr: "Vous n'avez pas la permission de créer des factures." },
+      "Salvando Fatura...": { pt: "Salvando Fatura...", fr: "Enregistrement de la facture..." },
+      "Salvar Fatura": { pt: "Salvar Fatura", fr: "Enregistrer la facture" },
+      "* Anexe um arquivo PDF até 10MB.": { pt: "* Anexe um arquivo PDF até 10MB.", fr: "* Joindre un fichier PDF jusqu'à 10 Mo." }
+    };
+    return d[k]?.[lang] || k;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,11 +68,11 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
     const today = new Date().toISOString().split('T')[0];
     if (formData.invoice_date > today) {
-      alert('A data da fatura não pode ser futura.');
+      alert(t('A data da fatura não pode ser futura.'));
       return;
     }
     if (formData.amount <= 0) {
-      alert('O valor deve ser maior que zero.');
+      alert(t('O valor deve ser maior que zero.'));
       return;
     }
     try {
@@ -73,11 +95,11 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.type !== 'application/pdf') {
-      alert('Apenas arquivos PDF são permitidos.');
+      alert(t('Apenas arquivos PDF são permitidos.'));
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      alert('Arquivo muito grande. Máximo permitido: 10MB');
+      alert(t('Arquivo muito grande. Máximo permitido: 10MB'));
       return;
     }
     setSelectedFile(file);
@@ -87,7 +109,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     return (
       <div className="p-6 text-center">
         <p className="text-muted-foreground" id="no-permission">
-          Você não tem permissão para criar faturas.
+          {t("Você não tem permissão para criar faturas.")}
         </p>
       </div>
     );
@@ -98,7 +120,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       <form onSubmit={handleSubmit} className="space-y-6" aria-describedby="invoice-form-description">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
           <div className="space-y-2">
-            <Label htmlFor="invoice_date" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Data da Fatura</Label>
+            <Label htmlFor="invoice_date" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Data da Fatura")}</Label>
             <div className="relative group">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors h-4 w-4" />
               <Input
@@ -114,7 +136,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="amount" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Valor da Fatura</Label>
+            <Label htmlFor="amount" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Valor da Fatura")}</Label>
             <div className="relative group">
               <Input
                 id="amount"
@@ -133,19 +155,19 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Descrição (Opcional)</Label>
+          <Label htmlFor="description" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Descrição (Opcional)")}</Label>
           <Textarea
             id="description"
             value={formData.description}
             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-            placeholder="Descrição da fatura..."
+            placeholder={t("Descrição da fatura...")}
             rows={2}
             className="min-h-[44px] bg-popover border-border/40 resize-none py-2.5 transition-all focus:ring-primary/20"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="file" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Documento PDF (Opcional)</Label>
+          <Label htmlFor="file" className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Documento PDF (Opcional)")}</Label>
           <div className="flex flex-col sm:flex-row gap-3">
             <Input
               id="file"
@@ -162,7 +184,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             )}
           </div>
           <p className="text-[10px] text-muted-foreground leading-relaxed italic">
-            * Anexe um arquivo PDF até 10MB.
+            {t("* Anexe um arquivo PDF até 10MB.")}
           </p>
         </div>
 
@@ -175,12 +197,12 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             {isSubmitting ? (
               <>
                 <Upload className="w-5 h-5 mr-2 animate-spin" />
-                Salvando Fatura...
+                {t("Salvando Fatura...")}
               </>
             ) : (
               <>
                 <Save className="w-5 h-5 mr-2" />
-                Salvar Fatura
+                {t("Salvar Fatura")}
               </>
             )}
           </Button>

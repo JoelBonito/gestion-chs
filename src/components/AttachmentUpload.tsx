@@ -7,6 +7,7 @@ import { useSupabaseStorage } from '@/hooks/useSupabaseStorage';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useIsCollaborator } from '@/hooks/useIsCollaborator';
 
+import { useAuth } from '@/hooks/useAuth';
 interface AttachmentUploadProps {
   entityType?: string;
   entityId?: string;
@@ -28,11 +29,25 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading, uploadProgress } = useSupabaseStorage();
-  const { hasRole, isHardcodedAdmin } = useUserRole();
+  const { canEdit } = useUserRole();
   const { isCollaborator } = useIsCollaborator();
+  const { user } = useAuth();
+  const isHam = user?.email?.toLowerCase() === 'ham@admin.com';
+  const lang: 'pt' | 'fr' = isHam ? 'fr' : 'pt';
+
+  const t = (k: string) => {
+    const d: Record<string, { pt: string, fr: string }> = {
+      'Enviando...': { pt: 'Enviando...', fr: 'Envoi...' },
+      'Adicionar': { pt: 'Adicionar', fr: 'Ajouter' },
+      'Anexar Arquivo': { pt: 'Anexar Arquivo', fr: 'Joindre un fichier' },
+      '% enviado': { pt: '% enviado', fr: '% envoyé' },
+      'Iniciando upload do arquivo:': { pt: 'Iniciando upload do arquivo:', fr: 'Début du téléchargement du fichier :' }
+    };
+    return d[k]?.[lang] || k;
+  };
 
   // Check if user can upload files
-  const canUpload = isHardcodedAdmin || hasRole('admin') || hasRole('ops') || hasRole('factory') || hasRole('finance') || isCollaborator;
+  const canUpload = canEdit() || isCollaborator;
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
@@ -42,7 +57,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    console.log('Iniciando upload do arquivo:', file.name, 'para entidade:', entityType, entityId);
+    console.log(t('Iniciando upload do arquivo:'), file.name, 'para entidade:', entityType, entityId);
 
     try {
       const result = await uploadFile(file, entityType, entityId);
@@ -93,12 +108,12 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
           {isUploading ? (
             <>
               <Upload className="h-3 w-3 animate-spin" />
-              <span>Enviando...</span>
+              <span>{t('Enviando...')}</span>
             </>
           ) : (
             <>
               <Paperclip className="h-3 w-3" />
-              <span>Adicionar</span>
+              <span>{t('Adicionar')}</span>
             </>
           )}
         </Button>
@@ -128,12 +143,12 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
         {isUploading ? (
           <>
             <Upload className="w-4 h-4 mr-2 animate-spin" />
-            <span>Enviando...</span>
+            <span>{t('Enviando...')}</span>
           </>
         ) : (
           <>
             <Paperclip className="w-4 h-4 mr-2" />
-            <span>Anexar Arquivo</span>
+            <span>{t('Anexar Arquivo')}</span>
           </>
         )}
       </Button>
@@ -142,7 +157,7 @@ export const AttachmentUpload: React.FC<AttachmentUploadProps> = ({
         <div className="space-y-1">
           <Progress value={uploadProgress} className="h-2" />
           <p className="text-xs text-muted-foreground text-center">
-            {uploadProgress}% enviado
+            {uploadProgress}{t('% enviado')}
           </p>
         </div>
       )}

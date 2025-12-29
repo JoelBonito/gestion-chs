@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
+import { useLocale } from "@/contexts/LocaleContext";
 
 interface OrderItem {
   id: string;
@@ -28,9 +29,27 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
   const [items, setItems] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { isCollaborator } = useIsCollaborator();
+  const { isRestrictedFR } = useLocale();
 
   // Se for colaborador, sempre mostrar preços de custo
   const shouldShowCostPrices = showCostPrices || isCollaborator;
+
+  const t = (k: string) => {
+    const d: Record<string, { pt: string; fr: string }> = {
+      "Itens da Encomenda": { pt: "Itens da Encomenda", fr: "Articles de la commande" },
+      "Produto": { pt: "Produto", fr: "Produit" },
+      "Marca": { pt: "Marca", fr: "Marque" },
+      "Tipo": { pt: "Tipo", fr: "Type" },
+      "Qtd": { pt: "Qtd", fr: "Qté" },
+      "Preço Un.": { pt: "Preço Un.", fr: "Prix Un." },
+      "Custo Un.": { pt: "Custo Un.", fr: "Coût Un." },
+      "Subtotal": { pt: "Subtotal", fr: "Sous-total" },
+      "Total dos Itens:": { pt: "Total dos Itens:", fr: "Total des articles :" },
+      "Carregando itens...": { pt: "Carregando itens...", fr: "Chargement des articles..." },
+      "Nenhum item encontrado": { pt: "Nenhum item encontrado", fr: "Aucun article trouvé" },
+    };
+    return d[k]?.[isRestrictedFR ? "fr" : "pt"] || k;
+  };
 
   useEffect(() => {
     fetchItems();
@@ -65,7 +84,7 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
     return (
       <Card className="bg-popover border-border/50">
         <CardContent className="p-4 text-center">
-          <p className="text-muted-foreground">Carregando itens...</p>
+          <p className="text-muted-foreground">{t("Carregando itens...")}</p>
         </CardContent>
       </Card>
     );
@@ -75,10 +94,10 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
     return (
       <Card className="bg-popover border-border/50">
         <CardHeader>
-          <CardTitle>Itens da Encomenda</CardTitle>
+          <CardTitle>{t("Itens da Encomenda")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-center py-4">Nenhum item encontrado</p>
+          <p className="text-muted-foreground text-center py-4">{t("Nenhum item encontrado")}</p>
         </CardContent>
       </Card>
     );
@@ -88,7 +107,7 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
     <Card className="bg-popover border-border/30 overflow-hidden shadow-none">
       <CardHeader className="pb-4">
         <CardTitle className="text-lg font-bold flex items-center gap-2">
-          Itens da Encomenda
+          {t("Itens da Encomenda")}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -96,12 +115,14 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
           <Table>
             <TableHeader className="bg-muted/50 border-b border-border/40">
               <TableRow className="hover:bg-transparent">
-                <TableHead className="font-bold">Produto</TableHead>
-                <TableHead className="font-bold">Marca</TableHead>
-                <TableHead className="font-bold">Tipo</TableHead>
-                <TableHead className="text-right font-bold">Qtd</TableHead>
-                <TableHead className="text-right font-bold">{shouldShowCostPrices ? 'Custo Un.' : 'Preço Un.'}</TableHead>
-                <TableHead className="text-right font-bold">Subtotal</TableHead>
+                <TableHead className="font-bold">{t("Produto")}</TableHead>
+                <TableHead className="font-bold">{t("Marca")}</TableHead>
+                <TableHead className="font-bold">{t("Tipo")}</TableHead>
+                <TableHead className="text-right font-bold">{t("Qtd")}</TableHead>
+                <TableHead className="text-right font-bold">
+                  {shouldShowCostPrices ? t("Custo Un.") : t("Preço Un.")}
+                </TableHead>
+                <TableHead className="text-right font-bold">{t("Subtotal")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -134,7 +155,7 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
         <div className="mt-6 pt-4 border-t border-border/40">
           <div className="flex justify-end pr-2">
             <div className="text-right">
-              <p className="text-xs uppercase font-bold text-muted-foreground tracking-wider mb-1">Total dos Itens:</p>
+              <p className="text-xs uppercase font-bold text-muted-foreground tracking-wider mb-1">{t("Total dos Itens:")}</p>
               <p className="text-xl font-black text-primary">
                 {formatCurrencyEUR(shouldShowCostPrices
                   ? items.reduce((sum, item) => sum + (item.quantidade * (item.preco_custo || 0)), 0)

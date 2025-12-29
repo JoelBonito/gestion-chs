@@ -62,7 +62,12 @@ export function UserRoleProvider({ children }: { children: ReactNode }) {
         user?.email?.toLowerCase() === 'jbento1@gmail.com' ||
         user?.email?.toLowerCase() === 'admin@admin.com';
 
-    const canEdit = () => isHardcodedAdmin || hasRole('admin') || hasRole('ops');
+    const isClientFR = user?.email?.toLowerCase() === 'ham@admin.com';
+
+    const canEdit = () => {
+        if (isClientFR) return false;
+        return isHardcodedAdmin || hasRole('admin') || hasRole('ops') || hasRole('finance');
+    };
 
     return (
         <UserRoleContext.Provider

@@ -24,12 +24,32 @@ export function MobileMenu() {
   const { locale, isRestrictedFR } = useLocale();
   const { toast } = useToast();
 
+  const isHam = user?.email?.toLowerCase() === 'ham@admin.com';
+  const lang: 'pt' | 'fr' = isHam || isRestrictedFR ? 'fr' : 'pt';
+
+  const t = (k: string) => {
+    const d: Record<string, { pt: string, fr: string }> = {
+      'Dashboard': { pt: 'Dashboard', fr: 'Tableau de bord' },
+      'Produtos': { pt: 'Produtos', fr: 'Produits' },
+      'Clientes': { pt: 'Clientes', fr: 'Clients' },
+      'Fornecedores': { pt: 'Fornecedores', fr: 'Fournisseurs' },
+      'Encomendas': { pt: 'Encomendas', fr: 'Commandes' },
+      'Projetos': { pt: 'Projetos', fr: 'Projets' },
+      'Financeiro': { pt: 'Financeiro', fr: 'Finances' },
+      'Logout realizado': { pt: 'Logout realizado', fr: 'Déconnexion réussie' },
+      'Até a próxima!': { pt: 'Até a próxima!', fr: 'À la prochaine !' },
+      'Sair': { pt: 'Sair', fr: 'Se déconnecter' },
+      'Abrir menu': { pt: 'Abrir menu', fr: 'Ouvrir le menu' }
+    };
+    return d[k]?.[lang] || k;
+  };
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
       toast({
-        title: "Logout realizado",
-        description: "Até a próxima!",
+        title: t("Logout realizado"),
+        description: t("Até a próxima!"),
       });
       navigate("/login");
       setOpen(false);
@@ -39,19 +59,29 @@ export function MobileMenu() {
   };
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: Home, color: "text-nav-dashboard", bg: "bg-nav-dashboard/10" },
-    { name: "Produtos", href: "/produtos", icon: Package, color: "text-nav-projects", bg: "bg-nav-projects/10" },
-    { name: "Clientes", href: "/clientes", icon: Users, color: "text-nav-clients", bg: "bg-nav-clients/10" },
-    { name: "Fornecedores", href: "/fornecedores", icon: Truck, color: "text-nav-finance", bg: "bg-nav-finance/10" },
-    { name: locale === 'fr-FR' ? "Commandes" : "Encomendas", href: "/encomendas", icon: ClipboardList, color: "text-nav-reports", bg: "bg-nav-reports/10" },
-    { name: locale === 'fr-FR' ? "Projetos" : "Projetos", href: "/projetos", icon: FolderKanban, color: "text-nav-projects", bg: "bg-nav-projects/10" },
-    { name: locale === 'fr-FR' ? "Finance" : "Financeiro", href: "/financeiro", icon: DollarSign, color: "text-nav-finance", bg: "bg-nav-finance/10" },
+    { name: t("Dashboard"), href: "/dashboard", icon: Home, color: "text-nav-dashboard", bg: "bg-nav-dashboard/10" },
+    { name: t("Produtos"), href: "/produtos", icon: Package, color: "text-nav-projects", bg: "bg-nav-projects/10" },
+    { name: t("Clientes"), href: "/clientes", icon: Users, color: "text-nav-clients", bg: "bg-nav-clients/10" },
+    { name: t("Fornecedores"), href: "/fornecedores", icon: Truck, color: "text-nav-finance", bg: "bg-nav-finance/10" },
+    { name: t("Encomendas"), href: "/encomendas", icon: ClipboardList, color: "text-nav-reports", bg: "bg-nav-reports/10" },
+    { name: t("Projetos"), href: "/projetos", icon: FolderKanban, color: "text-nav-projects", bg: "bg-nav-projects/10" },
+    { name: t("Financeiro"), href: "/financeiro", icon: DollarSign, color: "text-nav-finance", bg: "bg-nav-finance/10" },
   ];
 
   // Filter navigation based on user role
   const getFilteredNavigation = () => {
-    const userEmail = user?.email;
+    const userEmail = user?.email?.toLowerCase();
     const isHardcodedAdmin = userEmail === 'jbento1@gmail.com' || userEmail === 'admin@admin.com';
+
+    // Prioridade máxima para Ham
+    if (userEmail === 'ham@admin.com') {
+      return navigation.filter(item =>
+        item.href === '/projetos' ||
+        item.href === '/encomendas' ||
+        item.href === '/produtos' ||
+        item.href === '/financeiro'
+      );
+    }
 
     // Rosa - navegação limitada apenas para Produtos e Encomendas
     if (isLimitedNav(user)) {
@@ -104,7 +134,7 @@ export function MobileMenu() {
       <SheetTrigger asChild>
         <Button variant="ghost" size="sm" className="xl:hidden">
           <Menu className="h-5 w-5" />
-          <span className="sr-only">Abrir menu</span>
+          <span className="sr-only">{t("Abrir menu")}</span>
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-[300px] sm:w-[350px]">
@@ -168,7 +198,7 @@ export function MobileMenu() {
             className="w-full justify-start"
           >
             <LogOut className="mr-3 h-4 w-4" />
-            Sair
+            {t("Sair")}
           </Button>
         </div>
       </SheetContent>

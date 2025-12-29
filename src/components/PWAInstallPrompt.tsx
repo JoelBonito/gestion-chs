@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Download, X } from 'lucide-react';
 import { usePWA } from '@/hooks/usePWA';
+import { useLocale } from '@/contexts/LocaleContext';
 
 interface PWAInstallPromptProps {
   onDismiss: () => void;
@@ -10,10 +11,19 @@ interface PWAInstallPromptProps {
 
 export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onDismiss }) => {
   const { installPWA } = usePWA();
+  const { isRestrictedFR } = useLocale();
 
   const handleInstall = async () => {
     await installPWA();
     onDismiss();
+  };
+
+  const t = {
+    title: isRestrictedFR ? 'Installer Gestion CHS' : 'Instalar Gestion CHS',
+    subtitle: isRestrictedFR
+      ? "Accédez rapidement depuis votre écran d'accueil"
+      : 'Acesse rapidamente direto da sua tela inicial',
+    button: isRestrictedFR ? 'Installer' : 'Instalar'
   };
 
   return (
@@ -25,9 +35,9 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onDismiss })
               <Download className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-sm">Instalar Gestion CHS</h3>
+              <h3 className="font-semibold text-sm">{t.title}</h3>
               <p className="text-xs text-muted-foreground">
-                Acesse rapidamente direto da sua tela inicial
+                {t.subtitle}
               </p>
             </div>
           </div>
@@ -38,7 +48,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onDismiss })
               onClick={handleInstall}
               className="text-xs"
             >
-              Instalar
+              {t.button}
             </Button>
             <Button
               size="sm"

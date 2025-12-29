@@ -95,12 +95,16 @@ export default function EncomendasFinanceiro({
     "Encomenda:": { pt: "Encomenda:", fr: "Commande :" },
     "Cliente:": { pt: "Cliente:", fr: "Client :" },
     "Data Produção:": { pt: "Data Produção:", fr: "Date de production :" },
-    "Valor Produtos:": { pt: "Valor Produtos:", fr: "Montant des produits :" },
+    "Valor Itens:": { pt: "Valor Itens:", fr: "Prix des produits :" },
     "Valor Frete:": { pt: "Valor Frete:", fr: "Frais de port :" },
     "Total:": { pt: "Total:", fr: "Total :" },
     "Valor Recebido:": { pt: "Valor Recebido:", fr: "Montant reçu :" },
+    "Recebido:": { pt: "Recebido:", fr: "Reçu :" },
     "Saldo:": { pt: "Saldo:", fr: "Solde :" },
+    "Pagamentos:": { pt: "Pagamentos:", fr: "Paiements :" },
     "Quantidade de Pagamentos:": { pt: "Quantidade de Pagamentos:", fr: "Nombre de paiements :" },
+    "Confira todas as informações financeiras desta venda.": { pt: "Confira todas as informações financeiras desta venda.", fr: "Consultez toutes les informations financières de cette vente." },
+    "Associe um novo pagamento à encomenda selecionada.": { pt: "Associe um novo pagamento à encomenda selecionada.", fr: "Associez um nouveau paiement à la commande sélectionnée." },
 
     // Anexos
     "Comprovantes e Anexos": { pt: "Comprovantes e Anexos", fr: "Justificatifs et pièces jointes" },
@@ -403,7 +407,7 @@ export default function EncomendasFinanceiro({
                 {tr("Registrar Pagamento")}
               </DialogTitle>
               <DialogDescription className="text-muted-foreground">
-                Associe um novo pagamento à encomenda selecionada.
+                {tr("Associe um novo pagamento à encomenda selecionada.")}
               </DialogDescription>
             </DialogHeader>
             <PagamentoForm onSuccess={handlePagamentoSuccess} encomendas={[selectedEncomenda]} />
@@ -421,7 +425,7 @@ export default function EncomendasFinanceiro({
                 {tr("Detalhes da Conta a Receber")}
               </DialogTitle>
               <DialogDescription className="text-muted-foreground">
-                Confira todas as informações financeiras desta venda.
+                {tr("Confira todas as informações financeiras desta venda.")}
               </DialogDescription>
             </DialogHeader>
 

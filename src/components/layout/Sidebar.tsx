@@ -26,6 +26,8 @@ import { ThemeSwitcherPill } from '@/components/ui/theme-switcher';
 // import { NotificationToggle } from '@/components/NotificationToggle'; // Notification is tricky in sidebar, lets skip for now or add simple
 import { LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useLocale } from '@/contexts/LocaleContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -251,6 +253,10 @@ const SidebarContent = ({
     toggleCollapsed,
     closeMobile
 }: SidebarContentProps) => {
+    const { user } = useAuth();
+    const { locale } = useLocale();
+    const userEmail = user?.email?.toLowerCase();
+
     const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
         'GESTÃO': true,
         'CADASTROS': true,
@@ -263,6 +269,43 @@ const SidebarContent = ({
             [sectionTitle]: !prev[sectionTitle]
         }));
     };
+
+    // Filter and Translate Sections
+    const filteredSections = NAV_SECTIONS.map(section => {
+        let sectionTitle = section.title;
+        if (locale === 'fr-FR') {
+            if (section.title === 'GESTÃO') sectionTitle = 'GESTION';
+            if (section.title === 'CADASTROS') sectionTitle = 'CATALOGUE';
+            if (section.title === 'FINANCEIRO') sectionTitle = 'FINANCES';
+        }
+
+        return {
+            ...section,
+            title: sectionTitle,
+            items: section.items.map(item => {
+                // Translate label if needed
+                let label = item.label;
+                if (locale === 'fr-FR') {
+                    if (item.to === '/encomendas') label = 'Commandes';
+                    if (item.to === '/projetos') label = 'Projets';
+                    if (item.to === '/financeiro') label = 'Finances';
+                    if (item.to === '/produtos') label = 'Produits';
+                }
+                return { ...item, label };
+            }).filter(item => {
+                // Ham restrictions
+                if (userEmail === 'ham@admin.com') {
+                    return ['/projetos', '/encomendas', '/produtos', '/financeiro'].includes(item.to);
+                }
+                return true;
+            })
+        };
+    }).filter(section => section.items.length > 0);
+
+    const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Usuário';
+    const formattedName = displayName.replace(/\d+/g, '').split(/[._-]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    const displaySubtitle = user?.email === 'jbento1@gmail.com' ? 'Proprietário' : (user?.email || 'Membro da Equipe');
+    const initials = formattedName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
     return (
         <div className="flex flex-col h-full w-full bg-[var(--surface)] border-r border-[var(--border)] relative shadow-2xl">
@@ -327,7 +370,7 @@ const SidebarContent = ({
                     ? "flex flex-col items-center justify-center py-4"
                     : "overflow-y-auto py-1 space-y-0.5"
             )}>
-                {NAV_SECTIONS.map((section, sectionIndex) => (
+                {filteredSections.map((section, sectionIndex) => (
                     <div key={section.title}>
                         <CollapsibleSection
                             title={section.title}
@@ -339,7 +382,7 @@ const SidebarContent = ({
                             closeMobile={closeMobile}
                         />
 
-                        {sectionIndex < NAV_SECTIONS.length - 1 && (
+                        {sectionIndex < filteredSections.length - 1 && (
                             <div className={cn(
                                 "h-px bg-[var(--border)]",
                                 // 24px acima (mt-6) e 24px abaixo (mb-6) da linha
@@ -357,12 +400,11 @@ const SidebarContent = ({
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold uppercase shadow-sm">
-                                { /* Hardcoded initials logic matching TopBar for consistency or use hook if available inside SidebarContent */}
-                                JO
+                                {initials}
                             </div>
                             <div>
-                                <p className="text-sm font-bold text-[var(--foreground)] leading-none mb-1">Joel Bonito</p>
-                                <p className="text-[10px] text-[var(--text-secondary)]">Proprietário</p>
+                                <p className="text-sm font-bold text-[var(--foreground)] leading-none mb-1">{formattedName}</p>
+                                <p className="text-[10px] text-[var(--text-secondary)]">{displaySubtitle}</p>
                             </div>
                         </div>
                         <Button

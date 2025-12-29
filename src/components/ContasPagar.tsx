@@ -559,12 +559,12 @@ export default function ContasPagar() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="space-y-1">
                   <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Pedido")}:</span>
-                  <div className="text-sm font-semibold flex items-center gap-2">
+                  <p className="text-sm font-semibold flex items-center gap-2">
                     #{selectedConta.numero_encomenda}
                     {selectedConta.etiqueta && (
                       <Badge variant="info">{selectedConta.etiqueta}</Badge>
                     )}
-                  </div>
+                  </p>
                 </div>
                 <div className="space-y-1">
                   <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Fornecedor")}:</span>

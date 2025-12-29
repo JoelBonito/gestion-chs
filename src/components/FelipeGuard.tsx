@@ -14,11 +14,13 @@ export function FelipeGuard({ children }: FelipeGuardProps) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
+  const isRestricted = user?.email?.toLowerCase() === 'felipe@colaborador.com' || user?.email?.toLowerCase() === 'ham@admin.com';
+
   useEffect(() => {
-    if (!loading && user?.email?.toLowerCase() === 'felipe@colaborador.com') {
+    if (!loading && isRestricted) {
       navigate('/encomendas', { replace: true });
     }
-  }, [loading, user, navigate]);
+  }, [loading, isRestricted, navigate]);
 
   if (loading) {
     return (
@@ -32,8 +34,8 @@ export function FelipeGuard({ children }: FelipeGuardProps) {
     );
   }
 
-  // Se é felipe, não mostra o conteúdo (já foi redirecionado)
-  if (user?.email?.toLowerCase() === 'felipe@colaborador.com') {
+  // Se é usuário restrito, não mostra o conteúdo (já foi redirecionado)
+  if (isRestricted) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card>

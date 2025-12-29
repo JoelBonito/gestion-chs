@@ -24,12 +24,24 @@ export function ResponsiveHeader({ title, subtitle, actions }: ResponsiveHeaderP
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // i18n helper
+  const isHam = user?.email?.toLowerCase() === "ham@admin.com";
+  const lang: "pt" | "fr" = isHam || isRestrictedFR ? "fr" : "pt";
+  const t = (k: string) => {
+    const d: Record<string, { pt: string, fr: string }> = {
+      "Logout realizado": { pt: "Logout realizado", fr: "Déconnexion réussie" },
+      "Até a próxima!": { pt: "Até a próxima!", fr: "À bientôt !" },
+      "Sair": { pt: "Sair", fr: "Se déconnecter" }
+    };
+    return d[k]?.[lang] || k;
+  };
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
       toast({
-        title: "Logout realizado",
-        description: "Até a próxima!",
+        title: t("Logout realizado"),
+        description: t("Até a próxima!"),
       });
       navigate("/login");
     } catch (error) {
@@ -92,7 +104,7 @@ export function ResponsiveHeader({ title, subtitle, actions }: ResponsiveHeaderP
                 className="text-muted-foreground hover:text-foreground hover:bg-destructive/10 rounded-2xl"
               >
                 <LogOut className="h-4 w-4 mr-2" />
-                Sair
+                {t("Sair")}
               </Button>
             </>
           )}

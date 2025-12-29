@@ -73,14 +73,22 @@ export function ProjetoActions({ projeto, onView, onEdit, onRefresh, isRestricte
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[160px] bg-popover dark:bg-[#252a36] border-[var(--border)] shadow-xl">
-          <DropdownMenuItem onClick={() => onEdit(projeto)} className="cursor-pointer group hover:!text-blue-500 hover:!bg-blue-500/10 transition-colors">
-            <Edit className="mr-3 h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors" />
-            Editar
+          <DropdownMenuItem onClick={() => onView(projeto)} className="cursor-pointer group hover:!text-primary hover:!bg-primary/10 transition-colors">
+            <Eye className="mr-3 h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            Visualizar
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleArchive} className="cursor-pointer group hover:!text-amber-500 hover:!bg-amber-500/10 transition-colors">
-            <Archive className="mr-3 h-4 w-4 text-muted-foreground group-hover:text-amber-500 transition-colors" />
-            {isArchived ? 'Desarquivar' : 'Arquivar'}
-          </DropdownMenuItem>
+          {!isRestrictedUser && (
+            <>
+              <DropdownMenuItem onClick={() => onEdit(projeto)} className="cursor-pointer group hover:!text-blue-500 hover:!bg-blue-500/10 transition-colors">
+                <Edit className="mr-3 h-4 w-4 text-muted-foreground group-hover:text-blue-500 transition-colors" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleArchive} className="cursor-pointer group hover:!text-amber-500 hover:!bg-amber-500/10 transition-colors">
+                <Archive className="mr-3 h-4 w-4 text-muted-foreground group-hover:text-amber-500 transition-colors" />
+                {isArchived ? 'Desarquivar' : 'Arquivar'}
+              </DropdownMenuItem>
+            </>
+          )}
           {!isRestrictedUser && (
             <DropdownMenuItem
               onClick={() => setShowDeleteDialog(true)}

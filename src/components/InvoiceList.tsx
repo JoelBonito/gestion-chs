@@ -48,8 +48,45 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
     fileName: string;
   } | null>(null);
 
-  const canEdit = hasRole('admin') || hasRole('finance');
+  const { canEdit: canEditFn } = useUserRole();
+  const canEdit = canEditFn();
   const isRestrictedUser = user?.email?.toLowerCase() === "ham@admin.com";
+
+  // i18n
+  const lang: "pt" | "fr" = isRestrictedUser ? "fr" : "pt";
+  const t = (k: string) => {
+    const d: Record<string, { pt: string, fr: string }> = {
+      "Faturas": { pt: "Faturas", fr: "Factures" },
+      "Gestão de faturas e documentos fiscais": { pt: "Gestão de faturas e documentos fiscais", fr: "Gestion des factures et documents fiscaux" },
+      "Nova Fatura": { pt: "Nova Fatura", fr: "Nouvelle Facture" },
+      "Data": { pt: "Data", fr: "Date" },
+      "Valor": { pt: "Valor", fr: "Valeur" },
+      "Descrição": { pt: "Descrição", fr: "Description" },
+      "Arquivo": { pt: "Arquivo", fr: "Fichier" },
+      "Anexos": { pt: "Anexos", fr: "Pièces jointes" },
+      "Ações": { pt: "Ações", fr: "Actions" },
+      "Carregando faturas...": { pt: "Carregando faturas...", fr: "Chargement des factures..." },
+      "Nenhuma fatura encontrada.": { pt: "Nenhuma fatura encontrada.", fr: "Aucune facture trouvée." },
+      "Editar Fatura": { pt: "Editar Fatura", fr: "Modifier la Facture" },
+      "Atualize os dados da fatura": { pt: "Atualize os dados da fatura", fr: "Mettre à jour les données de la facture" },
+      "Visualizar Fatura": { pt: "Visualizar Fatura", fr: "Voir la Facture" },
+      "Deletar": { pt: "Deletar", fr: "Supprimer" },
+      "Confirmar Exclusão": { pt: "Confirmar Exclusão", fr: "Confirmer la suppression" },
+      "Tem certeza que deseja deletar esta fatura?": { pt: "Tem certeza que deseja deletar esta fatura?", fr: "Êtes-vous sûr de vouloir supprimer cette facture ?" },
+      "Cancelar": { pt: "Cancelar", fr: "Annuler" },
+      "Salvar": { pt: "Salvar", fr: "Enregistrer" },
+      "Data da fatura": { pt: "Data da fatura", fr: "Date de la facture" },
+      "O valor deve ser maior que zero.": { pt: "O valor deve ser maior que zero.", fr: "La valeur doit être supérieure à zéro." },
+      "A data da fatura não pode ser futura.": { pt: "A data da fatura não pode ser futura.", fr: "La date de la facture ne peut pas être future." },
+      "Detalhes da Fatura": { pt: "Detalhes da Fatura", fr: "Détails de la Facture" },
+      "Valor Total": { pt: "Valor Total", fr: "Valeur Totale" },
+      "Observações": { pt: "Observações", fr: "Observations" },
+      "Abrir em nova aba": { pt: "Abrir em nova aba", fr: "Ouvrir dans un nouvel onglet" },
+      "Não informado": { pt: "Não informado", fr: "Non renseigné" },
+      "Total:": { pt: "Total:", fr: "Total :" },
+    };
+    return d[k]?.[lang] || k;
+  };
 
   const getPublicUrl = (storagePath: string) => {
     const { data } = supabase.storage.from('attachments').getPublicUrl(storagePath);
@@ -71,12 +108,12 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
 
     const today = new Date().toISOString().split('T')[0];
     if (editFormData.invoice_date > today) {
-      alert('A data da fatura não pode ser futura.');
+      alert(t('A data da fatura não pode ser futura.'));
       return;
     }
 
     if (editFormData.amount <= 0) {
-      alert('O valor deve ser maior que zero.');
+      alert(t('O valor deve ser maior que zero.'));
       return;
     }
 
@@ -123,7 +160,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
     return (
       <Card className="shadow-card">
         <CardContent className="p-8 text-center">
-          <p className="text-muted-foreground">Carregando faturas...</p>
+          <p className="text-muted-foreground">{t("Carregando faturas...")}</p>
         </CardContent>
       </Card>
     );
@@ -137,10 +174,10 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
             <div>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary" />
-                {locale === 'fr-FR' ? 'Factures' : 'Faturas'}
+                {t("Faturas")}
               </CardTitle>
               <CardDescription>
-                {invoices.length} {locale === 'fr-FR'
+                {invoices.length} {lang === 'fr'
                   ? `facture${invoices.length !== 1 ? 's' : ''} trouvée${invoices.length !== 1 ? 's' : ''}`
                   : `fatura${invoices.length !== 1 ? 's' : ''} encontrada${invoices.length !== 1 ? 's' : ''}`
                 }
@@ -152,177 +189,119 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                 className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2 transition-all active:scale-95"
               >
                 <Plus className="w-4 h-4" />
-                {locale === 'fr-FR' ? 'Nouvelle Facture' : 'Nova Fatura'}
+                {t("Nova Fatura")}
               </Button>
             )}
           </div>
         </CardHeader>
         <CardContent>
-          {/* Tabela apenas no desktop */}
-          <div className="hidden xl:block overflow-x-auto rounded-xl border border-border/40 overflow-hidden bg-popover shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-border/40 overflow-hidden bg-popover shadow-sm">
             <Table>
               <TableHeader className="bg-popover border-b border-border/40">
                 <TableRow className="hover:bg-transparent transition-none border-b-0">
-                  <TableHead>Data</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Documento</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead>{t("Data")}</TableHead>
+                  <TableHead>{t("Valor")}</TableHead>
+                  <TableHead>{t("Descrição")}</TableHead>
+                  <TableHead>{t("Arquivo")}</TableHead>
+                  <TableHead className="text-right">{t("Ações")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.map((invoice) => (
-                  <TableRow
-                    key={invoice.id}
-                    className="bg-popover hover:bg-muted/30 transition-colors border-b border-border dark:border-white/5 last:border-0 cursor-pointer group"
-                    onClick={() => setViewingInvoice(invoice)}
-                  >
-                    <TableCell className="font-medium">
-                      {new Date(invoice.invoice_date).toLocaleDateString('pt-BR')}
+                {invoices.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-32 text-center text-muted-foreground italic font-medium">
+                      {t("Nenhuma fatura encontrada.")}
                     </TableCell>
-                    <TableCell className="font-semibold">
-                      {formatCurrencyEUR(invoice.amount)}
-                    </TableCell>
-                    <TableCell>
-                      {invoice.description || '-'}
-                    </TableCell>
-                    <TableCell>
-                      {invoice.attachment ? (
-                        <div className="flex items-center gap-1">
-                          <FileText className="h-4 w-4 text-red-500" />
-                          <span className="text-xs truncate max-w-[100px]">
-                            {invoice.attachment.file_name}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">Sem documento</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); setViewingInvoice(invoice); }}
-                          title="Ver detalhes"
-                          className="hover:text-primary hover:bg-primary/10 transition-colors"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-
-                        {invoice.attachment && (
+                  </TableRow>
+                ) : (
+                  invoices.map((invoice) => (
+                    <TableRow
+                      key={invoice.id}
+                      className="bg-popover hover:bg-muted/30 transition-colors border-b border-border dark:border-white/5 last:border-0 cursor-pointer group"
+                      onClick={() => setViewingInvoice(invoice)}
+                    >
+                      <TableCell className="font-medium whitespace-nowrap">
+                        {new Date(invoice.invoice_date).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="font-semibold whitespace-nowrap">
+                        {formatCurrencyEUR(invoice.amount)}
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate">
+                        {invoice.description || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {invoice.attachment ? (
+                          <div className="flex items-center gap-1">
+                            <FileText className="h-4 w-4 text-red-500" />
+                            <span className="text-xs truncate max-w-[150px]">
+                              {invoice.attachment.file_name}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">{t("Não informado")}</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => { e.stopPropagation(); handleDownload(invoice); }}
-                            title="Download"
+                            onClick={() => setViewingInvoice(invoice)}
+                            title={t("Visualizar Fatura")}
                             className="hover:text-primary hover:bg-primary/10 transition-colors"
                           >
-                            <Download className="w-4 h-4" />
+                            <Eye className="w-4 h-4" />
                           </Button>
-                        )}
 
-                        {canEdit && !isRestrictedUser && (
-                          <>
+                          {invoice.attachment && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={(e) => { e.stopPropagation(); handleEditClick(invoice); }}
-                              title="Editar"
+                              onClick={() => handleDownload(invoice)}
+                              title="Download"
                               className="hover:text-primary hover:bg-primary/10 transition-colors"
                             >
-                              <Edit className="w-4 h-4" />
+                              <Download className="w-4 h-4" />
                             </Button>
+                          )}
 
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-95"
-                              onClick={(e) => { e.stopPropagation(); onDelete(invoice); }}
-                              title="Excluir"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {invoices.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      Nenhuma fatura encontrada
-                    </TableCell>
-                  </TableRow>
+                          {canEdit && !isRestrictedUser && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditClick(invoice)}
+                                title={t("Editar Fatura")}
+                                className="hover:text-primary hover:bg-primary/10 transition-colors"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-95"
+                                onClick={() => onDelete(invoice)}
+                                title={t("Deletar")}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>
-          </div>
-
-          {/* Lista em cartões no mobile/tablet */}
-          <div className="xl:hidden space-y-3">
-            {invoices.length === 0 && (
-              <Card className="shadow-none border-dashed">
-                <CardContent className="p-6 text-center text-muted-foreground">
-                  Nenhuma fatura encontrada
-                </CardContent>
-              </Card>
-            )}
-            {invoices.map((invoice) => (
-              <Card key={invoice.id} className="overflow-hidden bg-popover border-border/50">
-                <CardContent className="p-4 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-sm font-semibold">
-                      {new Date(invoice.invoice_date).toLocaleDateString('pt-BR')}
-                    </div>
-                    <div className="text-sm font-semibold">
-                      {formatCurrencyEUR(invoice.amount)}
-                    </div>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {invoice.description || 'Sem descrição'}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {invoice.attachment ? (
-                      <div className="flex items-center gap-1">
-                        <FileText className="h-3 w-3 text-red-500" />
-                        <span className="truncate">{invoice.attachment.file_name}</span>
-                      </div>
-                    ) : (
-                      'Sem documento'
-                    )}
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                    <Button variant="outline" size="sm" className="w-full sm:w-auto bg-sky-500/5 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-200/50 dark:border-sky-800/50" onClick={() => setViewingInvoice(invoice)}>
-                      <Eye className="w-4 h-4 mr-2" /> Ver detalhes
-                    </Button>
-                    {invoice.attachment && (
-                      <Button variant="outline" size="sm" className="w-full sm:w-auto bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-800/50" onClick={() => handleDownload(invoice)}>
-                        <Download className="w-4 h-4 mr-2" /> Download
-                      </Button>
-                    )}
-                    {canEdit && !isRestrictedUser && (
-                      <>
-                        <Button variant="outline" size="sm" className="w-full sm:w-auto bg-amber-500/5 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200/50 dark:border-amber-800/50" onClick={() => handleEditClick(invoice)}>
-                          <Edit className="w-4 h-4 mr-2" /> Editar
-                        </Button>
-                        <Button variant="outline" size="sm" className="w-full sm:w-auto bg-red-500/5 hover:bg-red-500/10 text-destructive border-red-200/50 dark:border-red-800/50" onClick={() => onDelete(invoice)}>
-                          <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
           </div>
 
           {invoices.length > 0 && (
             <div className="mt-4 pt-4 border-t">
               <div className="flex justify-end">
                 <div className="text-lg font-semibold">
-                  Total: {formatCurrencyEUR(totalAmount)}
+                  {t("Total:")} {formatCurrencyEUR(totalAmount)}
                 </div>
               </div>
             </div>
@@ -407,24 +386,24 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
             <DialogHeader>
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary" />
-                Detalhes da Fatura
+                {t("Detalhes da Fatura")}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                 <div className="space-y-1">
-                  <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Data da Fatura</Label>
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{t("Data da fatura")}</Label>
                   <p className="text-sm font-semibold">
-                    {new Date(viewingInvoice.invoice_date).toLocaleDateString('pt-BR')}
+                    {new Date(viewingInvoice.invoice_date).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'pt-BR')}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Valor Total</Label>
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{t("Valor Total")}</Label>
                   <p className="text-lg font-black text-primary">{formatCurrencyEUR(viewingInvoice.amount)}</p>
                 </div>
                 {viewingInvoice.description && (
                   <div className="space-y-1 col-span-2 md:col-span-1">
-                    <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Observações</Label>
+                    <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{t("Observações")}</Label>
                     <p className="text-sm text-muted-foreground line-clamp-2" title={viewingInvoice.description}>
                       {viewingInvoice.description}
                     </p>
@@ -471,7 +450,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                   onClick={() => window.open(previewModal.url, '_blank')}
                 >
                   <ExternalLink className="w-4 h-4 mr-1" />
-                  Abrir em nova aba
+                  {t("Abrir em nova aba")}
                 </Button>
               </div>
             </div>

@@ -100,78 +100,115 @@ function EncomendaCardComponent({
     };
 
     return (
-        <GlassCard className="flex flex-col h-full overflow-hidden bg-card border-border/50 transition-all hover:shadow-lg hover:border-primary/20 group" hoverEffect>
-            <div className="flex-1 p-5 space-y-4" onClick={onView}>
-                {/* Header: ID, Tag & Date */}
-                {/* Header: ID, Tag & Date */}
-                <div className="flex flex-col gap-4 mb-2">
-                    <div className="flex items-center justify-between w-full border-b border-border/30 pb-2">
-                        <div className="flex items-center gap-2 overflow-hidden">
-                            <span className="text-lg font-bold font-mono text-primary shrink-0">
-                                #{e.numero_encomenda}
-                            </span>
-                            {e.etiqueta && (
-                                <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-[10px] px-1.5 py-0 uppercase font-bold tracking-wide border-0 truncate max-w-[150px]">
-                                    {e.etiqueta}
-                                </Badge>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted/40 px-2 py-0.5 rounded-full shrink-0">
-                            <CalendarIcon className="h-3 w-3" />
+        <GlassCard className="relative p-0 overflow-hidden bg-card" hoverEffect>
+            {/* Ações Absolutas */}
+            <div className="absolute top-4 right-4 z-10">
+                <EncomendaActions
+                    encomenda={e as any}
+                    onView={onView}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onTransport={onTransport}
+                    canEditOrders={canEditOrders}
+                />
+            </div>
+
+            <div className="p-4 sm:p-5">
+                {/* Header: ID, Tag, Data e Status */}
+                <div className="flex items-center justify-between gap-2 mb-3 pr-10">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="text-base sm:text-lg font-bold font-mono text-primary shrink-0">
+                            #{e.numero_encomenda}
+                        </span>
+                        {e.etiqueta && (
+                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-[10px] sm:text-xs px-1.5 py-0 shrink-0 uppercase tracking-wide font-bold">
+                                {e.etiqueta}
+                            </Badge>
+                        )}
+                        <span className="text-[10px] sm:text-xs text-muted-foreground shrink-0 hidden xs:inline">
                             {formatDate(e.data_criacao)}
-                        </div>
+                        </span>
                     </div>
 
-                    {/* Status Row - Explicitly new line */}
-                    <div onClick={(ev) => ev.stopPropagation()} className="w-full relative z-10 pt-1">
+                    {/* Status */}
+                    <div className="shrink-0 min-w-max flex justify-end">
                         {isHam ? (
-                            <Badge variant="outline" className="text-[10px] font-medium py-0.5 px-2 bg-background w-fit">
+                            <Badge variant="outline" className="w-full justify-center py-0.5 text-[10px] sm:text-xs">
                                 {getStatusLabel(e.status)}
                             </Badge>
                         ) : (
-                            <div className="w-full">
-                                <EncomendaStatusSelect
-                                    encomendaId={e.id}
-                                    currentStatus={e.status}
-                                    numeroEncomenda={e.numero_encomenda}
-                                    onStatusChange={onStatusChange}
-                                />
-                            </div>
+                            <EncomendaStatusSelect
+                                encomendaId={e.id}
+                                currentStatus={e.status}
+                                numeroEncomenda={e.numero_encomenda}
+                                onStatusChange={onStatusChange}
+                            />
                         )}
                     </div>
                 </div>
 
-                {/* Cliente / Fornecedor Info */}
-                <div className="space-y-2 pt-2 pb-2">
-                    <div className="flex items-center gap-2.5 text-sm">
-                        <User className="h-4 w-4 text-muted-foreground/70 shrink-0" />
-                        <span className="text-foreground font-medium truncate" title={e.clientes?.nome ?? e.cliente_nome ?? ""}>
-                            {e.clientes?.nome ?? e.cliente_nome ?? "—"}
-                        </span>
+                {/* Cliente e Fornecedor */}
+                <div className="flex items-center justify-between gap-4 py-2 border-y border-border/30 text-xs sm:text-sm">
+                    <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-4 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-muted-foreground shrink-0">{t.client}:</span>
+                            <span className="font-medium text-white truncate" title={e.clientes?.nome ?? e.cliente_nome ?? ""}>
+                                {e.clientes?.nome ?? e.cliente_nome ?? "—"}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-muted-foreground shrink-0">{t.supplier}:</span>
+                            <span className="font-medium text-white truncate" title={e.fornecedores?.nome ?? e.fornecedor_nome ?? ""}>
+                                {e.fornecedores?.nome ?? e.fornecedor_nome ?? "—"}
+                            </span>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2.5 text-sm">
-                        <Building2 className="h-4 w-4 text-muted-foreground/70 shrink-0" />
-                        <span className="text-foreground/80 truncate" title={e.fornecedores?.nome ?? e.fornecedor_nome ?? ""}>
-                            {e.fornecedores?.nome ?? e.fornecedor_nome ?? "—"}
-                        </span>
+
+                    {/* Ações Rápidas */}
+                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onView}
+                            title="Visualizar"
+                            className="h-8 w-8 text-muted-foreground hover:text-cyan-500 hover:bg-cyan-500/10 hover:scale-110 active:scale-90 transition-all"
+                        >
+                            <Eye className="h-4 w-4" />
+                        </Button>
+
+                        {canEditOrders && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={onEdit}
+                                title="Editar"
+                                className="h-8 w-8 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 hover:scale-110 active:scale-90 transition-all"
+                            >
+                                <Edit className="h-4 w-4" />
+                            </Button>
+                        )}
                     </div>
                 </div>
 
-                {/* Datas & Peso Grid */}
+                {/* Datas - Somente para não-Ham */}
                 {!isHam && (
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-3 pt-3 border-t border-border/40 text-xs" onClick={(ev) => ev.stopPropagation()}>
-                        {/* Produção */}
-                        <div className="space-y-1">
-                            <span className="text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {t.productionDate}
-                            </span>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-3 text-xs">
+                        {/* Data Produção */}
+                        <div className="flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5 text-amber-500" />
+                            <span className="text-muted-foreground">{t.productionDate}:</span>
                             {canEditProduction ? (
                                 <Popover>
                                     <PopoverTrigger asChild>
-                                        <button className="font-medium text-foreground hover:text-primary transition-colors text-left truncate w-full flex items-center gap-1">
-                                            {e.data_producao_estimada ? format(new Date(e.data_producao_estimada), "dd/MM/yy") : "Definir"}
-                                        </button>
+                                        <Button variant="ghost" size="sm" className="h-6 px-2 font-medium text-white hover:bg-amber-500/10">
+                                            {e.data_producao_estimada
+                                                ? format(new Date(e.data_producao_estimada), "dd/MM/yy")
+                                                : "—"
+                                            }
+                                            <CalendarIcon className="ml-1 h-3 w-3 text-muted-foreground" />
+                                        </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">
                                         <Calendar
@@ -182,22 +219,29 @@ function EncomendaCardComponent({
                                     </PopoverContent>
                                 </Popover>
                             ) : (
-                                <span className="font-medium text-foreground">{e.data_producao_estimada ? format(new Date(e.data_producao_estimada), "dd/MM/yy") : "—"}</span>
+                                <span className="font-medium text-white">
+                                    {e.data_producao_estimada
+                                        ? format(new Date(e.data_producao_estimada), "dd/MM/yy")
+                                        : "—"
+                                    }
+                                </span>
                             )}
                         </div>
 
-                        {/* Entrega */}
-                        <div className="space-y-1">
-                            <span className="text-muted-foreground flex items-center gap-1">
-                                <Truck className="h-3 w-3" />
-                                {t.deliveryDate}
-                            </span>
+                        {/* Data Entrega */}
+                        <div className="flex items-center gap-1.5">
+                            <Truck className="h-3.5 w-3.5 text-green-500" />
+                            <span className="text-muted-foreground">{t.deliveryDate}:</span>
                             {canEditDelivery ? (
                                 <Popover>
                                     <PopoverTrigger asChild>
-                                        <button className="font-medium text-foreground hover:text-primary transition-colors text-left truncate w-full flex items-center gap-1">
-                                            {e.data_envio_estimada ? format(new Date(e.data_envio_estimada), "dd/MM/yy") : "Definir"}
-                                        </button>
+                                        <Button variant="ghost" size="sm" className="h-6 px-2 font-medium text-white hover:bg-green-500/10">
+                                            {e.data_envio_estimada
+                                                ? format(new Date(e.data_envio_estimada), "dd/MM/yy")
+                                                : "—"
+                                            }
+                                            <CalendarIcon className="ml-1 h-3 w-3 text-muted-foreground" />
+                                        </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0" align="start">
                                         <Calendar
@@ -208,63 +252,46 @@ function EncomendaCardComponent({
                                     </PopoverContent>
                                 </Popover>
                             ) : (
-                                <span className="font-medium text-foreground">{e.data_envio_estimada ? format(new Date(e.data_envio_estimada), "dd/MM/yy") : "—"}</span>
+                                <span className="font-medium text-white">
+                                    {e.data_envio_estimada
+                                        ? format(new Date(e.data_envio_estimada), "dd/MM/yy")
+                                        : "—"
+                                    }
+                                </span>
                             )}
                         </div>
 
                         {/* Peso */}
-                        <div className="col-span-2 pt-1 flex items-center justify-between">
-                            <span className="text-muted-foreground flex items-center gap-1">
-                                <Package className="h-3 w-3" />
-                                {t.grossWeight}
-                            </span>
-                            <span className="font-medium text-foreground">{pesoTransporte.toFixed(1)} kg</span>
+                        <div className="flex items-center gap-1.5">
+                            <Package className="h-3.5 w-3.5 text-purple-500" />
+                            <span className="text-muted-foreground">{t.grossWeight}:</span>
+                            <span className="font-medium text-white">{pesoTransporte.toFixed(1)} kg</span>
                         </div>
                     </div>
                 )}
 
-                {/* Financial Summary */}
+                {/* Valores Financeiros */}
                 {!hidePrices && (
-                    <div className="pt-3 mt-1 border-t border-border/40 flex justify-between items-center text-xs">
-                        <div className="flex flex-col">
-                            <span className="text-muted-foreground text-[10px] uppercase font-bold">{t.total}</span>
-                            <span className="font-bold text-sm text-foreground">{formatCurrency(e.valor_total || 0)}</span>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-3 text-xs border-t border-border/20 mt-3">
+                        <div className="flex items-center gap-1.5">
+                            <CreditCard className="h-3.5 w-3.5 text-blue-500" />
+                            <span className="text-muted-foreground">{t.total}:</span>
+                            <span className="font-bold text-white">{formatCurrency(e.valor_total || 0)}</span>
                         </div>
-                        <div className="flex flex-col items-end">
-                            <span className="text-muted-foreground text-[10px] uppercase font-bold">{t.paid}</span>
-                            <span className={cn("font-bold text-sm", (e.valor_pago || 0) >= (e.valor_total || 0) ? "text-success" : "text-warning")}>
-                                {formatCurrency(e.valor_pago || 0)}
-                            </span>
+                        <div className="flex items-center gap-1.5">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                            <span className="text-muted-foreground">{t.paid}:</span>
+                            <span className="font-medium text-white">{formatCurrency(e.valor_pago || 0)}</span>
                         </div>
+                        {e.commission_amount !== undefined && (
+                            <div className="flex items-center gap-1.5">
+                                <TrendingUp className="h-3.5 w-3.5 text-cyan-500" />
+                                <span className="text-muted-foreground">{t.commission}:</span>
+                                <span className="font-medium text-white">{formatCurrency(e.commission_amount)}</span>
+                            </div>
+                        )}
                     </div>
                 )}
-
-            </div>
-
-            {/* Footer Actions */}
-            <div className="bg-muted/40 border-t border-border/50 p-3 flex justify-end items-center gap-2" onClick={(ev) => ev.stopPropagation()}>
-                <Button variant="ghost" size="sm" onClick={onView} className="h-8 text-xs gap-1.5 hover:bg-background hover:text-primary hover:shadow-sm transition-all border border-transparent hover:border-border/50">
-                    <Eye className="h-3.5 w-3.5" />
-                    Visualizar
-                </Button>
-
-                {canEditOrders && (
-                    <Button variant="ghost" size="sm" onClick={onEdit} className="h-8 text-xs gap-1.5 hover:bg-background hover:text-blue-500 hover:shadow-sm transition-all border border-transparent hover:border-border/50">
-                        <Edit className="h-3.5 w-3.5" />
-                        Editar
-                    </Button>
-                )}
-
-                <div className="pl-1 border-l border-border/30">
-                    <EncomendaActions
-                        encomenda={e as any}
-                        onView={onView}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
-                        onTransport={onTransport}
-                        canEditOrders={canEditOrders}
-                    />
-                </div>
             </div>
         </GlassCard>
     );

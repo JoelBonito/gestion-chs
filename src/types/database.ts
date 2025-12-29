@@ -17,6 +17,8 @@ export interface Produto {
   estoque_garrafas?: number;
   estoque_tampas?: number;
   estoque_rotulos?: number;
+  new_product?: boolean;
+  peso?: number;
 }
 
 

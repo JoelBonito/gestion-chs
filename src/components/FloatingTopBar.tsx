@@ -67,8 +67,44 @@ export const FloatingTopBar = ({ onMobileMenuClick, isSidebarCollapsed = false }
     // Consume Dynamic Actions
     const { actions } = useTopBarActions();
 
+    const isHam = user?.email?.toLowerCase() === 'ham@admin.com';
+    const lang: 'pt' | 'fr' = isHam ? 'fr' : 'pt';
+
+    const t = (k: string) => {
+        const d: Record<string, { pt: string, fr: string }> = {
+            'Dashboard': { pt: 'Dashboard', fr: 'Tableau de bord' },
+            'Clientes': { pt: 'Clientes', fr: 'Clients' },
+            'Fornecedores': { pt: 'Fornecedores', fr: 'Fournisseurs' },
+            'Encomendas': { pt: 'Encomendas', fr: 'Commandes' },
+            'Produtos': { pt: 'Produtos', fr: 'Produits' },
+            'Produção': { pt: 'Produção', fr: 'Production' },
+            'Financeiro': { pt: 'Financeiro', fr: 'Finances' },
+            'Projetos': { pt: 'Projetos', fr: 'Projets' },
+            'Meu Perfil': { pt: 'Meu Perfil', fr: 'Mon Profil' },
+            'Bem-vindo': { pt: 'Bem-vindo', fr: 'Bienvenue' },
+            'Logout realizado': { pt: 'Logout realizado', fr: 'Déconnexion réussie' },
+            'Até a próxima!': { pt: 'Até a próxima!', fr: 'À la prochaine !' },
+            'Nome atualizado!': { pt: 'Nome atualizado!', fr: 'Nom mis à jour !' },
+            'Seu nome de exibição foi alterado com sucesso.': { pt: 'Seu nome de exibição foi alterado com sucesso.', fr: 'Votre nom d\'affichage a été modifié avec succès.' },
+            'Erro ao atualizar': { pt: 'Erro ao atualizar', fr: 'Erreur lors de la mise à jour' },
+            'Não foi possível atualizar seu nome.': { pt: 'Não foi possível atualizar seu nome.', fr: 'Impossible de mettre à jour votre nom.' },
+            'Alterar Nome': { pt: 'Alterar Nome', fr: 'Changer le nom' },
+            'Sair da Conta': { pt: 'Sair da Conta', fr: 'Se déconnecter' },
+            'Alterar Nome de Exibição': { pt: 'Alterar Nome de Exibição', fr: 'Changer le nom d\'affichage' },
+            'Escolha como você quer ser identificado no sistema.': { pt: 'Escolha como você quer ser identificado no sistema.', fr: 'Choisissez comment vous souhaitez être identifié dans le système.' },
+            'Nome': { pt: 'Nome', fr: 'Nom' },
+            'Seu nome': { pt: 'Seu nome', fr: 'Votre nom' },
+            'Cancelar': { pt: 'Cancelar', fr: 'Annuler' },
+            'Salvar': { pt: 'Salvar', fr: 'Sauvegarder' },
+            'Proprietário': { pt: 'Proprietário', fr: 'Propriétaire' },
+            'Membro da Equipe': { pt: 'Membro da Equipe', fr: 'Membre de l\'équipe' },
+            'Usuário': { pt: 'Usuário', fr: 'Utilisateur' }
+        };
+        return d[k]?.[lang] || k;
+    };
+
     // Get current page title based on location
-    const currentPageTitle = pageTitles[location.pathname] || 'Gestion CHS';
+    const currentPageTitle = t(pageTitles[location.pathname] || 'Gestion CHS');
 
     // Monitor scroll to apply glass effect
     useEffect(() => {
@@ -81,17 +117,17 @@ export const FloatingTopBar = ({ onMobileMenuClick, isSidebarCollapsed = false }
 
     // Derived User Info
     // Prioritize display_name from metadata, fallback to email prefix
-    const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Usuário';
+    const displayName = user?.user_metadata?.display_name || user?.email?.split('@')[0] || t('Usuário');
     const formattedName = displayName.replace(/\d+/g, '').split(/[._-]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-    const displaySubtitle = user?.email === 'jbento1@gmail.com' ? 'Proprietário' : (user?.email || 'Membro da Equipe');
-    const initials = "JO"; // Explicitly match JO as requested/seen in image
+    const displaySubtitle = user?.email === 'jbento1@gmail.com' ? t('Proprietário') : (user?.email || t('Membro da Equipe'));
+    const initials = formattedName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
     const handleLogout = async () => {
         try {
             await supabase.auth.signOut();
             toast({
-                title: "Logout realizado",
-                description: "Até a próxima!",
+                title: t("Logout realizado"),
+                description: t("Até a próxima!"),
             });
             navigate("/login");
         } catch (error) {
@@ -110,16 +146,16 @@ export const FloatingTopBar = ({ onMobileMenuClick, isSidebarCollapsed = false }
             if (error) throw error;
 
             toast({
-                title: "Nome atualizado!",
-                description: "Seu nome de exibição foi alterado com sucesso.",
+                title: t("Nome atualizado!"),
+                description: t("Seu nome de exibição foi alterado com sucesso."),
             });
             setIsEditNameOpen(false);
             // Force refresh of user context implies waiting for auth state change usually handled by provider
         } catch (error) {
             console.error("Error updating name:", error);
             toast({
-                title: "Erro ao atualizar",
-                description: "Não foi possível atualizar seu nome.",
+                title: t("Erro ao atualizar"),
+                description: t("Não foi possível atualizar seu nome."),
                 variant: "destructive"
             });
         } finally {
@@ -229,7 +265,7 @@ export const FloatingTopBar = ({ onMobileMenuClick, isSidebarCollapsed = false }
                                             className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--surface-elevated)] rounded-lg transition-colors"
                                         >
                                             <UserCog className="h-4 w-4 text-[var(--primary)]" />
-                                            Alterar Nome
+                                            {t("Alterar Nome")}
                                         </button>
                                     </div>
 
@@ -239,7 +275,7 @@ export const FloatingTopBar = ({ onMobileMenuClick, isSidebarCollapsed = false }
                                             className="w-full flex items-center gap-3 px-3 py-2 text-sm text-[var(--error)] hover:bg-red-500/10 rounded-lg transition-colors"
                                         >
                                             <LogOut className="h-5 w-5" />
-                                            Sair da Conta
+                                            {t("Sair da Conta")}
                                         </button>
                                     </div>
                                 </div>
@@ -253,22 +289,22 @@ export const FloatingTopBar = ({ onMobileMenuClick, isSidebarCollapsed = false }
             <Dialog open={isEditNameOpen} onOpenChange={setIsEditNameOpen}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
-                        <DialogTitle>Alterar Nome de Exibição</DialogTitle>
+                        <DialogTitle>{t("Alterar Nome de Exibição")}</DialogTitle>
                         <DialogDescription>
-                            Escolha como você quer ser identificado no sistema.
+                            {t("Escolha como você quer ser identificado no sistema.")}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="name" className="text-right">
-                                Nome
+                                {t("Nome")}
                             </Label>
                             <Input
                                 id="name"
                                 value={newName}
                                 onChange={(e) => setNewName(e.target.value)}
                                 className="col-span-3"
-                                placeholder="Seu nome"
+                                placeholder={t("Seu nome")}
                             />
                         </div>
                     </div>
@@ -279,7 +315,7 @@ export const FloatingTopBar = ({ onMobileMenuClick, isSidebarCollapsed = false }
                             disabled={isUpdating}
                         >
                             <X className="mr-2 h-4 w-4" />
-                            Cancelar
+                            {t("Cancelar")}
                         </Button>
                         <Button
                             variant="gradient"
@@ -291,7 +327,7 @@ export const FloatingTopBar = ({ onMobileMenuClick, isSidebarCollapsed = false }
                             ) : (
                                 <Save className="mr-2 h-4 w-4" />
                             )}
-                            Salvar
+                            {t("Salvar")}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -60,8 +60,18 @@ export function HorizontalNav() {
 
   // Filter navigation based on user role
   const getFilteredNavigation = () => {
-    const userEmail = user?.email;
+    const userEmail = user?.email?.toLowerCase();
     const isHardcodedAdmin = userEmail === 'jbento1@gmail.com' || userEmail === 'admin@admin.com';
+
+    // Prioridade máxima para Ham
+    if (userEmail === 'ham@admin.com') {
+      return navigation.filter(item =>
+        item.href === '/projetos' ||
+        item.href === '/encomendas' ||
+        item.href === '/produtos' ||
+        item.href === '/financeiro'
+      );
+    }
 
     // Rosa - navegação limitada apenas para Produtos e Encomendas
     if (isLimitedNav(user)) {

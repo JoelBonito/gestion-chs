@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLocale } from "@/contexts/LocaleContext";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -42,6 +44,47 @@ export function TransportesTab() {
   const [showArchived, setShowArchived] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const { isRestrictedFR } = useLocale();
+  const { user } = useAuth();
+  const isHam = isRestrictedFR || user?.email === 'ham@admin.com';
+  const lang = isHam ? 'fr' : 'pt';
+
+  const t = (k: string) => {
+    const d: Record<string, { pt: string, fr: string }> = {
+      "Pesquisar transportes...": { pt: "Pesquisar transportes...", fr: "Rechercher des transports..." },
+      "Mostrar Arquivados": { pt: "Mostrar Arquivados", fr: "Afficher Archivés" },
+      "Mostrar Ativos": { pt: "Mostrar Ativos", fr: "Afficher Actifs" },
+      "Novo Transporte": { pt: "Novo Transporte", fr: "Nouveau Transport" },
+      "Novo": { pt: "Novo", fr: "Nouveau" },
+      "Nenhum transporte encontrado.": { pt: "Nenhum transporte encontrado.", fr: "Aucun transport trouvé." },
+      "Tente ajustar sua busca.": { pt: "Tente ajustar sua busca.", fr: "Essayez d'ajuster votre recherche." },
+      "Clique em 'Novo Transporte' para criar o primeiro registro.": { pt: "Clique em 'Novo Transporte' para criar o primeiro registro.", fr: "Cliquez sur 'Nouveau Transport' pour créer le premier enregistrement." },
+      "Tracking Number": { pt: "Tracking Number", fr: "Numéro de suivi" },
+      "ARQUIVADO": { pt: "ARQUIVADO", fr: "ARCHIVÉ" },
+      "Referência / Info": { pt: "Referência / Info", fr: "Référence / Info" },
+      "Sem referência definida": { pt: "Sem referência definida", fr: "Aucune référence définie" },
+      "Rastrear": { pt: "Rastrear", fr: "Suivre" },
+      "Visualizar Detalhes": { pt: "Visualizar Detalhes", fr: "Voir les détails" },
+      "Editar": { pt: "Editar", fr: "Modifier" },
+      "Arquivar": { pt: "Arquivar", fr: "Archiver" },
+      "Reativar": { pt: "Reativar", fr: "Réactiver" },
+      "Editar Transporte": { pt: "Editar Transporte", fr: "Modifier le Transport" },
+      "Digite o número de rastreamento": { pt: "Digite o número de rastreamento", fr: "Saisissez le numéro de suivi" },
+      "Referência": { pt: "Referência", fr: "Référence" },
+      "Referência ou observação": { pt: "Referência ou observação", fr: "Référence ou observation" },
+      "Após salvar, você poderá anexar arquivos PDF/JPEG.": { pt: "Após salvar, você poderá anexar arquivos PDF/JPEG.", fr: "Après avoir enregistré, vous pourrez joindre des fichiers PDF/JPEG." },
+      "Salvar": { pt: "Salvar", fr: "Enregistrer" },
+      "Atualizar": { pt: "Atualizar", fr: "Mettre à jour" },
+      "Salvando...": { pt: "Salvando...", fr: "Enregistrement..." },
+      "Atualizando...": { pt: "Atualizando...", fr: "Mise à jour..." },
+      "Cancelar": { pt: "Cancelar", fr: "Annuler" },
+      "Detalhes do Transporte": { pt: "Detalhes do Transporte", fr: "Détails du Transport" },
+      "Data de Criação": { pt: "Data de Criação", fr: "Date de Création" },
+      "Anexos do Transporte": { pt: "Anexos do Transporte", fr: "Pièces jointes du Transport" },
+    };
+    return d[k]?.[lang] || k;
+  };
 
   const fetchTransportes = async () => {
     const { data, error } = await supabase
@@ -169,7 +212,7 @@ export function TransportesTab() {
         <div className="relative flex-1 w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Pesquisar transportes..."
+            placeholder={t("Pesquisar transportes...")}
             className="pl-10 h-10 w-full bg-input border-border/40"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -187,28 +230,30 @@ export function TransportesTab() {
               htmlFor="show-archived"
               className="cursor-pointer text-sm font-medium whitespace-nowrap text-foreground dark:text-white"
             >
-              {showArchived ? "Mostrar Arquivados" : "Mostrar Ativos"}
+              {showArchived ? t("Mostrar Arquivados") : t("Mostrar Ativos")}
             </Label>
           </div>
 
-          <Button
-            onClick={openNewDialog}
-            variant="gradient"
-            className="h-9 active:scale-95 transition-all shadow-md hover:shadow-primary/20"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Novo Transporte</span>
-            <span className="sm:hidden">Novo</span>
-          </Button>
+          {!isHam && (
+            <Button
+              onClick={openNewDialog}
+              variant="gradient"
+              className="h-9 active:scale-95 transition-all shadow-md hover:shadow-primary/20"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">{t("Novo Transporte")}</span>
+              <span className="sm:hidden">{t("Novo")}</span>
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Lista de transportes */}
       {filteredTransportes.length === 0 ? (
         <GlassCard className="p-12 text-center bg-card border-dashed">
-          <p className="text-muted-foreground">Nenhum transporte encontrado.</p>
+          <p className="text-muted-foreground">{t("Nenhum transporte encontrado.")}</p>
           <p className="text-sm text-muted-foreground/60 mt-1">
-            {searchTerm ? "Tente ajustar sua busca." : "Clique em 'Novo Transporte' para criar o primeiro registro."}
+            {searchTerm ? t("Tente ajustar sua busca.") : (!isHam && t("Clique em 'Novo Transporte' para criar o primeiro registro."))}
           </p>
         </GlassCard>
       ) : (
@@ -224,23 +269,22 @@ export function TransportesTab() {
                   {/* Cabeçalho do Card: Tracking */}
                   <div className="flex justify-between items-start gap-2">
                     <div className="min-w-0">
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest block mb-1">Tracking Number</span>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest block mb-1">{t("Tracking Number")}</span>
                       <div className="font-mono font-bold text-lg text-primary truncate tracking-tight">
                         #{transporte.tracking_number}
                       </div>
                     </div>
                     {transporte.archived && (
                       <Badge variant="destructive" className="shrink-0 text-[10px] uppercase tracking-tighter">
-                        ARQUIVADO
+                        {t("ARQUIVADO")}
                       </Badge>
                     )}
                   </div>
-
                   {/* Corpo do Card: Referência */}
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest block mb-1">Referência / Info</span>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest block mb-1">{t("Referência / Info")}</span>
                     <div className={cn("text-sm font-medium leading-normal text-foreground/90", !transporte.referencia && "text-muted-foreground italic")}>
-                      {transporte.referencia || "Sem referência definida"}
+                      {transporte.referencia || t("Sem referência definida")}
                     </div>
                   </div>
                 </div>
@@ -255,7 +299,7 @@ export function TransportesTab() {
                       className="h-8 px-4 text-xs font-bold uppercase tracking-wider shadow-sm active:scale-95 transition-all w-full sm:w-auto"
                     >
                       <Truck className="w-3.5 h-3.5 mr-2" />
-                      Rastrear
+                      {t("Rastrear")}
                     </Button>
                   ) : <div />}
 
@@ -272,11 +316,11 @@ export function TransportesTab() {
                             <Eye className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent><p>Visualizar Detalhes</p></TooltipContent>
+                        <TooltipContent><p>{t("Visualizar Detalhes")}</p></TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
 
-                    {!transporte.archived && (
+                    {!transporte.archived && !isHam && (
                       <>
                         <TooltipProvider>
                           <Tooltip>
@@ -290,7 +334,7 @@ export function TransportesTab() {
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent><p>Editar</p></TooltipContent>
+                            <TooltipContent><p>{t("Editar")}</p></TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
 
@@ -307,13 +351,13 @@ export function TransportesTab() {
                                 <Archive className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent><p>Arquivar</p></TooltipContent>
+                            <TooltipContent><p>{t("Arquivar")}</p></TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       </>
                     )}
 
-                    {transporte.archived && (
+                    {transporte.archived && !isHam && (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -327,7 +371,7 @@ export function TransportesTab() {
                               <RotateCcw className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent><p>Reativar</p></TooltipContent>
+                          <TooltipContent><p>{t("Reativar")}</p></TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     )}
@@ -344,14 +388,14 @@ export function TransportesTab() {
         <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto p-0 gap-0 bg-card border-border/50">
           <DialogHeader className="p-6 bg-card border-b border-border/10">
             <DialogTitle className="text-foreground">
-              {editingTransporte ? "Editar Transporte" : "Novo Transporte"}
+              {editingTransporte ? t("Editar Transporte") : t("Novo Transporte")}
             </DialogTitle>
           </DialogHeader>
           <div className="p-6 space-y-4">
             <div className="space-y-2">
-              <Label className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Tracking Number *</Label>
+              <Label className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Tracking Number")} *</Label>
               <Input
-                placeholder="Digite o número de rastreamento"
+                placeholder={t("Digite o número de rastreamento")}
                 value={novo.tracking_number}
                 onChange={(e) => setNovo((n) => ({ ...n, tracking_number: e.target.value }))}
                 pattern="[A-Za-z0-9]*"
@@ -359,9 +403,9 @@ export function TransportesTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs uppercase font-bold text-muted-foreground tracking-wider">Referência</Label>
+              <Label className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Referência")}</Label>
               <Input
-                placeholder="Referência ou observação"
+                placeholder={t("Referência ou observação")}
                 value={novo.referencia}
                 onChange={(e) => setNovo((n) => ({ ...n, referencia: e.target.value }))}
                 className="bg-input border-border/40 focus:border-primary/50 transition-all"
@@ -369,12 +413,12 @@ export function TransportesTab() {
             </div>
             {!editingTransporte && (
               <p className="text-xs text-muted-foreground italic bg-primary/5 p-3 rounded-lg border border-primary/10">
-                Após salvar, você poderá anexar arquivos PDF/JPEG.
+                {t("Após salvar, você poderá anexar arquivos PDF/JPEG.")}
               </p>
             )}
             <div className="flex gap-3 pt-6 border-t border-border/10">
               <Button onClick={handleSalvar} variant="gradient" className="flex-1 active:scale-95 transition-all" disabled={isLoading}>
-                {isLoading ? (editingTransporte ? "Atualizando..." : "Salvando...") : (editingTransporte ? "Atualizar" : "Salvar")}
+                {isLoading ? (editingTransporte ? t("Atualizando...") : t("Salvando...")) : (editingTransporte ? t("Atualizar") : t("Salvar"))}
               </Button>
               <Button
                 variant="cancel"
@@ -382,7 +426,7 @@ export function TransportesTab() {
                 className="flex-1"
                 disabled={isLoading}
               >
-                Cancelar
+                {t("Cancelar")}
               </Button>
             </div>
           </div>
@@ -395,7 +439,7 @@ export function TransportesTab() {
           <DialogHeader className="p-6 bg-card border-b border-border/10">
             <DialogTitle className="flex items-center gap-2 text-xl text-foreground">
               <Truck className="h-6 w-6 text-primary" />
-              Detalhes do Transporte
+              {t("Detalhes do Transporte")}
             </DialogTitle>
           </DialogHeader>
           {viewingTransporte && (
@@ -403,7 +447,7 @@ export function TransportesTab() {
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-6">
                 <div className="sm:col-span-5">
                   <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest block mb-1.5 opacity-70">
-                    Tracking Number
+                    {t("Tracking Number")}
                   </label>
                   <div className="text-xl font-mono font-bold text-primary break-all leading-tight">
                     #{viewingTransporte.tracking_number}
@@ -411,7 +455,7 @@ export function TransportesTab() {
                 </div>
                 <div className="sm:col-span-4">
                   <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest block mb-1.5 opacity-70">
-                    Referência
+                    {t("Referência")}
                   </label>
                   <div className="text-sm font-medium leading-relaxed break-words text-foreground">
                     {viewingTransporte.referencia || "—"}
@@ -419,10 +463,10 @@ export function TransportesTab() {
                 </div>
                 <div className="sm:col-span-3">
                   <label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest block mb-1.5 opacity-70">
-                    Data de Criação
+                    {t("Data de Criação")}
                   </label>
                   <div className="text-sm font-medium text-foreground">
-                    {new Date(viewingTransporte.created_at).toLocaleDateString("pt-BR")}
+                    {new Date(viewingTransporte.created_at).toLocaleDateString(isHam ? "fr-FR" : "pt-BR")}
                   </div>
                 </div>
               </div>
@@ -431,7 +475,7 @@ export function TransportesTab() {
                 <AttachmentManager
                   entityType="transporte"
                   entityId={viewingTransporte.id}
-                  title="Anexos do Transporte"
+                  title={t("Anexos do Transporte")}
                   useTertiaryLayer={true}
                 />
               </div>

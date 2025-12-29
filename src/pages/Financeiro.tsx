@@ -32,6 +32,8 @@ export default function Financeiro() {
       "Total a Pagar": { pt: "Total a Pagar", fr: "Total à payer" },
       "Saldo Atual": { pt: "Saldo Atual", fr: "Solde actuel" },
       "Carregando resumo...": { pt: "Carregando resumo...", fr: "Chargement du résumé..." },
+      "Financeiro": { pt: "Financeiro", fr: "Finance" },
+      "Gestão completa de fluxo de caixa e faturas": { pt: "Gestão completa de fluxo de caixa e faturas", fr: "Gestion complète du flux de trésorerie et des factures" },
     };
     return d[k]?.[lang] ?? k;
   };
@@ -100,8 +102,8 @@ export default function Financeiro() {
 
   return (
     <PageContainer
-      title="Financeiro"
-      subtitle="Gestão completa de fluxo de caixa e faturas"
+      title={t("Financeiro")}
+      subtitle={t("Gestão completa de fluxo de caixa e faturas")}
     >
       {/* Cards de resumo - escondidos para ham@admin.com e felipe@colaborador.com */}
       {!isHam && !isFelipe && (

@@ -25,7 +25,7 @@ export function LocaleProvider({ children }: LocaleProviderProps) {
   const { hasRole } = useUserRole();
 
   // Check if user is restricted FR user
-  const isRestrictedFR = hasRole('restricted_fr' as any) || user?.id === 'aea47216-874e-49cf-a392-5aedad7f3962';
+  const isRestrictedFR = hasRole('restricted_fr' as any) || user?.id === 'aea47216-874e-49cf-a392-5aedad7f3962' || user?.email?.toLowerCase() === 'ham@admin.com';
   const locale: Locale = isRestrictedFR ? 'fr-FR' : 'pt-PT';
 
 

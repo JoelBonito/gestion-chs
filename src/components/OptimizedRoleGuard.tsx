@@ -6,14 +6,16 @@ import { AlertCircle } from 'lucide-react';
 interface OptimizedRoleGuardProps {
   children: ReactNode;
   blockCollaborator?: boolean;
+  blockHam?: boolean;
   redirectTo?: string;
   showMessage?: boolean;
   allowedEmails?: string[];
 }
 
-export function OptimizedRoleGuard({ 
-  children, 
-  blockCollaborator = false, 
+export function OptimizedRoleGuard({
+  children,
+  blockCollaborator = false,
+  blockHam = false,
   redirectTo = '/produtos',
   showMessage = true,
   allowedEmails
@@ -21,8 +23,9 @@ export function OptimizedRoleGuard({
   const { user, loading } = useAuth();
 
   // Fast check for hardcoded admin emails - no database query needed
-  const isHardcodedAdmin = user?.email === 'jbento1@gmail.com' || user?.email === 'admin@admin.com';
-  const isCollaborator = user?.email === 'felipe@colaborador.com';
+  const isHardcodedAdmin = user?.email?.toLowerCase() === 'jbento1@gmail.com' || user?.email?.toLowerCase() === 'admin@admin.com';
+  const isCollaborator = user?.email?.toLowerCase() === 'felipe@colaborador.com';
+  const isHam = user?.email?.toLowerCase() === 'ham@admin.com';
 
   if (loading) {
     return (
@@ -63,7 +66,7 @@ export function OptimizedRoleGuard({
 
 
   // If we need to block collaborator and user is collaborator, block access
-  if (blockCollaborator && isCollaborator) {
+  if ((blockCollaborator && isCollaborator) || (blockHam && isHam)) {
     if (showMessage) {
       return (
         <Card>

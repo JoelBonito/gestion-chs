@@ -6,7 +6,7 @@ import { User } from '@supabase/supabase-js';
  */
 export function isNoPriceUser(user: User | null): boolean {
   if (!user?.email) return false;
-  return user.email.toLowerCase() === 'rosa@colaborador.com';
+  return user.email.toLowerCase() === 'rosa@colaborador.com' || user.email.toLowerCase() === 'ham@admin.com';
 }
 
 /**
