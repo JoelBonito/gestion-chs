@@ -290,8 +290,8 @@ export default function Produtos() {
                 {/* Produto */}
                 <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider py-4 pl-6 w-[28%]">{t("Produto")}</TableHead>
 
-                {/* Resumo */}
-                <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider py-4 text-center w-[12%]">{t("Resumo")}</TableHead>
+                {/* Marca Categoria */}
+                <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider py-4 w-[16%]">{t("Marca Categoria")}</TableHead>
 
                 {/* Fornecedor */}
                 <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider py-4 w-[18%]">{t("Fornecedor")}</TableHead>
@@ -302,13 +302,28 @@ export default function Produtos() {
                 {/* Colunas Condicionais de Preço */}
                 {!isHam && !hidePrices && (
                   <>
-                    <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider text-right py-4 leading-tight w-[9%] whitespace-nowrap">{t("Preço de Custo")}</TableHead>
-                    <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider text-right py-4 leading-tight w-[9%] whitespace-nowrap">{t("Preço de Venda")}</TableHead>
+                    <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider text-right py-4 leading-none w-[9%]">
+                      <div className="flex flex-col items-end">
+                        <span>{t("Preço")}</span>
+                        <span className="text-[9px] opacity-70">{t("Custo")}</span>
+                      </div>
+                    </TableHead>
+                    <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider text-right py-4 leading-none w-[9%]">
+                      <div className="flex flex-col items-end">
+                        <span>{t("Preço")}</span>
+                        <span className="text-[9px] opacity-70">{t("Venda")}</span>
+                      </div>
+                    </TableHead>
                   </>
                 )}
 
                 {isHam && (
-                  <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider text-right py-4 leading-tight w-[12%] whitespace-nowrap">{t("Preço de Venda")}</TableHead>
+                  <TableHead className="uppercase text-[10px] font-bold text-muted-foreground tracking-wider text-right py-4 leading-none w-[12%]">
+                    <div className="flex flex-col items-end">
+                      <span>{t("Preço")}</span>
+                      <span className="text-[9px] opacity-70">{t("Venda")}</span>
+                    </div>
+                  </TableHead>
                 )}
 
                 {/* Ações */}
