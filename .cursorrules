@@ -1,0 +1,198 @@
+# INOVE AI Design System — Cursor Rules
+# Versão: 5.1.0 (2025-01)
+# Stack: React 18 + Vite 6 + Tailwind CSS v4 + shadcn/ui
+
+## 🎯 REGRAS FUNDAMENTAIS
+
+### Stack Obrigatória
+- Frontend: React 18 + TypeScript strict
+- Styling: Tailwind CSS v4 (CSS-first, @theme)
+- UI Components: shadcn/ui (ownership no projeto)
+- Estado: React Query (server) + Zustand (client)
+- Validação: Zod
+
+### Idioma
+- UI: Português Brasileiro (PT-BR)
+- Código: Inglês (variáveis, funções)
+- Comentários: Português
+
+---
+
+## 🎨 DESIGN SYSTEM
+
+### Sistema de Camadas (NUNCA pular)
+```
+Layer 1: bg-background  → Fundo principal
+Layer 2: bg-card        → Modais, Cards, Sidebar
+Layer 3: bg-popover     → Seções de formulário
+Layer 4: bg-accent      → Inputs, campos
+```
+
+### Tokens Semânticos (USAR SEMPRE)
+- Cores: `bg-primary`, `text-foreground`, `border-border`
+- NUNCA usar HEX inline: ❌ `bg-[#1c202a]`
+- SEMPRE usar tokens: ✅ `bg-card`
+
+### Cores de Status
+- Success: `text-success` / `bg-success`
+- Warning: `text-warning` / `bg-warning`
+- Error: `text-error` / `bg-error` / `bg-destructive`
+- Info: `text-info` / `bg-info`
+
+### Navegação Colorida
+- Dashboard: `text-nav-dashboard` (azul)
+- Projetos: `text-nav-projects` (amber)
+- Clientes: `text-nav-clients` (emerald)
+- Finanças: `text-nav-finance` (verde)
+
+---
+
+## 🧩 COMPONENTES
+
+### Componentes Disponíveis em @/components/ui
+Accordion, AlertDialog, Alert, Avatar, Badge, Breadcrumb,
+Button, Calendar, Card, Carousel, Chart, Checkbox, Collapsible,
+Command, ContextMenu, DatePickerPopover, Dialog, Drawer,
+DropdownMenu, Form, HoverCard, Input, Label, Loading, Menubar,
+MultiSelect, NavigationMenu, Pagination, Popover, Progress,
+RadioGroup, Resizable, ScrollArea, Select, Separator, Sheet,
+Sidebar, Skeleton, Slider, Sonner, Switch, Table, Tabs,
+Textarea, ThemeSwitcher, Toast, Toggle, ToggleGroup, Tooltip
+
+### Padrões de Componente
+```tsx
+// SEMPRE usar forwardRef
+const Component = React.forwardRef<HTMLDivElement, Props>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("base-classes", className)} {...props} />
+  )
+)
+Component.displayName = "Component"
+```
+
+### Sistema de Variants (cva)
+```tsx
+import { cva, type VariantProps } from "class-variance-authority"
+
+const componentVariants = cva("base-classes", {
+  variants: {
+    variant: { default: "...", primary: "..." },
+    size: { sm: "...", md: "...", lg: "..." }
+  },
+  defaultVariants: { variant: "default", size: "md" }
+})
+```
+
+### Botões
+- Ação primária: `variant="gradient"`
+- Cancelar/Fechar: `variant="cancel"`
+- Excluir: `variant="destructive"`
+- Secundário: `variant="ghost"` ou `variant="outline"`
+
+---
+
+## ♿ ACESSIBILIDADE
+
+### Obrigatório
+- `focus-visible:ring-2` em todos elementos interativos
+- `sr-only` em botões com apenas ícone
+- `motion-reduce:animate-none` em animações
+- Labels em todos inputs
+- Contraste mínimo 4.5:1 (texto) / 3:1 (UI)
+
+### Exemplo Botão com Ícone
+```tsx
+<Button size="icon">
+  <X className="size-4" />
+  <span className="sr-only">Fechar</span>
+</Button>
+```
+
+---
+
+## 🔧 UTILITÁRIOS
+
+### cn() para Classes Condicionais
+```tsx
+import { cn } from "@/lib/utils"
+
+<div className={cn("base-class", isActive && "active-class")} />
+```
+
+### Formatação
+```tsx
+import { formatCurrency, formatDate } from "@/lib/utils"
+
+formatCurrency(1234.56)  // "1.234,56€"
+formatDate(new Date())   // "02/01/2025"
+```
+
+---
+
+## 🚫 ANTI-PATTERNS
+
+### NUNCA fazer
+```tsx
+// ❌ Cores hardcoded
+<div className="bg-[#1c202a]" />
+
+// ❌ text-white que quebra em light mode
+<p className="text-white">Texto</p>
+
+// ❌ Classes dinâmicas (Tailwind não gera)
+<div className={`text-${color}-500`} />
+
+// ❌ Remover focus sem substituir
+<button className="focus:outline-none" />
+
+// ❌ Pular camadas
+Modal (L2) → Input (L4)  // ERRADO: falta L3
+```
+
+### SEMPRE fazer
+```tsx
+// ✅ Tokens semânticos
+<div className="bg-card" />
+
+// ✅ Tokens de texto
+<p className="text-foreground">Texto</p>
+
+// ✅ Mapeamento explícito
+const colorMap = { red: 'text-red-500', blue: 'text-blue-500' }
+
+// ✅ Focus visible
+<button className="focus:outline-none focus-visible:ring-2" />
+
+// ✅ Respeitar camadas
+Modal (L2) → Seção (L3) → Input (L4)
+```
+
+---
+
+## 📁 ESTRUTURA DE ARQUIVOS
+
+```
+src/
+├── components/
+│   ├── ui/           # shadcn components (base)
+│   └── [feature]/    # feature components
+├── hooks/            # custom hooks
+├── lib/
+│   └── utils.ts      # cn(), formatters
+├── pages/            # route pages
+├── types/            # TypeScript types
+└── index.css         # Tailwind @theme + tokens
+```
+
+---
+
+## 🎯 CHECKLIST ANTES DE COMMIT
+
+- [ ] Sem cores hardcoded (HEX inline)
+- [ ] Usando tokens semânticos
+- [ ] focus-visible em elementos interativos
+- [ ] sr-only em botões icon-only
+- [ ] Testado em Light E Dark mode
+- [ ] Testado em mobile
+- [ ] TypeScript sem erros
+- [ ] ESLint sem erros
