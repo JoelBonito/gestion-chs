@@ -71,7 +71,7 @@ const getStatusColor = (status: StatusEncomenda) => {
     case "ENTREGUE":
       return "bg-green-600";
     default:
-      return "bg-slate-500";
+      return "bg-muted";
   }
 };
 

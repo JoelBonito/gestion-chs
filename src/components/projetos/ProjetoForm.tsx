@@ -160,7 +160,7 @@ export function ProjetoForm({ projeto, onSuccess }: ProjetoFormProps) {
           {projeto || projetoId ? (
             <ProjetoAttachmentManager projetoId={projeto?.id || projetoId || ""} />
           ) : (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {t("Salve o projeto primeiro para adicionar anexos")}
             </p>
           )}

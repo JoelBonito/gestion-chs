@@ -345,7 +345,7 @@ export default function EncomendaView({ encomendaId }: Props) {
         <section className="bg-popover space-y-4 rounded-xl p-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="bg-accent border-border/40 rounded-md border p-3">
-              <div className="mb-1 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+              <div className="mb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
                 {t.client}
               </div>
               <div className="font-semibold text-foreground">
@@ -353,7 +353,7 @@ export default function EncomendaView({ encomendaId }: Props) {
               </div>
             </div>
             <div className="bg-accent border-border/40 rounded-md border p-3">
-              <div className="mb-1 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+              <div className="mb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
                 {t.supplier}
               </div>
               <div className="font-semibold text-foreground">
@@ -365,7 +365,7 @@ export default function EncomendaView({ encomendaId }: Props) {
           {/* Datas */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="bg-accent border-border/40 rounded-md border p-3">
-              <div className="mb-1 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+              <div className="mb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
                 {t.productionDate}
               </div>
               <div className="font-semibold text-foreground">
@@ -375,7 +375,7 @@ export default function EncomendaView({ encomendaId }: Props) {
               </div>
             </div>
             <div className="bg-accent border-border/40 rounded-md border p-3">
-              <div className="mb-1 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+              <div className="mb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
                 {t.deliveryDate}
               </div>
               <div className="font-semibold text-foreground">
@@ -388,7 +388,7 @@ export default function EncomendaView({ encomendaId }: Props) {
           {(!isRosa || isHam) && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
               <div className="bg-accent border-border/40 rounded-md border p-3">
-                <div className="mb-1 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+                <div className="mb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
                   {isFelipe ? t.totalCost : t.subtotalItems}
                 </div>
                 <div className="font-semibold text-foreground">
@@ -399,7 +399,7 @@ export default function EncomendaView({ encomendaId }: Props) {
               {/* Pago — NÃO mostrar para Felipe */}
               {!isFelipe && (
                 <div className="bg-accent border-border/40 rounded-md border p-3">
-                  <div className="mb-1 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+                  <div className="mb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
                     {t.paid}
                   </div>
                   <div className="font-semibold text-foreground">
@@ -411,7 +411,7 @@ export default function EncomendaView({ encomendaId }: Props) {
               {/* Lucro estimado — oculto para Felipe e Ham */}
               {!(isFelipe || isHam) && (
                 <div className="bg-accent border-border/40 rounded-md border p-3">
-                  <div className="mb-1 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+                  <div className="mb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
                     {t.estProfit}
                   </div>
                   <div
@@ -428,7 +428,7 @@ export default function EncomendaView({ encomendaId }: Props) {
               {/* % Lucro — mostrar apenas para jbento1@gmail.com e admin@admin.com */}
               {(email === "jbento1@gmail.com" || email === "admin@admin.com") && (
                 <div className="bg-accent border-border/40 rounded-md border p-3">
-                  <div className="mb-1 text-xs font-medium tracking-wider text-gray-500 uppercase dark:text-gray-400">
+                  <div className="mb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
                     % Lucro
                   </div>
                   <div

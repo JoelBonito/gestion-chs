@@ -41,7 +41,7 @@ const getStatusColor = (status: string) => {
     case "ENTREGUE":
       return "bg-green-600 border-transparent";
     default:
-      return "bg-slate-500 border-transparent";
+      return "bg-muted border-transparent";
   }
 };
 

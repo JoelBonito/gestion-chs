@@ -62,7 +62,7 @@ export function ThemeSwitcherPill({ className, size = "md" }: ThemeSwitcherPillP
           className={cn(
             "z-10 flex items-center justify-center rounded-full transition-all duration-300",
             sizes.iconContainer,
-            !isDark ? "text-amber-500" : "text-slate-500"
+            !isDark ? "text-amber-500" : "text-muted-foreground"
           )}
         >
           <SunIcon
@@ -75,7 +75,7 @@ export function ThemeSwitcherPill({ className, size = "md" }: ThemeSwitcherPillP
           className={cn(
             "z-10 flex items-center justify-center rounded-full transition-all duration-300",
             sizes.iconContainer,
-            isDark ? "text-blue-300" : "text-slate-400"
+            isDark ? "text-blue-300" : "text-muted-foreground"
           )}
         >
           <MoonIcon

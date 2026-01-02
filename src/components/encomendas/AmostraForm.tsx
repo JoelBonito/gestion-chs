@@ -203,7 +203,7 @@ export function AmostraForm({ amostra, onSuccess }: AmostraFormProps) {
                           className={cn(
                             InputStyles,
                             "border-border/10 hover:bg-muted/50 h-11 w-full border pl-3 text-left text-xs font-bold tracking-widest uppercase transition-all dark:hover:bg-accent",
-                            !field.value && "text-slate-500"
+                            !field.value && "text-muted-foreground"
                           )}
                         >
                           {field.value ? (
@@ -211,7 +211,7 @@ export function AmostraForm({ amostra, onSuccess }: AmostraFormProps) {
                           ) : (
                             <span>Selecionar data</span>
                           )}
-                          <CalendarIcon className="ml-auto h-4 w-4 text-slate-400" />
+                          <CalendarIcon className="ml-auto h-4 w-4 text-muted-foreground" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
@@ -339,7 +339,7 @@ export function AmostraForm({ amostra, onSuccess }: AmostraFormProps) {
                   <FormLabel className={LabelStyles}>Cor</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Palette className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                      <Palette className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         placeholder="Cor do produto"
                         {...field}
@@ -360,7 +360,7 @@ export function AmostraForm({ amostra, onSuccess }: AmostraFormProps) {
                   <FormLabel className={LabelStyles}>Textura</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Droplets className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                      <Droplets className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         placeholder="Textura do produto"
                         {...field}
@@ -381,7 +381,7 @@ export function AmostraForm({ amostra, onSuccess }: AmostraFormProps) {
                   <FormLabel className={LabelStyles}>Fragrância</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Wind className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                      <Wind className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         placeholder="Fragrância do produto"
                         {...field}
@@ -440,7 +440,7 @@ export function AmostraForm({ amostra, onSuccess }: AmostraFormProps) {
                           className={cn(
                             InputStyles,
                             "border-border/10 hover:bg-muted/50 h-11 w-full border pl-3 text-left text-xs font-bold tracking-widest uppercase transition-all dark:hover:bg-accent",
-                            !field.value && "text-slate-500"
+                            !field.value && "text-muted-foreground"
                           )}
                         >
                           {field.value ? (
@@ -448,7 +448,7 @@ export function AmostraForm({ amostra, onSuccess }: AmostraFormProps) {
                           ) : (
                             <span>Selecionar data</span>
                           )}
-                          <CalendarIcon className="ml-auto h-4 w-4 text-slate-400" />
+                          <CalendarIcon className="ml-auto h-4 w-4 text-muted-foreground" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
