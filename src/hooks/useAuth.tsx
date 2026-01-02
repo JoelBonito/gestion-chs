@@ -1,7 +1,6 @@
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -13,7 +12,10 @@ export function useAuth() {
     // Get initial user - só seta loading=false quando isso terminar
     const initAuth = async () => {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser();
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
         if (error) {
           // Se der erro (ex: refresh token inválido), limpamos o usuário
           // console.error("Erro ao carregar usuário inicial:", error);
@@ -33,12 +35,14 @@ export function useAuth() {
     initAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (mounted) {
         setUser(session?.user ?? null);
 
         // Se for SIGN_OUT, garantir loading false
-        if (event === 'SIGNED_OUT') {
+        if (event === "SIGNED_OUT") {
           setLoading(false);
           // Limpar query cache se necessário, mas aqui só lidamos com auth state
         }

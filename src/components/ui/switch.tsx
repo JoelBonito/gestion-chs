@@ -1,7 +1,7 @@
-import * as React from "react"
-import * as SwitchPrimitives from "@radix-ui/react-switch"
+import * as React from "react";
+import * as SwitchPrimitives from "@radix-ui/react-switch";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const Switch = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,
@@ -9,11 +9,11 @@ const Switch = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SwitchPrimitives.Root
     className={cn(
-      "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-lg border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
-      // Dark Mode: OFF=#2d3342, ON=cyan-500
-      "dark:data-[state=checked]:bg-cyan-500 dark:data-[state=unchecked]:bg-[#2d3342]",
-      // Light Mode: ON=#457b77, OFF=#e0e7e6
-      "data-[state=checked]:bg-[#457b77] data-[state=unchecked]:bg-[#e0e7e6]",
+      "peer focus-visible:ring-ring focus-visible:ring-offset-background inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-lg border-2 border-transparent transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+      // ON state: usar --primary (teal em light, cyan em dark)
+      "data-[state=checked]:bg-primary",
+      // OFF state: usar --border (neutro em ambos os modos)
+      "data-[state=unchecked]:bg-border",
       className
     )}
     {...props}
@@ -29,7 +29,7 @@ const Switch = React.forwardRef<
       )}
     />
   </SwitchPrimitives.Root>
-))
-Switch.displayName = SwitchPrimitives.Root.displayName
+));
+Switch.displayName = SwitchPrimitives.Root.displayName;
 
-export { Switch }
+export { Switch };

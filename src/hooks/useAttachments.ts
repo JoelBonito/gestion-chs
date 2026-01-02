@@ -1,8 +1,7 @@
-
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useSupabaseStorage } from './useSupabaseStorage';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useSupabaseStorage } from "./useSupabaseStorage";
 
 interface Attachment {
   id: string;
@@ -21,14 +20,14 @@ export const useAttachments = (entityType: string, entityId: string) => {
   const { toast } = useToast();
   const { deleteFile } = useSupabaseStorage();
   const queryClient = useQueryClient();
-  
+
   // Define a stable query key
-  const queryKey = ['attachments', entityType, entityId];
+  const queryKey = ["attachments", entityType, entityId];
 
   const {
     data: attachments = [],
     isLoading,
-    refetch
+    refetch,
   } = useQuery({
     queryKey,
     queryFn: async () => {
@@ -36,27 +35,29 @@ export const useAttachments = (entityType: string, entityId: string) => {
         console.log("useAttachments - Sem entityId, não buscando anexos");
         return [];
       }
-      
-      console.log(`useAttachments - Buscando anexos para entityType: ${entityType}, entityId: ${entityId}`);
-      
+
+      console.log(
+        `useAttachments - Buscando anexos para entityType: ${entityType}, entityId: ${entityId}`
+      );
+
       const { data, error } = await supabase
-        .from('attachments')
-        .select('*')
-        .eq('entity_type', entityType)
-        .eq('entity_id', entityId)
-        .order('created_at', { ascending: false });
+        .from("attachments")
+        .select("*")
+        .eq("entity_type", entityType)
+        .eq("entity_id", entityId)
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("useAttachments - Erro ao buscar anexos:", error);
         throw error;
       }
-      
+
       console.log(`useAttachments - Anexos encontrados (${data?.length || 0}):`, data);
       return data || [];
     },
     enabled: !!entityId,
     staleTime: 0, // Always fetch fresh data
-    gcTime: 0 // Don't cache data
+    gcTime: 0, // Don't cache data
   });
 
   const createAttachment = async (attachmentData: {
@@ -66,12 +67,18 @@ export const useAttachments = (entityType: string, entityId: string) => {
     storage_url: string;
     file_size: number;
   }) => {
-    console.log(`useAttachments - Criando anexo no banco para entityType: ${entityType}, entityId: ${entityId}`, attachmentData);
-    
+    console.log(
+      `useAttachments - Criando anexo no banco para entityType: ${entityType}, entityId: ${entityId}`,
+      attachmentData
+    );
+
     try {
       // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
       if (userError) {
         console.error("useAttachments - Erro ao obter usuário:", userError);
         throw new Error("Erro ao obter usuário atual");
@@ -92,13 +99,13 @@ export const useAttachments = (entityType: string, entityId: string) => {
         storage_path: attachmentData.storage_path,
         storage_url: attachmentData.storage_url,
         file_size: attachmentData.file_size,
-        uploaded_by: user.id
+        uploaded_by: user.id,
       };
 
       console.log("useAttachments - Dados para inserção no banco:", insertData);
 
       const { data, error } = await supabase
-        .from('attachments')
+        .from("attachments")
         .insert([insertData])
         .select()
         .single();
@@ -109,21 +116,21 @@ export const useAttachments = (entityType: string, entityId: string) => {
           message: error.message,
           details: error.details,
           hint: error.hint,
-          code: error.code
+          code: error.code,
         });
         throw error;
       }
-      
+
       console.log("useAttachments - Anexo inserido com sucesso no banco:", data);
-      
+
       // Invalidate queries to trigger immediate refresh
       console.log("useAttachments - Invalidando queries para refresh imediato");
       await queryClient.invalidateQueries({ queryKey });
-      
+
       // Force refetch to ensure immediate update
       console.log("useAttachments - Forçando refetch para atualização imediata");
       await refetch();
-      
+
       toast({
         title: "Anexo adicionado",
         description: "Arquivo anexado com sucesso.",
@@ -135,7 +142,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
       toast({
         title: "Erro ao salvar anexo",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
       throw error;
     }
@@ -149,16 +156,13 @@ export const useAttachments = (entityType: string, entityId: string) => {
       await deleteFile(attachment.storage_path);
 
       // Then delete the record from database
-      const { error } = await supabase
-        .from('attachments')
-        .delete()
-        .eq('id', attachment.id);
+      const { error } = await supabase.from("attachments").delete().eq("id", attachment.id);
 
       if (error) throw error;
 
       // Invalidate queries to refresh the list
       await queryClient.invalidateQueries({ queryKey });
-      
+
       // Force refetch to ensure immediate update
       await refetch();
 
@@ -171,7 +175,7 @@ export const useAttachments = (entityType: string, entityId: string) => {
       toast({
         title: "Erro ao remover anexo",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -181,6 +185,6 @@ export const useAttachments = (entityType: string, entityId: string) => {
     isLoading,
     createAttachment,
     deleteAttachment,
-    refetch
+    refetch,
   };
 };

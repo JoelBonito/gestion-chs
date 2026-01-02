@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -78,30 +77,39 @@ const App = () => {
                           <AppLayout>
                             <Suspense fallback={<PageLoader />}>
                               <Routes>
-                                <Route path="/" element={
-                                  <FelipeGuard>
-                                    <FactoryGuard>
-                                      <Dashboard />
-                                    </FactoryGuard>
-                                  </FelipeGuard>
-                                } />
-                                <Route path="/dashboard" element={
-                                  <FelipeGuard>
-                                    <FactoryGuard>
-                                      <Dashboard />
-                                    </FactoryGuard>
-                                  </FelipeGuard>
-                                } />
+                                <Route
+                                  path="/"
+                                  element={
+                                    <FelipeGuard>
+                                      <FactoryGuard>
+                                        <Dashboard />
+                                      </FactoryGuard>
+                                    </FelipeGuard>
+                                  }
+                                />
+                                <Route
+                                  path="/dashboard"
+                                  element={
+                                    <FelipeGuard>
+                                      <FactoryGuard>
+                                        <Dashboard />
+                                      </FactoryGuard>
+                                    </FelipeGuard>
+                                  }
+                                />
                                 <Route path="/produtos" element={<Produtos />} />
                                 <Route path="/clientes" element={<Clientes />} />
                                 <Route path="/fornecedores" element={<Fornecedores />} />
                                 <Route path="/encomendas" element={<Encomendas />} />
                                 <Route path="/projetos" element={<Projetos />} />
-                                <Route path="/producao" element={
-                                  <FactoryGuard>
-                                    <Producao />
-                                  </FactoryGuard>
-                                } />
+                                <Route
+                                  path="/producao"
+                                  element={
+                                    <FactoryGuard>
+                                      <Producao />
+                                    </FactoryGuard>
+                                  }
+                                />
                                 <Route path="/financeiro" element={<Financeiro />} />
                                 <Route path="/welcome" element={<Index />} />
                                 <Route path="*" element={<NotFound />} />

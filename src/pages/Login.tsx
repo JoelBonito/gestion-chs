@@ -49,7 +49,6 @@ export default function Login() {
       } else {
         navigate("/dashboard"); // rota padrão para os outros usuários
       }
-
     } catch (error: any) {
       toast({
         title: "Erro no login",
@@ -62,28 +61,28 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+    <div className="bg-background flex min-h-screen items-center justify-center p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <div className="rounded-xl border border-border bg-[var(--surface-elevated)] p-8 shadow-sm">
-          <div className="flex flex-col items-center text-center mb-8 space-y-2">
-            <div className="mb-6 h-24 w-full flex items-center justify-center relative">
+        <div className="border-border rounded-xl border bg-[var(--surface-elevated)] p-8 shadow-sm">
+          <div className="mb-8 flex flex-col items-center space-y-2 text-center">
+            <div className="relative mb-6 flex h-24 w-full items-center justify-center">
               <img
                 src="/chs-logo-light.png"
                 alt="Gestion CHS"
-                className="h-24 w-auto object-contain dark:hidden transition-transform hover:scale-105"
+                className="h-24 w-auto object-contain transition-transform hover:scale-105 dark:hidden"
               />
               <img
                 src="/chs-logo-dark.png"
                 alt="Gestion CHS"
-                className="h-24 w-auto object-contain hidden dark:block transition-transform hover:scale-105"
+                className="hidden h-24 w-auto object-contain transition-transform hover:scale-105 dark:block"
               />
             </div>
-            <h1 className="text-3xl font-display font-bold tracking-tight">Bem-vindo</h1>
+            <h1 className="font-display text-3xl font-bold tracking-tight">Bem-vindo</h1>
             <p className="text-muted-foreground">
               Entre com suas credenciais para acessar o sistema
             </p>
@@ -92,7 +91,7 @@ export default function Login() {
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium ml-1">
+                <label htmlFor="email" className="ml-1 text-sm font-medium">
                   Email
                 </label>
                 <Input
@@ -106,7 +105,7 @@ export default function Login() {
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium ml-1">
+                <label htmlFor="password" className="ml-1 text-sm font-medium">
                   Senha
                 </label>
                 <Input
@@ -124,7 +123,7 @@ export default function Login() {
             <Button
               type="submit"
               variant="gradient"
-              className="w-full h-11 text-base font-medium"
+              className="h-11 w-full text-base font-medium"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -138,7 +137,7 @@ export default function Login() {
             </Button>
           </form>
 
-          <p className="mt-8 text-center text-xs text-muted-foreground">
+          <p className="text-muted-foreground mt-8 text-center text-xs">
             Gestão CHS © {new Date().getFullYear()}
           </p>
         </div>

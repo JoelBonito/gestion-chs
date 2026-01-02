@@ -1,6 +1,6 @@
-import { useUserRoleContext } from '@/contexts/UserRoleContext';
+import { useUserRoleContext } from "@/contexts/UserRoleContext";
 
-export type UserRole = 'admin' | 'ops' | 'client' | 'factory' | 'finance' | 'restricted_fr';
+export type UserRole = "admin" | "ops" | "client" | "factory" | "finance" | "restricted_fr";
 
 export function useUserRole() {
   const context = useUserRoleContext();
@@ -11,6 +11,6 @@ export function useUserRole() {
     canEdit: context.canEdit,
     loading: context.loading,
     isHardcodedAdmin: context.isHardcodedAdmin,
-    refreshRoles: context.refreshRoles
+    refreshRoles: context.refreshRoles,
   };
 }

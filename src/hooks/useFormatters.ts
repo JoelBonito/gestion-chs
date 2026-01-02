@@ -1,10 +1,10 @@
-import { useLocale } from '@/contexts/LocaleContext';
-import { formatCurrencyEUR } from '@/lib/utils/currency';
+import { useLocale } from "@/contexts/LocaleContext";
+import { formatCurrencyEUR } from "@/lib/utils/currency";
 
 export function useFormatters() {
   const { locale } = useLocale();
 
-  // Usar formatCurrencyEUR para consistência 
+  // Usar formatCurrencyEUR para consistência
   const formatCurrency = (value: number | null | undefined) => {
     return formatCurrencyEUR(value);
   };

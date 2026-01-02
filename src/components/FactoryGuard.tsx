@@ -1,9 +1,9 @@
-import { ReactNode, useEffect } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
-import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { ReactNode, useEffect } from "react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 
 interface FactoryGuardProps {
   children: ReactNode;
@@ -17,25 +17,25 @@ interface FactoryGuardProps {
  */
 export function FactoryGuard({
   children,
-  redirectTo = '/produtos',
-  showMessage = true
+  redirectTo = "/produtos",
+  showMessage = true,
 }: FactoryGuardProps) {
   const { hasRole, loading } = useUserRole();
   const { user } = useAuth();
   const navigate = useNavigate();
 
   // Administradores têm acesso total sempre
-  const isHardcodedAdmin = user?.email === 'jbento1@gmail.com' || user?.email === 'admin@admin.com';
-  
+  const isHardcodedAdmin = user?.email === "jbento1@gmail.com" || user?.email === "admin@admin.com";
+
   useEffect(() => {
-    if (!isHardcodedAdmin && !loading && hasRole('factory')) {
+    if (!isHardcodedAdmin && !loading && hasRole("factory")) {
       navigate(redirectTo, { replace: true });
     }
   }, [loading, hasRole, navigate, redirectTo, isHardcodedAdmin]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <Card>
           <CardContent className="p-8 text-center">
             <p className="text-muted-foreground">Verificando permissões…</p>
@@ -50,9 +50,9 @@ export function FactoryGuard({
     return <>{children}</>;
   }
 
-  if (hasRole('factory')) {
+  if (hasRole("factory")) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <Card>
           <CardContent className="p-8 text-center">
             <p className="text-muted-foreground">Verificando permissões…</p>
@@ -62,14 +62,14 @@ export function FactoryGuard({
     );
   }
 
-  if (hasRole('factory')) {
+  if (hasRole("factory")) {
     if (showMessage) {
       return (
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="flex min-h-screen items-center justify-center">
           <Card className="max-w-md">
             <CardContent className="p-6 text-center">
-              <AlertCircle className="w-8 h-8 mx-auto mb-3 text-yellow-500" />
-              <h3 className="text-lg font-semibold mb-2">Acesso Restrito</h3>
+              <AlertCircle className="mx-auto mb-3 h-8 w-8 text-yellow-500" />
+              <h3 className="mb-2 text-lg font-semibold">Acesso Restrito</h3>
               <p className="text-muted-foreground">
                 Usuário de fábrica não tem acesso a esta seção.
                 <br />

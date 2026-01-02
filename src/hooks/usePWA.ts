@@ -1,19 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 interface PWAInstallPrompt extends Event {
   prompt(): Promise<void>;
-  userChoice: Promise<{outcome: 'accepted' | 'dismissed'}>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
 export const usePWA = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<PWAInstallPrompt | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
 
   useEffect(() => {
     // Only run in browser environment
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -31,20 +33,20 @@ export const usePWA = () => {
     const handleOffline = () => setIsOnline(false);
 
     // Check if already installed
-    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+    if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) {
       setIsInstalled(true);
     }
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
@@ -54,13 +56,13 @@ export const usePWA = () => {
     try {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
+
+      if (outcome === "accepted") {
         setIsInstallable(false);
         setDeferredPrompt(null);
       }
     } catch (error) {
-      console.error('Error installing PWA:', error);
+      console.error("Error installing PWA:", error);
     }
   };
 
@@ -68,6 +70,6 @@ export const usePWA = () => {
     isInstallable,
     isInstalled,
     isOnline,
-    installPWA
+    installPWA,
   };
 };

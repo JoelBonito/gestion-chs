@@ -1,5 +1,3 @@
-
-
 export interface Produto {
   id: string;
   nome: string;
@@ -20,7 +18,6 @@ export interface Produto {
   new_product?: boolean;
   peso?: number;
 }
-
 
 export interface Fornecedor {
   id: string;

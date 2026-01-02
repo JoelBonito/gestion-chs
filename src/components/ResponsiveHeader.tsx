@@ -28,10 +28,10 @@ export function ResponsiveHeader({ title, subtitle, actions }: ResponsiveHeaderP
   const isHam = user?.email?.toLowerCase() === "ham@admin.com";
   const lang: "pt" | "fr" = isHam || isRestrictedFR ? "fr" : "pt";
   const t = (k: string) => {
-    const d: Record<string, { pt: string, fr: string }> = {
+    const d: Record<string, { pt: string; fr: string }> = {
       "Logout realizado": { pt: "Logout realizado", fr: "Déconnexion réussie" },
       "Até a próxima!": { pt: "Até a próxima!", fr: "À bientôt !" },
-      "Sair": { pt: "Sair", fr: "Se déconnecter" }
+      Sair: { pt: "Sair", fr: "Se déconnecter" },
     };
     return d[k]?.[lang] || k;
   };
@@ -56,12 +56,12 @@ export function ResponsiveHeader({ title, subtitle, actions }: ResponsiveHeaderP
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/80 shadow-sm">
+    <header className="border-border/50 sticky top-0 z-40 w-full border-b bg-white/80 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-white/80">
       <div className="container flex h-20 max-w-screen-2xl items-center px-6">
         <div className="mr-4 flex">
           {isMobile && <MobileMenu />}
 
-          <Link to={getHomeLink()} className="mr-6 flex items-center space-x-3 group">
+          <Link to={getHomeLink()} className="group mr-6 flex items-center space-x-3">
             {!isMobile && (
               <div className="transition-transform duration-300 group-hover:scale-105">
                 <img
@@ -71,17 +71,19 @@ export function ResponsiveHeader({ title, subtitle, actions }: ResponsiveHeaderP
                 />
               </div>
             )}
-            <span className="hidden font-bold sm:inline-block text-2xl bg-gradient-to-r from-primary via-primary-dark to-primary-glow bg-clip-text text-transparent">
+            <span className="from-primary via-primary-dark to-primary-glow hidden bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent sm:inline-block">
               Gestion CHS
             </span>
           </Link>
         </div>
 
         {title && (
-          <div className="flex-1 mr-4">
-            <h1 className="text-xl sm:text-3xl font-bold truncate bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">{title}</h1>
+          <div className="mr-4 flex-1">
+            <h1 className="from-foreground to-foreground/70 truncate bg-gradient-to-r bg-clip-text text-xl font-bold text-transparent sm:text-3xl">
+              {title}
+            </h1>
             {subtitle && !isMobile && (
-              <p className="text-sm text-muted-foreground font-medium">{subtitle}</p>
+              <p className="text-muted-foreground text-sm font-medium">{subtitle}</p>
             )}
           </div>
         )}
@@ -91,11 +93,11 @@ export function ResponsiveHeader({ title, subtitle, actions }: ResponsiveHeaderP
 
           {!isMobile && user && (
             <>
-              <div className="hidden sm:flex items-center space-x-2 px-4 py-2 rounded-2xl bg-gradient-to-r from-accent to-accent/50 border border-primary/10">
-                <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary to-primary-dark">
-                  <User className="h-3.5 w-3.5 text-white" />
+              <div className="from-accent to-accent/50 border-primary/10 hidden items-center space-x-2 rounded-2xl border bg-gradient-to-r px-4 py-2 sm:flex">
+                <div className="from-primary to-primary-dark rounded-lg bg-gradient-to-br p-1.5">
+                  <User className="h-3.5 w-3.5 text-primary-foreground" />
                 </div>
-                <span className="text-sm font-medium text-foreground">{user.email}</span>
+                <span className="text-foreground text-sm font-medium">{user.email}</span>
               </div>
               <Button
                 variant="ghost"
@@ -103,7 +105,7 @@ export function ResponsiveHeader({ title, subtitle, actions }: ResponsiveHeaderP
                 onClick={handleLogout}
                 className="text-muted-foreground hover:text-foreground hover:bg-destructive/10 rounded-2xl"
               >
-                <LogOut className="h-4 w-4 mr-2" />
+                <LogOut className="mr-2 h-4 w-4" />
                 {t("Sair")}
               </Button>
             </>

@@ -1,22 +1,29 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
-import { Plus, Loader2, FolderPlus, Archive } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { OptimizedRoleGuard } from '@/components/OptimizedRoleGuard';
-import { ProjetoForm } from '@/components/ProjetoForm';
-import { ProjetoView } from '@/components/ProjetoView';
-import { ProjetoActions } from '@/components/ProjetoActions';
-import { useProjetos } from '@/hooks/useProjetos';
-import { Projeto } from '@/types/projeto';
-import { useLocale } from '@/contexts/LocaleContext';
-import { PageContainer } from '@/components/PageContainer';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Plus, Loader2, FolderPlus, Archive } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { OptimizedRoleGuard } from "@/components/OptimizedRoleGuard";
+import { ProjetoForm } from "@/components/projetos";
+import { ProjetoView } from "@/components/projetos";
+import { ProjetoActions } from "@/components/projetos";
+import { useProjetos } from "@/hooks/useProjetos";
+import { Projeto } from "@/types/projeto";
+import { useLocale } from "@/contexts/LocaleContext";
+import { PageContainer } from "@/components/shared";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 export default function Projetos() {
   const { user } = useAuth();
@@ -25,20 +32,26 @@ export default function Projetos() {
 
   // Forçar francês se for ham@admin.com
   const forceFrench = user?.email?.toLowerCase() === "ham@admin.com";
-  const lang: "pt" | "fr" = forceFrench ? "fr" : (isRestrictedFR ? "fr" : "pt");
+  const lang: "pt" | "fr" = forceFrench ? "fr" : isRestrictedFR ? "fr" : "pt";
 
   // Restringir permissões para ham@admin.com
   const isRestrictedUser = user?.email?.toLowerCase() === "ham@admin.com";
 
   const t = (key: string) => {
     const translations = {
-      "Projetos": { pt: "Projetos", fr: "Projets" },
+      Projetos: { pt: "Projetos", fr: "Projets" },
       "Novo Projeto": { pt: "Novo Projeto", fr: "Nouveau projet" },
       "Cadastrar Projeto": { pt: "Cadastrar Projeto", fr: "Créer un projet" },
-      "Adicione um novo projeto para acompanhar.": { pt: "Adicione um novo projeto para acompanhar.", fr: "Ajoutez un nouveau projet à suivre." },
+      "Adicione um novo projeto para acompanhar.": {
+        pt: "Adicione um novo projeto para acompanhar.",
+        fr: "Ajoutez un nouveau projet à suivre.",
+      },
       "Carregando projetos...": { pt: "Carregando projetos...", fr: "Chargement des projets..." },
       "Nenhum projeto encontrado": { pt: "Nenhum projeto encontrado", fr: "Aucun projet trouvé" },
-      "Erro ao carregar projetos": { pt: "Erro ao carregar projetos", fr: "Erreur lors du chargement des projets" },
+      "Erro ao carregar projetos": {
+        pt: "Erro ao carregar projetos",
+        fr: "Erreur lors du chargement des projets",
+      },
       "Mostrar Arquivados": { pt: "Mostrar Arquivados", fr: "Afficher les archivés" },
       "Editar Projeto": { pt: "Editar Projeto", fr: "Modifier le projet" },
     };
@@ -60,10 +73,11 @@ export default function Projetos() {
     fetchProjetos();
   };
 
-  const filteredProjetos = projetos.filter(p => {
-    const isArchived = p.status === 'arquivado';
-    const matchesSearch = p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (p.observacoes?.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredProjetos = projetos.filter((p) => {
+    const isArchived = p.status === "arquivado";
+    const matchesSearch =
+      p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.observacoes?.toLowerCase().includes(searchTerm.toLowerCase());
 
     return (showArchived ? isArchived : !isArchived) && matchesSearch;
   });
@@ -73,11 +87,11 @@ export default function Projetos() {
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogTrigger asChild>
           <Button onClick={() => setEditingProjeto(null)} variant="gradient">
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             <span>{t("Novo Projeto")}</span>
           </Button>
         </DialogTrigger>
-        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
+        <DialogContent className="bg-card border-border/50 max-h-[90vh] w-[95vw] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingProjeto ? t("Editar Projeto") : t("Novo Projeto")}</DialogTitle>
             <DialogDescription className="sr-only">
@@ -95,17 +109,17 @@ export default function Projetos() {
       <PageContainer title={t("Projetos")} actions={pageActions}>
         <div className="space-y-6">
           {/* Barra de Pesquisa e Filtro */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 bg-card p-3 rounded-xl border border-border shadow-sm">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="bg-card border-border flex flex-col items-center gap-4 rounded-xl border p-3 shadow-sm sm:flex-row">
+            <div className="relative w-full flex-1">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <Input
-                placeholder={lang === 'fr' ? "Rechercher des projets..." : "Pesquisar projetos..."}
-                className="pl-10 h-10 w-full"
+                placeholder={lang === "fr" ? "Rechercher des projets..." : "Pesquisar projetos..."}
+                className="h-10 w-full pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-4 px-3 border-l border-border/50 h-8 shrink-0">
+            <div className="border-border/50 flex h-8 shrink-0 items-center gap-4 border-l px-3">
               <div className="flex items-center gap-2">
                 <Switch
                   id="show-archived"
@@ -115,7 +129,7 @@ export default function Projetos() {
               </div>
               <Label
                 htmlFor="show-archived"
-                className="cursor-pointer text-sm font-medium whitespace-nowrap text-foreground dark:text-white"
+                className="text-foreground cursor-pointer text-sm font-medium whitespace-nowrap"
               >
                 {t("Mostrar Arquivados")}
               </Label>
@@ -127,9 +141,9 @@ export default function Projetos() {
               <span className="ml-2">{t("Carregando projetos...")}</span>
             </div>
           ) : (
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredProjetos.length === 0 && showArchived && (
-                <div className="col-span-full py-10 text-center text-muted-foreground">
+                <div className="text-muted-foreground col-span-full py-10 text-center">
                   {t("Nenhum projeto encontrado")}
                 </div>
               )}
@@ -137,7 +151,7 @@ export default function Projetos() {
               {filteredProjetos.map((projeto) => (
                 <Card
                   key={projeto.id}
-                  className="relative border border-[var(--border)] bg-card cursor-pointer hover:border-primary/50 transition-colors group flex flex-col justify-between h-full min-h-[160px]"
+                  className="bg-card hover:border-primary/50 group relative flex h-full min-h-[160px] cursor-pointer flex-col justify-between border border-[var(--border)] transition-colors"
                   onClick={() => setViewingProjeto(projeto)}
                 >
                   <div className="absolute top-3 right-3 z-10" onClick={(e) => e.stopPropagation()}>
@@ -153,18 +167,19 @@ export default function Projetos() {
                     />
                   </div>
                   <CardHeader>
-                    <CardTitle className="pr-8 flex justify-between items-start gap-4">
-                      <span className="leading-tight line-clamp-2">{projeto.nome}</span>
+                    <CardTitle className="flex items-start justify-between gap-4 pr-8">
+                      <span className="line-clamp-2 leading-tight">{projeto.nome}</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {projeto.observacoes || (lang === 'fr' ? 'Pas de remarques' : 'Sem observações')}
+                    <p className="text-muted-foreground line-clamp-3 text-sm">
+                      {projeto.observacoes ||
+                        (lang === "fr" ? "Pas de remarques" : "Sem observações")}
                     </p>
-                    {projeto.status === 'arquivado' && (
-                      <div className="mt-4 inline-flex items-center px-2 py-1 rounded-md bg-muted text-muted-foreground text-xs font-medium">
-                        <Archive className="w-3 h-3 mr-1" />
-                        {lang === 'fr' ? 'Archivé' : 'Arquivado'}
+                    {projeto.status === "arquivado" && (
+                      <div className="bg-muted text-muted-foreground mt-4 inline-flex items-center rounded-md px-2 py-1 text-xs font-medium">
+                        <Archive className="mr-1 h-3 w-3" />
+                        {lang === "fr" ? "Archivé" : "Arquivado"}
                       </div>
                     )}
                   </CardContent>
@@ -174,19 +189,19 @@ export default function Projetos() {
               {/* Ghost Card for New Project */}
               {!isRestrictedUser && !showArchived && (
                 <Card
-                  className="relative border-2 border-dashed border-muted-foreground/25 bg-transparent hover:bg-card/30 cursor-pointer transition-all flex flex-col items-center justify-center min-h-[160px] group"
+                  className="border-muted-foreground/25 hover:bg-card/30 group relative flex min-h-[160px] cursor-pointer flex-col items-center justify-center border-2 border-dashed bg-transparent transition-all"
                   onClick={() => {
                     setEditingProjeto(null);
                     setShowForm(true);
                   }}
                 >
-                  <div className="h-12 w-12 rounded-xl bg-card border border-border flex items-center justify-center mb-4 group-hover:border-primary/50 group-hover:text-primary transition-colors shadow-sm">
+                  <div className="bg-card border-border group-hover:border-primary/50 group-hover:text-primary mb-4 flex h-12 w-12 items-center justify-center rounded-xl border shadow-sm transition-colors">
                     <Plus className="h-6 w-6" />
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+                  <h3 className="text-foreground group-hover:text-primary text-lg font-semibold transition-colors">
                     {t("Cadastrar Projeto")}
                   </h3>
-                  <p className="text-sm text-muted-foreground text-center max-w-[200px] mt-1">
+                  <p className="text-muted-foreground mt-1 max-w-[200px] text-center text-sm">
                     {t("Adicione um novo projeto para acompanhar.")}
                   </p>
                 </Card>
@@ -196,7 +211,7 @@ export default function Projetos() {
 
           {viewingProjeto && (
             <Dialog open={!!viewingProjeto} onOpenChange={() => setViewingProjeto(null)}>
-              <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto bg-card border-border/50">
+              <DialogContent className="bg-card border-border/50 max-h-[90vh] w-[95vw] max-w-3xl overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{viewingProjeto.nome}</DialogTitle>
                   <DialogDescription className="sr-only">

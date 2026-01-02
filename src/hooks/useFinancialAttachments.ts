@@ -1,55 +1,60 @@
-
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useSupabaseStorage } from './useSupabaseStorage';
-import { Attachment, AttachmentUploadData } from '@/types/attachment';
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useSupabaseStorage } from "./useSupabaseStorage";
+import { Attachment, AttachmentUploadData } from "@/types/attachment";
 
 export const useFinancialAttachments = (entityType: string, entityId: string) => {
   const { toast } = useToast();
   const { deleteFile } = useSupabaseStorage();
   const queryClient = useQueryClient();
-  
-  const queryKey = ['financial-attachments', entityType, entityId];
+
+  const queryKey = ["financial-attachments", entityType, entityId];
 
   const {
     data: attachments = [],
     isLoading,
     refetch,
-    error
+    error,
   } = useQuery({
     queryKey,
     queryFn: async () => {
       if (!entityId) return [];
-      
+
       console.log(`useFinancialAttachments - Buscando anexos para ${entityType}:${entityId}`);
-      
+
       const { data, error } = await supabase
-        .from('attachments')
-        .select('*')
-        .eq('entity_type', entityType)
-        .eq('entity_id', entityId)
-        .order('created_at', { ascending: false });
+        .from("attachments")
+        .select("*")
+        .eq("entity_type", entityType)
+        .eq("entity_id", entityId)
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("useFinancialAttachments - Erro:", error);
         throw error;
       }
-      
+
       console.log(`useFinancialAttachments - Encontrados ${data?.length || 0} anexos`);
       return data || [];
     },
     enabled: !!entityId,
     staleTime: 0, // Sempre buscar dados frescos
-    gcTime: 0 // Não manter cache
+    gcTime: 0, // Não manter cache
   });
 
   const createAttachmentMutation = useMutation({
     mutationFn: async (attachmentData: AttachmentUploadData) => {
-      console.log(`useFinancialAttachments - Criando anexo para ${entityType}:${entityId}`, attachmentData);
-      
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+      console.log(
+        `useFinancialAttachments - Criando anexo para ${entityType}:${entityId}`,
+        attachmentData
+      );
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
       if (userError || !user) {
         throw new Error("Usuário não autenticado");
       }
@@ -62,11 +67,11 @@ export const useFinancialAttachments = (entityType: string, entityId: string) =>
         storage_path: attachmentData.storage_path,
         storage_url: attachmentData.storage_url,
         file_size: attachmentData.file_size,
-        uploaded_by: user.id
+        uploaded_by: user.id,
       };
 
       const { data, error } = await supabase
-        .from('attachments')
+        .from("attachments")
         .insert([insertData])
         .select()
         .single();
@@ -75,21 +80,21 @@ export const useFinancialAttachments = (entityType: string, entityId: string) =>
         console.error("useFinancialAttachments - Erro ao inserir:", error);
         throw error;
       }
-      
+
       return data;
     },
     onSuccess: async () => {
       console.log("useFinancialAttachments - Upload bem-sucedido, invalidando queries");
-      
+
       // Invalidar múltiplas queries relacionadas
       await queryClient.invalidateQueries({ queryKey });
-      await queryClient.invalidateQueries({ 
-        queryKey: ['attachments', entityType, entityId] 
+      await queryClient.invalidateQueries({
+        queryKey: ["attachments", entityType, entityId],
       });
-      
+
       // Forçar refetch imediato
       refetch();
-      
+
       toast({
         title: "Anexo adicionado",
         description: "Comprovante anexado com sucesso.",
@@ -100,9 +105,9 @@ export const useFinancialAttachments = (entityType: string, entityId: string) =>
       toast({
         title: "Erro ao salvar anexo",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const deleteAttachmentMutation = useMutation({
@@ -111,10 +116,7 @@ export const useFinancialAttachments = (entityType: string, entityId: string) =>
 
       await deleteFile(attachment.storage_path);
 
-      const { error } = await supabase
-        .from('attachments')
-        .delete()
-        .eq('id', attachment.id);
+      const { error } = await supabase.from("attachments").delete().eq("id", attachment.id);
 
       if (error) throw error;
 
@@ -122,14 +124,14 @@ export const useFinancialAttachments = (entityType: string, entityId: string) =>
     },
     onSuccess: async () => {
       console.log("useFinancialAttachments - Delete bem-sucedido, invalidando queries");
-      
+
       await queryClient.invalidateQueries({ queryKey });
-      await queryClient.invalidateQueries({ 
-        queryKey: ['attachments', entityType, entityId] 
+      await queryClient.invalidateQueries({
+        queryKey: ["attachments", entityType, entityId],
       });
-      
+
       refetch();
-      
+
       toast({
         title: "Anexo removido",
         description: "Comprovante removido com sucesso.",
@@ -140,9 +142,9 @@ export const useFinancialAttachments = (entityType: string, entityId: string) =>
       toast({
         title: "Erro ao remover anexo",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   return {
@@ -153,6 +155,6 @@ export const useFinancialAttachments = (entityType: string, entityId: string) =>
     createAttachment: createAttachmentMutation.mutate,
     deleteAttachment: deleteAttachmentMutation.mutate,
     isCreating: createAttachmentMutation.isPending,
-    isDeleting: deleteAttachmentMutation.isPending
+    isDeleting: deleteAttachmentMutation.isPending,
   };
 };

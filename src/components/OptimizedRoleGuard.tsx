@@ -1,7 +1,7 @@
-import { ReactNode } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { ReactNode } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 
 interface OptimizedRoleGuardProps {
   children: ReactNode;
@@ -16,16 +16,18 @@ export function OptimizedRoleGuard({
   children,
   blockCollaborator = false,
   blockHam = false,
-  redirectTo = '/produtos',
+  redirectTo = "/produtos",
   showMessage = true,
-  allowedEmails
+  allowedEmails,
 }: OptimizedRoleGuardProps) {
   const { user, loading } = useAuth();
 
   // Fast check for hardcoded admin emails - no database query needed
-  const isHardcodedAdmin = user?.email?.toLowerCase() === 'jbento1@gmail.com' || user?.email?.toLowerCase() === 'admin@admin.com';
-  const isCollaborator = user?.email?.toLowerCase() === 'felipe@colaborador.com';
-  const isHam = user?.email?.toLowerCase() === 'ham@admin.com';
+  const isHardcodedAdmin =
+    user?.email?.toLowerCase() === "jbento1@gmail.com" ||
+    user?.email?.toLowerCase() === "admin@admin.com";
+  const isCollaborator = user?.email?.toLowerCase() === "felipe@colaborador.com";
+  const isHam = user?.email?.toLowerCase() === "ham@admin.com";
 
   if (loading) {
     return (
@@ -50,8 +52,8 @@ export function OptimizedRoleGuard({
         return (
           <Card>
             <CardContent className="p-6 text-center">
-              <AlertCircle className="h-12 w-12 text-warning mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Acesso Negado</h3>
+              <AlertCircle className="text-warning mx-auto mb-4 h-12 w-12" />
+              <h3 className="mb-2 text-lg font-semibold">Acesso Negado</h3>
               <p className="text-muted-foreground">
                 Você não tem permissão para acessar esta seção.
               </p>
@@ -64,18 +66,15 @@ export function OptimizedRoleGuard({
     return <>{children}</>;
   }
 
-
   // If we need to block collaborator and user is collaborator, block access
   if ((blockCollaborator && isCollaborator) || (blockHam && isHam)) {
     if (showMessage) {
       return (
         <Card>
           <CardContent className="p-6 text-center">
-            <AlertCircle className="h-12 w-12 text-warning mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Acesso Negado</h3>
-            <p className="text-muted-foreground">
-              Você não tem permissão para acessar esta seção.
-            </p>
+            <AlertCircle className="text-warning mx-auto mb-4 h-12 w-12" />
+            <h3 className="mb-2 text-lg font-semibold">Acesso Negado</h3>
+            <p className="text-muted-foreground">Você não tem permissão para acessar esta seção.</p>
           </CardContent>
         </Card>
       );

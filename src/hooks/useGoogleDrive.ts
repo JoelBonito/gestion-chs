@@ -1,7 +1,6 @@
-
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface GoogleDriveUploadResult {
   fileId: string;
@@ -17,16 +16,20 @@ export const useGoogleDrive = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const { toast } = useToast();
 
-  const uploadFile = async (file: File, entityType?: string, entityId?: string): Promise<GoogleDriveUploadResult | null> => {
+  const uploadFile = async (
+    file: File,
+    entityType?: string,
+    entityId?: string
+  ): Promise<GoogleDriveUploadResult | null> => {
     if (!file) return null;
 
     // Validate file type
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
     if (!allowedTypes.includes(file.type)) {
       toast({
         title: "Tipo de arquivo não permitido",
         description: "Apenas arquivos PDF, JPG e PNG são aceitos.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return null;
     }
@@ -37,7 +40,7 @@ export const useGoogleDrive = () => {
       toast({
         title: "Arquivo muito grande",
         description: "O arquivo deve ter no máximo 10MB.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return null;
     }
@@ -48,14 +51,14 @@ export const useGoogleDrive = () => {
     try {
       console.log("Iniciando upload real para Google Drive:", file.name);
       console.log("EntityType:", entityType, "EntityId:", entityId);
-      
+
       // Convert file to base64
       const fileContent = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
           const result = reader.result as string;
           // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
-          const base64Content = result.split(',')[1];
+          const base64Content = result.split(",")[1];
           resolve(base64Content);
         };
         reader.onerror = reject;
@@ -66,20 +69,20 @@ export const useGoogleDrive = () => {
 
       // Simulate progress for better UX
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
+        setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 100);
 
       console.log("Chamando Edge Function google-drive-upload...");
 
       // Call the Edge Function
-      const { data, error } = await supabase.functions.invoke('google-drive-upload', {
+      const { data, error } = await supabase.functions.invoke("google-drive-upload", {
         body: {
           fileName: file.name,
           fileContent,
           mimeType: file.type,
           entityType,
-          entityId
-        }
+          entityId,
+        },
       });
 
       clearInterval(progressInterval);
@@ -88,16 +91,16 @@ export const useGoogleDrive = () => {
       console.log("Resposta da Edge Function:", { data, error });
 
       if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || 'Erro na função de upload');
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Erro na função de upload");
       }
 
       if (!data) {
-        console.error('Nenhum dado retornado do upload');
-        throw new Error('Nenhum dado retornado do upload');
+        console.error("Nenhum dado retornado do upload");
+        throw new Error("Nenhum dado retornado do upload");
       }
 
-      console.log('Upload realizado com sucesso no Google Drive:', data);
+      console.log("Upload realizado com sucesso no Google Drive:", data);
 
       toast({
         title: "Upload realizado com sucesso",
@@ -106,11 +109,11 @@ export const useGoogleDrive = () => {
 
       return data;
     } catch (error: any) {
-      console.error('Upload error detalhado:', error);
+      console.error("Upload error detalhado:", error);
       toast({
         title: "Erro no upload",
         description: error.message || "Falha ao fazer upload do arquivo.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return null;
     } finally {
@@ -122,6 +125,6 @@ export const useGoogleDrive = () => {
   return {
     uploadFile,
     isUploading,
-    uploadProgress
+    uploadProgress,
   };
 };

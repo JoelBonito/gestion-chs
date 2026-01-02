@@ -1,13 +1,32 @@
-
 import { useState, useEffect } from "react";
 import { Plus, Search, Truck, Package, Calculator, Eye, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -50,7 +69,7 @@ export default function Frete() {
     origin: "",
     destination: "",
     currency: "EUR",
-    rate_per_kg: ""
+    rate_per_kg: "",
   });
 
   useEffect(() => {
@@ -68,9 +87,9 @@ export default function Frete() {
           origin: "Portugal",
           destination: "España",
           currency: "EUR",
-          rate_per_kg: 2.50,
+          rate_per_kg: 2.5,
           active: true,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         },
         {
           id: "2",
@@ -79,43 +98,45 @@ export default function Frete() {
           currency: "EUR",
           rate_per_kg: 3.75,
           active: true,
-          created_at: new Date().toISOString()
-        }
+          created_at: new Date().toISOString(),
+        },
       ];
       setFreightRates(mockRates);
 
       // Fetch orders with basic data (without freight fields that don't exist yet)
       const { data: encomendasData, error } = await supabase
         .from("encomendas")
-        .select(`
+        .select(
+          `
           id,
           numero_encomenda,
           status,
           data_criacao,
           clientes(nome)
-        `)
+        `
+        )
         .order("created_at", { ascending: false })
         .limit(20);
 
       if (error) throw error;
 
       // Map to expected format with estimated weight data
-      const mappedEncomendas = encomendasData?.map((encomenda: any) => ({
-        id: encomenda.id,
-        numero_encomenda: encomenda.numero_encomenda,
-        total_weight_kg: 5.0, // Estimated weight
-        weight_multiplier: 1.2, // Standard multiplier
-        adjusted_weight_kg: 6.0, // Adjusted weight
-        freight_rate_currency: "EUR",
-        freight_rate_per_kg: 2.50,
-        freight_value: 15.0, // Calculated freight
-        status: encomenda.status,
-        data_criacao: encomenda.data_criacao,
-        clientes: encomenda.clientes,
-      })) || [];
+      const mappedEncomendas =
+        encomendasData?.map((encomenda: any) => ({
+          id: encomenda.id,
+          numero_encomenda: encomenda.numero_encomenda,
+          total_weight_kg: 5.0, // Estimated weight
+          weight_multiplier: 1.2, // Standard multiplier
+          adjusted_weight_kg: 6.0, // Adjusted weight
+          freight_rate_currency: "EUR",
+          freight_rate_per_kg: 2.5,
+          freight_value: 15.0, // Calculated freight
+          status: encomenda.status,
+          data_criacao: encomenda.data_criacao,
+          clientes: encomenda.clientes,
+        })) || [];
 
       setEncomendas(mappedEncomendas);
-
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar dados de frete");
@@ -139,20 +160,19 @@ export default function Frete() {
         currency: newRate.currency,
         rate_per_kg: parseFloat(newRate.rate_per_kg),
         active: true,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
-      setFreightRates(prev => [mockNewRate, ...prev]);
+      setFreightRates((prev) => [mockNewRate, ...prev]);
       toast.success("Taxa de frete criada com sucesso!");
 
       setNewRate({
         origin: "",
         destination: "",
         currency: "EUR",
-        rate_per_kg: ""
+        rate_per_kg: "",
       });
       setDialogOpen(false);
-
     } catch (error) {
       console.error("Erro ao criar taxa:", error);
       toast.error("Erro ao criar taxa de frete");
@@ -175,24 +195,30 @@ export default function Frete() {
     }
   };
 
-  const filteredRates = freightRates.filter(rate =>
-    rate.origin.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    rate.destination.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredRates = freightRates.filter(
+    (rate) =>
+      rate.origin.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      rate.destination.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredEncomendas = encomendas.filter(encomenda =>
-    encomenda.numero_encomenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    encomenda.clientes?.nome?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEncomendas = encomendas.filter(
+    (encomenda) =>
+      encomenda.numero_encomenda.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      encomenda.clientes?.nome?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const canEdit = hasRole("admin") || hasRole("ops");
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold text-foreground">Gestão de Frete</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Configure tarifas e calcule custos de envio</p>
+          <h1 className="font-display text-foreground text-2xl font-bold sm:text-3xl">
+            Gestão de Frete
+          </h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Configure tarifas e calcule custos de envio
+          </p>
         </div>
         {canEdit && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -203,15 +229,13 @@ export default function Frete() {
                 <span className="sm:hidden">Nova</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-h-[90vh] w-[95vw] max-w-[500px] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Nova Taxa de Frete</DialogTitle>
-                <DialogDescription>
-                  Configure uma nova taxa de frete por rota
-                </DialogDescription>
+                <DialogDescription>Configure uma nova taxa de frete por rota</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <Label>Origem *</Label>
                     <Input
@@ -229,10 +253,13 @@ export default function Frete() {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <Label>Moeda</Label>
-                    <Select value={newRate.currency} onValueChange={(value) => setNewRate({ ...newRate, currency: value })}>
+                    <Select
+                      value={newRate.currency}
+                      onValueChange={(value) => setNewRate({ ...newRate, currency: value })}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -271,12 +298,12 @@ export default function Frete() {
       <Card className="shadow-card bg-card">
         <CardContent className="pt-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
             <Input
               placeholder="Buscar por origem, destino ou número da encomenda..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-background dark:bg-popover"
+              className="bg-background dark:bg-popover pl-10"
             />
           </div>
         </CardContent>
@@ -289,9 +316,7 @@ export default function Frete() {
             <Truck className="h-5 w-5" />
             Taxas de Frete Configuradas
           </CardTitle>
-          <CardDescription>
-            {filteredRates.length} taxa(s) de frete configurada(s)
-          </CardDescription>
+          <CardDescription>{filteredRates.length} taxa(s) de frete configurada(s)</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -309,22 +334,30 @@ export default function Frete() {
                 <TableBody>
                   {loading ? (
                     <TableRow className="bg-background dark:bg-popover">
-                      <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8">
+                      <TableCell colSpan={canEdit ? 5 : 4} className="py-8 text-center">
                         Carregando taxas...
                       </TableCell>
                     </TableRow>
                   ) : filteredRates.length === 0 ? (
                     <TableRow className="bg-background dark:bg-popover">
-                      <TableCell colSpan={canEdit ? 5 : 4} className="text-center py-8 text-muted-foreground">
+                      <TableCell
+                        colSpan={canEdit ? 5 : 4}
+                        className="text-muted-foreground py-8 text-center"
+                      >
                         Nenhuma taxa encontrada
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredRates.map((rate) => (
-                      <TableRow key={rate.id} className="bg-background dark:bg-popover border-border/10">
+                      <TableRow
+                        key={rate.id}
+                        className="bg-background dark:bg-popover border-border/10"
+                      >
                         <TableCell className="font-medium">{rate.origin}</TableCell>
                         <TableCell>{rate.destination}</TableCell>
-                        <TableCell>{rate.currency} {rate.rate_per_kg.toFixed(2)}</TableCell>
+                        <TableCell>
+                          {rate.currency} {rate.rate_per_kg.toFixed(2)}
+                        </TableCell>
                         <TableCell>
                           <Badge variant={rate.active ? "default" : "secondary"}>
                             {rate.active ? "Ativa" : "Inativa"}
@@ -382,13 +415,16 @@ export default function Frete() {
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={canEdit ? 8 : 7} className="text-center py-8">
+                      <TableCell colSpan={canEdit ? 8 : 7} className="py-8 text-center">
                         Carregando encomendas...
                       </TableCell>
                     </TableRow>
                   ) : filteredEncomendas.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={canEdit ? 8 : 7} className="text-center py-8 text-muted-foreground">
+                      <TableCell
+                        colSpan={canEdit ? 8 : 7}
+                        className="text-muted-foreground py-8 text-center"
+                      >
                         Nenhuma encomenda encontrada
                       </TableCell>
                     </TableRow>
@@ -399,10 +435,15 @@ export default function Frete() {
                         <TableCell>{encomenda.clientes?.nome || "N/A"}</TableCell>
                         <TableCell>{encomenda.total_weight_kg?.toFixed(2)} kg</TableCell>
                         <TableCell>{encomenda.adjusted_weight_kg?.toFixed(2)} kg</TableCell>
-                        <TableCell>{encomenda.freight_rate_currency} {encomenda.freight_rate_per_kg?.toFixed(2)}</TableCell>
-                        <TableCell className="font-semibold">{encomenda.freight_rate_currency} {encomenda.freight_value?.toFixed(2)}</TableCell>
                         <TableCell>
-                          <Badge variant={encomenda.status === 'enviado' ? 'default' : 'secondary'}>
+                          {encomenda.freight_rate_currency}{" "}
+                          {encomenda.freight_rate_per_kg?.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          {encomenda.freight_rate_currency} {encomenda.freight_value?.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={encomenda.status === "enviado" ? "default" : "secondary"}>
                             {encomenda.status}
                           </Badge>
                         </TableCell>

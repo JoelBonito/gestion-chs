@@ -1,4 +1,3 @@
-
 export interface Invoice {
   id: string;
   invoice_date: string;

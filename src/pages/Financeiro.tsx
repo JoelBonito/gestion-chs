@@ -2,57 +2,18 @@ import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
-import EncomendasFinanceiro from "@/components/EncomendasFinanceiro"; // Vendas
-import ContasPagar from "@/components/ContasPagar";                 // Compras
-import Invoices from "@/components/Invoices";                       // Faturas
-import { PageContainer } from "@/components/PageContainer";
-import { GlassCard } from "@/components/GlassCard";
+import { EncomendasFinanceiro, ContasPagar, Invoices } from "@/components/financeiro";
+import { PageContainer, GlassCard } from "@/components/shared";
+import { useFinanceiroTranslation } from "@/hooks/useFinanceiroTranslation";
 import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
 
 type TabKey = "encomendas" | "pagar" | "faturas";
 
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState<TabKey>("encomendas");
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const { t, isHam, isFelipe } = useFinanceiroTranslation();
   const [resumo, setResumo] = useState({ a_receber: 0, a_pagar: 0, saldo: 0 });
   const [loadingResumo, setLoadingResumo] = useState(true);
-
-  const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
-  const isFelipe = (userEmail?.toLowerCase() ?? "") === "felipe@colaborador.com";
-
-  // i18n básico
-  const lang: "pt" | "fr" = isHam ? "fr" : "pt";
-  const t = (k: string) => {
-    const d: Record<string, { pt: string; fr: string }> = {
-      Vendas: { pt: "Vendas", fr: "Ventes" },
-      Compras: { pt: "Compras", fr: "Achats" },
-      Faturas: { pt: "Faturas", fr: "Factures" },
-      "Mostrar inativos": { pt: "Mostrar inativos", fr: "Afficher inactifs" },
-      "Total a Receber": { pt: "Total a Receber", fr: "Total à recevoir" },
-      "Total a Pagar": { pt: "Total a Pagar", fr: "Total à payer" },
-      "Saldo Atual": { pt: "Saldo Atual", fr: "Solde actuel" },
-      "Carregando resumo...": { pt: "Carregando resumo...", fr: "Chargement du résumé..." },
-      "Financeiro": { pt: "Financeiro", fr: "Finance" },
-      "Gestão completa de fluxo de caixa e faturas": { pt: "Gestão completa de fluxo de caixa e faturas", fr: "Gestion complète du flux de trésorerie et des factures" },
-    };
-    return d[k]?.[lang] ?? k;
-  };
-
-  // pega usuário e define tab padrão
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getUser();
-      const email = data?.user?.email ?? null;
-      setUserEmail(email);
-      if (email?.toLowerCase() === "ham@admin.com") {
-        setActiveTab("encomendas");
-      } else if (email?.toLowerCase() === "felipe@colaborador.com") {
-        setActiveTab("pagar");
-      } else {
-        setActiveTab("encomendas");
-      }
-    })();
-  }, []);
 
   // resumo financeiro baseado na Dashboard
   useEffect(() => {
@@ -95,6 +56,15 @@ export default function Financeiro() {
     fetchResumo();
   }, []);
 
+  // pega usuário e define tab padrão
+  useEffect(() => {
+    if (isHam) {
+      setActiveTab("encomendas");
+    } else if (isFelipe) {
+      setActiveTab("pagar");
+    }
+  }, [isHam, isFelipe]);
+
   // regras de visibilidade
   const hideVendas = isFelipe;
   const hideCompras = isHam;
@@ -107,52 +77,58 @@ export default function Financeiro() {
     >
       {/* Cards de resumo - escondidos para ham@admin.com e felipe@colaborador.com */}
       {!isHam && !isFelipe && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {loadingResumo ? (
-            [1, 2, 3].map(i => <GlassCard key={i} className="h-32 animate-pulse bg-muted/20"><div /></GlassCard>)
+            [1, 2, 3].map((i) => (
+              <GlassCard key={i} className="bg-muted/20 h-32 animate-pulse">
+                <div />
+              </GlassCard>
+            ))
           ) : (
             <>
-              <GlassCard className="p-6 relative overflow-hidden group hover:border-success/30 transition-all">
-                <div className="flex flex-col gap-1 z-10 relative">
-                  <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-success" />
+              <GlassCard className="group hover:border-success/30 relative overflow-hidden p-6 transition-all">
+                <div className="relative z-10 flex flex-col gap-1">
+                  <span className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+                    <TrendingUp className="text-success h-4 w-4" />
                     {t("Total a Receber")}
                   </span>
-                  <span className="text-3xl font-bold text-foreground tracking-tight">
+                  <span className="text-foreground text-3xl font-bold tracking-tight">
                     {formatCurrencyEUR(resumo.a_receber)}
                   </span>
                 </div>
-                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <div className="absolute top-0 right-0 p-4 opacity-5 transition-opacity group-hover:opacity-10">
                   <TrendingUp className="h-16 w-16" />
                 </div>
               </GlassCard>
 
-              <GlassCard className="p-6 relative overflow-hidden group hover:border-destructive/30 transition-all">
-                <div className="flex flex-col gap-1 z-10 relative">
-                  <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <TrendingDown className="h-4 w-4 text-destructive" />
+              <GlassCard className="group hover:border-destructive/30 relative overflow-hidden p-6 transition-all">
+                <div className="relative z-10 flex flex-col gap-1">
+                  <span className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+                    <TrendingDown className="text-destructive h-4 w-4" />
                     {t("Total a Pagar")}
                   </span>
-                  <span className="text-3xl font-bold text-foreground tracking-tight">
+                  <span className="text-foreground text-3xl font-bold tracking-tight">
                     {formatCurrencyEUR(resumo.a_pagar)}
                   </span>
                 </div>
-                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <div className="absolute top-0 right-0 p-4 opacity-5 transition-opacity group-hover:opacity-10">
                   <TrendingDown className="h-16 w-16" />
                 </div>
               </GlassCard>
 
-              <GlassCard className="p-6 relative overflow-hidden group hover:border-primary/30 transition-all">
-                <div className="flex flex-col gap-1 z-10 relative">
-                  <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Wallet className="h-4 w-4 text-primary" />
+              <GlassCard className="group hover:border-primary/30 relative overflow-hidden p-6 transition-all">
+                <div className="relative z-10 flex flex-col gap-1">
+                  <span className="text-muted-foreground flex items-center gap-2 text-sm font-medium">
+                    <Wallet className="text-primary h-4 w-4" />
                     {t("Saldo Atual")}
                   </span>
-                  <span className={`text-3xl font-bold tracking-tight ${resumo.saldo >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                  <span
+                    className={`text-3xl font-bold tracking-tight ${resumo.saldo >= 0 ? "text-primary" : "text-destructive"}`}
+                  >
                     {formatCurrencyEUR(resumo.saldo)}
                   </span>
                 </div>
-                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <div className="absolute top-0 right-0 p-4 opacity-5 transition-opacity group-hover:opacity-10">
                   <Wallet className="h-16 w-16" />
                 </div>
               </GlassCard>
@@ -161,12 +137,16 @@ export default function Financeiro() {
         </div>
       )}
 
-      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as TabKey)} className="space-y-6">
-        <TabsList className="bg-transparent p-0 border-b border-border/40 w-full justify-start rounded-none h-auto gap-8">
+      <Tabs
+        value={activeTab}
+        onValueChange={(val) => setActiveTab(val as TabKey)}
+        className="space-y-6"
+      >
+        <TabsList className="border-border/40 h-auto w-full justify-start gap-8 rounded-none border-b bg-transparent p-0">
           {!hideVendas && (
             <TabsTrigger
               value="encomendas"
-              className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary pb-4 px-0 font-semibold transition-all hover:text-primary/80"
+              className="data-[state=active]:border-primary data-[state=active]:text-primary hover:text-primary/80 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-4 font-semibold transition-all data-[state=active]:bg-transparent"
             >
               {t("Vendas")}
             </TabsTrigger>
@@ -174,7 +154,7 @@ export default function Financeiro() {
           {!hideCompras && (
             <TabsTrigger
               value="pagar"
-              className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary pb-4 px-0 font-semibold transition-all hover:text-primary/80"
+              className="data-[state=active]:border-primary data-[state=active]:text-primary hover:text-primary/80 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-4 font-semibold transition-all data-[state=active]:bg-transparent"
             >
               {t("Compras")}
             </TabsTrigger>
@@ -182,7 +162,7 @@ export default function Financeiro() {
           {!hideFaturas && (
             <TabsTrigger
               value="faturas"
-              className="bg-transparent rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary pb-4 px-0 font-semibold transition-all hover:text-primary/80"
+              className="data-[state=active]:border-primary data-[state=active]:text-primary hover:text-primary/80 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-4 font-semibold transition-all data-[state=active]:bg-transparent"
             >
               {t("Faturas")}
             </TabsTrigger>

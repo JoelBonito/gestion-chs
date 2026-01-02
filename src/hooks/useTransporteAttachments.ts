@@ -1,7 +1,7 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useSupabaseStorage } from './useSupabaseStorage';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useSupabaseStorage } from "./useSupabaseStorage";
 
 interface TransporteAttachment {
   id: string;
@@ -18,13 +18,13 @@ export const useTransporteAttachments = (transporteId: string) => {
   const { toast } = useToast();
   const { deleteFile } = useSupabaseStorage();
   const queryClient = useQueryClient();
-  
-  const queryKey = ['transporte-attachments', transporteId];
+
+  const queryKey = ["transporte-attachments", transporteId];
 
   const {
     data: attachments = [],
     isLoading,
-    refetch
+    refetch,
   } = useQuery({
     queryKey,
     queryFn: async () => {
@@ -32,26 +32,26 @@ export const useTransporteAttachments = (transporteId: string) => {
         console.log("useTransporteAttachments - Sem transporteId, não buscando anexos");
         return [];
       }
-      
+
       console.log(`useTransporteAttachments - Buscando anexos para transporteId: ${transporteId}`);
-      
+
       const { data, error } = await supabase
-        .from('transporte_attachments')
-        .select('*')
-        .eq('transporte_id', transporteId)
-        .order('created_at', { ascending: false });
+        .from("transporte_attachments")
+        .select("*")
+        .eq("transporte_id", transporteId)
+        .order("created_at", { ascending: false });
 
       if (error) {
         console.error("useTransporteAttachments - Erro ao buscar anexos:", error);
         throw error;
       }
-      
+
       console.log(`useTransporteAttachments - Anexos encontrados (${data?.length || 0}):`, data);
       return data || [];
     },
     enabled: !!transporteId,
     staleTime: 0,
-    gcTime: 0
+    gcTime: 0,
   });
 
   const createAttachment = async (attachmentData: {
@@ -60,11 +60,17 @@ export const useTransporteAttachments = (transporteId: string) => {
     url: string;
     file_size: number;
   }) => {
-    console.log(`useTransporteAttachments - Criando anexo para transporteId: ${transporteId}`, attachmentData);
-    
+    console.log(
+      `useTransporteAttachments - Criando anexo para transporteId: ${transporteId}`,
+      attachmentData
+    );
+
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
       if (userError) {
         console.error("useTransporteAttachments - Erro ao obter usuário:", userError);
         throw new Error("Erro ao obter usuário atual");
@@ -81,13 +87,13 @@ export const useTransporteAttachments = (transporteId: string) => {
         file_type: attachmentData.file_type,
         url: attachmentData.url,
         file_size: attachmentData.file_size,
-        uploaded_by: user.id
+        uploaded_by: user.id,
       };
 
       console.log("useTransporteAttachments - Dados para inserção:", insertData);
 
       const { data, error } = await supabase
-        .from('transporte_attachments')
+        .from("transporte_attachments")
         .insert([insertData])
         .select()
         .single();
@@ -96,12 +102,12 @@ export const useTransporteAttachments = (transporteId: string) => {
         console.error("useTransporteAttachments - Erro ao inserir:", error);
         throw error;
       }
-      
+
       console.log("useTransporteAttachments - Anexo inserido com sucesso:", data);
-      
+
       await queryClient.invalidateQueries({ queryKey });
       await refetch();
-      
+
       toast({
         title: "Anexo adicionado",
         description: "Arquivo anexado com sucesso.",
@@ -113,7 +119,7 @@ export const useTransporteAttachments = (transporteId: string) => {
       toast({
         title: "Erro ao salvar anexo",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
       throw error;
     }
@@ -124,13 +130,13 @@ export const useTransporteAttachments = (transporteId: string) => {
       console.log("useTransporteAttachments - Deletando anexo:", attachment);
 
       // Extract storage path from URL for deletion
-      const storagePath = attachment.url.split('/').slice(-2).join('/');
+      const storagePath = attachment.url.split("/").slice(-2).join("/");
       await deleteFile(storagePath);
 
       const { error } = await supabase
-        .from('transporte_attachments')
+        .from("transporte_attachments")
         .delete()
-        .eq('id', attachment.id);
+        .eq("id", attachment.id);
 
       if (error) throw error;
 
@@ -146,7 +152,7 @@ export const useTransporteAttachments = (transporteId: string) => {
       toast({
         title: "Erro ao remover anexo",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -156,6 +162,6 @@ export const useTransporteAttachments = (transporteId: string) => {
     isLoading,
     createAttachment,
     deleteAttachment,
-    refetch
+    refetch,
   };
 };

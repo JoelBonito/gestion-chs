@@ -1,10 +1,9 @@
+import { ReactNode } from "react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { Card, CardContent } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 
-import { ReactNode } from 'react';
-import { useUserRole } from '@/hooks/useUserRole';
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
-
-type UserRole = 'admin' | 'ops' | 'client' | 'factory' | 'finance';
+type UserRole = "admin" | "ops" | "client" | "factory" | "finance";
 
 interface RoleGuardProps {
   allowedRoles: UserRole[];
@@ -25,21 +24,23 @@ export function RoleGuard({ allowedRoles, children, fallback }: RoleGuardProps) 
     );
   }
 
-  const hasAllowedRole = allowedRoles.some(role => roles.includes(role));
+  const hasAllowedRole = allowedRoles.some((role) => roles.includes(role));
 
   if (!hasAllowedRole) {
-    return fallback || (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <AlertCircle className="h-12 w-12 text-warning mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Acesso Negado</h3>
-          <p className="text-muted-foreground">
-            Você não tem permissão para acessar esta seção.
-            <br />
-            Roles necessárias: {allowedRoles.join(', ')}
-          </p>
-        </CardContent>
-      </Card>
+    return (
+      fallback || (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="text-warning mx-auto mb-4 h-12 w-12" />
+            <h3 className="mb-2 text-lg font-semibold">Acesso Negado</h3>
+            <p className="text-muted-foreground">
+              Você não tem permissão para acessar esta seção.
+              <br />
+              Roles necessárias: {allowedRoles.join(", ")}
+            </p>
+          </CardContent>
+        </Card>
+      )
     );
   }
 

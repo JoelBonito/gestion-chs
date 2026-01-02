@@ -1,7 +1,6 @@
-
 // src/pages/Encomendas.tsx
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Plus, Search, CalendarIcon, Eye, Edit, User, Building2, Package, Truck, TrendingUp, CreditCard, Filter, CheckCircle2, Clock } from "lucide-react";
+import { Plus } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,37 +12,38 @@ import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useFormatters } from "@/hooks/useFormatters";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
-import EncomendaForm from "@/components/EncomendaForm";
-import EncomendaView from "@/components/EncomendaView";
-import { EncomendaActions } from "@/components/EncomendaActions";
-import { EncomendaStatusFilter } from "@/components/EncomendaStatusFilter";
-import { EncomendaStatusSelect } from "@/components/EncomendaStatusSelect";
-import { TransportesTab } from "@/components/TransportesTab";
-import { TarefasTab } from "@/components/TarefasTab";
-import { AmostrasTab } from "@/components/AmostrasTab";
+import {
+  EncomendaForm,
+  EncomendaView,
+  EncomendaStatusFilter,
+  TransportesTab,
+  TarefasTab,
+  AmostrasTab,
+  EncomendaList,
+  EncomendaFilters
+} from "@/components/encomendas";
 import { useAuth } from "@/hooks/useAuth";
-import { isLimitedNav, shouldHidePrices, isReadonlyOrders, ROSA_ALLOWED_SUPPLIERS } from "@/lib/permissions";
-import { PageContainer } from "@/components/PageContainer";
-import { GlassCard } from "@/components/GlassCard";
-import { Skeleton } from "@/components/ui/skeleton";
-import { DatePickerPopover } from "@/components/ui/date-picker-popover";
+import { useEncomendaTranslation } from "@/hooks/useEncomendaTranslation";
+import {
+  isLimitedNav,
+  shouldHidePrices,
+  isReadonlyOrders,
+  ROSA_ALLOWED_SUPPLIERS,
+} from "@/lib/permissions";
+import { PageContainer, GlassCard } from "@/components/shared";
 
-type StatusEncomenda = "NOVO PEDIDO" | "MATÉRIA PRIMA" | "PRODUÇÃO" | "EMBALAGENS" | "TRANSPORTE" | "ENTREGUE";
+import { StatusEncomenda } from "@/types/entities";
+
 type StatusFilter = StatusEncomenda | "TODOS";
 
 interface Encomenda {
@@ -67,6 +67,17 @@ interface Encomenda {
   valor_total_custo?: number;
 }
 
+interface EncomendaDBRow extends Encomenda {
+  itens_encomenda?: {
+    quantidade: number | null;
+    preco_unitario: number | null;
+    preco_custo: number | null;
+    produtos?: {
+      size_weight: number | null;
+    } | null;
+  }[];
+}
+
 export default function Encomendas() {
   const { canEdit, hasRole } = useUserRole();
   const { isCollaborator } = useIsCollaborator();
@@ -87,99 +98,26 @@ export default function Encomendas() {
     "b8f995d2-47dc-4c8f-9779-ce21431f5244",
   ];
 
-  const isHam = email === "ham@admin.com";
   const isRosa = email === "rosa@colaborador.com";
 
   // Check if user has access to amostras tab
-  const hasAmostrasAccess = user?.email && [
-    'jbento1@gmail.com',
-    'admin@admin.com',
-    'rosa@colaborador.com',
-    'felipe@colaborador.com'
-  ].includes(user.email);
+  const hasAmostrasAccess =
+    user?.email &&
+    [
+      "jbento1@gmail.com",
+      "admin@admin.com",
+      "rosa@colaborador.com",
+      "felipe@colaborador.com",
+    ].includes(user.email);
 
-  // Dicionário (FR para Ham, PT para demais)
-  const t = isHam
-    ? {
-      orders: "Commandes",
-      manageOrders: "Gérer vos commandes",
-      newOrder: "Nouvelle commande",
-      searchPlaceholder: "Rechercher...",
-      showDelivered: "Afficher livrées",
-      noOrders: "Aucune commande trouvée",
-      order: "Commande",
-      label: "Étiquette",
-      client: "Client",
-      supplier: "Fournisseur",
-      status: "Statut",
-      productionDate: "Date de production",
-      deliveryDate: "Date de livraison",
-      grossWeight: "Poids brut",
-      shippingValue: "Valeur du transport",
-      commission: "Commission",
-      total: "Valeur Totale",
-      totalCost: "Coût total",
-      paid: "Montant payé",
-      notes: "Observations",
-      viewOrder: "Voir",
-      editOrder: "Modifier",
-      transportConfig: "Transport",
-      select: "Sélectionner",
-      loadingOrders: "Chargement...",
-      createdOn: "Créée le",
-      errLoad: "Erreur lors du chargement",
-      printOpened: "Fenêtre d’impression ouverte",
-      printError: "Erreur lors de l’ouverture de l’impression",
-    }
-    : {
-      orders: "Encomendas",
-      manageOrders: "Visão geral e gestão de pedidos",
-      newOrder: "Nova Encomenda",
-      searchPlaceholder: "Buscar por nº, cliente, fornecedor...",
-      showDelivered: "Exibir entregues",
-      noOrders: "Nenhuma encomenda encontrada",
-      order: "Pedido",
-      label: "Etiqueta",
-      client: "Cliente",
-      supplier: "Fornecedor",
-      status: "Status",
-      productionDate: "Data Produção",
-      deliveryDate: "Data Entrega",
-      grossWeight: "Peso Bruto",
-      shippingValue: "Valor Frete",
-      commission: "Comissão",
-      total: "Valor Total",
-      totalCost: "Custo Total",
-      paid: "Valor Pago",
-      notes: "Observações",
-      viewOrder: "Visualizar",
-      editOrder: "Editar",
-      transportConfig: "Transporte",
-      select: "Selecionar",
-      loadingOrders: "Carregando encomendas...",
-      createdOn: "Criada em",
-      errLoad: "Erro ao carregar encomendas",
-      printOpened: "Janela de impressão aberta",
-      printError: "Erro ao abrir impressão",
-    };
-
-  const getStatusLabel = (status: StatusEncomenda): string => {
-    if (!isHam) return status;
-    switch (status) {
-      case "NOVO PEDIDO": return "Nouvelle demande";
-      case "MATÉRIA PRIMA": return "Matières premières";
-      case "PRODUÇÃO": return "Production";
-      case "EMBALAGENS": return "Emballage";
-      case "TRANSPORTE": return "Transport";
-      case "ENTREGUE": return "Livré";
-      default: return status;
-    }
-  };
+  const { t, isHam, getStatusLabel } = useEncomendaTranslation();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("TODOS");
-  const [activeTab, setActiveTab] = useState<"encomendas" | "transportes" | "tarefas" | "amostras">("encomendas");
+  const [activeTab, setActiveTab] = useState<"encomendas" | "transportes" | "tarefas" | "amostras">(
+    "encomendas"
+  );
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEncomendaForEdit, setSelectedEncomendaForEdit] = useState<Encomenda | null>(null);
@@ -198,7 +136,8 @@ export default function Encomendas() {
       setLoading(true);
       const { data, error } = await supabase
         .from("encomendas")
-        .select(`
+        .select(
+          `
           *,
           clientes(nome),
           fornecedores(nome),
@@ -208,18 +147,19 @@ export default function Encomendas() {
             preco_custo,
             produtos(nome, size_weight)
           )
-        `)
+        `
+        )
         .order("created_at", { ascending: false })
         .limit(100);
 
       if (error) throw error;
 
-      const computed = (data || []).map((enc: any) => {
+      const computed = (data || []).map((enc) => {
         let commission_amount = 0;
         let valor_total_custo = 0;
         let totalGramas = 0;
 
-        (enc.itens_encomenda || []).forEach((it: any) => {
+        ((enc as EncomendaDBRow).itens_encomenda || []).forEach((it) => {
           const q = Number(it.quantidade || 0);
           const pv = Number(it.preco_unitario || 0);
           const pc = Number(it.preco_custo || 0);
@@ -234,14 +174,14 @@ export default function Encomendas() {
           ...enc,
           commission_amount,
           valor_total_custo,
-          peso_bruto: (totalGramas * 1.3) / 1000 // kg
+          peso_bruto: (totalGramas * 1.3) / 1000, // kg
         } as Encomenda & { peso_bruto: number };
       });
 
       setEncomendas(computed);
 
       const pesos: Record<string, number> = {};
-      computed.forEach((enc: any) => {
+      computed.forEach((enc) => {
         pesos[enc.id] = enc.peso_bruto || 0;
       });
       setPesoTransporte(pesos);
@@ -280,11 +220,17 @@ export default function Encomendas() {
     field: "data_producao_estimada" | "data_envio_estimada",
     value: string
   ) => {
-    if ((field === "data_producao_estimada" && !canEditProductionUI) || (field === "data_envio_estimada" && !canEditDeliveryUI)) {
+    if (
+      (field === "data_producao_estimada" && !canEditProductionUI) ||
+      (field === "data_envio_estimada" && !canEditDeliveryUI)
+    ) {
       return;
     }
     try {
-      const { error } = await supabase.from("encomendas").update({ [field]: value || null }).eq("id", encomendaId);
+      const { error } = await supabase
+        .from("encomendas")
+        .update({ [field]: value || null })
+        .eq("id", encomendaId);
       if (error) throw error;
 
       setEncomendas((prev) =>
@@ -304,9 +250,10 @@ export default function Encomendas() {
 
   const handleDelete = () => fetchEncomendas();
 
-  const scopedEncomendas = isFelipe || isRosa
-    ? encomendas.filter((e) => ALLOWED_SUPPLIERS_FOR_FELIPE.includes(e.fornecedor_id ?? ""))
-    : encomendas;
+  const scopedEncomendas =
+    isFelipe || isRosa
+      ? encomendas.filter((e) => ALLOWED_SUPPLIERS_FOR_FELIPE.includes(e.fornecedor_id ?? ""))
+      : encomendas;
 
   const filteredEncomendas = scopedEncomendas.filter((e) => {
     const q = searchTerm.trim().toLowerCase();
@@ -325,10 +272,7 @@ export default function Encomendas() {
   const pageActions = (
     <div className="flex items-center gap-2">
       {canEdit() && !readOnlyOrders && (
-        <Button
-          variant="gradient"
-          onClick={() => setDialogOpen(true)}
-        >
+        <Button variant="gradient" onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           <span className="hidden sm:inline">{t.newOrder}</span>
           <span className="sm:hidden">Nova</span>
@@ -338,20 +282,16 @@ export default function Encomendas() {
   );
 
   return (
-    <PageContainer
-      title={t.orders}
-      subtitle={t.manageOrders}
-      actions={pageActions}
-    >
+    <PageContainer title={t.orders} subtitle={t.manageOrders} actions={pageActions}>
       {/* Navegação Secundária (Abas) - Compacta no mobile */}
-      <div className="flex border-b border-border/40 mb-4 sm:mb-6 overflow-x-auto no-scrollbar -mx-1">
+      <div className="border-border/40 no-scrollbar -mx-1 mb-4 flex overflow-x-auto border-b sm:mb-6">
         <button
           onClick={() => setActiveTab("encomendas")}
           className={cn(
-            "px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
+            "border-b-2 px-4 py-2 text-xs font-medium whitespace-nowrap transition-all sm:px-6 sm:py-3 sm:text-sm",
             activeTab === "encomendas"
               ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-primary/80"
+              : "text-muted-foreground hover:text-primary/80 border-transparent"
           )}
         >
           {t.orders}
@@ -360,10 +300,10 @@ export default function Encomendas() {
           <button
             onClick={() => setActiveTab("transportes")}
             className={cn(
-              "px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
+              "border-b-2 px-4 py-2 text-xs font-medium whitespace-nowrap transition-all sm:px-6 sm:py-3 sm:text-sm",
               activeTab === "transportes"
                 ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-primary/80"
+                : "text-muted-foreground hover:text-primary/80 border-transparent"
             )}
           >
             {isHam ? "Transport" : "Transporte"}
@@ -373,10 +313,10 @@ export default function Encomendas() {
           <button
             onClick={() => setActiveTab("tarefas")}
             className={cn(
-              "px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
+              "border-b-2 px-4 py-2 text-xs font-medium whitespace-nowrap transition-all sm:px-6 sm:py-3 sm:text-sm",
               activeTab === "tarefas"
                 ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-primary/80"
+                : "text-muted-foreground hover:text-primary/80 border-transparent"
             )}
           >
             Tarefas
@@ -386,10 +326,10 @@ export default function Encomendas() {
           <button
             onClick={() => setActiveTab("amostras")}
             className={cn(
-              "px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-medium border-b-2 transition-all whitespace-nowrap",
+              "border-b-2 px-4 py-2 text-xs font-medium whitespace-nowrap transition-all sm:px-6 sm:py-3 sm:text-sm",
               activeTab === "amostras"
                 ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-primary/80"
+                : "text-muted-foreground hover:text-primary/80 border-transparent"
             )}
           >
             Amostras
@@ -403,299 +343,80 @@ export default function Encomendas() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
-          {/* Barra de Pesquisa e Filtros - Unificada */}
-          <div className="flex flex-col lg:flex-row items-center gap-4 bg-card p-3 rounded-xl border border-border shadow-sm">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t.searchPlaceholder}
-                className="pl-10 h-10 w-full bg-input border-border/40 text-foreground"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-              <div className="w-full sm:w-auto sm:border-l border-border/50 sm:pl-2 h-10 flex items-center">
-                <EncomendaStatusFilter selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} />
-              </div>
-
-              <div className="flex items-center gap-3 px-3 border-l border-border/50 h-6 shrink-0 ml-auto sm:ml-0">
-                <Switch
-                  id="show-completed"
-                  checked={showCompleted}
-                  onCheckedChange={setShowCompleted}
-                />
-                <Label
-                  htmlFor="show-completed"
-                  className="cursor-pointer text-sm font-medium whitespace-nowrap text-foreground dark:text-white"
-                >
-                  {t.showDelivered}
-                </Label>
-              </div>
-            </div>
-          </div>
+          <EncomendaFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            selectedStatus={selectedStatus}
+            onStatusChange={setSelectedStatus}
+            showCompleted={showCompleted}
+            onShowCompletedChange={setShowCompleted}
+            translations={t}
+          />
 
           {/* Lista de Encomendas */}
-          <div className="space-y-4">
-            {(loading || authLoading) ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map(i => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}
-              </div>
-            ) : filteredEncomendas.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center bg-card rounded-xl border border-dashed border-border/50 shadow-sm">
-                <Package className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
-                <h3 className="text-lg font-medium text-foreground">{t.noOrders}</h3>
-                <p className="text-muted-foreground text-sm max-w-sm mt-1">
-                  Tente ajustar os filtros ou crie uma nova encomenda.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {filteredEncomendas.map((e, index) => (
-                  <GlassCard
-                    key={`${e.id}-${user?.email || 'loading'}`}
-                    className="relative p-0 overflow-hidden bg-card"
-                    hoverEffect
-                  >
-                    {/* Ações Absolutas - Padrão Projetos */}
-                    <div className="absolute top-4 right-4 z-10" onClick={(ev) => ev.stopPropagation()}>
-                      <EncomendaActions
-                        encomenda={e as any}
-                        onView={() => setSelectedEncomendaForView(e)}
-                        onEdit={() => setSelectedEncomendaForEdit(e)}
-                        onDelete={handleDelete}
-                        onTransport={() => setTransportDialogOpen(true)}
-                        canEditOrders={canEdit() && !isCollaborator && !readOnlyOrders}
-                      />
-                    </div>
-                    <div className="p-4 sm:p-5 cursor-pointer" onClick={() => setSelectedEncomendaForView(e)}>
-                      {/* Header: ID, Tag, Data e Status - Tudo em uma linha */}
-                      <div className="flex items-center justify-between gap-2 mb-3 pr-10">
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <span className="text-base sm:text-lg font-bold font-mono text-primary shrink-0">
-                            #{e.numero_encomenda}
-                          </span>
-                          {e.etiqueta && (
-                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 text-[10px] sm:text-xs px-1.5 py-0 shrink-0 uppercase tracking-wide font-bold">
-                              {e.etiqueta}
-                            </Badge>
-                          )}
-                          <span className="text-[10px] sm:text-xs text-muted-foreground shrink-0 hidden xs:inline">
-                            {formatDate(e.data_criacao)}
-                          </span>
-                        </div>
-
-                        {/* Status - Flexível */}
-                        <div className="shrink-0 min-w-max flex justify-end">
-                          {isHam ? (
-                            <Badge variant="outline" className="w-full justify-center py-0.5 text-[10px] sm:text-xs">
-                              {getStatusLabel(e.status)}
-                            </Badge>
-                          ) : (
-                            <EncomendaStatusSelect
-                              encomendaId={e.id}
-                              currentStatus={e.status}
-                              numeroEncomenda={e.numero_encomenda}
-                              onStatusChange={handleStatusChange}
-                            />
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Cliente e Fornecedor + Ações Rápidas - Layout Horizontal Compacto */}
-                      <div className="flex items-center justify-between gap-4 py-2 border-y border-border/30 text-xs sm:text-sm">
-                        <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-4 min-w-0 flex-1">
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-muted-foreground shrink-0">{t.client}:</span>
-                            <span className="font-medium truncate" title={e.clientes?.nome ?? e.cliente_nome ?? ""}>
-                              {e.clientes?.nome ?? e.cliente_nome ?? "—"}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                            <span className="text-muted-foreground shrink-0">{t.supplier}:</span>
-                            <span className="font-medium truncate" title={e.fornecedores?.nome ?? e.fornecedor_nome ?? ""}>
-                              {e.fornecedores?.nome ?? e.fornecedor_nome ?? "—"}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Ações Rápidas - Agora Alinhadas com Cliente/Fornecedor */}
-                        <div className="flex items-center gap-1 shrink-0 ml-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(ev) => { ev.stopPropagation(); setSelectedEncomendaForView(e); }}
-                            title="Visualizar"
-                            className="h-8 w-8 text-muted-foreground hover:text-cyan-500 hover:bg-cyan-500/10 hover:scale-110 active:scale-90 transition-all"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-
-                          {(canEdit() && !isCollaborator && !readOnlyOrders) && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(ev) => { ev.stopPropagation(); setSelectedEncomendaForEdit(e); }}
-                              title="Editar"
-                              className="h-8 w-8 text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 hover:scale-110 active:scale-90 transition-all"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Rodapé: Datas, Peso, Financeiro e Ações */}
-                      <div className="flex flex-wrap items-end justify-between gap-3 pt-3 text-xs sm:text-sm">
-
-                        {/* Grupo Esquerdo: Datas e Peso */}
-                        <div className="flex flex-wrap items-center gap-4 sm:gap-6 py-1">
-                          {/* Data Produção */}
-                          <div className={cn("flex flex-col", !e.data_producao_estimada && "opacity-50")}>
-                            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">{t.productionDate}</span>
-                            {canEditProductionUI ? (
-                              <DatePickerPopover
-                                variant="inline"
-                                value={e.data_producao_estimada ? new Date(e.data_producao_estimada) : undefined}
-                                onChange={(d) => handleDateUpdate(e.id, "data_producao_estimada", d ? format(d, "yyyy-MM-dd") : "")}
-                              />
-                            ) : (
-                              <span className="font-medium">{e.data_producao_estimada ? formatDate(e.data_producao_estimada) : "—"}</span>
-                            )}
-                          </div>
-
-                          {/* Data Entrega */}
-                          <div className={cn("flex flex-col", !e.data_envio_estimada && "opacity-50")}>
-                            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">{t.deliveryDate}</span>
-                            {canEditDeliveryUI ? (
-                              <DatePickerPopover
-                                variant="inline"
-                                value={e.data_envio_estimada ? new Date(e.data_envio_estimada) : undefined}
-                                onChange={(d) => handleDateUpdate(e.id, "data_envio_estimada", d ? format(d, "yyyy-MM-dd") : "")}
-                              />
-                            ) : (
-                              <span className="font-medium">{e.data_envio_estimada ? formatDate(e.data_envio_estimada) : "—"}</span>
-                            )}
-                          </div>
-
-                          {/* Peso */}
-                          <div className="flex flex-col">
-                            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">{t.grossWeight}</span>
-                            <div className="flex items-center gap-1.5">
-                              <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span className="font-medium">
-                                {((e as any).peso_bruto || 0).toLocaleString('pt-PT', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kg
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Grupo Direito: Financeiro e Ações */}
-                        <div className="flex items-center gap-4 sm:gap-6 ml-auto">
-                          {/* Financeiro para Ham (específico) */}
-                          {isHam && (
-                            <div className="flex items-center gap-4 sm:gap-6">
-                              {/* Valor Pago */}
-                              <div className="flex flex-col items-end">
-                                <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">{t.paid}</span>
-                                <span className="font-bold text-sm sm:text-base text-foreground leading-none">
-                                  {formatCurrency(e.valor_pago || 0)}
-                                </span>
-                              </div>
-                              {/* Valor Total */}
-                              <div className="flex flex-col items-end">
-                                <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">{t.total}</span>
-                                <span className="font-bold text-sm sm:text-base text-primary leading-none">
-                                  {formatCurrency(e.valor_total || 0)}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-
-                          {!hidePrices && !isHam && (
-                            <>
-                              {/* Lucro (Comissão) */}
-                              {!isFelipe && (
-                                <div className="flex flex-col items-end">
-                                  <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">Comissão</span>
-                                  <div className="flex items-center gap-1 text-success text-xs sm:text-sm">
-                                    <TrendingUp className="h-3.5 w-3.5" />
-                                    <span className="font-bold">{formatCurrency(e.commission_amount || 0)}</span>
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* Total */}
-                              <div className="flex flex-col items-end ml-4 sm:ml-8">
-                                <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-semibold leading-none mb-1">Total</span>
-                                <span className="font-bold text-sm sm:text-base text-foreground leading-none">
-                                  {formatCurrency(isFelipe ? e.valor_total_custo || 0 : e.valor_total)}
-                                </span>
-                              </div>
-                            </>
-                          )}
-
-                        </div>
-                      </div>
-                    </div>
-                  </GlassCard>
-                ))}
-              </div>
-            )}
-          </div>
-        </motion.div >
-      )
-      }
+          <EncomendaList
+            loading={loading || authLoading}
+            encomendas={filteredEncomendas}
+            onView={(e) => setSelectedEncomendaForView(e)}
+            onEdit={(e) => setSelectedEncomendaForEdit(e)}
+            onDelete={handleDelete}
+            onTransport={() => setTransportDialogOpen(true)}
+            onStatusChange={handleStatusChange}
+            onDateUpdate={handleDateUpdate}
+            canEditOrders={canEdit() && !isCollaborator && !readOnlyOrders}
+            canEditProduction={canEditProductionUI}
+            canEditDelivery={canEditDeliveryUI}
+            hidePrices={hidePrices}
+            isHam={isHam}
+            t={t}
+            formatCurrency={formatCurrency}
+            formatDate={formatDate}
+            getPesoTransporte={(e) => pesoTransporte[e.id] || 0}
+          />
+        </motion.div>
+      )}
 
       {/* Abas Secundárias - Restauradas */}
-      {
-        activeTab === "transportes" && (
-          <div className="mt-6">
-            <TransportesTab />
-          </div>
-        )
-      }
+      {activeTab === "transportes" && (
+        <div className="mt-6">
+          <TransportesTab />
+        </div>
+      )}
 
-      {
-        activeTab === "tarefas" && (
-          <div className="mt-6">
-            <TarefasTab />
-          </div>
-        )
-      }
+      {activeTab === "tarefas" && (
+        <div className="mt-6">
+          <TarefasTab />
+        </div>
+      )}
 
-      {
-        activeTab === "amostras" && (
-          <div className="mt-6">
-            <AmostrasTab />
-          </div>
-        )
-      }
+      {activeTab === "amostras" && (
+        <div className="mt-6">
+          <AmostrasTab />
+        </div>
+      )}
 
       {/* DIALOGS */}
       {/* Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] w-[95vw] max-w-4xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t.newOrder}</DialogTitle>
-            <DialogDescription>
-              {t.manageOrders}
-            </DialogDescription>
+            <DialogDescription>{t.manageOrders}</DialogDescription>
           </DialogHeader>
-          <EncomendaForm
-            onSuccess={handleSuccess}
-          />
+          <EncomendaForm onSuccess={handleSuccess} />
         </DialogContent>
       </Dialog>
 
       {/* View Dialog */}
-      <Dialog open={!!selectedEncomendaForView} onOpenChange={(open) => !open && setSelectedEncomendaForView(null)}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-card">
+      <Dialog
+        open={!!selectedEncomendaForView}
+        onOpenChange={(open) => !open && setSelectedEncomendaForView(null)}
+      >
+        <DialogContent className="bg-card max-h-[90vh] w-[95vw] max-w-4xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t.viewOrder} #{selectedEncomendaForView?.numero_encomenda}</DialogTitle>
+            <DialogTitle>
+              {t.viewOrder} #{selectedEncomendaForView?.numero_encomenda}
+            </DialogTitle>
             <DialogDescription></DialogDescription>
           </DialogHeader>
           <EncomendaView encomendaId={selectedEncomendaForView?.id} />
@@ -703,10 +424,15 @@ export default function Encomendas() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={!!selectedEncomendaForEdit} onOpenChange={(open) => !open && setSelectedEncomendaForEdit(null)}>
-        <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Dialog
+        open={!!selectedEncomendaForEdit}
+        onOpenChange={(open) => !open && setSelectedEncomendaForEdit(null)}
+      >
+        <DialogContent className="max-h-[90vh] w-[95vw] max-w-4xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t.editOrder} #{selectedEncomendaForEdit?.numero_encomenda}</DialogTitle>
+            <DialogTitle>
+              {t.editOrder} #{selectedEncomendaForEdit?.numero_encomenda}
+            </DialogTitle>
             <DialogDescription></DialogDescription>
           </DialogHeader>
           {selectedEncomendaForEdit && (
@@ -718,7 +444,6 @@ export default function Encomendas() {
           )}
         </DialogContent>
       </Dialog>
-
-    </PageContainer >
+    </PageContainer>
   );
 }

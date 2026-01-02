@@ -14,7 +14,13 @@ export async function sendEmail(to: string[], subject: string, html: string) {
 
 // Templates de email
 export const emailTemplates = {
-  novaEncomenda: (pedido: string, etiqueta: string, cliente: string, fornecedor: string, produtos: Array<{ nome: string, quantidade: number }>) => `
+  novaEncomenda: (
+    pedido: string,
+    etiqueta: string,
+    cliente: string,
+    fornecedor: string,
+    produtos: Array<{ nome: string; quantidade: number }>
+  ) => `
     <h2>📦 Nova encomenda registrada</h2>
     <p><b>Pedido:</b> ${pedido}</p>
     <p><b>Etiqueta:</b> ${etiqueta}</p>
@@ -22,7 +28,7 @@ export const emailTemplates = {
     <p><b>Fornecedor:</b> ${fornecedor}</p>
     <h3>Produtos</h3>
     <ul>
-      ${produtos.map(p => `<li>${p.nome} — Qtd: ${p.quantidade}</li>`).join("")}
+      ${produtos.map((p) => `<li>${p.nome} — Qtd: ${p.quantidade}</li>`).join("")}
     </ul>
   `,
 
@@ -35,11 +41,10 @@ export const emailTemplates = {
 
   novoTransporte: (referencia: string, tracking?: string, anexoUrl?: string) => `
     <h2>🚚 Novo transporte</h2>
-    <p><b>Tracking:</b> ${tracking || 'Não informado'}</p>
+    <p><b>Tracking:</b> ${tracking || "Não informado"}</p>
     <p><b>Referência:</b> ${referencia}</p>
-    ${anexoUrl
-      ? `<p><a href="${anexoUrl}">📎 Baixar anexo</a></p>`
-      : "<p>Nenhum anexo enviado.</p>"
+    ${
+      anexoUrl ? `<p><a href="${anexoUrl}">📎 Baixar anexo</a></p>` : "<p>Nenhum anexo enviado.</p>"
     }
   `,
 
@@ -68,12 +73,12 @@ export const emailTemplates = {
     <p><b>Pedido:</b> ${pedido}</p>
     <p><b>Etiqueta:</b> ${etiqueta}</p>
     <p><b>Valor pago:</b> ${valorPago}</p>
-  `
+  `,
 };
 
 // Destinatários por tipo de notificação
 export const emailRecipients = {
   geral: ["jbento1@gmail.com", "hamamlian13@gmail.com", "msilva.lipe@gmail.com"],
   lipe: ["msilva.lipe@gmail.com"],
-  felipe: ["jbento1@gmail.com"]
+  felipe: ["jbento1@gmail.com"],
 };

@@ -2,31 +2,41 @@
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center space-y-8 p-8">
-        <div className="inline-flex p-10 rounded-xl bg-primary shadow-lg">
-          <svg className="w-20 h-20 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+    <div className="bg-background flex min-h-screen items-center justify-center">
+      <div className="space-y-8 p-8 text-center">
+        <div className="bg-primary inline-flex rounded-xl p-10 shadow-lg">
+          <svg
+            className="h-20 w-20 text-primary-foreground"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 10V3L4 14h7v7l9-11h-7z"
+            />
           </svg>
         </div>
         <div className="space-y-4">
-          <h1 className="text-5xl font-display font-bold text-foreground">
+          <h1 className="font-display text-foreground text-5xl font-bold">
             Bem-vindo ao Gestion CHS
           </h1>
-          <p className="text-xl text-muted-foreground font-medium max-w-2xl">
+          <p className="text-muted-foreground max-w-2xl text-xl font-medium">
             Sistema completo de gestão empresarial com design moderno e vibrante
           </p>
         </div>
-        <div className="flex gap-4 justify-center pt-4">
+        <div className="flex justify-center gap-4 pt-4">
           <a
             href="/dashboard"
-            className="inline-flex items-center justify-center h-12 px-8 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 transition-colors"
+            className="bg-primary hover:bg-primary/90 inline-flex h-12 items-center justify-center rounded-lg px-8 font-medium text-primary-foreground transition-colors"
           >
             Acessar Dashboard
           </a>
           <a
             href="/produtos"
-            className="inline-flex items-center justify-center h-12 px-8 rounded-lg border-2 border-primary text-primary font-medium hover:bg-primary/10 transition-colors"
+            className="border-primary text-primary hover:bg-primary/10 inline-flex h-12 items-center justify-center rounded-lg border-2 px-8 font-medium transition-colors"
           >
             Ver Produtos
           </a>

@@ -1,14 +1,14 @@
-import { ReactNode, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent } from '@/components/ui/card';
+import { ReactNode, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface AuthGuardProps {
   children: ReactNode;
   redirectTo?: string;
 }
 
-export function AuthGuard({ children, redirectTo = '/login' }: AuthGuardProps) {
+export function AuthGuard({ children, redirectTo = "/login" }: AuthGuardProps) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -20,16 +20,16 @@ export function AuthGuard({ children, redirectTo = '/login' }: AuthGuardProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="bg-background flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <div className="border-primary h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" />
           <p className="text-muted-foreground text-sm">Validando sessão...</p>
           <button
             onClick={() => {
               localStorage.clear();
-              window.location.href = '/login';
+              window.location.href = "/login";
             }}
-            className="text-xs text-primary hover:underline mt-4"
+            className="text-primary mt-4 text-xs hover:underline"
           >
             Demorando muito? Sair
           </button>
@@ -40,7 +40,7 @@ export function AuthGuard({ children, redirectTo = '/login' }: AuthGuardProps) {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <Card>
           <CardContent className="p-8 text-center">
             <p className="text-muted-foreground">Redirecionando para login…</p>

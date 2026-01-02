@@ -1,31 +1,30 @@
-
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useSupabaseStorage } from './useSupabaseStorage';
-import { Invoice, InvoiceFormData } from '@/types/invoice';
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useSupabaseStorage } from "./useSupabaseStorage";
+import { Invoice, InvoiceFormData } from "@/types/invoice";
 
 export const useInvoices = () => {
   const { toast } = useToast();
   const { uploadFile, deleteFile } = useSupabaseStorage();
   const queryClient = useQueryClient();
-  
-  const queryKey = ['invoices'];
+
+  const queryKey = ["invoices"];
 
   const {
     data: invoices = [],
     isLoading,
     refetch,
-    error
+    error,
   } = useQuery({
     queryKey,
     queryFn: async (): Promise<Invoice[]> => {
-      console.log('useInvoices - Buscando faturas');
-      
+      console.log("useInvoices - Buscando faturas");
+
       const { data: invoicesData, error: invoicesError } = await supabase
-        .from('invoices')
-        .select('*')
-        .order('invoice_date', { ascending: false });
+        .from("invoices")
+        .select("*")
+        .order("invoice_date", { ascending: false });
 
       if (invoicesError) {
         console.error("useInvoices - Erro:", invoicesError);
@@ -33,42 +32,45 @@ export const useInvoices = () => {
       }
 
       if (!invoicesData || invoicesData.length === 0) {
-        console.log('useInvoices - Nenhuma fatura encontrada');
+        console.log("useInvoices - Nenhuma fatura encontrada");
         return [];
       }
 
       // Buscar anexos para faturas que tenham attachment_id
       const invoicesWithAttachments = await Promise.all(
-        invoicesData.map(async (invoice: any) => {
+        invoicesData.map(async (invoice) => {
           if (invoice.attachment_id) {
             const { data: attachment } = await supabase
-              .from('attachments')
-              .select('id, file_name, file_type, storage_url, storage_path')
-              .eq('id', invoice.attachment_id)
+              .from("attachments")
+              .select("id, file_name, file_type, storage_url, storage_path")
+              .eq("id", invoice.attachment_id)
               .single();
-            
+
             return {
               ...invoice,
-              attachment
+              attachment,
             };
           }
           return invoice;
         })
       );
-      
+
       console.log(`useInvoices - Encontradas ${invoicesWithAttachments.length} faturas`);
       return invoicesWithAttachments as Invoice[];
     },
     staleTime: 0, // Sempre buscar dados frescos
-    gcTime: 0 // Não manter cache
+    gcTime: 0, // Não manter cache
   });
 
   const createInvoiceMutation = useMutation({
     mutationFn: async (invoiceData: InvoiceFormData) => {
-      console.log('useInvoices - Criando fatura:', invoiceData);
-      
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+      console.log("useInvoices - Criando fatura:", invoiceData);
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
       if (userError || !user) {
         throw new Error("Usuário não autenticado");
       }
@@ -77,13 +79,13 @@ export const useInvoices = () => {
 
       // Upload do arquivo se fornecido
       if (invoiceData.file) {
-        console.log('useInvoices - Fazendo upload do arquivo');
+        console.log("useInvoices - Fazendo upload do arquivo");
         const date = new Date(invoiceData.invoice_date);
         const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+
         uploadResult = await uploadFile(
-          invoiceData.file, 
+          invoiceData.file,
           `faturas/${year}/${month}`,
           `invoice-${Date.now()}`
         );
@@ -92,19 +94,19 @@ export const useInvoices = () => {
           throw new Error("Erro no upload do arquivo");
         }
 
-        console.log('useInvoices - Upload concluído');
+        console.log("useInvoices - Upload concluído");
       }
 
-      console.log('useInvoices - Criando registro da fatura');
+      console.log("useInvoices - Criando registro da fatura");
 
       // Criar a fatura primeiro
       const { data: invoice, error: invoiceError } = await supabase
-        .from('invoices')
+        .from("invoices")
         .insert({
           invoice_date: invoiceData.invoice_date,
           amount: invoiceData.amount,
           description: invoiceData.description || null,
-          created_by: user.id
+          created_by: user.id,
         })
         .select()
         .single();
@@ -114,25 +116,25 @@ export const useInvoices = () => {
         throw invoiceError;
       }
 
-      console.log('useInvoices - Fatura criada:', invoice);
+      console.log("useInvoices - Fatura criada:", invoice);
 
       // Criar attachment se há arquivo
       if (uploadResult && invoice.id) {
-        console.log('useInvoices - Criando registro de anexo');
-        
+        console.log("useInvoices - Criando registro de anexo");
+
         const { data: attachment, error: attachmentError } = await supabase
-          .from('attachments')
+          .from("attachments")
           .insert({
-            entity_type: 'financeiro',
+            entity_type: "financeiro",
             entity_id: invoice.id,
             file_name: uploadResult.fileName,
             file_type: uploadResult.mimeType,
             storage_path: uploadResult.path,
             storage_url: uploadResult.publicUrl,
             file_size: uploadResult.size,
-            uploaded_by: user.id
+            uploaded_by: user.id,
           })
-          .select('id')
+          .select("id")
           .single();
 
         if (attachmentError) {
@@ -142,27 +144,27 @@ export const useInvoices = () => {
 
         // Atualizar a fatura com o attachment_id
         const { error: updateError } = await supabase
-          .from('invoices')
+          .from("invoices")
           .update({ attachment_id: attachment.id })
-          .eq('id', invoice.id);
+          .eq("id", invoice.id);
 
         if (updateError) {
           console.error("useInvoices - Erro ao atualizar attachment_id:", updateError);
           throw updateError;
         }
 
-        console.log('useInvoices - Anexo criado e vinculado:', attachment.id);
+        console.log("useInvoices - Anexo criado e vinculado:", attachment.id);
       }
-      
+
       return invoice;
     },
     onSuccess: async (data) => {
       console.log("useInvoices - Fatura criada com sucesso:", data);
-      
+
       // Invalidar e refetch
       await queryClient.invalidateQueries({ queryKey });
       await refetch();
-      
+
       toast({
         title: "Fatura criada",
         description: "Fatura salva com sucesso.",
@@ -173,9 +175,9 @@ export const useInvoices = () => {
       toast({
         title: "Erro ao criar fatura",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const updateInvoiceMutation = useMutation({
@@ -184,13 +186,13 @@ export const useInvoices = () => {
 
       // Usar type assertion temporário até sync dos tipos
       const { error } = await (supabase as any)
-        .from('invoices')
+        .from("invoices")
         .update({
           invoice_date: data.invoice_date,
           amount: data.amount,
-          description: data.description || null
+          description: data.description || null,
         })
-        .eq('id', id);
+        .eq("id", id);
 
       if (error) throw error;
 
@@ -210,9 +212,9 @@ export const useInvoices = () => {
       toast({
         title: "Erro ao atualizar fatura",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const deleteInvoiceMutation = useMutation({
@@ -226,17 +228,11 @@ export const useInvoices = () => {
 
       // Deletar attachment se existir
       if (invoice.attachment_id) {
-        await supabase
-          .from('attachments')
-          .delete()
-          .eq('id', invoice.attachment_id);
+        await supabase.from("attachments").delete().eq("id", invoice.attachment_id);
       }
 
       // Usar type assertion temporário até sync dos tipos
-      const { error } = await (supabase as any)
-        .from('invoices')
-        .delete()
-        .eq('id', invoice.id);
+      const { error } = await (supabase as any).from("invoices").delete().eq("id", invoice.id);
 
       if (error) throw error;
 
@@ -256,9 +252,9 @@ export const useInvoices = () => {
       toast({
         title: "Erro ao remover fatura",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
-    }
+    },
   });
 
   return {
@@ -267,11 +263,13 @@ export const useInvoices = () => {
     error,
     refetch,
     createInvoice: createInvoiceMutation.mutateAsync,
-    updateInvoice: (id: string, data: { invoice_date: string; amount: number; description?: string }) => 
-      updateInvoiceMutation.mutateAsync({ id, data }),
+    updateInvoice: (
+      id: string,
+      data: { invoice_date: string; amount: number; description?: string }
+    ) => updateInvoiceMutation.mutateAsync({ id, data }),
     deleteInvoice: deleteInvoiceMutation.mutateAsync,
     isCreating: createInvoiceMutation.isPending,
     isUpdating: updateInvoiceMutation.isPending,
-    isDeleting: deleteInvoiceMutation.isPending
+    isDeleting: deleteInvoiceMutation.isPending,
   };
 };

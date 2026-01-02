@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { MessageSquare, X, Send, Loader2, Maximize2, Minimize2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useAuth } from '@/hooks/useAuth';
-import { cn } from '@/lib/utils';
-import { useAIChat } from '@/hooks/useAIChat';
-import { DataReportRenderer } from '@/components/chat/DataReportRenderer';
+import { useState } from "react";
+import { MessageSquare, X, Send, Loader2, Maximize2, Minimize2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/hooks/useAuth";
+import { cn } from "@/lib/utils";
+import { useAIChat } from "@/hooks/useAIChat";
+import { DataReportRenderer } from "@/components/chat/DataReportRenderer";
 
 export function AIAssistantChat() {
   const { user } = useAuth();
@@ -15,7 +15,7 @@ export function AIAssistantChat() {
   const { messages, isLoading, sendMessage, inputValue, setInputValue } = useAIChat();
 
   // Apenas mostrar para jbento1@gmail.com
-  if (user?.email !== 'jbento1@gmail.com') {
+  if (user?.email !== "jbento1@gmail.com") {
     return null;
   }
 
@@ -26,7 +26,7 @@ export function AIAssistantChat() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -39,12 +39,9 @@ export function AIAssistantChat() {
         <Button
           onClick={() => setIsOpen(true)}
           variant="gradient"
-          className={cn(
-            "fixed bottom-6 right-6 h-14 w-14 rounded-lg shadow-elegant",
-            "z-50 p-0"
-          )}
+          className={cn("shadow-elegant fixed right-6 bottom-6 h-14 w-14 rounded-lg", "z-50 p-0")}
         >
-          <MessageSquare className="h-6 w-6 text-white" />
+          <MessageSquare className="h-6 w-6 text-primary-foreground" />
         </Button>
       )}
 
@@ -52,21 +49,21 @@ export function AIAssistantChat() {
       {isOpen && (
         <div
           className={cn(
-            "fixed bg-background/95 backdrop-blur-xl border border-border/50 shadow-elegant flex flex-col overflow-hidden z-50 transition-all duration-300", // Classes base
+            "bg-background/95 border-border/50 shadow-elegant fixed z-50 flex flex-col overflow-hidden border backdrop-blur-xl transition-all duration-300", // Classes base
             isFullScreen
-              ? "inset-0 rounded-none w-full h-full" // Modo Full Screen
-              : "bottom-6 right-6 w-[400px] h-[600px] rounded-3xl animate-in slide-in-from-bottom-4" // Modo Normal
+              ? "inset-0 h-full w-full rounded-none" // Modo Full Screen
+              : "animate-in slide-in-from-bottom-4 right-6 bottom-6 h-[600px] w-[400px] rounded-3xl" // Modo Normal
           )}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border/50 bg-accent/20 shrink-0">
+          <div className="border-border/50 bg-accent/20 flex shrink-0 items-center justify-between border-b p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-[var(--btn-gradient-from)] flex items-center justify-center shadow-lg shadow-[var(--btn-shadow)]">
-                <MessageSquare className="h-5 w-5 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--btn-gradient-from)] shadow-[var(--btn-shadow)] shadow-lg">
+                <MessageSquare className="h-5 w-5 text-primary-foreground" />
               </div>
               <div>
-                <h3 className="font-semibold text-foreground">Assistente IA</h3>
-                <p className="text-xs text-muted-foreground">Powered by Gemini 2.5 Flash</p>
+                <h3 className="text-foreground font-semibold">Assistente IA</h3>
+                <p className="text-muted-foreground text-xs">Powered by Gemini 2.5 Flash</p>
               </div>
             </div>
 
@@ -76,7 +73,7 @@ export function AIAssistantChat() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsFullScreen(!isFullScreen)}
-                className="h-8 w-8 rounded-lg hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                className="hover:bg-muted/50 text-muted-foreground hover:text-foreground h-8 w-8 rounded-lg"
                 title={isFullScreen ? "Restaurar" : "Tela Cheia"}
               >
                 {isFullScreen ? (
@@ -94,7 +91,7 @@ export function AIAssistantChat() {
                   setIsOpen(false);
                   setIsFullScreen(false); // Reseta full screen ao fechar
                 }}
-                className="h-8 w-8 rounded-full hover:bg-red-500/10 hover:text-red-500 hover:rotate-90 transition-all duration-300 group"
+                className="group h-8 w-8 rounded-full transition-all duration-300 hover:rotate-90 hover:bg-red-500/10 hover:text-red-500"
               >
                 <X className="h-4 w-4 transition-transform" />
               </Button>
@@ -105,25 +102,24 @@ export function AIAssistantChat() {
           <ScrollArea className="flex-1 p-4">
             <div className="space-y-4">
               {messages.length === 0 && (
-                <div className="text-center text-muted-foreground py-8">
+                <div className="text-muted-foreground py-8 text-center">
                   <p className="text-sm">Olá! Como posso ajudar você hoje?</p>
-                  <p className="text-xs mt-2">Posso analisar dados, criar registros e muito mais.</p>
+                  <p className="mt-2 text-xs">
+                    Posso analisar dados, criar registros e muito mais.
+                  </p>
                 </div>
               )}
 
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
-                  className={cn(
-                    "flex",
-                    msg.role === 'user' ? "justify-end" : "justify-start"
-                  )}
+                  className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}
                 >
                   <div
                     className={cn(
                       "max-w-[85%] rounded-2xl px-4 py-3 shadow-sm", // Aumentei largura máx para 85% para caber tabela
-                      msg.role === 'user'
-                        ? "bg-gradient-to-r from-[var(--btn-gradient-from)] to-[var(--btn-gradient-to)] text-white"
+                      msg.role === "user"
+                        ? "bg-gradient-to-r from-[var(--btn-gradient-from)] to-[var(--btn-gradient-to)] text-primary-foreground"
                         : "bg-muted text-foreground overflow-hidden" // overflow-hidden para tabelas
                     )}
                   >
@@ -136,7 +132,7 @@ export function AIAssistantChat() {
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="bg-muted rounded-2xl px-4 py-2 shadow-sm">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
                   </div>
                 </div>
               )}
@@ -144,14 +140,14 @@ export function AIAssistantChat() {
           </ScrollArea>
 
           {/* Input */}
-          <div className="p-4 border-t border-border/50 bg-background/50">
+          <div className="border-border/50 bg-background/50 border-t p-4">
             <div className="flex gap-2">
               <Textarea
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Digite sua mensagem..."
-                className="min-h-[44px] max-h-[120px] resize-none rounded-2xl"
+                className="max-h-[120px] min-h-[44px] resize-none rounded-2xl"
                 disabled={isLoading}
               />
               <Button
@@ -159,9 +155,9 @@ export function AIAssistantChat() {
                 disabled={!inputValue.trim() || isLoading}
                 size="icon"
                 variant="gradient"
-                className="h-11 w-11 rounded-lg shrink-0"
+                className="h-11 w-11 shrink-0 rounded-lg"
               >
-                <Send className="h-4 w-4 text-white" />
+                <Send className="h-4 w-4 text-primary-foreground" />
               </Button>
             </div>
           </div>

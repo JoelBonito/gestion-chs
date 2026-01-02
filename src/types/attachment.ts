@@ -1,4 +1,3 @@
-
 export interface Attachment {
   id: string;
   entity_type: string;

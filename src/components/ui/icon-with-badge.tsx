@@ -12,7 +12,7 @@ export const IconWithBadge: React.FC<IconWithBadgeProps> = ({
   icon,
   count = 0,
   className,
-  badgeClassName
+  badgeClassName,
 }) => {
   return (
     <div className={cn("relative inline-flex", className)}>
@@ -20,7 +20,7 @@ export const IconWithBadge: React.FC<IconWithBadgeProps> = ({
       {count > 0 && (
         <span
           className={cn(
-            "absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-lg h-4 w-4 flex items-center justify-center font-semibold min-w-[16px]",
+            "bg-primary text-primary-foreground absolute -top-1 -right-1 flex h-4 w-4 min-w-[16px] items-center justify-center rounded-lg text-xs font-semibold",
             badgeClassName
           )}
         >
