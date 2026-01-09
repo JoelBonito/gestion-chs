@@ -1,36 +1,21 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye, Receipt, DollarSign, Plus, Paperclip } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { useToast } from "@/hooks/use-toast";
-import { EncomendaView } from "@/components/encomendas";
-import { PagamentoFornecedorForm } from "@/components/financeiro";
-import { AttachmentManager } from "@/components/shared";
+import EncomendaView from "@/components/EncomendaView";
+import PagamentoFornecedorForm from "@/components/PagamentoFornecedorForm";
+import { AttachmentManager } from "@/components/AttachmentManager";
 import { IconWithBadge } from "@/components/ui/icon-with-badge";
-import { PaymentDetailsModal } from "@/components/financeiro";
-import { OrderItemsView } from "@/components/shared";
+import { PaymentDetailsModal } from "@/components/PaymentDetailsModal";
+import { OrderItemsView } from "@/components/OrderItemsView";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useContasPagarTranslation } from "@/hooks/useContasPagarTranslation";
 
 interface ContaPagar {
   id: string;
@@ -60,7 +45,35 @@ export default function ContasPagar() {
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const { toast } = useToast();
 
-  const { t, isHam, isFelipe } = useContasPagarTranslation();
+  const isHam = (userEmail?.toLowerCase() ?? "") === "ham@admin.com";
+  const isFelipe = (userEmail?.toLowerCase() ?? "") === "felipe@colaborador.com";
+
+  // i18n básico
+  const lang: "pt" | "fr" = isHam ? "fr" : "pt";
+  const t = (k: string) => {
+    const d: Record<string, { pt: string; fr: string }> = {
+      "Contas a Pagar": { pt: "Contas a Pagar", fr: "Comptes à payer" },
+      "Pedido": { pt: "Pedido", fr: "Commande" },
+      "Fornecedor": { pt: "Fornecedor", fr: "Fournisseur" },
+      "Valor Total": { pt: "Valor Total", fr: "Montant total" },
+      "Valor Pago": { pt: "Valor Pago", fr: "Montant payé" },
+      "Saldo": { pt: "Saldo", fr: "Solde" },
+      "Data": { pt: "Data", fr: "Date" },
+      "Status": { pt: "Status", fr: "Statut" },
+      "Ações": { pt: "Ações", fr: "Actions" },
+      "Ver Detalhes": { pt: "Ver Detalhes", fr: "Voir détails" },
+      "Registrar Pagamento": { pt: "Registrar Pagamento", fr: "Enregistrer paiement" },
+      "Anexar Comprovante": { pt: "Anexar Comprovante", fr: "Joindre justificatif" },
+      "Carregando...": { pt: "Carregando...", fr: "Chargement..." },
+      "Mostrar Concluídos": { pt: "Mostrar Concluídos", fr: "Afficher terminés" },
+      "Compras - Fornecedores": { pt: "Compras - Fornecedores", fr: "Achats - Fournisseurs" },
+      "Encomendas com saldo devedor para fornecedores": { pt: "Encomendas com saldo devedor para fornecedores", fr: "Commandes avec solde débiteur aux fournisseurs" },
+      "Detalhes da Conta a Pagar": { pt: "Detalhes da Conta a Pagar", fr: "Détails du compte à payer" },
+      "Comprovantes e Anexos": { pt: "Comprovantes e Anexos", fr: "Justificatifs et pièces jointes" },
+      "Comprovantes de Pagamento": { pt: "Comprovantes de Pagamento", fr: "Justificatifs de paiement" },
+    };
+    return d[k]?.[lang] ?? k;
+  };
 
   useEffect(() => {
     const getUser = async () => {
@@ -70,13 +83,12 @@ export default function ContasPagar() {
     getUser();
   }, []);
 
-  const fetchContas = useCallback(async () => {
+  const fetchContas = async () => {
     setLoading(true);
     try {
       let query = supabase
         .from("encomendas")
-        .select(
-          `
+        .select(`
           id,
           numero_encomenda,
           fornecedor_id,
@@ -87,21 +99,14 @@ export default function ContasPagar() {
           data_criacao,
           status,
           etiqueta
-        `
-        );
-
-      // Filtro de saldo:
-      // Se NÃO mostrar concluídos: mostra apenas saldo > 0.01 (dívidas ativas)
-      // Se mostrar concluídos: mostra TUDO (dívidas, zerados e saldos negativos/créditos)
-      if (!showCompleted) {
-        query = query.gt("saldo_devedor_fornecedor", 0.01);
-      }
+        `)
+        .gte("saldo_devedor_fornecedor", showCompleted ? 0 : 0.01);
 
       // Filtro para Felipe - apenas fornecedores específicos
       if (isFelipe) {
         query = query.in("fornecedor_id", [
           "f0920a27-752c-4483-ba02-e7f32beceef6",
-          "b8f995d2-47dc-4c8f-9779-ce21431f5244",
+          "b8f995d2-47dc-4c8f-9779-ce21431f5244"
         ]);
       }
 
@@ -109,13 +114,10 @@ export default function ContasPagar() {
 
       if (error) throw error;
 
-      const contasPagar: ContaPagar[] = (data || []).map((item) => {
-        const row = item as unknown as ContaPagar;
-        return {
-          ...row,
-          encomenda_id: row.id,
-        };
-      });
+      const contasPagar: ContaPagar[] = (data || []).map((item: any) => ({
+        ...item,
+        encomenda_id: item.id
+      }));
       setContas(contasPagar);
     } catch (error) {
       console.error("Erro ao carregar contas a pagar:", error);
@@ -127,11 +129,13 @@ export default function ContasPagar() {
     } finally {
       setLoading(false);
     }
-  }, [showCompleted, isFelipe, toast]);
+  };
 
   useEffect(() => {
-    fetchContas();
-  }, [showCompleted, fetchContas]);
+    if (userEmail) {
+      fetchContas();
+    }
+  }, [userEmail, showCompleted]);
 
   const handlePaymentSuccess = () => {
     fetchContas();
@@ -152,7 +156,7 @@ export default function ContasPagar() {
     loadPaymentCounts();
   };
 
-  const loadAttachmentCounts = useCallback(async () => {
+  const loadAttachmentCounts = async () => {
     if (contas.length === 0) return;
 
     try {
@@ -161,10 +165,10 @@ export default function ContasPagar() {
       await Promise.all(
         contas.map(async (conta) => {
           const { count, error } = await supabase
-            .from("attachments")
-            .select("*", { count: "exact", head: true })
-            .eq("entity_type", "payable")
-            .eq("entity_id", conta.id);
+            .from('attachments')
+            .select('*', { count: 'exact', head: true })
+            .eq('entity_type', 'payable')
+            .eq('entity_id', conta.id);
 
           if (!error) {
             counts[conta.id] = count || 0;
@@ -174,11 +178,11 @@ export default function ContasPagar() {
 
       setAttachmentCounts(counts);
     } catch (error) {
-      console.error("Error loading attachment counts:", error);
+      console.error('Error loading attachment counts:', error);
     }
-  }, [contas]);
+  };
 
-  const loadPaymentCounts = useCallback(async () => {
+  const loadPaymentCounts = async () => {
     if (contas.length === 0) return;
 
     try {
@@ -187,9 +191,9 @@ export default function ContasPagar() {
       await Promise.all(
         contas.map(async (conta) => {
           const { count, error } = await supabase
-            .from("pagamentos_fornecedor")
-            .select("*", { count: "exact", head: true })
-            .eq("encomenda_id", conta.id);
+            .from('pagamentos_fornecedor')
+            .select('*', { count: 'exact', head: true })
+            .eq('encomenda_id', conta.id);
 
           if (!error) {
             counts[conta.id] = count || 0;
@@ -199,22 +203,22 @@ export default function ContasPagar() {
 
       setPaymentCounts(counts);
     } catch (error) {
-      console.error("Error loading payment counts:", error);
+      console.error('Error loading payment counts:', error);
     }
-  }, [contas]);
+  };
 
   useEffect(() => {
     if (contas.length > 0) {
       loadAttachmentCounts();
       loadPaymentCounts();
     }
-  }, [contas, loadAttachmentCounts, loadPaymentCounts]);
+  }, [contas]);
 
   if (loading) {
     return (
       <Card>
         <CardContent className="p-6">
-          <p className="text-muted-foreground text-center">{t("Carregando...")}</p>
+          <p className="text-center text-muted-foreground">{t("Carregando...")}</p>
         </CardContent>
       </Card>
     );
@@ -224,9 +228,7 @@ export default function ContasPagar() {
     return (
       <Card>
         <CardContent className="p-6">
-          <p className="text-muted-foreground text-center">
-            {t("Nenhuma conta a pagar encontrada")}
-          </p>
+          <p className="text-center text-muted-foreground">{t("Nenhuma conta a pagar encontrada")}</p>
         </CardContent>
       </Card>
     );
@@ -234,28 +236,25 @@ export default function ContasPagar() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <Card className="shadow-card bg-card dark:bg-[#1c202a] border-border/50">
+      <Card className="shadow-card bg-card border-border/50">
         <CardHeader className="px-4 sm:px-6">
-          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="text-warning h-5 w-5" />
+                <DollarSign className="h-5 w-5 text-warning" />
                 {t("Compras - Fornecedores")}
               </CardTitle>
               <CardDescription>
                 {t("Encomendas com saldo devedor para fornecedores")}
               </CardDescription>
             </div>
-            <div className="bg-muted/30 border-border/30 group flex items-center space-x-3 rounded-xl border px-3 py-1.5 shadow-inner">
+            <div className="flex items-center space-x-3 bg-muted/30 px-3 py-1.5 rounded-xl border border-border/30 shadow-inner group">
               <Switch
                 id="show-completed-payable"
                 checked={showCompleted}
                 onCheckedChange={setShowCompleted}
               />
-              <Label
-                htmlFor="show-completed-payable"
-                className="cursor-pointer text-xs font-semibold tracking-wider uppercase"
-              >
+              <Label htmlFor="show-completed-payable" className="text-xs font-semibold uppercase tracking-wider cursor-pointer">
                 {t("Mostrar Concluídos")}
               </Label>
             </div>
@@ -264,10 +263,10 @@ export default function ContasPagar() {
 
         <CardContent className="px-4 sm:px-6">
           {/* Tabela apenas no desktop */}
-          <div className="border-border/40 bg-popover dark:bg-[#1c202a] hidden overflow-hidden overflow-x-auto rounded-xl border shadow-sm xl:block">
+          <div className="hidden xl:block overflow-x-auto rounded-xl border border-border/40 overflow-hidden bg-popover shadow-sm">
             <Table>
-              <TableHeader className="bg-popover border-border/40 border-b">
-                <TableRow className="border-b-0 transition-none hover:bg-transparent">
+              <TableHeader className="bg-popover border-b border-border/40">
+                <TableRow className="hover:bg-transparent transition-none border-b-0">
                   <TableHead>{t("Pedido")}</TableHead>
                   <TableHead>{t("Fornecedor")}</TableHead>
                   <TableHead>Data Criação</TableHead>
@@ -283,23 +282,21 @@ export default function ContasPagar() {
                 {contas.map((conta) => (
                   <TableRow
                     key={conta.id}
-                    className="bg-popover hover:bg-muted/30 border-border group cursor-pointer border-b transition-colors last:border-0 dark:border-white/5"
+                    className="bg-popover hover:bg-muted/30 transition-colors border-b border-border dark:border-white/5 cursor-pointer group last:border-0"
                     onClick={() => handleViewDetails(conta)}
                   >
                     <TableCell className="font-medium">
                       <div className="flex flex-col">
-                        <span className="group-hover:text-primary transition-colors">
-                          {conta.numero_encomenda}
-                        </span>
+                        <span className="group-hover:text-primary transition-colors">{conta.numero_encomenda}</span>
                         <Badge variant="info" className="mt-0.5">
                           {conta.etiqueta || "Nenhum"}
                         </Badge>
                       </div>
                     </TableCell>
 
-                    <TableCell>{conta.fornecedores?.nome || "N/A"}</TableCell>
+                    <TableCell>{conta.fornecedores?.nome || 'N/A'}</TableCell>
 
-                    <TableCell className="text-muted-foreground text-sm">
+                    <TableCell className="text-sm text-muted-foreground">
                       {new Date(conta.data_criacao).toLocaleDateString()}
                     </TableCell>
 
@@ -311,16 +308,16 @@ export default function ContasPagar() {
                       {formatCurrencyEUR(conta.valor_pago_fornecedor)}
                     </TableCell>
 
-                    <TableCell className="text-warning font-semibold">
+                    <TableCell className="font-semibold text-warning">
                       {formatCurrencyEUR(conta.saldo_devedor_fornecedor)}
                     </TableCell>
 
-                    <TableCell className="text-muted-foreground text-sm">
+                    <TableCell className="text-sm text-muted-foreground">
                       {paymentCounts[conta.id] > 0 ? (
                         <Button
                           variant="link"
                           size="sm"
-                          className="text-primary h-auto p-0 underline"
+                          className="h-auto p-0 text-primary underline"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedPaymentConta(conta);
@@ -330,7 +327,7 @@ export default function ContasPagar() {
                           {paymentCounts[conta.id]} pag.
                         </Button>
                       ) : (
-                        "Nenhum"
+                        'Nenhum'
                       )}
                     </TableCell>
 
@@ -339,10 +336,7 @@ export default function ContasPagar() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewDetails(conta);
-                          }}
+                          onClick={(e) => { e.stopPropagation(); handleViewDetails(conta); }}
                           title={t("Ver Detalhes")}
                           type="button"
                           className="hover:text-primary hover:bg-primary/10 transition-colors"
@@ -384,13 +378,10 @@ export default function ContasPagar() {
                                 />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent
-                              className="bg-background border-border max-h-[90vh] w-[95vw] max-w-2xl overflow-y-auto"
-                              aria-describedby=""
-                            >
-                              <DialogHeader className="mb-4 border-b pb-4">
-                                <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-                                  <Paperclip className="text-primary h-5 w-5" />
+                            <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-background border-border" aria-describedby="">
+                              <DialogHeader className="border-b pb-4 mb-4">
+                                <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                                  <Paperclip className="h-5 w-5 text-primary" />
                                   {t("Anexar Comprovante")}
                                 </DialogTitle>
                               </DialogHeader>
@@ -410,7 +401,7 @@ export default function ContasPagar() {
 
                 {contas.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-muted-foreground py-8 text-center">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       {t("Nenhuma conta a pagar encontrada")}
                     </TableCell>
                   </TableRow>
@@ -420,10 +411,10 @@ export default function ContasPagar() {
           </div>
 
           {/* Lista em cartões no mobile/tablet */}
-          <div className="space-y-3 xl:hidden">
+          <div className="xl:hidden space-y-3">
             {contas.length === 0 && (
-              <Card className="border-dashed shadow-none">
-                <CardContent className="text-muted-foreground p-6 text-center">
+              <Card className="shadow-none border-dashed">
+                <CardContent className="p-6 text-center text-muted-foreground">
                   {t("Nenhuma conta a pagar encontrada")}
                 </CardContent>
               </Card>
@@ -431,48 +422,38 @@ export default function ContasPagar() {
             {contas.map((conta) => (
               <Card
                 key={conta.id}
-                className="bg-popover border-border/50 cursor-pointer overflow-hidden transition-all active:scale-[0.98]"
+                className="overflow-hidden bg-popover border-border/50 cursor-pointer active:scale-[0.98] transition-all"
                 onClick={() => handleViewDetails(conta)}
               >
-                <CardContent className="space-y-2 p-4">
+                <CardContent className="p-4 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold">
-                        #{conta.numero_encomenda}
-                      </div>
-                      <Badge variant="info" className="mt-0.5">
-                        {conta.etiqueta || "Nenhum"}
-                      </Badge>
+                      <div className="text-sm font-semibold truncate">#{conta.numero_encomenda}</div>
+                      <Badge variant="info" className="mt-0.5">{conta.etiqueta || "Nenhum"}</Badge>
                     </div>
-                    <div className="text-muted-foreground shrink-0 text-sm">
+                    <div className="text-sm text-muted-foreground shrink-0">
                       {new Date(conta.data_criacao).toLocaleDateString()}
                     </div>
                   </div>
-                  <div className="truncate text-sm">{conta.fornecedores?.nome || "N/A"}</div>
+                  <div className="text-sm truncate">{conta.fornecedores?.nome || 'N/A'}</div>
                   <div className="grid grid-cols-3 gap-2 text-sm">
                     <div>
                       <div className="text-muted-foreground">{t("Valor Total")}</div>
-                      <div className="font-semibold">
-                        {formatCurrencyEUR(conta.valor_total_custo)}
-                      </div>
+                      <div className="font-semibold">{formatCurrencyEUR(conta.valor_total_custo)}</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">{t("Valor Pago")}</div>
-                      <div className="text-success">
-                        {formatCurrencyEUR(conta.valor_pago_fornecedor)}
-                      </div>
+                      <div className="text-success">{formatCurrencyEUR(conta.valor_pago_fornecedor)}</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">{t("Saldo")}</div>
-                      <div className="text-warning font-semibold">
-                        {formatCurrencyEUR(conta.saldo_devedor_fornecedor)}
-                      </div>
+                      <div className="font-semibold text-warning">{formatCurrencyEUR(conta.saldo_devedor_fornecedor)}</div>
                     </div>
                   </div>
-                  <div className="text-muted-foreground text-xs">
+                  <div className="text-xs text-muted-foreground">
                     {paymentCounts[conta.id] > 0 ? (
                       <button
-                        className="text-primary cursor-pointer underline"
+                        className="text-primary underline cursor-pointer"
                         onClick={(ev) => {
                           ev.stopPropagation();
                           setSelectedPaymentConta(conta);
@@ -482,42 +463,29 @@ export default function ContasPagar() {
                         {paymentCounts[conta.id]} pag.
                       </button>
                     ) : (
-                      "Nenhum"
+                      'Nenhum'
                     )}
                   </div>
-                  <div
-                    className="flex flex-col gap-2 pt-1 sm:flex-row"
-                    onClick={(ev) => ev.stopPropagation()}
-                  >
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full border border-sky-200/30 bg-sky-500/5 text-sky-600 hover:bg-sky-500/10 sm:w-auto dark:border-sky-800/30 dark:text-sky-400"
-                      onClick={() => handleViewDetails(conta)}
-                    >
-                      <Eye className="mr-2 h-4 w-4" /> {t("Ver Detalhes")}
+                  <div className="flex flex-col sm:flex-row gap-2 pt-1" onClick={(ev) => ev.stopPropagation()}>
+                    <Button variant="ghost" size="sm" className="w-full sm:w-auto bg-sky-500/5 hover:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200/30 dark:border-sky-800/30" onClick={() => handleViewDetails(conta)}>
+                      <Eye className="w-4 h-4 mr-2" /> {t("Ver Detalhes")}
                     </Button>
                     {!isFelipe && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full border border-emerald-200/30 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 sm:w-auto dark:border-emerald-800/30 dark:text-emerald-400"
+                        className="w-full sm:w-auto bg-emerald-500/5 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200/30 dark:border-emerald-800/30"
                         onClick={() => {
                           setSelectedConta(conta);
                           setShowPaymentForm(true);
                         }}
                       >
-                        <Plus className="mr-2 h-4 w-4" /> {t("Registrar Pagamento")}
+                        <Plus className="w-4 h-4 mr-2" /> {t("Registrar Pagamento")}
                       </Button>
                     )}
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="w-full border border-purple-200/30 bg-purple-500/5 text-purple-600 hover:bg-purple-500/10 sm:w-auto dark:border-purple-800/30 dark:text-purple-400"
-                          title={t("Anexar Comprovante")}
-                        >
+                        <Button variant="ghost" size="sm" className="w-full sm:w-auto bg-purple-500/5 hover:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200/30 dark:border-purple-800/30" title={t("Anexar Comprovante")}>
                           <IconWithBadge
                             icon={<Paperclip className="h-4 w-4" />}
                             count={attachmentCounts[conta.id] || 0}
@@ -525,13 +493,10 @@ export default function ContasPagar() {
                           <span className="ml-2">Anexos</span>
                         </Button>
                       </DialogTrigger>
-                      <DialogContent
-                        className="bg-background border-border max-h-[90vh] w-[95vw] max-w-2xl overflow-y-auto"
-                        aria-describedby={undefined}
-                      >
-                        <DialogHeader className="mb-4 border-b pb-4">
-                          <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-                            <Paperclip className="text-primary h-5 w-5" />
+                      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-background border-border" aria-describedby={undefined}>
+                        <DialogHeader className="border-b pb-4 mb-4">
+                          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                            <Paperclip className="h-5 w-5 text-primary" />
                             {t("Anexar Comprovante")}
                           </DialogTitle>
                         </DialogHeader>
@@ -554,13 +519,10 @@ export default function ContasPagar() {
       {/* Dialog: Registrar Pagamento Fornecedor */}
       {!isFelipe && selectedConta && (
         <Dialog open={showPaymentForm} onOpenChange={setShowPaymentForm}>
-          <DialogContent
-            className="bg-card border-border max-h-[90vh] w-[95vw] max-w-2xl overflow-y-auto"
-            aria-describedby=""
-          >
-            <DialogHeader className="mb-4 border-b pb-4">
-              <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-                <Plus className="text-primary h-5 w-5" />
+          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border" aria-describedby="">
+            <DialogHeader className="border-b pb-4 mb-4">
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Plus className="h-5 w-5 text-primary" />
                 {t("Registrar Pagamento")}
               </DialogTitle>
               <DialogDescription className="text-muted-foreground">
@@ -581,13 +543,10 @@ export default function ContasPagar() {
       {/* Dialog: Detalhes + Anexos */}
       {selectedConta && (
         <Dialog open={showDetails} onOpenChange={setShowDetails}>
-          <DialogContent
-            className="bg-card border-border max-h-[90vh] w-[95vw] max-w-4xl overflow-y-auto"
-            aria-describedby=""
-          >
-            <DialogHeader className="mb-4 border-b pb-4">
-              <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-                <Eye className="text-primary h-5 w-5" />
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-popover border-border" aria-describedby="">
+            <DialogHeader className="border-b pb-4 mb-4">
+              <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                <Eye className="h-5 w-5 text-primary" />
                 {t("Detalhes da Conta a Pagar")}
               </DialogTitle>
               <DialogDescription className="text-muted-foreground">
@@ -597,12 +556,10 @@ export default function ContasPagar() {
 
             <div className="space-y-6">
               {/* Detalhes da conta - Camada 3 (Destaque sobre Camada 2) */}
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                    {t("Pedido")}:
-                  </span>
-                  <p className="flex items-center gap-2 text-sm font-semibold">
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Pedido")}:</span>
+                  <p className="text-sm font-semibold flex items-center gap-2">
                     #{selectedConta.numero_encomenda}
                     {selectedConta.etiqueta && (
                       <Badge variant="info">{selectedConta.etiqueta}</Badge>
@@ -610,57 +567,34 @@ export default function ContasPagar() {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                    {t("Fornecedor")}:
-                  </span>
-                  <p className="text-sm font-semibold">
-                    {selectedConta.fornecedores?.nome || "N/A"}
-                  </p>
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Fornecedor")}:</span>
+                  <p className="text-sm font-semibold">{selectedConta.fornecedores?.nome || 'N/A'}</p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                    {t("Data")}:
-                  </span>
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Data")}:</span>
                   <p className="text-sm font-semibold italic">
                     {new Date(selectedConta.data_criacao).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                    {t("Status")}:
-                  </span>
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Status")}:</span>
                   <div>
-                    <Badge
-                      variant="outline"
-                      className="border-primary/30 text-primary bg-primary/5"
-                    >
+                    <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">
                       {selectedConta.status}
                     </Badge>
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                    {t("Valor Total")}:
-                  </span>
-                  <p className="text-sm font-bold">
-                    {formatCurrencyEUR(selectedConta.valor_total_custo)}
-                  </p>
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Valor Total")}:</span>
+                  <p className="text-sm font-bold">{formatCurrencyEUR(selectedConta.valor_total_custo)}</p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                    {t("Valor Pago")}:
-                  </span>
-                  <p className="text-success text-sm font-bold">
-                    {formatCurrencyEUR(selectedConta.valor_pago_fornecedor)}
-                  </p>
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Valor Pago")}:</span>
+                  <p className="text-sm font-bold text-success">{formatCurrencyEUR(selectedConta.valor_pago_fornecedor)}</p>
                 </div>
                 <div className="space-y-1">
-                  <span className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
-                    {t("Saldo")}:
-                  </span>
-                  <p className="text-warning text-sm font-black">
-                    {formatCurrencyEUR(selectedConta.saldo_devedor_fornecedor)}
-                  </p>
+                  <span className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{t("Saldo")}:</span>
+                  <p className="text-sm font-black text-warning">{formatCurrencyEUR(selectedConta.saldo_devedor_fornecedor)}</p>
                 </div>
               </div>
 
@@ -670,7 +604,7 @@ export default function ContasPagar() {
               </div>
 
               {/* Anexos - Camada 3 (Destaque) */}
-              <div className="border-border/40 border-t pt-6">
+              <div className="border-t border-border/40 pt-6">
                 <AttachmentManager
                   entityType="payable"
                   entityId={selectedConta.id}
