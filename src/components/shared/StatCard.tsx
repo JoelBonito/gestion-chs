@@ -14,6 +14,7 @@ interface StatCardProps {
   };
   variant?: "default" | "success" | "warning" | "destructive" | "info";
   className?: string;
+  headerAction?: ReactNode;
 }
 
 export default function StatCard({
@@ -24,6 +25,7 @@ export default function StatCard({
   trend,
   variant = "default",
   className,
+  headerAction,
 }: StatCardProps) {
   const getVariantStyles = (v: string) => {
     switch (v) {
@@ -64,7 +66,10 @@ export default function StatCard({
     >
       <CardContent className="relative z-10 p-6">
         <div className="flex items-center justify-between space-y-0 pb-2">
-          <p className="text-sm font-medium text-[var(--text-secondary)]">{title}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-[var(--text-secondary)]">{title}</p>
+            {headerAction}
+          </div>
           {icon && (
             <div
               className={cn(

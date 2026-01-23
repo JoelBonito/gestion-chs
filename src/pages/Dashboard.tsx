@@ -9,13 +9,24 @@ import { RoleBasedGuard } from "@/components/RoleBasedGuard";
 import { useAuth } from "@/hooks/useAuth";
 import { Home, ClipboardList, DollarSign, Truck, Package, Factory, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTopBarActions } from "@/context/TopBarActionsContext";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { setActions } = useTopBarActions();
+
+  // Estados para seleção de ano
+  const [performanceYear, setPerformanceYear] = useState(2026);
+  const [comissoesAnoYear, setComissoesAnoYear] = useState(2026);
 
   // Teleport System Status to TopBar
   useEffect(() => {
@@ -126,13 +137,18 @@ export default function Dashboard() {
   });
 
   const { data: comissoesAnuais = 0 } = useQuery({
-    queryKey: ["comissoes-anuais"],
+    queryKey: ["comissoes-anuais", comissoesAnoYear],
     queryFn: async () => {
-      const { data: itens, error } = await supabase.from("itens_encomenda").select(`
+      const { data: itens, error } = await supabase
+        .from("itens_encomenda")
+        .select(`
           quantidade,
           preco_unitario,
-          preco_custo
-        `);
+          preco_custo,
+          encomendas!inner(data_producao_estimada)
+        `)
+        .gte("encomendas.data_producao_estimada", `${comissoesAnoYear}-01-01`)
+        .lt("encomendas.data_producao_estimada", `${comissoesAnoYear + 1}-01-01`);
       if (error || !itens) return 0;
 
       const total = itens.reduce((acc, item) => {
@@ -147,7 +163,7 @@ export default function Dashboard() {
   });
 
   const { data: comissoesPorMes = [] } = useQuery({
-    queryKey: ["comissoes-2025"],
+    queryKey: ["comissoes-por-mes", performanceYear],
     queryFn: async () => {
       const { data: itens, error } = await supabase
         .from("itens_encomenda")
@@ -159,8 +175,8 @@ export default function Dashboard() {
           encomendas!inner(data_producao_estimada)
         `
         )
-        .gte("encomendas.data_producao_estimada", "2025-01-01")
-        .lt("encomendas.data_producao_estimada", "2026-01-01");
+        .gte("encomendas.data_producao_estimada", `${performanceYear}-01-01`)
+        .lt("encomendas.data_producao_estimada", `${performanceYear + 1}-01-01`);
       if (error || !itens) return [];
       const meses = Array(12).fill(0);
       itens.forEach((item) => {
@@ -340,9 +356,23 @@ export default function Dashboard() {
               <StatCard
                 title="Comissões (Ano)"
                 value={formatCurrencyEUR(comissoesAnuais)}
-                subtitle="Acumulado 2025"
+                subtitle={`Acumulado ${comissoesAnoYear}`}
                 icon={<Factory className="h-5 w-5" />}
                 variant="default"
+                headerAction={
+                  <Select
+                    value={String(comissoesAnoYear)}
+                    onValueChange={(value) => setComissoesAnoYear(Number(value))}
+                  >
+                    <SelectTrigger className="h-6 w-[70px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="2025">2025</SelectItem>
+                      <SelectItem value="2026">2026</SelectItem>
+                    </SelectContent>
+                  </Select>
+                }
               />
             </motion.div>
           </motion.div>
@@ -354,9 +384,21 @@ export default function Dashboard() {
             transition={{ delay: 0.4 }}
             className="space-y-4"
           >
-            <div className="mb-4 flex items-center gap-2">
+            <div className="mb-4 flex items-center gap-3">
               <TrendingUp className="text-muted-foreground h-5 w-5" />
-              <h3 className="text-foreground/80 text-lg font-semibold">Performance Mensal 2025</h3>
+              <h3 className="text-foreground/80 text-lg font-semibold">Performance Mensal</h3>
+              <Select
+                value={String(performanceYear)}
+                onValueChange={(value) => setPerformanceYear(Number(value))}
+              >
+                <SelectTrigger className="h-8 w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="2025">2025</SelectItem>
+                  <SelectItem value="2026">2026</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
