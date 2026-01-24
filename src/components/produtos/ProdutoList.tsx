@@ -26,6 +26,7 @@ interface ProdutoListProps {
     FORNECEDOR_PRODUCAO_ID: string;
     onEdit: (produto: Produto) => void;
     onView: (produto: Produto) => void;
+    onDuplicate: (produto: Produto) => void;
     onRefresh: () => void;
     t: (k: string) => string;
 }
@@ -38,6 +39,7 @@ export function ProdutoList({
     FORNECEDOR_PRODUCAO_ID,
     onEdit,
     onView,
+    onDuplicate,
     onRefresh,
     t,
 }: ProdutoListProps) {
@@ -222,6 +224,7 @@ export function ProdutoList({
                                                 produto={produto}
                                                 onEdit={() => onEdit(produto)}
                                                 onView={() => onView(produto)}
+                                                onDuplicate={() => onDuplicate(produto)}
                                                 onRefresh={onRefresh}
                                             />
                                         </div>
@@ -270,6 +273,7 @@ export function ProdutoList({
                                         produto={produto}
                                         onEdit={() => onEdit(produto)}
                                         onView={() => onView(produto)}
+                                        onDuplicate={() => onDuplicate(produto)}
                                         onRefresh={onRefresh}
                                         className="scale-90"
                                     />

@@ -46,6 +46,7 @@ export default function Produtos() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
+  const [duplicateProduto, setDuplicateProduto] = useState<Produto | null>(null);
 
   // Inicialização
   useEffect(() => {
@@ -99,6 +100,7 @@ export default function Produtos() {
   const handleSuccess = () => {
     setDialogOpen(false);
     setEditDialogOpen(false);
+    setDuplicateProduto(null);
     fetchProdutos();
     fetchFilters();
   };
@@ -111,6 +113,18 @@ export default function Produtos() {
   const handleView = (produto: Produto) => {
     setSelectedProduto(produto);
     setViewDialogOpen(true);
+  };
+
+  const handleDuplicate = (produto: Produto) => {
+    setDuplicateProduto(produto);
+    setDialogOpen(true);
+  };
+
+  const handleCreateOpenChange = (open: boolean) => {
+    setDialogOpen(open);
+    if (!open) {
+      setDuplicateProduto(null);
+    }
   };
 
   const filteredProdutos = useMemo(() => {
@@ -141,9 +155,14 @@ export default function Produtos() {
         subtitle={t("Gestão de catálogo e lista de preços")}
         actions={
           !isHam && (
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <Dialog open={dialogOpen} onOpenChange={handleCreateOpenChange}>
               <DialogTrigger asChild>
-                <Button variant="gradient">
+                <Button
+                  variant="gradient"
+                  onClick={() => {
+                    setDuplicateProduto(null);
+                  }}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   <span className="hidden sm:inline">{t("Novo Produto")}</span>
                   <span className="sm:hidden">{t("Novo Produto")}</span>
@@ -151,10 +170,12 @@ export default function Produtos() {
               </DialogTrigger>
               <DialogContent className="bg-card border-border/50 max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>{t("Novo Produto")}</DialogTitle>
+                  <DialogTitle>
+                    {duplicateProduto ? "Duplicar Produto" : t("Novo Produto")}
+                  </DialogTitle>
                   <DialogDescription>{t("Gestão de catálogo e lista de preços")}</DialogDescription>
                 </DialogHeader>
-                <ProdutoForm onSuccess={handleSuccess} />
+                <ProdutoForm onSuccess={handleSuccess} produto={duplicateProduto} />
               </DialogContent>
             </Dialog>
           )
@@ -204,6 +225,7 @@ export default function Produtos() {
           FORNECEDOR_PRODUCAO_ID={FORNECEDOR_PRODUCAO_ID}
           onEdit={handleEdit}
           onView={handleView}
+          onDuplicate={handleDuplicate}
           onRefresh={fetchProdutos}
           t={t}
         />

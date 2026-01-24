@@ -1,16 +1,4 @@
-import { useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Trash2, Edit, Eye, Archive, RefreshCcw, MoreHorizontal } from "lucide-react";
+import { Edit, Eye, Archive, RefreshCcw, MoreHorizontal, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logActivity } from "@/utils/activityLogger";
@@ -22,8 +10,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -32,6 +18,7 @@ interface ProdutoActionsProps {
   produto: Produto;
   onEdit: (produto: Produto) => void;
   onView: (produto: Produto) => void;
+  onDuplicate: (produto: Produto) => void;
   onRefresh: () => void;
   className?: string;
 }
@@ -40,11 +27,10 @@ export function ProdutoActions({
   produto,
   onEdit,
   onView,
+  onDuplicate,
   onRefresh,
   className,
 }: ProdutoActionsProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const { isCollaborator } = useIsCollaborator();
   const { user } = useAuth();
   const isHam = user?.email?.toLowerCase() === "ham@admin.com";
@@ -60,9 +46,13 @@ export function ProdutoActions({
     onEdit(produto);
   };
 
+  const handleDuplicate = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    onDuplicate(produto);
+  };
+
   const handleArchive = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
-    setIsLoading(true);
     try {
       const newStatus = !produto.ativo;
       const { error } = await supabase
@@ -84,33 +74,6 @@ export function ProdutoActions({
     } catch (error) {
       console.error("Erro ao alternar status do produto:", error);
       toast.error("Erro ao processar solicitação");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    setIsLoading(true);
-    try {
-      const { error } = await supabase.from("produtos").delete().eq("id", produto.id);
-
-      if (error) throw error;
-
-      await logActivity({
-        entity: "produto",
-        entity_id: produto.id,
-        action: "hard_delete",
-        details: { nome: produto.nome },
-      });
-
-      toast.success("Produto removido permanentemente");
-      setShowDeleteAlert(false);
-      onRefresh();
-    } catch (error) {
-      console.error("Erro ao deletar produto:", error);
-      toast.error("Erro ao deletar produto");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -163,6 +126,16 @@ export function ProdutoActions({
 
           {!isRestricted && (
             <DropdownMenuItem
+              onClick={handleDuplicate}
+              className="cursor-pointer py-2 transition-colors hover:bg-emerald-500/10 hover:text-emerald-500 focus:bg-emerald-500/10 focus:text-emerald-500"
+            >
+              <Copy className="mr-2.5 h-4 w-4" />
+              Duplicar
+            </DropdownMenuItem>
+          )}
+
+          {!isRestricted && (
+            <DropdownMenuItem
               onClick={handleArchive}
               className="cursor-pointer py-2 transition-colors hover:bg-orange-500/10 hover:text-orange-500 focus:bg-orange-500/10 focus:text-orange-500"
             >
@@ -177,54 +150,8 @@ export function ProdutoActions({
               )}
             </DropdownMenuItem>
           )}
-
-          {!isRestricted && (
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDeleteAlert(true);
-              }}
-              className="text-destructive cursor-pointer py-2 transition-colors hover:bg-red-500/10 hover:text-red-500 focus:bg-red-500/10 focus:text-red-500"
-            >
-              <Trash2 className="mr-2.5 h-4 w-4" />
-              Excluir
-            </DropdownMenuItem>
-          )}
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
-        <AlertDialogContent
-          onClick={(e) => e.stopPropagation()}
-          className="bg-card border-none shadow-2xl"
-        >
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir permanentemente o produto "{produto.nome}"? Esta ação
-              não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={(e) => e.stopPropagation()}
-              className="bg-popover border-border/20"
-            >
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete();
-              }}
-              disabled={isLoading}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-            >
-              Excluir permanentemente
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
