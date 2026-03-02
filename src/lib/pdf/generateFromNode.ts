@@ -1,6 +1,6 @@
 export async function generatePdfFromNode(el: HTMLElement, fileName: string) {
   const { jsPDF } = await import("jspdf");
-  const html2canvas = (await import("html2canvas")).default;
+  const html2canvas = (await import("html2canvas-pro")).default;
 
   const start = performance.now();
   console.log("[OrderPDF] start");

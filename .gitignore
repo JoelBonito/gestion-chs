@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local agent / AI framework files
+.agent/
+.claude/
+.gemini/
+CLAUDE.md
+
+# Python cache / local runtime artifacts
+__pycache__/
+*.py[cod]

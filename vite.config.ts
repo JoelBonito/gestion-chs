@@ -82,7 +82,7 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       devOptions: {
-        enabled: true,
+        enabled: false,
         type: 'module',
       }
     })
@@ -91,5 +91,45 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  esbuild: {
+    // Remove console.log and console.debug in production builds
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React - carregado sempre
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // Radix UI components - usado em muitos lugares
+          'vendor-radix': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-checkbox',
+            '@radix-ui/react-switch',
+            '@radix-ui/react-label',
+            '@radix-ui/react-slot',
+          ],
+          // Bibliotecas pesadas - lazy loaded
+          'vendor-charts': ['recharts'],
+          'vendor-motion': ['framer-motion'],
+          // Note: jspdf and html2canvas are NOT in manualChunks
+          // They are dynamically imported and will be split automatically
+          // Supabase e data fetching
+          'vendor-data': ['@supabase/supabase-js', '@tanstack/react-query'],
+          // Forms e validação
+          'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
+          // Utilitários
+          'vendor-utils': ['date-fns', 'clsx', 'tailwind-merge', 'class-variance-authority'],
+        },
+      },
+    },
+    // Aumentar limite de warning para chunks esperados
+    chunkSizeWarningLimit: 600,
   },
 }));

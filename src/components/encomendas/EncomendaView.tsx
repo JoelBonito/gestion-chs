@@ -9,8 +9,7 @@ import { useFormatters } from "@/hooks/useFormatters";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { shouldHidePrices } from "@/lib/permissions";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+// jspdf and html2canvas are dynamically imported to reduce initial bundle size
 
 type Encomenda = {
   id: string;
@@ -230,6 +229,12 @@ export default function EncomendaView({ encomendaId }: Props) {
     const toastId = toast.loading("Gerando PDF...");
 
     try {
+      // Dynamic import to reduce initial bundle size
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas-pro"),
+        import("jspdf"),
+      ]);
+
       const canvas = await html2canvas(contentRef.current, {
         scale: 2,
         useCORS: true,
