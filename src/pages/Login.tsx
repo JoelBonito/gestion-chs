@@ -71,16 +71,22 @@ export default function Login() {
         <div className="border-border rounded-xl border bg-[var(--surface-elevated)] p-8 shadow-sm">
           <div className="mb-8 flex flex-col items-center space-y-2 text-center">
             <div className="relative mb-6 flex h-24 w-full items-center justify-center">
-              <img
-                src="/chs-logo-light.png"
-                alt="Gestion CHS"
-                className="h-24 w-auto object-contain transition-transform hover:scale-105 dark:hidden"
-              />
-              <img
-                src="/chs-logo-dark.png"
-                alt="Gestion CHS"
-                className="hidden h-24 w-auto object-contain transition-transform hover:scale-105 dark:block"
-              />
+              <picture className="h-24 w-auto dark:hidden">
+                <source srcSet="/chs-logo-light.webp" type="image/webp" />
+                <img
+                  src="/chs-logo-light.png"
+                  alt="Gestion CHS"
+                  className="h-24 w-auto object-contain transition-transform hover:scale-105"
+                />
+              </picture>
+              <picture className="hidden h-24 w-auto dark:block">
+                <source srcSet="/chs-logo-dark.webp" type="image/webp" />
+                <img
+                  src="/chs-logo-dark.png"
+                  alt="Gestion CHS"
+                  className="h-24 w-auto object-contain transition-transform hover:scale-105"
+                />
+              </picture>
             </div>
             <h1 className="font-display text-3xl font-bold tracking-tight">Bem-vindo</h1>
             <p className="text-muted-foreground">

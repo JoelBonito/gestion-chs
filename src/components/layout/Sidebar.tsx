@@ -389,17 +389,23 @@ const SidebarContent = ({
             )}
           >
             {/* Logo para Light Mode (texto preto) */}
-            <img
-              src="/chs-logo-for-light-mode.png"
-              alt="CHS Logo"
-              className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 hover:scale-105 dark:hidden"
-            />
+            <picture className="absolute inset-0 h-full w-full dark:hidden">
+              <source srcSet="/chs-logo-for-light-mode.webp" type="image/webp" />
+              <img
+                src="/chs-logo-for-light-mode.png"
+                alt="CHS Logo"
+                className="h-full w-full object-contain transition-transform duration-300 hover:scale-105"
+              />
+            </picture>
             {/* Logo para Dark Mode (texto branco) */}
-            <img
-              src="/chs-logo-for-dark-mode.png"
-              alt="CHS Logo"
-              className="absolute inset-0 hidden h-full w-full object-contain transition-transform duration-300 hover:scale-105 dark:block"
-            />
+            <picture className="absolute inset-0 hidden h-full w-full dark:block">
+              <source srcSet="/chs-logo-for-dark-mode.webp" type="image/webp" />
+              <img
+                src="/chs-logo-for-dark-mode.png"
+                alt="CHS Logo"
+                className="h-full w-full object-contain transition-transform duration-300 hover:scale-105"
+              />
+            </picture>
           </div>
 
           {/* Mobile Close Button */}
