@@ -55,17 +55,19 @@ export default function Dashboard() {
     show: { y: 0, opacity: 1 },
   };
 
-  // --- QUERY LOGIC (UNCHANGED) ---
+  // --- QUERY LOGIC (OPTIMIZED) ---
   const { data: encomendasAtivas = 0 } = useQuery({
     queryKey: ["encomendas-ativas"],
     queryFn: async () => {
+      // Only select id for count - reduces payload
       const { data, error } = await supabase
         .from("encomendas")
-        .select("*")
+        .select("id", { count: "exact", head: true })
         .neq("status", "ENTREGUE");
       if (error) throw error;
       return data?.length || 0;
     },
+    staleTime: 1000 * 60 * 2, // Cache for 2 minutes
   });
 
   const { data: aReceber = 0 } = useQuery({
@@ -194,58 +196,65 @@ export default function Dashboard() {
   const { data: encomendasProgresso = [] } = useQuery({
     queryKey: ["encomendas-progresso"],
     queryFn: async () => {
+      // Select only fields used in the UI
       const { data, error } = await supabase
         .from("encomendas")
-        .select(
-          `
-          *,
+        .select(`
+          id,
+          numero_encomenda,
+          status,
+          data_criacao,
           clientes (nome)
-        `
-        )
+        `)
         .neq("status", "ENTREGUE")
         .order("data_criacao", { ascending: false })
         .limit(5);
       if (error) throw error;
       return data || [];
     },
+    staleTime: 1000 * 60 * 2,
   });
 
   const { data: pagamentosReceber = [] } = useQuery({
     queryKey: ["pagamentos-receber"],
     queryFn: async () => {
+      // Select only fields used in the UI
       const { data, error } = await supabase
         .from("encomendas")
-        .select(
-          `
-          *,
+        .select(`
+          id,
+          numero_encomenda,
+          saldo_devedor,
           clientes (nome)
-        `
-        )
+        `)
         .gt("saldo_devedor", 0)
         .order("data_criacao", { ascending: false })
         .limit(5);
       if (error) throw error;
       return data || [];
     },
+    staleTime: 1000 * 60 * 2,
   });
 
   const { data: pagamentosFazer = [] } = useQuery({
     queryKey: ["pagamentos-fazer"],
     queryFn: async () => {
+      // Select only fields used in the UI
       const { data, error } = await supabase
         .from("encomendas")
-        .select(
-          `
-          *,
+        .select(`
+          id,
+          numero_encomenda,
+          saldo_devedor_fornecedor,
           fornecedores (nome)
-        `
-        )
+        `)
         .gt("saldo_devedor_fornecedor", 0)
         .order("data_criacao", { ascending: false })
         .limit(5);
       if (error) throw error;
       return data || [];
     },
+    staleTime: 1000 * 60 * 2,
   });
 
   const getStatusInfo = (status: string) => {

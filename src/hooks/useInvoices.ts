@@ -19,47 +19,34 @@ export const useInvoices = () => {
   } = useQuery({
     queryKey,
     queryFn: async (): Promise<Invoice[]> => {
-      console.log("useInvoices - Buscando faturas");
-
+      // Using JOIN to fetch invoices with attachments in a single query (fixes N+1 problem)
       const { data: invoicesData, error: invoicesError } = await supabase
         .from("invoices")
-        .select("*")
+        .select(`
+          id,
+          invoice_date,
+          amount,
+          description,
+          attachment_id,
+          created_at,
+          created_by,
+          attachment:attachments(id, file_name, file_type, storage_url, storage_path)
+        `)
         .order("invoice_date", { ascending: false });
 
       if (invoicesError) {
-        console.error("useInvoices - Erro:", invoicesError);
         throw invoicesError;
       }
 
       if (!invoicesData || invoicesData.length === 0) {
-        console.log("useInvoices - Nenhuma fatura encontrada");
         return [];
       }
 
-      // Buscar anexos para faturas que tenham attachment_id
-      const invoicesWithAttachments = await Promise.all(
-        invoicesData.map(async (invoice) => {
-          if (invoice.attachment_id) {
-            const { data: attachment } = await supabase
-              .from("attachments")
-              .select("id, file_name, file_type, storage_url, storage_path")
-              .eq("id", invoice.attachment_id)
-              .single();
-
-            return {
-              ...invoice,
-              attachment,
-            };
-          }
-          return invoice;
-        })
-      );
-
-      console.log(`useInvoices - Encontradas ${invoicesWithAttachments.length} faturas`);
-      return invoicesWithAttachments as Invoice[];
+      return invoicesData as Invoice[];
     },
-    staleTime: 0, // Sempre buscar dados frescos
-    gcTime: 0, // Não manter cache
+    // Cache for 2 minutes - invalidated on mutations
+    staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 5,
   });
 
   const createInvoiceMutation = useMutation({

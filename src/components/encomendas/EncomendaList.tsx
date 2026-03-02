@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Package } from "lucide-react";
 import { EncomendaCard } from "./EncomendaCard";
@@ -55,6 +57,19 @@ export function EncomendaList({
         );
     }
 
+    const parentRef = useRef<HTMLDivElement>(null);
+
+    // Only virtualize if we have more than 20 items
+    const shouldVirtualize = encomendas.length > 20;
+
+    const virtualizer = useVirtualizer({
+        count: encomendas.length,
+        getScrollElement: () => parentRef.current,
+        estimateSize: () => 180, // Estimated card height + gap
+        overscan: 5,
+        enabled: shouldVirtualize,
+    });
+
     if (encomendas.length === 0) {
         return (
             <div className="bg-card border-border/50 flex flex-col items-center justify-center rounded-xl border border-dashed py-16 text-center shadow-sm">
@@ -67,29 +82,85 @@ export function EncomendaList({
         );
     }
 
+    // For small lists, render without virtualization
+    if (!shouldVirtualize) {
+        return (
+            <div className="grid grid-cols-1 gap-4">
+                {encomendas.map((e) => (
+                    <EncomendaCard
+                        key={e.id}
+                        encomenda={e}
+                        onView={() => onView(e)}
+                        onEdit={() => onEdit(e)}
+                        onDelete={() => onDelete(e.id)}
+                        onTransport={() => onTransport(e)}
+                        onStatusChange={onStatusChange}
+                        onDateUpdate={onDateUpdate}
+                        canEditOrders={canEditOrders}
+                        canEditProduction={canEditProduction}
+                        canEditDelivery={canEditDelivery}
+                        hidePrices={hidePrices}
+                        isHam={isHam}
+                        t={t}
+                        formatCurrency={formatCurrency}
+                        formatDate={formatDate}
+                        pesoTransporte={getPesoTransporte(e)}
+                    />
+                ))}
+            </div>
+        );
+    }
+
+    // Virtualized list for large datasets
     return (
-        <div className="grid grid-cols-1 gap-4">
-            {encomendas.map((e) => (
-                <EncomendaCard
-                    key={e.id}
-                    encomenda={e}
-                    onView={() => onView(e)}
-                    onEdit={() => onEdit(e)}
-                    onDelete={() => onDelete(e.id)}
-                    onTransport={() => onTransport(e)}
-                    onStatusChange={onStatusChange}
-                    onDateUpdate={onDateUpdate}
-                    canEditOrders={canEditOrders}
-                    canEditProduction={canEditProduction}
-                    canEditDelivery={canEditDelivery}
-                    hidePrices={hidePrices}
-                    isHam={isHam}
-                    t={t}
-                    formatCurrency={formatCurrency}
-                    formatDate={formatDate}
-                    pesoTransporte={getPesoTransporte(e)}
-                />
-            ))}
+        <div
+            ref={parentRef}
+            className="max-h-[calc(100vh-300px)] overflow-auto"
+        >
+            <div
+                style={{
+                    height: `${virtualizer.getTotalSize()}px`,
+                    width: "100%",
+                    position: "relative",
+                }}
+            >
+                {virtualizer.getVirtualItems().map((virtualRow) => {
+                    const e = encomendas[virtualRow.index];
+                    return (
+                        <div
+                            key={e.id}
+                            style={{
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                width: "100%",
+                                height: `${virtualRow.size}px`,
+                                transform: `translateY(${virtualRow.start}px)`,
+                            }}
+                            className="pb-4"
+                        >
+                            <EncomendaCard
+                                encomenda={e}
+                                onView={() => onView(e)}
+                                onEdit={() => onEdit(e)}
+                                onDelete={() => onDelete(e.id)}
+                                onTransport={() => onTransport(e)}
+                                onStatusChange={onStatusChange}
+                                onDateUpdate={onDateUpdate}
+                                canEditOrders={canEditOrders}
+                                canEditProduction={canEditProduction}
+                                canEditDelivery={canEditDelivery}
+                                hidePrices={hidePrices}
+                                isHam={isHam}
+                                t={t}
+                                formatCurrency={formatCurrency}
+                                formatDate={formatDate}
+                                pesoTransporte={getPesoTransporte(e)}
+                            />
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }
