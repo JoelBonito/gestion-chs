@@ -47,16 +47,7 @@ export function EncomendaList({
     formatDate,
     getPesoTransporte,
 }: EncomendaListProps) {
-    if (loading) {
-        return (
-            <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} className="h-40 w-full rounded-xl" />
-                ))}
-            </div>
-        );
-    }
-
+    // Hooks must be called before any early returns
     const parentRef = useRef<HTMLDivElement>(null);
 
     // Only virtualize if we have more than 20 items
@@ -69,6 +60,17 @@ export function EncomendaList({
         overscan: 5,
         enabled: shouldVirtualize,
     });
+
+    // Early return after hooks are called
+    if (loading) {
+        return (
+            <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-40 w-full rounded-xl" />
+                ))}
+            </div>
+        );
+    }
 
     if (encomendas.length === 0) {
         return (

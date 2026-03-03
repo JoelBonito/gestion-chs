@@ -107,7 +107,9 @@ export function ProdutoForm({ onSuccess, produto, isEditing = false }: ProdutoFo
   };
 
   const onSubmit = async (values: ProdutoFormValues) => {
+    console.log("🔵 [ProdutoForm] Iniciando onSubmit", { isEditing, produtoId: produto?.id });
     setLoading(true);
+
     try {
       const payload: any = {
         nome: values.nome,
@@ -125,20 +127,40 @@ export function ProdutoForm({ onSuccess, produto, isEditing = false }: ProdutoFo
         payload.fornecedor_id = values.fornecedor_id;
       }
 
+      console.log("🔵 [ProdutoForm] Payload preparado:", payload);
+
       if (isEditing && produto) {
-        const { error } = await supabase.from("produtos").update(payload).eq("id", produto.id);
+        console.log("🔵 [ProdutoForm] Executando UPDATE para produto:", produto.id);
+        const { data, error } = await supabase
+          .from("produtos")
+          .update(payload)
+          .eq("id", produto.id)
+          .select();
+
+        console.log("🔵 [ProdutoForm] Resposta UPDATE:", { data, error });
+
         if (error) throw error;
         toast.success("Produto atualizado com sucesso");
       } else {
-        const { error } = await supabase.from("produtos").insert(payload);
+        console.log("🔵 [ProdutoForm] Executando INSERT");
+        const { data, error } = await supabase
+          .from("produtos")
+          .insert(payload)
+          .select();
+
+        console.log("🔵 [ProdutoForm] Resposta INSERT:", { data, error });
+
         if (error) throw error;
         toast.success("Produto criado com sucesso");
       }
+
+      console.log("🟢 [ProdutoForm] Operação concluída com sucesso, chamando onSuccess");
       onSuccess?.();
     } catch (error: any) {
-      console.error("Erro ao salvar produto:", error);
+      console.error("🔴 [ProdutoForm] Erro ao salvar produto:", error);
       toast.error(error.message || "Erro ao salvar produto");
     } finally {
+      console.log("🔵 [ProdutoForm] Finalizando (setLoading false)");
       setLoading(false);
     }
   };
