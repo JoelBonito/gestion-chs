@@ -246,6 +246,50 @@
 
   html {
     scroll-behavior: smooth;
+    /* Reduz tamanho de fonte base para interface mais compacta */
+    font-size: 96.25%; /* ~15.4px - 10% maior que 87.5% */
+  }
+
+  /* Densidade Visual Profissional */
+  body {
+    /* Densidade compacta para telas de alta resolução */
+    --spacing-multiplier: 0.935; /* 10% maior que 0.85 */
+  }
+
+  /* Reduzir espaçamentos globalmente */
+  .space-y-4 > * + * {
+    margin-top: calc(1rem * var(--spacing-multiplier));
+  }
+
+  .space-y-6 > * + * {
+    margin-top: calc(1.5rem * var(--spacing-multiplier));
+  }
+
+  /* Compactar padding de containers */
+  [class*="p-4"],
+  [class*="py-4"],
+  [class*="px-4"] {
+    padding: calc(1rem * var(--spacing-multiplier));
+  }
+
+  [class*="p-6"],
+  [class*="py-6"],
+  [class*="px-6"] {
+    padding: calc(1.5rem * var(--spacing-multiplier));
+  }
+
+  /* Reduzir altura de botões e inputs */
+  button,
+  input,
+  select,
+  textarea {
+    line-height: 1.4;
+  }
+
+  /* Compactar cards e containers */
+  [class*="rounded-xl"],
+  [class*="rounded-lg"] {
+    --card-padding: calc(1.25rem * var(--spacing-multiplier));
   }
 }
 
@@ -274,6 +318,62 @@
 }
 
 @layer utilities {
+  /* ==== DENSIDADE VISUAL PROFISSIONAL ==== */
+
+  /* Tabelas compactas */
+  table {
+    @apply text-[0.813rem]; /* ~13px */
+  }
+
+  table th {
+    @apply py-2 px-3;
+  }
+
+  table td {
+    @apply py-1.5 px-3;
+  }
+
+  /* Badges e Tags compactos */
+  [class*="badge"],
+  [class*="tag"] {
+    @apply text-[0.75rem] py-0.5 px-2;
+  }
+
+  /* Botões com altura reduzida */
+  button:not([class*="h-"]) {
+    @apply min-h-[2.25rem]; /* ~36px em vez de 40px+ */
+  }
+
+  button[class*="size-sm"] {
+    @apply min-h-[1.875rem]; /* ~30px */
+  }
+
+  /* Inputs compactos */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    @apply h-9 text-sm; /* 36px altura, 14px fonte */
+  }
+
+  /* Cards com menos padding */
+  [class*="card"],
+  [class*="glass-card"] {
+    @apply p-4;
+  }
+
+  /* Headers de página compactos */
+  h1 {
+    @apply text-2xl; /* em vez de 3xl */
+  }
+
+  h2 {
+    @apply text-xl; /* em vez de 2xl */
+  }
+
+  h3 {
+    @apply text-lg; /* em vez de xl */
+  }
+
   .glass {
     @apply border border-[var(--border)] bg-[var(--surface)]/40 backdrop-blur-md;
   }

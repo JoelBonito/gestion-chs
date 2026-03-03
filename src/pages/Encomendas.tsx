@@ -398,7 +398,7 @@ export default function Encomendas() {
       {/* DIALOGS */}
       {/* Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] w-[95vw] max-w-4xl overflow-y-auto">
+        <DialogContent className="max-h-[90vh] w-[95vw] max-w-5xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t.newOrder}</DialogTitle>
             <DialogDescription>{t.manageOrders}</DialogDescription>
@@ -412,7 +412,7 @@ export default function Encomendas() {
         open={!!selectedEncomendaForView}
         onOpenChange={(open) => !open && setSelectedEncomendaForView(null)}
       >
-        <DialogContent className="bg-card max-h-[90vh] w-[95vw] max-w-4xl overflow-y-auto">
+        <DialogContent className="bg-card max-h-[90vh] w-[95vw] max-w-5xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {t.viewOrder} #{selectedEncomendaForView?.numero_encomenda}
@@ -428,7 +428,7 @@ export default function Encomendas() {
         open={!!selectedEncomendaForEdit}
         onOpenChange={(open) => !open && setSelectedEncomendaForEdit(null)}
       >
-        <DialogContent className="max-h-[90vh] w-[95vw] max-w-4xl overflow-y-auto">
+        <DialogContent className="max-h-[90vh] w-[95vw] max-w-5xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {t.editOrder} #{selectedEncomendaForEdit?.numero_encomenda}

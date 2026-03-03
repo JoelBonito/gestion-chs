@@ -309,22 +309,19 @@ export function ItensEncomendaManager({
               <table className="w-full bg-card text-sm">
                 <thead className="border-border/40 border-b bg-muted/50">
                   <tr>
-                    <th className="text-muted-foreground w-[35%] px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase">
+                    <th className="text-muted-foreground w-[54%] px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase">
                       Produto
                     </th>
-                    <th className="text-muted-foreground w-[10%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
+                    <th className="text-muted-foreground w-[8%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
                       Qtd.
                     </th>
                     <th className="text-muted-foreground w-[10%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
-                      Peso Un.
-                    </th>
-                    <th className="text-muted-foreground w-[12%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
                       Custo (€)
                     </th>
-                    <th className="text-muted-foreground w-[12%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
+                    <th className="text-muted-foreground w-[10%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
                       Venda (€)
                     </th>
-                    <th className="text-muted-foreground w-[15%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
+                    <th className="text-muted-foreground w-[12%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
                       Subtotal
                     </th>
                     <th className="w-[6%] px-4 py-3 text-center"></th>
@@ -391,9 +388,6 @@ export function ItensEncomendaManager({
                             placeholder="0"
                             className="ml-auto h-9 w-16 bg-background text-right text-xs"
                           />
-                        </td>
-                        <td className="text-muted-foreground px-4 py-2 text-right text-xs">
-                          {isFrete ? "-" : item.peso_produto ? `${item.peso_produto}g` : "0g"}
                         </td>
                         <td className="px-4 py-2">
                           <LocalInput
