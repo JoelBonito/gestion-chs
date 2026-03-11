@@ -11,6 +11,7 @@ interface EncomendaListProps {
     onEdit: (e: any) => void;
     onDelete: (id: string) => void;
     onTransport: (e: any) => void;
+    onDuplicate?: (e: any) => void;
     onStatusChange: () => void;
     onDateUpdate: (id: string, field: string, value: string) => void;
     // Permissions
@@ -35,6 +36,7 @@ export function EncomendaList({
     onEdit,
     onDelete,
     onTransport,
+    onDuplicate,
     onStatusChange,
     onDateUpdate,
     canEditOrders,
@@ -96,6 +98,7 @@ export function EncomendaList({
                         onEdit={() => onEdit(e)}
                         onDelete={() => onDelete(e.id)}
                         onTransport={() => onTransport(e)}
+                        onDuplicate={onDuplicate ? () => onDuplicate(e) : undefined}
                         onStatusChange={onStatusChange}
                         onDateUpdate={onDateUpdate}
                         canEditOrders={canEditOrders}
@@ -147,6 +150,7 @@ export function EncomendaList({
                                 onEdit={() => onEdit(e)}
                                 onDelete={() => onDelete(e.id)}
                                 onTransport={() => onTransport(e)}
+                                onDuplicate={onDuplicate ? () => onDuplicate(e) : undefined}
                                 onStatusChange={onStatusChange}
                                 onDateUpdate={onDateUpdate}
                                 canEditOrders={canEditOrders}

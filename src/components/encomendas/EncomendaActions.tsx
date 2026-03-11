@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { MoreVertical, Eye, Edit, Trash2, Truck } from "lucide-react";
+import { MoreVertical, Eye, Edit, Trash2, Truck, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -41,6 +41,7 @@ interface EncomendaActionsProps {
   onEdit?: (data: any) => void;
   onDelete?: () => void;
   onTransport?: () => void;
+  onDuplicate?: () => void;
   // Permissões passadas pelo componente pai
   canEditOrders?: boolean;
 }
@@ -51,6 +52,7 @@ export function EncomendaActions({
   onEdit,
   onDelete,
   onTransport,
+  onDuplicate,
   canEditOrders = false,
 }: EncomendaActionsProps) {
   const handleDelete = async () => {
@@ -104,6 +106,15 @@ export function EncomendaActions({
               >
                 <Truck className="text-muted-foreground mr-3 h-4 w-4 transition-colors group-hover:text-purple-500" />
                 Transporte
+              </DropdownMenuItem>
+            )}
+            {onDuplicate && (
+              <DropdownMenuItem
+                onClick={onDuplicate}
+                className="group cursor-pointer transition-colors hover:!bg-emerald-500/10 hover:!text-emerald-500"
+              >
+                <Copy className="text-muted-foreground mr-3 h-4 w-4 transition-colors group-hover:text-emerald-500" />
+                Duplicar
               </DropdownMenuItem>
             )}
             <AlertDialog>

@@ -57,6 +57,7 @@ interface EncomendaCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onTransport: () => void;
+  onDuplicate?: () => void;
   onStatusChange: () => void;
   onDateUpdate: (
     encomendaId: string,
@@ -84,6 +85,7 @@ function EncomendaCardComponent({
   onEdit,
   onDelete,
   onTransport,
+  onDuplicate,
   onStatusChange,
   onDateUpdate,
   canEditOrders,
@@ -126,6 +128,7 @@ function EncomendaCardComponent({
           onEdit={onEdit}
           onDelete={onDelete}
           onTransport={onTransport}
+          onDuplicate={onDuplicate}
           canEditOrders={canEditOrders}
         />
       </div>

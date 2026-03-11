@@ -250,6 +250,74 @@ export default function Encomendas() {
 
   const handleDelete = () => fetchEncomendas();
 
+  const handleDuplicate = async (encomendaOriginal: Encomenda) => {
+    try {
+      // 1. Fetch items from original order
+      const { data: itensOriginal, error: itensError } = await supabase
+        .from("itens_encomenda")
+        .select("produto_id, quantidade, preco_unitario, preco_custo")
+        .eq("encomenda_id", encomendaOriginal.id);
+
+      if (itensError) throw itensError;
+
+      // 2. Get next order number
+      const { data: lastEnc } = await supabase
+        .from("encomendas")
+        .select("numero_encomenda")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      const lastNum = lastEnc?.numero_encomenda
+        ? parseInt(lastEnc.numero_encomenda.replace(/\D/g, ""))
+        : 0;
+      const novoNumero = `ENC${String(lastNum + 1).padStart(3, "0")}`;
+
+      // 3. Create duplicated order
+      const { data: novaEncomenda, error: insertError } = await supabase
+        .from("encomendas")
+        .insert({
+          numero_encomenda: novoNumero,
+          etiqueta: encomendaOriginal.etiqueta || null,
+          cliente_id: encomendaOriginal.cliente_id,
+          fornecedor_id: encomendaOriginal.fornecedor_id,
+          data_producao_estimada: encomendaOriginal.data_producao_estimada || null,
+          data_envio_estimada: encomendaOriginal.data_envio_estimada || null,
+          status: "NOVO PEDIDO",
+          valor_total: encomendaOriginal.valor_total || 0,
+          valor_pago: 0,
+          observacoes: encomendaOriginal.observacoes || null,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // 4. Copy items to new order
+      if (itensOriginal && itensOriginal.length > 0) {
+        const novosItens = itensOriginal.map((item) => ({
+          encomenda_id: novaEncomenda.id,
+          produto_id: item.produto_id,
+          quantidade: item.quantidade,
+          preco_unitario: item.preco_unitario,
+          preco_custo: item.preco_custo,
+        }));
+
+        const { error: itensInsertError } = await supabase
+          .from("itens_encomenda")
+          .insert(novosItens);
+
+        if (itensInsertError) throw itensInsertError;
+      }
+
+      toast.success(`Encomenda duplicada! Nova: #${novoNumero}`);
+      fetchEncomendas();
+    } catch (error: any) {
+      console.error("Erro ao duplicar encomenda:", error);
+      toast.error(error.message || "Erro ao duplicar encomenda");
+    }
+  };
+
   const scopedEncomendas =
     isFelipe || isRosa
       ? encomendas.filter((e) => ALLOWED_SUPPLIERS_FOR_FELIPE.includes(e.fornecedor_id ?? ""))
@@ -361,6 +429,7 @@ export default function Encomendas() {
             onEdit={(e) => setSelectedEncomendaForEdit(e)}
             onDelete={handleDelete}
             onTransport={() => setTransportDialogOpen(true)}
+            onDuplicate={canEdit() && !readOnlyOrders ? handleDuplicate : undefined}
             onStatusChange={handleStatusChange}
             onDateUpdate={handleDateUpdate}
             canEditOrders={canEdit() && !isCollaborator && !readOnlyOrders}
