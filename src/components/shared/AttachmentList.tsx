@@ -3,8 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Download, Trash2, FileText, Image, File, ExternalLink, X } from "lucide-react";
-import { useAttachments } from "@/hooks/useAttachments";
-import { useTransporteAttachments } from "@/hooks/useTransporteAttachments";
 import { useUserRole } from "@/hooks/useUserRole";
 import {
   Dialog,
@@ -22,6 +20,9 @@ import { useAuth } from "@/hooks/useAuth";
 interface AttachmentListProps {
   entityType: string;
   entityId: string;
+  attachments?: any[];
+  isLoading?: boolean;
+  deleteAttachment?: (attachment: any) => Promise<void>;
   onChanged?: () => void;
   compact?: boolean;
   useTertiaryLayer?: boolean;
@@ -30,18 +31,14 @@ interface AttachmentListProps {
 export const AttachmentList: React.FC<AttachmentListProps> = ({
   entityType,
   entityId,
+  attachments = [],
+  isLoading = false,
+  deleteAttachment,
   onChanged,
   compact = false,
   useTertiaryLayer = false,
 }) => {
   const isTransporte = entityType === "transporte";
-  const genericAttachments = useAttachments(entityType, entityId);
-  const transporteAttachments = useTransporteAttachments(isTransporte ? entityId : "");
-
-  // Use the appropriate hook based on entity type
-  const { attachments, isLoading, deleteAttachment } = isTransporte
-    ? transporteAttachments
-    : genericAttachments;
 
   const { canEdit } = useUserRole();
   const { user } = useAuth();

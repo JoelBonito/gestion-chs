@@ -11,6 +11,9 @@ export interface Produto {
     referencia?: string | null;
     preco_venda?: number | null;
     preco_custo?: number | null;
+    preco_nonato?: number | null;
+    preco_tabela?: number | null;
+    preco_plus25?: number | null;
     stock_atual?: number | null;
     stock_minimo?: number | null;
     ativo: boolean;
@@ -25,6 +28,9 @@ export interface ProdutoFormData {
     referencia?: string;
     preco_venda?: number;
     preco_custo?: number;
+    preco_nonato?: number;
+    preco_tabela?: number;
+    preco_plus25?: number;
     stock_atual?: number;
     stock_minimo?: number;
 }

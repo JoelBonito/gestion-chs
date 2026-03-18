@@ -1,0 +1,27 @@
+name: n8n-automation
+version: 1.0.0
+description: n8n workflow automation squad, specialized in generating, validating and designing n8n integrations.
+author: InoveAI
+
+dependencies:
+  core_skills:
+    - clean-code
+    - api-patterns
+    - mcp-builder
+
+components:
+  agents:
+    - n8n-specialist
+  skills:
+    - n8n-orchestration
+  workflows:
+    - n8n-setup
+    - n8n-scaffold
+    - n8n-debug
+  scripts:
+    - setup_n8n_mcp.py
+
+platforms:
+  claude_code: true
+  codex: true
+  antigravity: true

@@ -124,16 +124,6 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
             });
           }
 
-          // Wait a bit to ensure all queries are invalidated
-          await new Promise((resolve) => setTimeout(resolve, 100));
-
-          // Force refetch of current data
-          if (isTransporte) {
-            await transporteAttachments.refetch();
-          } else {
-            await genericAttachments.refetch();
-          }
-
           // Toast de sucesso específico para projetos
           if (entityType === "projeto") {
             toast({
@@ -242,12 +232,6 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       });
     }
 
-    if (isTransporte) {
-      await transporteAttachments.refetch();
-    } else {
-      await genericAttachments.refetch();
-    }
-
     if (onChanged) {
       onChanged();
     }
@@ -270,6 +254,9 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
         <AttachmentList
           entityType={entityType}
           entityId={entityId}
+          attachments={isTransporte ? transporteAttachments.attachments : genericAttachments.attachments}
+          isLoading={isTransporte ? transporteAttachments.isLoading : genericAttachments.isLoading}
+          deleteAttachment={isTransporte ? transporteAttachments.deleteAttachment : genericAttachments.deleteAttachment}
           onChanged={handleDeleteSuccess}
           compact={true}
         />
@@ -299,6 +286,9 @@ export const AttachmentManager: React.FC<AttachmentManagerProps> = ({
       <AttachmentList
         entityType={entityType}
         entityId={entityId}
+        attachments={isTransporte ? transporteAttachments.attachments : genericAttachments.attachments}
+        isLoading={isTransporte ? transporteAttachments.isLoading : genericAttachments.isLoading}
+        deleteAttachment={isTransporte ? transporteAttachments.deleteAttachment : genericAttachments.deleteAttachment}
         onChanged={handleDeleteSuccess}
         useTertiaryLayer={useTertiaryLayer}
       />

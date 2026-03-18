@@ -1,0 +1,23 @@
+name: my-squad
+version: 1.0.0
+description: "Brief description of this specialist squad"
+author: "Your Name"
+
+components:
+  agents:
+    - lead-agent
+  skills:
+    - example
+  workflows:
+    - pipeline
+  scripts: []
+
+platforms:
+  claude_code: true
+  gemini: true
+  codex: true
+
+dependencies:
+  core_skills:
+    - clean-code
+    - brainstorming

@@ -206,7 +206,7 @@ export function ProdutoList({
                                     </TableCell>
                                     {!isHam && !hidePrices && (
                                         <TableCell className="py-4 text-right tabular-nums">
-                                            <span className="text-muted-foreground text-[12px] font-bold">
+                                            <span className={`text-[12px] font-bold ${produto.custo_tabela_breakdown ? "text-emerald-400" : "text-muted-foreground"}`}>
                                                 {formatCurrencyEUR(produto.preco_custo || 0)}
                                             </span>
                                         </TableCell>

@@ -32,3 +32,7 @@ CLAUDE.md
 # Python cache / local runtime artifacts
 __pycache__/
 *.py[cod]
+.agents/locks/
+.agents/.session_state.json
+.agents.bak/
+.gemini/mcp.json

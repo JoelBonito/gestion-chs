@@ -55,28 +55,29 @@ export default function Produtos() {
   }, []);
 
   const fetchFilters = async () => {
-    try {
-      const { data: produtosData } = await supabase
-        .from("produtos")
-        .select("tipo")
-        .not("tipo", "is", null);
+    // Run queries in parallel so a failure in one doesn't block the other
+    const [categoriasResult, fornecedoresResult] = await Promise.allSettled([
+      supabase.from("produtos").select("tipo").not("tipo", "is", null),
+      supabase.from("fornecedores").select("id, nome").eq("active", true).order("nome"),
+    ]);
 
-      if (produtosData) {
-        const uniqueCategories = [...new Set(produtosData.map((p) => p.tipo).filter(Boolean))];
+    if (categoriasResult.status === "fulfilled") {
+      const { data, error } = categoriasResult.value;
+      if (error) {
+        console.error("Erro ao carregar categorias:", error.message);
+      } else if (data) {
+        const uniqueCategories = [...new Set(data.map((p) => p.tipo).filter(Boolean))];
         setCategorias(uniqueCategories.map((cat) => ({ value: cat!, label: cat! })));
       }
+    }
 
-      const { data: fornecedoresData } = await supabase
-        .from("fornecedores")
-        .select("id, nome")
-        .eq("active", true)
-        .order("nome");
-
-      if (fornecedoresData) {
-        setFornecedores(fornecedoresData.map((f) => ({ value: f.id, label: f.nome })));
+    if (fornecedoresResult.status === "fulfilled") {
+      const { data, error } = fornecedoresResult.value;
+      if (error) {
+        console.error("Erro ao carregar fornecedores:", error.message);
+      } else if (data) {
+        setFornecedores(data.map((f) => ({ value: f.id, label: f.nome })));
       }
-    } catch (error) {
-      console.error("Erro ao carregar filtros:", error);
     }
   };
 
@@ -212,7 +213,14 @@ export default function Produtos() {
               <DialogTitle>{t("Detalhes do Produto")}</DialogTitle>
             </DialogHeader>
             {selectedProduto && (
-              <ProdutoView produto={selectedProduto} onClose={() => setViewDialogOpen(false)} />
+              <ProdutoView
+                produto={selectedProduto}
+                onClose={() => setViewDialogOpen(false)}
+                onEdit={() => {
+                  setViewDialogOpen(false);
+                  handleEdit(selectedProduto);
+                }}
+              />
             )}
           </DialogContent>
         </Dialog>

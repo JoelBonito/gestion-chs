@@ -56,3 +56,30 @@ export function parseCurrencyEUR(input: string | number | null | undefined): num
   const num = Number(normalized);
   return Number.isFinite(num) ? num : null;
 }
+
+// BRL / EUR conversion (fixed rate)
+export const BRL_EUR_RATE = 6; // 1 EUR = 6 BRL
+
+export function brlToEur(brl: number): number {
+  return brl / BRL_EUR_RATE;
+}
+
+export function eurToBrl(eur: number): number {
+  return eur * BRL_EUR_RATE;
+}
+
+const BRL_NUMBER = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+  useGrouping: true,
+});
+
+export function formatCurrencyBRL(
+  value: number | null | undefined,
+  fallback = "—"
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return fallback;
+  const negative = value < 0;
+  const abs = Math.abs(value);
+  return `${negative ? "-" : ""}R$ ${BRL_NUMBER.format(abs)}`;
+}

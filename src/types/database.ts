@@ -1,3 +1,13 @@
+export interface CustoBreakdown {
+  embalagem: number;
+  tampa: number;
+  rotulo: number;
+  producao_nonato: number;
+  frete_sp: number;
+  manuseio_carol: number;
+  imposto: number;
+}
+
 export interface Produto {
   id: string;
   nome: string;
@@ -12,6 +22,15 @@ export interface Produto {
   updated_at: string;
   imagem_url?: string | null;
   descricao?: string | null;
+  // 50/50 pricing
+  preco_nonato?: number | null;
+  custo_nonato_breakdown?: CustoBreakdown | null;
+  // Tabela pricing
+  preco_tabela?: number | null;
+  custo_tabela_breakdown?: CustoBreakdown | null;
+  // +25% pricing
+  preco_plus25?: number | null;
+  custo_plus25_breakdown?: CustoBreakdown | null;
   estoque_garrafas?: number;
   estoque_tampas?: number;
   estoque_rotulos?: number;

@@ -56,8 +56,8 @@ export const useAttachments = (entityType: string, entityId: string) => {
       return data || [];
     },
     enabled: !!entityId,
-    staleTime: 0, // Always fetch fresh data
-    gcTime: 0, // Don't cache data
+    staleTime: 30_000, // 30 seconds before refetch
+    gcTime: 5 * 60_000, // 5 minutes cache
   });
 
   const createAttachment = async (attachmentData: {
@@ -123,13 +123,8 @@ export const useAttachments = (entityType: string, entityId: string) => {
 
       console.log("useAttachments - Anexo inserido com sucesso no banco:", data);
 
-      // Invalidate queries to trigger immediate refresh
-      console.log("useAttachments - Invalidando queries para refresh imediato");
+      // Invalidate queries to trigger refresh
       await queryClient.invalidateQueries({ queryKey });
-
-      // Force refetch to ensure immediate update
-      console.log("useAttachments - Forçando refetch para atualização imediata");
-      await refetch();
 
       toast({
         title: "Anexo adicionado",
@@ -162,9 +157,6 @@ export const useAttachments = (entityType: string, entityId: string) => {
 
       // Invalidate queries to refresh the list
       await queryClient.invalidateQueries({ queryKey });
-
-      // Force refetch to ensure immediate update
-      await refetch();
 
       toast({
         title: "Anexo removido",

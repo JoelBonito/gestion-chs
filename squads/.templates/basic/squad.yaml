@@ -1,0 +1,20 @@
+name: my-squad
+version: 1.0.0
+description: "Brief description of this squad"
+author: "Your Name"
+
+components:
+  agents:
+    - lead-agent
+  skills: []
+  workflows: []
+  scripts: []
+
+platforms:
+  claude_code: true
+  gemini: true
+  codex: true
+
+dependencies:
+  core_skills:
+    - clean-code
