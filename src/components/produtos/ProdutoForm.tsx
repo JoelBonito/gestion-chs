@@ -74,8 +74,16 @@ const InputStyles =
 
 export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false }: ProdutoFormProps) {
   const [loading, setLoading] = useState(false);
-  const [fornecedores, setFornecedores] = useState<{ id: string; nome: string }[]>([]);
-  const [tipos, setTipos] = useState<string[]>([]);
+  const [fornecedores, setFornecedores] = useState<{ id: string; nome: string }[]>(
+    // Seed with the current product's supplier so the Select can display it immediately
+    produtoProp?.fornecedor_id && (produtoProp as any).fornecedores
+      ? [{ id: produtoProp.fornecedor_id, nome: (produtoProp as any).fornecedores.nome }]
+      : []
+  );
+  const [tipos, setTipos] = useState<string[]>(
+    // Seed with the current product's type so the Select can display it immediately
+    produtoProp?.tipo ? [produtoProp.tipo] : []
+  );
   const [isNewType, setIsNewType] = useState(false);
   const [activeCustoType, setActiveCustoType] = useState<PriceTypeKey | null>(null);
   // Local copy of produto that we can update after saving breakdowns
@@ -278,7 +286,7 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
                               field.onChange(val);
                             }
                           }}
-                          defaultValue={field.value}
+                          value={field.value}
                         >
                           <SelectTrigger className={InputStyles}>
                             <SelectValue placeholder="Selecione o tipo" />
@@ -314,7 +322,7 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
                       <Truck className="h-3 w-3" /> Fornecedor Principal
                     </FormLabel>
                     <FormControl>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <SelectTrigger className={InputStyles}>
                           <SelectValue placeholder="Selecione o fornecedor" />
                         </SelectTrigger>
