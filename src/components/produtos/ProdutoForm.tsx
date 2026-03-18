@@ -535,8 +535,8 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
                       <span className={cn("text-base font-bold tabular-nums", card.valueColor)}>
                         {formatCurrencyEUR(brlToEur(card.value))}
                       </span>
-                      <span className="text-xs font-medium tabular-nums text-muted-foreground">
-                        {formatCurrencyBRL(card.value)}{" "}
+                      <span className="flex items-center justify-between text-xs font-medium tabular-nums text-muted-foreground">
+                        <span>{formatCurrencyBRL(card.value)}</span>
                         <span className="text-white">({formatCurrencyBRL(card.value * 0.20)})</span>
                       </span>
                     </div>
