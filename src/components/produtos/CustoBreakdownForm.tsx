@@ -283,19 +283,13 @@ export function CustoBreakdownForm({
         payload.preco_plus25 = Math.round(brlToEur(totalPlus25BRL) * 100) / 100;
       }
 
-      const result = await Promise.race([
-        supabase
-          .from("produtos")
-          .update(payload)
-          .eq("id", produtoId)
-          .select("id")
-          .single(),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout: servidor não respondeu em 15s. Tente fazer logout e login novamente.")), 15000)
-        ),
-      ]);
+      const { data: updated, error } = await supabase
+        .from("produtos")
+        .update(payload)
+        .eq("id", produtoId)
+        .select("id")
+        .single();
 
-      const { data: updated, error } = result;
       if (error) throw error;
       if (!updated) throw new Error("Sem permissão para atualizar este produto");
       toast.success(
