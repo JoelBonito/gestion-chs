@@ -507,75 +507,63 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
               })}
             </div>
 
-            {/* Row 4: Peso | (empty) | Lucro Tabela Nonato | Lucro +25% Nonato */}
-            <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-              {/* Col 1-2: Peso */}
-              <div className="col-span-2 flex items-end">
-                <FormField
-                  control={form.control}
-                  name="size_weight"
-                  render={({ field }) => (
-                    <FormItem className="w-full max-w-[200px]">
-                      <FormLabel className={LabelStyles}>Peso (g)</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="number"
-                          step="0.01"
-                          className={cn(InputStyles, "tabular-nums")}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+            {/* Row 4: Nonato profit cards (only when producao_nonato > 0) */}
+            {(() => {
+              const tb = produto?.custo_tabela_breakdown as CustoBreakdown | null | undefined;
+              if (!tb || !(tb.producao_nonato > 0)) return null;
 
-              {/* Col 3: Lucro Tabela Nonato */}
-              {(() => {
-                const tb = produto?.custo_tabela_breakdown as CustoBreakdown | null | undefined;
-                if (!tb || !tb.producao_nonato) return <div />;
-                const producaoTabela = tb.producao_nonato;
-                const producao5050 = Math.round(producaoTabela * 0.80 * 100) / 100;
-                const lucroTabelaNonato = producaoTabela - producao5050;
-                return (
-                  <div className={cn("flex flex-col gap-1 rounded-lg border p-2.5 text-xs", "border-amber-500/20 bg-amber-500/5")}>
-                    <span className="text-[10px] font-medium text-amber-400">Lucro Tabela Nonato</span>
-                    <span className="text-base font-bold tabular-nums text-amber-500">
-                      {formatCurrencyEUR(brlToEur(lucroTabelaNonato))}
-                    </span>
-                    <span className="text-xs font-medium tabular-nums text-muted-foreground">
-                      {formatCurrencyBRL(lucroTabelaNonato)}
-                    </span>
-                  </div>
-                );
-              })()}
+              const pv = Number(form.watch("preco_venda")) || 0;
+              const pn = Number(form.watch("preco_nonato")) || 0;
 
-              {/* Col 4: Lucro +25% Nonato */}
-              {(() => {
-                const tb = produto?.custo_tabela_breakdown as CustoBreakdown | null | undefined;
-                if (!tb || !tb.producao_nonato) return <div />;
-                const producaoTabela = tb.producao_nonato;
-                const producao5050 = Math.round(producaoTabela * 0.80 * 100) / 100;
-                const producaoPlus25 = Math.round(producaoTabela * 1.25 * 100) / 100;
-                const lucroPlus25Nonato = producaoPlus25 - (tb.embalagem + tb.tampa + tb.rotulo + producao5050);
-                return (
-                  <div className={cn(
-                    "flex flex-col gap-1 rounded-lg border p-2.5 text-xs",
-                    lucroPlus25Nonato >= 0 ? "border-rose-500/20 bg-rose-500/5" : "border-red-500/20 bg-red-500/5",
-                  )}>
-                    <span className={cn("text-[10px] font-medium", lucroPlus25Nonato >= 0 ? "text-rose-400" : "text-red-400")}>
-                      Lucro +25% Nonato
-                    </span>
-                    <span className={cn("text-base font-bold tabular-nums", lucroPlus25Nonato >= 0 ? "text-rose-500" : "text-red-500")}>
-                      {formatCurrencyEUR(brlToEur(lucroPlus25Nonato))}
-                    </span>
-                    <span className="text-xs font-medium tabular-nums text-muted-foreground">
-                      {formatCurrencyBRL(lucroPlus25Nonato)}
-                    </span>
-                  </div>
-                );
-              })()}
+              const lucroRealNonato = tb.producao_nonato;
+              const lucro5050Nonato = (tb.producao_nonato * 0.80) + eurToBrl(pv - pn);
+              const lucroTabelaNonato = tb.producao_nonato;
+              const lucroPlus25Nonato = tb.producao_nonato * 1.25;
+
+              const cards = [
+                { label: "Lucro Real Nonato", value: lucroRealNonato, border: "border-emerald-500/20", bg: "bg-emerald-500/5", labelColor: "text-emerald-400", valueColor: "text-emerald-500" },
+                { label: "Lucro 50/50 Nonato", value: lucro5050Nonato, border: "border-violet-500/20", bg: "bg-violet-500/5", labelColor: "text-violet-400", valueColor: "text-violet-500" },
+                { label: "Lucro Tabela Nonato", value: lucroTabelaNonato, border: "border-amber-500/20", bg: "bg-amber-500/5", labelColor: "text-amber-400", valueColor: "text-amber-500" },
+                { label: "Lucro +25% Nonato", value: lucroPlus25Nonato, border: "border-rose-500/20", bg: "bg-rose-500/5", labelColor: "text-rose-400", valueColor: "text-rose-500" },
+              ];
+
+              return (
+                <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
+                  {cards.map((card) => (
+                    <div key={card.label} className={cn("flex flex-col gap-1 rounded-lg border p-2.5 text-xs", card.border, card.bg)}>
+                      <span className={cn("text-[10px] font-medium", card.labelColor)}>{card.label}</span>
+                      <span className={cn("text-base font-bold tabular-nums", card.valueColor)}>
+                        {formatCurrencyEUR(brlToEur(card.value))}
+                      </span>
+                      <span className="text-xs font-medium tabular-nums text-muted-foreground">
+                        {formatCurrencyBRL(card.value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* Row 5: Peso (standalone) */}
+            <div className="mb-4">
+              <FormField
+                control={form.control}
+                name="size_weight"
+                render={({ field }) => (
+                  <FormItem className="w-full max-w-[200px]">
+                    <FormLabel className={LabelStyles}>Peso (g)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="number"
+                        step="0.01"
+                        className={cn(InputStyles, "tabular-nums")}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Editar Custos Dropdown - only in edit mode */}
