@@ -160,19 +160,36 @@ export function CustoBreakdownForm({
   // Load import products when toggled
   useEffect(() => {
     if (!showImport || !produtoMarca) return;
+    let cancelled = false;
     setImportLoading(true);
-    supabase
+
+    const fetchPromise = supabase
       .from("produtos")
       .select("id, nome")
       .eq("marca", produtoMarca)
       .neq("id", produtoId)
-      .order("nome")
+      .order("nome");
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("timeout")), 10000)
+    );
+
+    Promise.race([fetchPromise, timeoutPromise])
       .then(({ data, error }) => {
+        if (cancelled) return;
         if (!error && data) {
           setImportProducts(data);
         }
         setImportLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setImportLoading(false);
+        toast.error("Erro ao carregar produtos. Tente novamente.");
+        setShowImport(false);
       });
+
+    return () => { cancelled = true; };
   }, [showImport, produtoMarca, produtoId]);
 
   const handleImport = async (selectedId: string) => {
@@ -180,11 +197,24 @@ export function CustoBreakdownForm({
     if (!product) return;
 
     // Lazy-load only the breakdown data for the selected product
-    const { data, error } = await supabase
-      .from("produtos")
-      .select("custo_nonato_breakdown, custo_tabela_breakdown, custo_plus25_breakdown")
-      .eq("id", selectedId)
-      .single();
+    let data, error;
+    try {
+      const result = await Promise.race([
+        supabase
+          .from("produtos")
+          .select("custo_nonato_breakdown, custo_tabela_breakdown, custo_plus25_breakdown")
+          .eq("id", selectedId)
+          .single(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout ao importar dados")), 10000)
+        ),
+      ]);
+      data = result.data;
+      error = result.error;
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao carregar dados do produto");
+      return;
+    }
 
     if (error || !data) {
       toast.error("Erro ao carregar dados do produto");
