@@ -37,9 +37,9 @@ export function calcularFreteSP(weightGrams: number): number {
   return Math.round(kg * 2 * 100) / 100;
 }
 
-/** Manuseio Carol: ≥500g → R$3, <500g → R$1.50 */
+/** Manuseio Carol: ≥500g → R$4, <500g → R$1.50 */
 export function calcularManuseioCarol(weightGrams: number): number {
-  return weightGrams >= 500 ? 3 : 1.5;
+  return weightGrams >= 500 ? 4 : 1.5;
 }
 
 /** Imposto: 25% of declared EUR value × exchange rate */
@@ -76,7 +76,7 @@ export function getAutoCalcTooltip(key: string, weightGrams: number): string {
       return `${kg}kg × R$2/kg = R$${calcularFreteSP(weightGrams).toFixed(2)}`;
     case "manuseio_carol":
       return weightGrams >= 500
-        ? `Peso ≥ 500g → R$3,00`
+        ? `Peso ≥ 500g → R$4,00`
         : `Peso < 500g → R$1,50`;
     case "imposto": {
       const bracket = findClosestBracket(weightGrams);
