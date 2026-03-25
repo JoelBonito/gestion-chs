@@ -38,6 +38,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      app_config: {
+        Row: {
+          key: string;
+          value: Json;
+          updated_at: string;
+        };
+        Insert: {
+          key: string;
+          value: Json;
+          updated_at?: string;
+        };
+        Update: {
+          key?: string;
+          value?: Json;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       amostras: {
         Row: {
           archived: boolean;
@@ -144,6 +162,88 @@ export type Database = {
           uploaded_by?: string | null;
         };
         Relationships: [];
+      };
+      custos_producao_encomenda: {
+        Row: {
+          id: string;
+          encomenda_id: string;
+          item_encomenda_id: string;
+          produto_id: string;
+          garrafa: number;
+          tampa: number;
+          rotulo: number;
+          producao_nonato: number;
+          frete_sp: number;
+          embalagem_carol: number;
+          imposto: number;
+          diversos: number;
+          custo_total_brl: number;
+          custo_total_eur: number;
+          lucro_joel_real: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          encomenda_id: string;
+          item_encomenda_id: string;
+          produto_id: string;
+          garrafa?: number;
+          tampa?: number;
+          rotulo?: number;
+          producao_nonato?: number;
+          frete_sp?: number;
+          embalagem_carol?: number;
+          imposto?: number;
+          diversos?: number;
+          custo_total_brl?: number;
+          custo_total_eur?: number;
+          lucro_joel_real?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          encomenda_id?: string;
+          item_encomenda_id?: string;
+          produto_id?: string;
+          garrafa?: number;
+          tampa?: number;
+          rotulo?: number;
+          producao_nonato?: number;
+          frete_sp?: number;
+          embalagem_carol?: number;
+          imposto?: number;
+          diversos?: number;
+          custo_total_brl?: number;
+          custo_total_eur?: number;
+          lucro_joel_real?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "custos_producao_encomenda_encomenda_id_fkey";
+            columns: ["encomenda_id"];
+            isOneToOne: false;
+            referencedRelation: "encomendas";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "custos_producao_encomenda_item_encomenda_id_fkey";
+            columns: ["item_encomenda_id"];
+            isOneToOne: false;
+            referencedRelation: "itens_encomenda";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "custos_producao_encomenda_produto_id_fkey";
+            columns: ["produto_id"];
+            isOneToOne: false;
+            referencedRelation: "produtos";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       clientes: {
         Row: {
@@ -583,6 +683,7 @@ export type Database = {
           ativo: boolean;
           created_at: string;
           created_by: string;
+          custo_producao: number | null;
           deactivated_at: string | null;
           deactivated_reason: string | null;
           estoque_garrafas: number;
@@ -590,6 +691,7 @@ export type Database = {
           estoque_tampas: number;
           fornecedor_id: string | null;
           id: string;
+          lucro_joel: number | null;
           marca: string;
           nome: string;
           preco_custo: number;
@@ -604,6 +706,7 @@ export type Database = {
           ativo?: boolean;
           created_at?: string;
           created_by?: string;
+          custo_producao?: number | null;
           deactivated_at?: string | null;
           deactivated_reason?: string | null;
           estoque_garrafas?: number;
@@ -611,6 +714,7 @@ export type Database = {
           estoque_tampas?: number;
           fornecedor_id?: string | null;
           id?: string;
+          lucro_joel?: number | null;
           marca: string;
           nome: string;
           preco_custo: number;
@@ -625,6 +729,7 @@ export type Database = {
           ativo?: boolean;
           created_at?: string;
           created_by?: string;
+          custo_producao?: number | null;
           deactivated_at?: string | null;
           deactivated_reason?: string | null;
           estoque_garrafas?: number;
@@ -632,6 +737,7 @@ export type Database = {
           estoque_tampas?: number;
           fornecedor_id?: string | null;
           id?: string;
+          lucro_joel?: number | null;
           marca?: string;
           nome?: string;
           preco_custo?: number;

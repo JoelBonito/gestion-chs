@@ -13,6 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { FORNECEDOR_PRODUCAO_ID } from "@/lib/permissions";
 import {
   Select,
   SelectContent,
@@ -23,19 +24,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Loader2, Save, X, Plus, Package, Truck, Info, Euro, Calculator, BarChart3, ChevronDown } from "lucide-react";
-import { Produto, CustoBreakdown } from "@/types/database";
+import { Loader2, Save, X, Plus, Package, Truck, Info, Euro, BarChart3 } from "lucide-react";
+import { Produto } from "@/types/database";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { cn } from "@/lib/utils";
 import { eurToBrl, brlToEur, formatCurrencyBRL, formatCurrencyEUR } from "@/lib/utils/currency";
-import { PRICE_TYPES, PRICE_COLOR_CLASSES, type PriceTypeKey } from "@/lib/config/price-types";
-import { CustoBreakdownForm } from "./CustoBreakdownForm";
 
 // Schema de Validação
 const produtoSchema = z.object({
@@ -44,11 +37,10 @@ const produtoSchema = z.object({
   tipo: z.string().min(1, "Tipo é obrigatório"),
   fornecedor_id: z.string().optional(),
   size_weight: z.coerce.number().min(0, "Peso deve ser positivo"),
-  preco_custo: z.coerce.number().min(0, "Preço de custo deve ser positivo"),
   preco_venda: z.coerce.number().min(0, "Preço de venda deve ser positivo"),
-  preco_nonato: z.coerce.number().min(0, "Preço nonato deve ser positivo").optional().nullable(),
-  preco_tabela: z.coerce.number().min(0).optional().nullable(),
-  preco_plus25: z.coerce.number().min(0).optional().nullable(),
+  preco_custo: z.coerce.number().min(0).optional().nullable(),
+  custo_producao: z.coerce.number().min(0).optional().nullable(),
+  lucro_joel: z.coerce.number().min(0).optional().nullable(),
   descricao: z.string().optional().nullable(),
   ativo: z.boolean().default(true),
   imagem_url: z.string().optional().nullable(),
@@ -85,10 +77,13 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
     produtoProp?.tipo ? [produtoProp.tipo] : []
   );
   const [isNewType, setIsNewType] = useState(false);
-  const [activeCustoType, setActiveCustoType] = useState<PriceTypeKey | null>(null);
-  // Local copy of produto that we can update after saving breakdowns
   const [produto, setProduto] = useState(produtoProp);
   const { isCollaborator } = useIsCollaborator();
+  const [custoProducaoBRL, setCustoProducaoBRL] = useState(
+    produtoProp?.custo_producao ? Math.round(eurToBrl(produtoProp.custo_producao) * 100) / 100 : 0
+  );
+  const [garrafaIncluso, setGarrafaIncluso] = useState(produtoProp?.garrafa_incluso ?? false);
+  const [tampaIncluso, setTampaIncluso] = useState(produtoProp?.tampa_incluso ?? false);
 
   const form = useForm<ProdutoFormValues>({
     resolver: zodResolver(produtoSchema) as any,
@@ -98,11 +93,10 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
       tipo: produto?.tipo || "",
       fornecedor_id: produto?.fornecedor_id || undefined,
       size_weight: produto?.size_weight || 0,
-      preco_custo: produto?.preco_custo || 0,
       preco_venda: produto?.preco_venda || 0,
-      preco_nonato: produto?.preco_nonato ?? undefined,
-      preco_tabela: produto?.preco_tabela ?? undefined,
-      preco_plus25: produto?.preco_plus25 ?? undefined,
+      preco_custo: produto?.preco_custo ?? undefined,
+      custo_producao: produto?.custo_producao ?? undefined,
+      lucro_joel: produto?.lucro_joel ?? undefined,
       descricao: produto?.descricao || "",
       ativo: produto?.ativo ?? true,
       imagem_url: produto?.imagem_url || "",
@@ -138,9 +132,14 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
     setTipos(uniqueTipos);
   };
 
+  const watchedFornecedorId = form.watch("fornecedor_id");
+  const isProducao = watchedFornecedorId === FORNECEDOR_PRODUCAO_ID;
+
   const onSubmit = async (values: ProdutoFormValues) => {
     console.log("🔵 [ProdutoForm] Iniciando onSubmit", { isEditing, produtoId: produto?.id });
     setLoading(true);
+
+    const submitIsProducao = values.fornecedor_id === FORNECEDOR_PRODUCAO_ID;
 
     try {
       const payload: any = {
@@ -148,17 +147,20 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
         marca: values.marca,
         tipo: values.tipo,
         size_weight: Number(values.size_weight) || 0,
-        preco_custo: Number(values.preco_custo) || 0,
         preco_venda: Number(values.preco_venda) || 0,
-        preco_nonato: values.preco_nonato ? Number(values.preco_nonato) : null,
-        preco_tabela: values.preco_tabela ? Number(values.preco_tabela) : null,
-        preco_plus25: values.preco_plus25 ? Number(values.preco_plus25) : null,
+        preco_custo: submitIsProducao ? (produto?.preco_custo || 0) : (Number(values.preco_custo) || 0),
+        custo_producao: submitIsProducao ? (Number(values.custo_producao) || null) : null,
+        lucro_joel: submitIsProducao
+          ? (Number(values.lucro_joel) || null)
+          : (Number(values.preco_venda) - Number(values.preco_custo || 0)) || null,
         ativo: values.ativo,
         descricao: values.descricao || null,
         imagem_url: values.imagem_url || null,
         estoque_garrafas: Number(values.estoque_garrafas) || 0,
         estoque_tampas: Number(values.estoque_tampas) || 0,
         estoque_rotulos: Number(values.estoque_rotulos) || 0,
+        garrafa_incluso: submitIsProducao ? garrafaIncluso : false,
+        tampa_incluso: submitIsProducao ? tampaIncluso : false,
       };
 
       if (values.fornecedor_id) {
@@ -169,24 +171,22 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
 
       if (isEditing && produto) {
         console.log("🔵 [ProdutoForm] Executando UPDATE para produto:", produto.id);
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from("produtos")
           .update(payload)
-          .eq("id", produto.id)
-          .select();
+          .eq("id", produto.id);
 
-        console.log("🔵 [ProdutoForm] Resposta UPDATE:", { data, error });
+        console.log("🔵 [ProdutoForm] Resposta UPDATE:", { error });
 
         if (error) throw error;
         toast.success("Produto atualizado com sucesso");
       } else {
         console.log("🔵 [ProdutoForm] Executando INSERT");
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from("produtos")
-          .insert(payload)
-          .select();
+          .insert(payload);
 
-        console.log("🔵 [ProdutoForm] Resposta INSERT:", { data, error });
+        console.log("🔵 [ProdutoForm] Resposta INSERT:", { error });
 
         if (error) throw error;
         toast.success("Produto criado com sucesso");
@@ -377,181 +377,167 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
               />
             </div>
 
-            {/* Row 2: Preço Custo | Preço 50/50 | Preço Tabela | Preço +25% */}
-            <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-              <FormField
-                control={form.control}
-                name="preco_custo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className={LabelStyles}>
-                      <Euro className="h-3 w-3" /> Preço Custo
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="number"
-                        step="0.01"
-                        className={cn(InputStyles, "tabular-nums")}
-                      />
-                    </FormControl>
-                    {(() => {
-                      const val = Number(form.watch("preco_custo")) || 0;
-                      if (val <= 0) return null;
-                      return (
+            {/* Row 2: Custo + Lucro Joel (condicional por fornecedor) */}
+            <div className="mb-4 grid grid-cols-2 gap-4">
+              {isProducao ? (
+                <FormItem>
+                  <FormLabel className={cn(LabelStyles, "text-orange-400")}>
+                    <Euro className="h-3 w-3 text-orange-400" /> Custo Produção
+                  </FormLabel>
+                  <div className="relative">
+                    <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-xs font-medium">
+                      R$
+                    </span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      value={custoProducaoBRL || ""}
+                      onChange={(e) => {
+                        const brl = parseFloat(e.target.value) || 0;
+                        setCustoProducaoBRL(brl);
+                        form.setValue("custo_producao", Math.round(brlToEur(brl) * 100) / 100);
+                      }}
+                      className={cn(InputStyles, "border-orange-500/20 text-orange-400 tabular-nums pl-9")}
+                    />
+                  </div>
+                  {(() => {
+                    const val = Number(form.watch("custo_producao")) || 0;
+                    if (val <= 0) return null;
+                    return (
+                      <p className="mt-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                        ~ {formatCurrencyEUR(val)}
+                      </p>
+                    );
+                  })()}
+                </FormItem>
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="preco_custo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className={cn(LabelStyles, "text-orange-400")}>
+                        <Euro className="h-3 w-3 text-orange-400" /> Preço Custo
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value ?? ""}
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          className={cn(InputStyles, "border-orange-500/20 text-orange-400 tabular-nums")}
+                        />
+                      </FormControl>
+                      {(() => {
+                        const val = Number(form.watch("preco_custo")) || 0;
+                        if (val <= 0) return null;
+                        return (
+                          <p className="mt-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                            {formatCurrencyBRL(eurToBrl(val))}
+                          </p>
+                        );
+                      })()}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
+              {isProducao ? (
+                <FormField
+                  control={form.control}
+                  name="lucro_joel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className={cn(LabelStyles, "text-emerald-400")}>
+                        <Euro className="h-3 w-3 text-emerald-400" /> Lucro Joel
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value ?? ""}
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          className={cn(InputStyles, "border-emerald-500/20 text-emerald-400 tabular-nums")}
+                        />
+                      </FormControl>
+                      {(() => {
+                        const val = Number(form.watch("lucro_joel")) || 0;
+                        if (val <= 0) return null;
+                        return (
+                          <p className="mt-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                            {formatCurrencyBRL(eurToBrl(val))}
+                          </p>
+                        );
+                      })()}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <div>
+                  <div className={cn(LabelStyles, "text-emerald-400")}>
+                    <Euro className="h-3 w-3 text-emerald-400" /> Lucro Joel
+                  </div>
+                  {(() => {
+                    const pv = Number(form.watch("preco_venda")) || 0;
+                    const pc = Number(form.watch("preco_custo")) || 0;
+                    const lucro = pv - pc;
+                    if (pv <= 0) return (
+                      <div className={cn(InputStyles, "border-emerald-500/20 text-emerald-400/50 flex items-center tabular-nums opacity-60 cursor-not-allowed")}>
+                        0.00
+                      </div>
+                    );
+                    return (
+                      <>
+                        <div className={cn(InputStyles, "border-emerald-500/20 text-emerald-400 flex items-center font-bold tabular-nums cursor-not-allowed")}>
+                          {lucro.toFixed(2)}
+                        </div>
                         <p className="mt-0.5 text-xs font-medium tabular-nums text-muted-foreground">
-                          {formatCurrencyBRL(eurToBrl(val))}
+                          {formatCurrencyBRL(eurToBrl(lucro))}
                         </p>
-                      );
-                    })()}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {PRICE_TYPES.map((pt) => {
-                const colors = PRICE_COLOR_CLASSES[pt.color];
-                const fieldName = pt.priceField as "preco_nonato" | "preco_tabela" | "preco_plus25";
-                const isDerived = pt.key !== "tabela";
-                return (
-                  <FormField
-                    key={pt.key}
-                    control={form.control}
-                    name={fieldName}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className={cn(LabelStyles, colors.text)}>
-                          <Euro className={cn("h-3 w-3", colors.text)} /> Preço {pt.label}
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            value={field.value ?? ""}
-                            type="number"
-                            step="0.01"
-                            placeholder={isDerived ? "Auto" : "Opcional"}
-                            readOnly={isDerived}
-                            className={cn(
-                              InputStyles, colors.border, colors.text, "tabular-nums",
-                              isDerived && "opacity-60 cursor-not-allowed",
-                            )}
-                          />
-                        </FormControl>
-                        {(() => {
-                          const val = Number(form.watch(fieldName)) || 0;
-                          if (val <= 0) return null;
-                          return (
-                            <p className="mt-0.5 text-xs font-medium tabular-nums text-muted-foreground">
-                              {formatCurrencyBRL(eurToBrl(val))}
-                            </p>
-                          );
-                        })()}
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                );
-              })}
-            </div>
-
-            {/* Row 3: Lucro Real | Lucro 50/50 | Lucro Tabela | Lucro +25% */}
-            <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-              {/* Lucro Real = preco_venda - preco_custo */}
-              {(() => {
-                const pv = Number(form.watch("preco_venda")) || 0;
-                const pc = Number(form.watch("preco_custo")) || 0;
-                const lucro = pv - pc;
-                const isPositive = lucro >= 0;
-                if (pv <= 0) return <div />;
-                return (
-                  <div className={cn(
-                    "flex flex-col gap-1 rounded-lg border p-2.5 text-xs",
-                    isPositive
-                      ? "border-emerald-500/20 bg-emerald-500/5"
-                      : "border-red-500/20 bg-red-500/5"
-                  )}>
-                    <span className={cn("text-[10px] font-medium", isPositive ? "text-emerald-500" : "text-red-500")}>
-                      Lucro Real
-                    </span>
-                    <span className={cn("text-base font-bold tabular-nums", isPositive ? "text-emerald-500" : "text-red-500")}>
-                      {lucro.toFixed(2)}€
-                    </span>
-                    <span className="text-xs font-medium tabular-nums text-muted-foreground">
-                      {formatCurrencyBRL(eurToBrl(lucro))}
-                    </span>
-                  </div>
-                );
-              })()}
-
-              {/* Dynamic profit cards for each price type */}
-              {PRICE_TYPES.map((pt) => {
-                const pv = Number(form.watch("preco_venda")) || 0;
-                const fieldName = pt.priceField as "preco_nonato" | "preco_tabela" | "preco_plus25";
-                const pp = Number(form.watch(fieldName)) || 0;
-                const colors = PRICE_COLOR_CLASSES[pt.color];
-                if (pv <= 0 || pp <= 0) return <div key={pt.key} />;
-                const lucro = pt.profitFormula(pv, pp);
-                return (
-                  <div key={pt.key} className={cn("flex flex-col gap-1 rounded-lg border p-2.5 text-xs", colors.border, colors.bg)}>
-                    <span className={cn("text-[10px] font-medium", colors.textLight)}>
-                      {pt.profitLabel}
-                    </span>
-                    <span className={cn("text-base font-bold tabular-nums", colors.text)}>
-                      {lucro.toFixed(2)}€
-                    </span>
-                    <span className="text-xs font-medium tabular-nums text-muted-foreground">
-                      {formatCurrencyBRL(eurToBrl(lucro))}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Row 4: Nonato profit cards (only when producao_nonato > 0) */}
-            {(() => {
-              const tb = produto?.custo_tabela_breakdown as CustoBreakdown | null | undefined;
-              if (!tb || !(tb.producao_nonato > 0)) return null;
-
-              const pv = Number(form.watch("preco_venda")) || 0;
-              const pn = Number(form.watch("preco_nonato")) || 0;
-
-              const lucroRealNonato = tb.producao_nonato;
-              const lucro5050Nonato = (tb.producao_nonato * 0.80) + eurToBrl(pv - pn);
-              const lucroTabelaNonato = tb.producao_nonato;
-              const lucroPlus25Nonato = tb.producao_nonato * 1.25;
-
-              const cards = [
-                { label: "Lucro Real Nonato", value: lucroRealNonato, border: "border-emerald-500/20", bg: "bg-emerald-500/5", labelColor: "text-emerald-400", valueColor: "text-emerald-500" },
-                { label: "Lucro 50/50 Nonato", value: lucro5050Nonato, border: "border-violet-500/20", bg: "bg-violet-500/5", labelColor: "text-violet-400", valueColor: "text-violet-500" },
-                { label: "Lucro Tabela Nonato", value: lucroTabelaNonato, border: "border-amber-500/20", bg: "bg-amber-500/5", labelColor: "text-amber-400", valueColor: "text-amber-500" },
-                { label: "Lucro +25% Nonato", value: lucroPlus25Nonato, border: "border-rose-500/20", bg: "bg-rose-500/5", labelColor: "text-rose-400", valueColor: "text-rose-500" },
-              ];
-
-              return (
-                <div className="mb-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-                  {cards.map((card) => (
-                    <div key={card.label} className={cn("flex flex-col gap-1 rounded-lg border p-2.5 text-xs", card.border, card.bg)}>
-                      <span className={cn("text-[10px] font-medium", card.labelColor)}>{card.label}</span>
-                      <span className={cn("text-base font-bold tabular-nums", card.valueColor)}>
-                        {formatCurrencyEUR(brlToEur(card.value))}
-                      </span>
-                      <span className="flex items-center justify-between text-xs font-medium tabular-nums text-muted-foreground">
-                        <span>{formatCurrencyBRL(card.value)}</span>
-                        <span className="text-white">({formatCurrencyBRL(card.value * 0.20)})</span>
-                      </span>
-                    </div>
-                  ))}
+                      </>
+                    );
+                  })()}
                 </div>
-              );
-            })()}
+              )}
+            </div>
 
-            {/* Row 5: Peso (standalone) */}
-            <div className="mb-4">
+            {/* Row 3: Toggles Garrafa/Tampa inclusos + Peso */}
+            <div className="mb-4 grid grid-cols-2 gap-4">
+              {isProducao && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between rounded-lg border border-border/30 bg-accent/30 px-3 py-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Garrafa incluso na produção
+                    </span>
+                    <Switch
+                      checked={garrafaIncluso}
+                      onCheckedChange={setGarrafaIncluso}
+                      className="h-4 w-7 data-[state=checked]:bg-blue-500"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between rounded-lg border border-border/30 bg-accent/30 px-3 py-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Tampa incluso na produção
+                    </span>
+                    <Switch
+                      checked={tampaIncluso}
+                      onCheckedChange={setTampaIncluso}
+                      className="h-4 w-7 data-[state=checked]:bg-blue-500"
+                    />
+                  </div>
+                </div>
+              )}
+
               <FormField
                 control={form.control}
                 name="size_weight"
                 render={({ field }) => (
-                  <FormItem className="w-full max-w-[200px]">
+                  <FormItem>
                     <FormLabel className={LabelStyles}>Peso (g)</FormLabel>
                     <FormControl>
                       <Input
@@ -567,47 +553,6 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
               />
             </div>
 
-            {/* Editar Custos Dropdown - only in edit mode */}
-            {isEditing && produto && (() => {
-              const hasTabela = !!produto.custo_tabela_breakdown;
-              return (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="mt-3 w-full border border-border/30 hover:bg-muted/50"
-                    >
-                      <Calculator className="mr-2 h-3.5 w-3.5" />
-                      Editar Custos
-                      <ChevronDown className="ml-2 h-3.5 w-3.5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="w-56">
-                    {PRICE_TYPES.map((pt) => {
-                      const colors = PRICE_COLOR_CLASSES[pt.color];
-                      const isBlocked = pt.key !== "tabela" && !hasTabela;
-                      return (
-                        <DropdownMenuItem
-                          key={pt.key}
-                          onClick={() => !isBlocked && setActiveCustoType(pt.key)}
-                          disabled={isBlocked}
-                          className={cn(
-                            "cursor-pointer",
-                            isBlocked ? "opacity-40 cursor-not-allowed" : colors.text,
-                          )}
-                        >
-                          <Calculator className="mr-2 h-3.5 w-3.5" />
-                          {pt.sheetTitle}
-                          {isBlocked && <span className="ml-auto text-[10px] text-muted-foreground">Preencha Tabela</span>}
-                        </DropdownMenuItem>
-                      );
-                    })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              );
-            })()}
           </div>
 
           {/* Seção 3: Estoque de Insumos */}
@@ -740,47 +685,6 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
         </div>
       </form>
 
-      {isEditing && produto && activeCustoType && (() => {
-        const config = PRICE_TYPES.find((pt) => pt.key === activeCustoType)!;
-        const breakdownKey = config.breakdownField as keyof typeof produto;
-        const currentBreakdown = produto[breakdownKey] as any;
-        // Tabela is the primary form — 50/50 and +25% get auto-filled from Tabela
-        const fallback = activeCustoType !== "tabela" ? produto.custo_tabela_breakdown : null;
-        return (
-          <CustoBreakdownForm
-            open={!!activeCustoType}
-            onOpenChange={(open) => { if (!open) setActiveCustoType(null); }}
-            produtoId={produto.id}
-            produtoNome={produto.nome}
-            produtoMarca={produto.marca}
-            priceType={config}
-            breakdown={currentBreakdown}
-            fallbackBreakdown={fallback}
-            sizeWeight={produto.size_weight || 0}
-            estoqueInicial={{
-              garrafas: produto.estoque_garrafas || 0,
-              tampas: produto.estoque_tampas || 0,
-              rotulos: produto.estoque_rotulos || 0,
-            }}
-            onSaved={() => {
-              // Re-fetch full produto to update breakdowns + prices
-              supabase
-                .from("produtos")
-                .select("*")
-                .eq("id", produto.id)
-                .single()
-                .then(({ data }) => {
-                  if (data) {
-                    setProduto(data as Produto);
-                    if (data.preco_nonato) form.setValue("preco_nonato", data.preco_nonato);
-                    if (data.preco_tabela) form.setValue("preco_tabela", data.preco_tabela);
-                    if (data.preco_plus25) form.setValue("preco_plus25", data.preco_plus25);
-                  }
-                });
-            }}
-          />
-        );
-      })()}
     </Form>
   );
 }

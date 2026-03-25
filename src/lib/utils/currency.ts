@@ -57,15 +57,80 @@ export function parseCurrencyEUR(input: string | number | null | undefined): num
   return Number.isFinite(num) ? num : null;
 }
 
-// BRL / EUR conversion (fixed rate)
-export const BRL_EUR_RATE = 6; // 1 EUR = 6 BRL
+// BRL / EUR conversion (configurable rate)
+export const BRL_EUR_RATE = 6; // default fallback: 1 EUR = 6 BRL
+
+let currentRate: number = BRL_EUR_RATE;
+
+export function setExchangeRate(rate: number): void {
+  if (rate > 0 && Number.isFinite(rate)) {
+    currentRate = rate;
+  }
+}
+
+export function getExchangeRate(): number {
+  return currentRate;
+}
+
+/**
+ * Loads exchange rate from `app_config` table in Supabase.
+ * Falls back to BRL_EUR_RATE if not found or on error.
+ */
+export async function fetchExchangeRate(): Promise<number> {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data, error } = await supabase
+      .from("app_config")
+      .select("value")
+      .eq("key", "brl_eur_rate")
+      .maybeSingle();
+
+    if (error || !data?.value) {
+      return currentRate;
+    }
+
+    // Handle both {"rate": 6} (JSONB object) and "6" (plain number) formats
+    const raw = data.value;
+    const parsed = typeof raw === "object" && raw !== null && "rate" in raw
+      ? Number((raw as { rate: number }).rate)
+      : Number(raw);
+    if (parsed > 0 && Number.isFinite(parsed)) {
+      currentRate = parsed;
+      return currentRate;
+    }
+  } catch {
+    // Fallback silently
+  }
+  return currentRate;
+}
+
+/**
+ * Saves exchange rate to `app_config` table in Supabase.
+ */
+export async function updateExchangeRate(rate: number): Promise<boolean> {
+  if (!(rate > 0 && Number.isFinite(rate))) return false;
+
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { error } = await supabase
+      .from("app_config")
+      .upsert({ key: "brl_eur_rate", value: { rate } as unknown as string, updated_at: new Date().toISOString() }, { onConflict: "key" });
+
+    if (error) return false;
+
+    currentRate = rate;
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function brlToEur(brl: number): number {
-  return brl / BRL_EUR_RATE;
+  return brl / currentRate;
 }
 
 export function eurToBrl(eur: number): number {
-  return eur * BRL_EUR_RATE;
+  return eur * currentRate;
 }
 
 const BRL_NUMBER = new Intl.NumberFormat("pt-BR", {

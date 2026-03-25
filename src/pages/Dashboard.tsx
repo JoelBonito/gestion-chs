@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { StatCard } from "@/components/shared";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,11 +8,15 @@ import { formatDate } from "@/lib/utils";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { RoleBasedGuard } from "@/components/RoleBasedGuard";
 import { useAuth } from "@/hooks/useAuth";
-import { Home, ClipboardList, DollarSign, Truck, Package, Factory, TrendingUp } from "lucide-react";
+import { Home, ClipboardList, DollarSign, Truck, Package, Factory, TrendingUp, Edit2, Save, RefreshCw } from "lucide-react";
+import { calcularComissaoItem } from "@/lib/utils/commission";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useTopBarActions } from "@/context/TopBarActionsContext";
 import { cn } from "@/lib/utils";
+import { getExchangeRate, updateExchangeRate, fetchExchangeRate } from "@/lib/utils/currency";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -27,6 +32,36 @@ export default function Dashboard() {
   // Estados para seleção de ano
   const [performanceYear, setPerformanceYear] = useState(2026);
   const [comissoesAnoYear, setComissoesAnoYear] = useState(2026);
+
+  // Exchange rate state
+  const isAdmin = user?.email === "jbento1@gmail.com" || user?.email === "admin@admin.com";
+  const [exchangeRate, setExchangeRate] = useState(getExchangeRate());
+  const [editingRate, setEditingRate] = useState(false);
+  const [rateInput, setRateInput] = useState("");
+  const [savingRate, setSavingRate] = useState(false);
+
+  // Load exchange rate on mount
+  useEffect(() => {
+    fetchExchangeRate().then((rate) => setExchangeRate(rate));
+  }, []);
+
+  const handleSaveRate = async () => {
+    const parsed = parseFloat(rateInput.replace(",", "."));
+    if (!(parsed > 0) || !Number.isFinite(parsed)) {
+      toast.error("Taxa inválida. Use um número positivo.");
+      return;
+    }
+    setSavingRate(true);
+    const ok = await updateExchangeRate(parsed);
+    setSavingRate(false);
+    if (ok) {
+      setExchangeRate(parsed);
+      setEditingRate(false);
+      toast.success(`Taxa atualizada: 1 EUR = ${parsed.toFixed(2)} BRL`);
+    } else {
+      toast.error("Erro ao salvar taxa de câmbio.");
+    }
+  };
 
   // Teleport System Status to TopBar
   useEffect(() => {
@@ -102,6 +137,62 @@ export default function Dashboard() {
     },
   });
 
+  // Types for commission queries
+  interface CommissionItemRow {
+    id: string;
+    quantidade: number;
+    preco_unitario: number;
+    preco_custo: number;
+    produtos: { lucro_joel: number | null; fornecedor_id: string | null } | null;
+    encomendas: {
+      numero_encomenda: string;
+      status: string;
+      fornecedor_id: string | null;
+      data_producao_estimada: string | null;
+    } | null;
+  }
+
+  interface CustoRow {
+    item_encomenda_id: string;
+    lucro_joel_real: number;
+  }
+
+  function buildCustoMap(custosData: CustoRow[] | null): Record<string, number> {
+    const map: Record<string, number> = {};
+    (custosData || []).forEach((c) => { map[c.item_encomenda_id] = c.lucro_joel_real; });
+    return map;
+  }
+
+  function computeCommissionTotal(itens: CommissionItemRow[], custosByItemId: Record<string, number>): number {
+    return itens.reduce((acc, item) => {
+      const enc = item.encomendas;
+      return acc + calcularComissaoItem(
+        {
+          quantidade: item.quantidade || 0,
+          preco_unitario: item.preco_unitario || 0,
+          preco_custo: item.preco_custo || 0,
+          lucro_joel: item.produtos?.lucro_joel ?? null,
+          lucro_joel_real: custosByItemId[item.id] ?? null,
+          fornecedor_id: item.produtos?.fornecedor_id ?? undefined,
+        },
+        {
+          numero_encomenda: enc?.numero_encomenda || "",
+          status: enc?.status || "",
+          fornecedor_id: enc?.fornecedor_id ?? undefined,
+        }
+      );
+    }, 0);
+  }
+
+  async function fetchCustos(itemIds: string[]): Promise<Record<string, number>> {
+    if (itemIds.length === 0) return {};
+    const { data } = await supabase
+      .from("custos_producao_encomenda")
+      .select("item_encomenda_id, lucro_joel_real")
+      .in("item_encomenda_id", itemIds);
+    return buildCustoMap(data);
+  }
+
   function isoDate(d: Date) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T00:00:00`;
   }
@@ -117,24 +208,21 @@ export default function Dashboard() {
         .from("itens_encomenda")
         .select(
           `
+          id,
           quantidade,
           preco_unitario,
           preco_custo,
-          encomendas!inner(data_producao_estimada)
+          produtos(lucro_joel, fornecedor_id),
+          encomendas!inner(numero_encomenda, status, fornecedor_id, data_producao_estimada)
         `
         )
         .gte("encomendas.data_producao_estimada", isoDate(start))
         .lt("encomendas.data_producao_estimada", isoDate(end));
       if (error || !itens) return 0;
 
-      const total = itens.reduce((acc, item) => {
-        const quantidade = item.quantidade || 0;
-        const precoUnitario = item.preco_unitario || 0;
-        const precoCusto = item.preco_custo || 0;
-        const lucro = quantidade * precoUnitario - quantidade * precoCusto;
-        return acc + lucro;
-      }, 0);
-      return total;
+      const typedItens = itens as unknown as CommissionItemRow[];
+      const custosByItemId = await fetchCustos(typedItens.map((it) => it.id));
+      return computeCommissionTotal(typedItens, custosByItemId);
     },
   });
 
@@ -144,23 +232,20 @@ export default function Dashboard() {
       const { data: itens, error } = await supabase
         .from("itens_encomenda")
         .select(`
+          id,
           quantidade,
           preco_unitario,
           preco_custo,
-          encomendas!inner(data_producao_estimada)
+          produtos(lucro_joel, fornecedor_id),
+          encomendas!inner(numero_encomenda, status, fornecedor_id, data_producao_estimada)
         `)
         .gte("encomendas.data_producao_estimada", `${comissoesAnoYear}-01-01`)
         .lt("encomendas.data_producao_estimada", `${comissoesAnoYear + 1}-01-01`);
       if (error || !itens) return 0;
 
-      const total = itens.reduce((acc, item) => {
-        const quantidade = item.quantidade || 0;
-        const precoUnitario = item.preco_unitario || 0;
-        const precoCusto = item.preco_custo || 0;
-        const lucro = quantidade * precoUnitario - quantidade * precoCusto;
-        return acc + lucro;
-      }, 0);
-      return total;
+      const typedItens = itens as unknown as CommissionItemRow[];
+      const custosByItemId = await fetchCustos(typedItens.map((it) => it.id));
+      return computeCommissionTotal(typedItens, custosByItemId);
     },
   });
 
@@ -171,23 +256,42 @@ export default function Dashboard() {
         .from("itens_encomenda")
         .select(
           `
+          id,
           quantidade,
           preco_unitario,
           preco_custo,
-          encomendas!inner(data_producao_estimada)
+          produtos(lucro_joel, fornecedor_id),
+          encomendas!inner(numero_encomenda, status, fornecedor_id, data_producao_estimada)
         `
         )
         .gte("encomendas.data_producao_estimada", `${performanceYear}-01-01`)
         .lt("encomendas.data_producao_estimada", `${performanceYear + 1}-01-01`);
       if (error || !itens) return [];
+
+      const typedItens = itens as unknown as CommissionItemRow[];
+      const custosByItemId = await fetchCustos(typedItens.map((it) => it.id));
+
       const meses = Array(12).fill(0);
-      itens.forEach((item) => {
-        const dataProd = item.encomendas?.data_producao_estimada;
+      typedItens.forEach((item) => {
+        const enc = item.encomendas;
+        const dataProd = enc?.data_producao_estimada;
         if (!dataProd) return;
         const mes = new Date(dataProd).getMonth();
-        const lucro =
-          (item.quantidade || 0) * ((item.preco_unitario || 0) - (item.preco_custo || 0));
-        meses[mes] += lucro;
+        meses[mes] += calcularComissaoItem(
+          {
+            quantidade: item.quantidade || 0,
+            preco_unitario: item.preco_unitario || 0,
+            preco_custo: item.preco_custo || 0,
+            lucro_joel: item.produtos?.lucro_joel ?? null,
+            lucro_joel_real: custosByItemId[item.id] ?? null,
+            fornecedor_id: item.produtos?.fornecedor_id ?? undefined,
+          },
+          {
+            numero_encomenda: enc?.numero_encomenda || "",
+            status: enc?.status || "",
+            fornecedor_id: enc?.fornecedor_id ?? undefined,
+          }
+        );
       });
       return meses;
     },
@@ -385,6 +489,59 @@ export default function Dashboard() {
               />
             </motion.div>
           </motion.div>
+
+          {/* Exchange Rate Widget - admin only */}
+          {isAdmin && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+            >
+              <Card className="bg-card border-[var(--border)]">
+                <CardContent className="flex items-center gap-4 py-3 px-4">
+                  <RefreshCw className="text-muted-foreground h-4 w-4 shrink-0" />
+                  <span className="text-sm font-medium text-foreground whitespace-nowrap">Taxa de Câmbio:</span>
+                  {editingRate ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">1 EUR =</span>
+                      <Input
+                        type="text"
+                        inputMode="decimal"
+                        value={rateInput}
+                        onChange={(e) => setRateInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleSaveRate(); if (e.key === "Escape") setEditingRate(false); }}
+                        className="h-8 w-20 text-sm"
+                        autoFocus
+                      />
+                      <span className="text-sm text-muted-foreground">BRL</span>
+                      <Button size="sm" variant="gradient" className="h-8" onClick={handleSaveRate} disabled={savingRate}>
+                        <Save className="mr-1 h-3 w-3" />
+                        Salvar
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-8" onClick={() => setEditingRate(false)}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-foreground">
+                        1 EUR = {exchangeRate.toFixed(2)} BRL
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => { setRateInput(exchangeRate.toFixed(2)); setEditingRate(true); }}
+                      >
+                        <Edit2 className="mr-1 h-3 w-3" />
+                        Editar
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
           {/* Monthly Commissions Grid */}
           <motion.div

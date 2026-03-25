@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { calcularComissaoItem } from "@/lib/utils/commission";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useFormatters } from "@/hooks/useFormatters";
@@ -69,11 +70,15 @@ interface Encomenda {
 
 interface EncomendaDBRow extends Encomenda {
   itens_encomenda?: {
+    id: string;
     quantidade: number | null;
     preco_unitario: number | null;
     preco_custo: number | null;
     produtos?: {
+      nome: string | null;
       size_weight: number | null;
+      lucro_joel: number | null;
+      fornecedor_id: string | null;
     } | null;
   }[];
 }
@@ -142,10 +147,11 @@ export default function Encomendas() {
           clientes(nome),
           fornecedores(nome),
           itens_encomenda(
+            id,
             quantidade,
             preco_unitario,
             preco_custo,
-            produtos(nome, size_weight)
+            produtos(nome, size_weight, lucro_joel, fornecedor_id)
           )
         `
         )
@@ -154,6 +160,21 @@ export default function Encomendas() {
 
       if (error) throw error;
 
+      // Batch fetch real costs for all orders
+      const orderIds = (data || []).map((enc) => enc.id);
+      const { data: custosData } = orderIds.length > 0
+        ? await supabase
+            .from("custos_producao_encomenda")
+            .select("item_encomenda_id, lucro_joel_real")
+            .in("encomenda_id", orderIds)
+        : { data: [] };
+
+      // Index real costs by item_encomenda_id
+      const custosByItemId: Record<string, number> = {};
+      (custosData || []).forEach((c) => {
+        custosByItemId[c.item_encomenda_id] = c.lucro_joel_real;
+      });
+
       const computed = (data || []).map((enc) => {
         let commission_amount = 0;
         let valor_total_custo = 0;
@@ -161,11 +182,24 @@ export default function Encomendas() {
 
         ((enc as EncomendaDBRow).itens_encomenda || []).forEach((it) => {
           const q = Number(it.quantidade || 0);
-          const pv = Number(it.preco_unitario || 0);
           const pc = Number(it.preco_custo || 0);
           const sw = Number(it.produtos?.size_weight || 0);
 
-          commission_amount += q * pv - q * pc;
+          commission_amount += calcularComissaoItem(
+            {
+              quantidade: q,
+              preco_unitario: Number(it.preco_unitario || 0),
+              preco_custo: pc,
+              lucro_joel: it.produtos?.lucro_joel ?? null,
+              lucro_joel_real: custosByItemId[it.id] ?? null,
+              fornecedor_id: it.produtos?.fornecedor_id ?? undefined,
+            },
+            {
+              numero_encomenda: enc.numero_encomenda,
+              status: enc.status,
+              fornecedor_id: enc.fornecedor_id,
+            }
+          );
           valor_total_custo += q * pc;
           totalGramas += q * sw;
         });

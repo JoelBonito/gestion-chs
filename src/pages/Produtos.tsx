@@ -25,8 +25,6 @@ export default function Produtos() {
   const { user } = useAuth();
   const hidePrices = shouldHidePrices(user);
   const { t, isHam } = useProdutoTranslation();
-  const FORNECEDOR_PRODUCAO_ID = "b8f995d2-47dc-4c8f-9779-ce21431f5244";
-
   // Estados de Dados
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -230,7 +228,6 @@ export default function Produtos() {
           loading={loading}
           isHam={isHam}
           hidePrices={hidePrices}
-          FORNECEDOR_PRODUCAO_ID={FORNECEDOR_PRODUCAO_ID}
           onEdit={handleEdit}
           onView={handleView}
           onDuplicate={handleDuplicate}

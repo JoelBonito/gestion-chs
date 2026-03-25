@@ -19,6 +19,8 @@ export interface Produto {
     ativo: boolean;
     created_at?: string;
     updated_at?: string;
+    custo_producao?: number | null;
+    lucro_joel?: number | null;
 }
 
 export interface ProdutoFormData {
@@ -33,6 +35,8 @@ export interface ProdutoFormData {
     preco_plus25?: number;
     stock_atual?: number;
     stock_minimo?: number;
+    custo_producao?: number;
+    lucro_joel?: number;
 }
 
 export interface ProdutoWithStats extends Produto {

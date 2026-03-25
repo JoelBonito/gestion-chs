@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Package, DollarSign, Paperclip, Truck, BarChart3, Save, Loader2, Pencil } from "lucide-react";
 import { AttachmentManager } from "@/components/shared";
 import { useAuth } from "@/hooks/useAuth";
-import { shouldHidePrices } from "@/lib/permissions";
-import { cn } from "@/lib/utils";
+import { shouldHidePrices, FORNECEDOR_PRODUCAO_ID } from "@/lib/permissions";
+
 import { Produto } from "@/types/database";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -76,6 +76,9 @@ export default function ProdutoView({ produto: initialProduto, onClose, onEdit }
       "Margem Estimada:": { pt: "Margem Estimada:", fr: "Marge Estimée :" },
       "Nonato": { pt: "Nonato", fr: "Nonato" },
       "Lucro Nonato:": { pt: "Lucro Nonato:", fr: "Profit Nonato :" },
+      "Custo Produção": { pt: "Custo Produção", fr: "Coût de Production" },
+      "Preço Custo": { pt: "Preço Custo", fr: "Prix Coût" },
+      "Lucro Joel": { pt: "Lucro Joel", fr: "Profit Joel" },
       "Níveis de Estoque": { pt: "Níveis de Estoque", fr: "Niveaux de Stock" },
       Garrafas: { pt: "Garrafas", fr: "Bouteilles" },
       Tampas: { pt: "Tampas", fr: "Bouchons" },
@@ -254,82 +257,52 @@ export default function ProdutoView({ produto: initialProduto, onClose, onEdit }
                 </div>
               </div>
 
+              {/* Custo + Lucro Joel (condicional por fornecedor) */}
               {!isHam && !hidePrices && (() => {
-                const priceTypes = [
-                  { label: "Custo", price: produto.preco_custo, color: "orange", textCls: "text-orange-400", borderCls: "border-orange-500/20" },
-                  { label: "Tabela", price: produto.preco_tabela, color: "amber", textCls: "text-amber-500", borderCls: "border-amber-500/20" },
-                  { label: "50/50", price: produto.preco_nonato, color: "violet", textCls: "text-violet-500", borderCls: "border-violet-500/20" },
-                  { label: "+25%", price: produto.preco_plus25, color: "rose", textCls: "text-rose-500", borderCls: "border-rose-500/20" },
-                ];
+                const isProducao = produto.fornecedor_id === FORNECEDOR_PRODUCAO_ID;
 
-                const profitTypes = [
-                  { label: "Lucro Real", getValue: () => produto.preco_venda - produto.preco_custo, requires: produto.preco_custo > 0, textCls: "text-emerald-500", borderCls: "border-emerald-500/20" },
-                  { label: "Lucro Tabela", getValue: () => produto.preco_venda - (produto.preco_tabela || 0), requires: (produto.preco_tabela || 0) > 0, textCls: "text-amber-400", borderCls: "border-amber-500/20" },
-                  { label: "Lucro 50/50", getValue: () => (produto.preco_venda - (produto.preco_nonato || 0)) / 2, requires: (produto.preco_nonato || 0) > 0, textCls: "text-violet-400", borderCls: "border-violet-500/20" },
-                  { label: "Lucro +25%", getValue: () => produto.preco_venda - (produto.preco_plus25 || 0), requires: (produto.preco_plus25 || 0) > 0, textCls: "text-rose-400", borderCls: "border-rose-500/20" },
-                ];
+                const custoLabel = isProducao ? t("Custo Produção") : t("Preço Custo");
+                const custoValue = isProducao ? produto.custo_producao : produto.preco_custo;
+                const lucroValue = isProducao
+                  ? produto.lucro_joel
+                  : (produto.preco_venda - (produto.preco_custo || 0));
 
-                const activePrices = priceTypes.filter((pt) => pt.price != null && pt.price > 0);
-                const activeProfits = profitTypes.filter((pt) => pt.requires && produto.preco_venda > 0);
+                const hasCusto = custoValue != null && custoValue > 0;
+                const hasLucro = lucroValue != null && lucroValue > 0;
+
+                if (!hasCusto && !hasLucro) return null;
 
                 return (
-                  <>
-                    {/* Row: All prices side by side */}
-                    {activePrices.length > 0 && (
-                      <div className={cn("mt-4 grid gap-3", activePrices.length <= 2 ? "grid-cols-2" : "grid-cols-4")}>
-                        {activePrices.map((pt) => (
-                          <div key={pt.label} className={cn("bg-accent rounded-xl border p-3 shadow-sm", pt.borderCls)}>
-                            <span className={cn("text-[9px] font-bold tracking-wider uppercase", pt.textCls)}>
-                              {pt.label}
-                            </span>
-                            <div className={cn("mt-1 text-lg font-bold tabular-nums", pt.textCls)}>
-                              {formatCurrencyEUR(pt.price!)}
-                            </div>
-                            <div className="text-muted-foreground mt-0.5 text-xs font-medium tabular-nums">
-                              {formatCurrencyBRL(eurToBrl(pt.price!))}
-                            </div>
-                          </div>
-                        ))}
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    {hasCusto && (
+                      <div className="bg-accent rounded-xl border border-orange-500/20 p-3 shadow-sm">
+                        <span className="text-[9px] font-bold tracking-wider text-orange-400 uppercase">
+                          {custoLabel}
+                        </span>
+                        <div className="mt-1 text-lg font-bold tabular-nums text-orange-400">
+                          {formatCurrencyEUR(custoValue!)}
+                        </div>
+                        <div className="text-muted-foreground mt-0.5 text-xs font-medium tabular-nums">
+                          {formatCurrencyBRL(eurToBrl(custoValue!))}
+                        </div>
                       </div>
                     )}
-
-                    {/* Row: All profits side by side */}
-                    {activeProfits.length > 0 && (
-                      <div className={cn("mt-3 grid gap-3", activeProfits.length <= 2 ? "grid-cols-2" : "grid-cols-4")}>
-                        {activeProfits.map((pt) => {
-                          const lucro = pt.getValue();
-                          return (
-                            <div key={pt.label} className={cn("rounded-xl border p-3", pt.borderCls, lucro >= 0 ? "bg-accent" : "bg-red-500/5 border-red-500/20")}>
-                              <span className={cn("text-[9px] font-bold tracking-wider uppercase", lucro >= 0 ? pt.textCls : "text-red-500")}>
-                                {pt.label}
-                              </span>
-                              <div className={cn("mt-1 text-lg font-bold tabular-nums", lucro >= 0 ? pt.textCls : "text-red-500")}>
-                                {formatCurrencyEUR(lucro)}
-                              </div>
-                              <div className="text-muted-foreground mt-0.5 text-xs font-medium tabular-nums">
-                                {formatCurrencyBRL(eurToBrl(lucro))}
-                              </div>
-                            </div>
-                          );
-                        })}
+                    {hasLucro && (
+                      <div className="bg-accent rounded-xl border border-emerald-500/20 p-3 shadow-sm">
+                        <span className="text-[9px] font-bold tracking-wider text-emerald-400 uppercase">
+                          {t("Lucro Joel")}
+                        </span>
+                        <div className="mt-1 text-lg font-bold tabular-nums text-emerald-400">
+                          {formatCurrencyEUR(lucroValue!)}
+                        </div>
+                        <div className="text-muted-foreground mt-0.5 text-xs font-medium tabular-nums">
+                          {formatCurrencyBRL(eurToBrl(lucroValue!))}
+                        </div>
                       </div>
                     )}
-                  </>
+                  </div>
                 );
               })()}
-
-              {!isHam && !hidePrices && produto.preco_venda > 0 && produto.preco_custo > 0 && (
-                <div className="bg-accent border-border/10 mt-4 flex items-center justify-between rounded-xl border p-3 text-xs shadow-inner">
-                  <span className="text-muted-foreground font-medium">{t("Margem Estimada:")}</span>
-                  <span className="text-foreground text-lg font-bold">
-                    {(
-                      ((produto.preco_venda - produto.preco_custo) / produto.preco_venda) *
-                      100
-                    ).toFixed(1)}
-                    %
-                  </span>
-                </div>
-              )}
             </div>
           )}
 

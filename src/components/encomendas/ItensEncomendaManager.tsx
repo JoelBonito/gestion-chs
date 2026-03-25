@@ -9,11 +9,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, Box, Package, Euro, Save, X, Loader2 } from "lucide-react";
+import { Trash2, Plus, Box, Package, Euro, Save, X, Loader2, CircleDollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/shared";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CustoProducaoEncomenda } from "@/types/database";
 
 export interface ItemEncomenda {
   id?: string;
@@ -44,6 +45,9 @@ interface ItensEncomendaManagerProps {
   isTransportMode?: boolean;
   onCancel?: () => void;
   isSubmitting?: boolean;
+  isOnlus?: boolean;
+  custosProducao?: CustoProducaoEncomenda[];
+  onOpenCustoForm?: (item: ItemEncomenda) => void;
 }
 
 // Componente de Input isolado que gerencia estado local
@@ -170,6 +174,9 @@ export function ItensEncomendaManager({
   isTransportMode = false,
   onCancel,
   isSubmitting = false,
+  isOnlus = false,
+  custosProducao = [],
+  onOpenCustoForm,
 }: ItensEncomendaManagerProps) {
   const [produtos, setProdutos] = useState<Produto[]>([]);
 
@@ -309,15 +316,25 @@ export function ItensEncomendaManager({
               <table className="w-full bg-card text-sm">
                 <thead className="border-border/40 border-b bg-muted/50">
                   <tr>
-                    <th className="text-muted-foreground w-[54%] px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase">
+                    <th className={cn(
+                      "text-muted-foreground px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase",
+                      isOnlus ? "w-[48%]" : "w-[54%]"
+                    )}>
                       Produto
                     </th>
+                    {isOnlus && (
+                      <th className="text-muted-foreground w-[6%] px-4 py-3 text-center text-[10px] font-semibold tracking-wider uppercase">
+                        Custo
+                      </th>
+                    )}
                     <th className="text-muted-foreground w-[8%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
                       Qtd.
                     </th>
-                    <th className="text-muted-foreground w-[10%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
-                      Custo (€)
-                    </th>
+                    {!isOnlus && (
+                      <th className="text-muted-foreground w-[10%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
+                        Custo (€)
+                      </th>
+                    )}
                     <th className="text-muted-foreground w-[10%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
                       Venda (€)
                     </th>
@@ -379,6 +396,44 @@ export function ItensEncomendaManager({
                             </TooltipProvider>
                           )}
                         </td>
+                        {isOnlus && (
+                          <td className="px-2 py-2 text-center">
+                            {item.id && item.preco_venda > 0 ? (() => {
+                              const existing = custosProducao.find(
+                                (c) => c.item_encomenda_id === item.id
+                              );
+                              const isFilled = !!existing;
+                              return (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
+                                        type="button"
+                                        onClick={() => onOpenCustoForm?.(item)}
+                                        className={cn(
+                                          "mx-auto flex h-7 w-7 items-center justify-center rounded-full transition-colors cursor-pointer",
+                                          isFilled
+                                            ? "bg-emerald-500/20 hover:bg-emerald-500/30"
+                                            : "bg-red-500/20 hover:bg-red-500/30"
+                                        )}
+                                      >
+                                        <CircleDollarSign className={cn(
+                                          "h-3.5 w-3.5",
+                                          isFilled ? "text-emerald-400" : "text-red-400"
+                                        )} />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="text-xs">
+                                      {isFilled
+                                        ? `Preenchido - Lucro: ${formatCurrencyEUR(existing!.lucro_joel_real)}/un`
+                                        : "Custos pendentes - Clique para preencher"}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              );
+                            })() : null}
+                          </td>
+                        )}
                         <td className="px-4 py-2">
                           <LocalInput
                             type="text"
@@ -389,17 +444,19 @@ export function ItensEncomendaManager({
                             className="ml-auto h-9 w-16 bg-background text-right text-xs"
                           />
                         </td>
-                        <td className="px-4 py-2">
-                          <LocalInput
-                            type="text"
-                            inputMode="decimal"
-                            value={item.preco_custo || ""}
-                            onChange={(val) => atualizarItem(index, "preco_custo", val)}
-                            placeholder="0.00"
-                            className="ml-auto h-9 w-24 bg-background text-right text-xs"
-                            disabled={isTransportMode}
-                          />
-                        </td>
+                        {!isOnlus && (
+                          <td className="px-4 py-2">
+                            <LocalInput
+                              type="text"
+                              inputMode="decimal"
+                              value={item.preco_custo || ""}
+                              onChange={(val) => atualizarItem(index, "preco_custo", val)}
+                              placeholder="0.00"
+                              className="ml-auto h-9 w-24 bg-background text-right text-xs"
+                              disabled={isTransportMode}
+                            />
+                          </td>
+                        )}
                         <td className="px-4 py-2">
                           <LocalInput
                             type="text"
@@ -495,7 +552,7 @@ export function ItensEncomendaManager({
                           </TooltipProvider>
                         )}
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className={cn("grid gap-2", isOnlus ? "grid-cols-2" : "grid-cols-3")}>
                         <div>
                           <label className="text-muted-foreground mb-1 block text-[10px] font-bold uppercase">
                             Qtd ({isFrete ? "Kg" : "Un"})
@@ -508,19 +565,21 @@ export function ItensEncomendaManager({
                             className="h-9 w-full bg-background text-xs"
                           />
                         </div>
-                        <div>
-                          <label className="text-muted-foreground mb-1 block text-[10px] font-bold uppercase">
-                            Custo (€)
-                          </label>
-                          <LocalInput
-                            type="text"
-                            inputMode="decimal"
-                            value={item.preco_custo || ""}
-                            onChange={(v) => atualizarItem(index, "preco_custo", v)}
-                            className="h-9 w-full bg-background text-xs"
-                            disabled={isTransportMode}
-                          />
-                        </div>
+                        {!isOnlus && (
+                          <div>
+                            <label className="text-muted-foreground mb-1 block text-[10px] font-bold uppercase">
+                              Custo (€)
+                            </label>
+                            <LocalInput
+                              type="text"
+                              inputMode="decimal"
+                              value={item.preco_custo || ""}
+                              onChange={(v) => atualizarItem(index, "preco_custo", v)}
+                              className="h-9 w-full bg-background text-xs"
+                              disabled={isTransportMode}
+                            />
+                          </div>
+                        )}
                         <div>
                           <label className="text-muted-foreground mb-1 block text-[10px] font-bold uppercase">
                             Venda (€)
@@ -534,6 +593,29 @@ export function ItensEncomendaManager({
                           />
                         </div>
                       </div>
+                      {isOnlus && item.id && item.preco_venda > 0 && (() => {
+                        const existing = custosProducao.find(
+                          (c) => c.item_encomenda_id === item.id
+                        );
+                        const isFilled = !!existing;
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => onOpenCustoForm?.(item)}
+                            className={cn(
+                              "flex items-center gap-2 rounded-md px-3 py-1.5 text-[11px] font-medium transition-colors w-full",
+                              isFilled
+                                ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                                : "bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                            )}
+                          >
+                            <CircleDollarSign className="h-3.5 w-3.5" />
+                            {isFilled
+                              ? `Custo preenchido - Lucro: ${formatCurrencyEUR(existing!.lucro_joel_real)}/un`
+                              : "Preencher custos de producao"}
+                          </button>
+                        );
+                      })()}
                       <div className="border-border/20 flex items-center justify-between rounded border bg-muted/50 p-2 text-xs">
                         <span className="text-muted-foreground font-semibold">SUBTOTAL</span>
                         <span className="text-primary font-bold">

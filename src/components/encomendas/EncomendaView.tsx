@@ -8,7 +8,8 @@ import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { useFormatters } from "@/hooks/useFormatters";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { shouldHidePrices } from "@/lib/permissions";
+import { shouldHidePrices, FORNECEDOR_PRODUCAO_ID } from "@/lib/permissions";
+import { calcularComissaoItem } from "@/lib/utils/commission";
 // jspdf and html2canvas are dynamically imported to reduce initial bundle size
 
 type Encomenda = {
@@ -23,6 +24,7 @@ type Encomenda = {
   data_envio_estimada?: string | null;
   observacoes_joel?: string | null;
   observacoes_felipe?: string | null;
+  fornecedor_id?: string | null;
   clientes?: { nome?: string | null } | null;
   fornecedores?: { nome?: string | null } | null;
 };
@@ -32,7 +34,16 @@ type ItemEncomenda = {
   quantidade: number | null;
   preco_unitario: number | null;
   preco_custo: number | null;
-  produtos?: { nome?: string | null } | null;
+  produtos?: {
+    nome?: string | null;
+    lucro_joel?: number | null;
+    fornecedor_id?: string | null;
+  } | null;
+};
+
+type CustoProducaoRow = {
+  item_encomenda_id: string;
+  lucro_joel_real: number;
 };
 
 type Props = {
@@ -54,6 +65,7 @@ export default function EncomendaView({ encomendaId }: Props) {
 
   const [encomenda, setEncomenda] = useState<Encomenda | null>(null);
   const [itens, setItens] = useState<ItemEncomenda[]>([]);
+  const [custosByItemId, setCustosByItemId] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [loadingItens, setLoadingItens] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -134,8 +146,8 @@ export default function EncomendaView({ encomendaId }: Props) {
         setLoading(true);
         setLoadingItens(true);
 
-        // Dispara ambas em paralelo
-        const [encomendaRes, itensRes] = await Promise.all([
+        // Dispara todas em paralelo
+        const [encomendaRes, itensRes, custosRes] = await Promise.all([
           supabase
             .from("encomendas")
             .select(`*, clientes(nome), fornecedores(nome)`)
@@ -143,7 +155,11 @@ export default function EncomendaView({ encomendaId }: Props) {
             .single(),
           supabase
             .from("itens_encomenda")
-            .select(`id, quantidade, preco_unitario, preco_custo, produtos(nome)`)
+            .select(`id, quantidade, preco_unitario, preco_custo, produtos(nome, lucro_joel, fornecedor_id)`)
+            .eq("encomenda_id", id),
+          supabase
+            .from("custos_producao_encomenda")
+            .select("item_encomenda_id, lucro_joel_real")
             .eq("encomenda_id", id),
         ]);
 
@@ -156,6 +172,13 @@ export default function EncomendaView({ encomendaId }: Props) {
         setFelipeValue(dataEnc.observacoes_felipe ?? "");
 
         setItens((itensRes.data || []) as ItemEncomenda[]);
+
+        // Build custos lookup map
+        const custosMap: Record<string, number> = {};
+        ((custosRes.data || []) as CustoProducaoRow[]).forEach((c) => {
+          custosMap[c.item_encomenda_id] = c.lucro_joel_real;
+        });
+        setCustosByItemId(custosMap);
       } catch (e) {
         console.error(e);
         toast.error(isHam ? "Erreur lors du chargement" : "Erro ao carregar dados da encomenda");
@@ -219,8 +242,30 @@ export default function EncomendaView({ encomendaId }: Props) {
     return acc + q * pc;
   }, 0);
 
-  // Cálculo da % de lucro
-  const lucro = subtotalVenda - subtotalCusto;
+  // Commission-based profit calculation using calcularComissaoItem
+  const lucro = useMemo(() => {
+    if (!encomenda) return 0;
+    return (itens || []).reduce((acc, item) => {
+      const q = Number(item.quantidade ?? 0) || 0;
+      const pu = Number(item.preco_unitario ?? 0) || 0;
+      const pc = Number(item.preco_custo ?? 0) || 0;
+      return acc + calcularComissaoItem(
+        {
+          quantidade: q,
+          preco_unitario: pu,
+          preco_custo: pc,
+          lucro_joel: item.produtos?.lucro_joel ?? null,
+          lucro_joel_real: custosByItemId[item.id] ?? null,
+          fornecedor_id: item.produtos?.fornecedor_id ?? undefined,
+        },
+        {
+          numero_encomenda: encomenda.numero_encomenda,
+          status: encomenda.status,
+          fornecedor_id: encomenda.fornecedor_id ?? undefined,
+        }
+      );
+    }, 0);
+  }, [itens, encomenda, custosByItemId]);
   const percentLucro = subtotalVenda > 0 ? (lucro / subtotalVenda) * 100 : 0;
 
   const handleDownloadPDF = async () => {

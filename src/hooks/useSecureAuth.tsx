@@ -97,7 +97,8 @@ export function useSecureAuth() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const signOut = async () => {
     try {

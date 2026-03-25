@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { ProdutoActions } from "@/components/produtos/ProdutoActions";
 import { Produto } from "@/types/database";
+import { FORNECEDOR_PRODUCAO_ID } from "@/lib/permissions";
 
 interface JoinedProduto extends Produto {
     fornecedores?: { id: string; nome: string } | null;
@@ -23,7 +24,6 @@ interface ProdutoListProps {
     loading: boolean;
     isHam: boolean;
     hidePrices: boolean;
-    FORNECEDOR_PRODUCAO_ID: string;
     onEdit: (produto: Produto) => void;
     onView: (produto: Produto) => void;
     onDuplicate: (produto: Produto) => void;
@@ -36,7 +36,6 @@ export function ProdutoList({
     loading,
     isHam,
     hidePrices,
-    FORNECEDOR_PRODUCAO_ID,
     onEdit,
     onView,
     onDuplicate,
@@ -66,10 +65,10 @@ export function ProdutoList({
                 <Table className="bg-card w-full min-w-[950px] table-fixed border-collapse">
                     <TableHeader className="bg-card border-border border-b">
                         <TableRow className="border-none hover:bg-transparent">
-                            <TableHead className="text-muted-foreground w-[28%] py-4 pl-6 text-[10px] font-bold tracking-wider uppercase">
+                            <TableHead className="text-muted-foreground w-[30%] py-4 pl-6 text-[10px] font-bold tracking-wider uppercase">
                                 {t("Produto")}
                             </TableHead>
-                            <TableHead className="text-muted-foreground w-[16%] py-4 text-[10px] font-bold tracking-wider uppercase">
+                            <TableHead className="text-muted-foreground w-[18%] py-4 text-[10px] font-bold tracking-wider uppercase">
                                 <div className="flex flex-col gap-0.5">
                                     <span className="leading-tight">{t("Marca")}</span>
                                     <span className="leading-tight">{t("Categoria")}</span>
@@ -78,24 +77,16 @@ export function ProdutoList({
                             <TableHead className="text-muted-foreground w-[18%] py-4 text-[10px] font-bold tracking-wider uppercase">
                                 {t("Fornecedor")}
                             </TableHead>
-                            <TableHead className="text-muted-foreground w-[14%] py-4 text-center text-[10px] font-bold tracking-wider uppercase">
+                            <TableHead className="text-muted-foreground w-[16%] py-4 text-center text-[10px] font-bold tracking-wider uppercase">
                                 {t("Estoques")}
                             </TableHead>
                             {!isHam && !hidePrices && (
-                                <>
-                                    <TableHead className="text-muted-foreground w-[9%] py-4 text-right text-[10px] font-bold tracking-wider uppercase">
-                                        <div className="flex flex-col items-end gap-0.5">
-                                            <span className="leading-tight">{t("Preço")}</span>
-                                            <span className="leading-tight">{t("Custo")}</span>
-                                        </div>
-                                    </TableHead>
-                                    <TableHead className="text-muted-foreground w-[9%] py-4 text-right text-[10px] font-bold tracking-wider uppercase">
-                                        <div className="flex flex-col items-end gap-0.5">
-                                            <span className="leading-tight">{t("Preço")}</span>
-                                            <span className="leading-tight">{t("Venda")}</span>
-                                        </div>
-                                    </TableHead>
-                                </>
+                                <TableHead className="text-muted-foreground w-[12%] py-4 text-right text-[10px] font-bold tracking-wider uppercase">
+                                    <div className="flex flex-col items-end gap-0.5">
+                                        <span className="leading-tight">{t("Preço")}</span>
+                                        <span className="leading-tight">{t("Venda")}</span>
+                                    </div>
+                                </TableHead>
                             )}
                             {isHam && (
                                 <TableHead className="text-muted-foreground w-[12%] py-4 text-right text-[10px] font-bold tracking-wider uppercase">
@@ -116,6 +107,9 @@ export function ProdutoList({
                                 produto.fornecedores?.id === FORNECEDOR_PRODUCAO_ID ||
                                 produto.fornecedor_id === FORNECEDOR_PRODUCAO_ID;
                             const fornecedorNome = produto.fornecedores?.nome || "-";
+                            const hasNewPricing = isFornecedorProducao
+                                ? (produto.custo_producao != null && produto.custo_producao > 0 && produto.lucro_joel != null && produto.lucro_joel > 0)
+                                : (produto.preco_custo > 0);
 
                             return (
                                 <TableRow
@@ -204,16 +198,9 @@ export function ProdutoList({
                                             ))}
                                         </div>
                                     </TableCell>
-                                    {!isHam && !hidePrices && (
-                                        <TableCell className="py-4 text-right tabular-nums">
-                                            <span className={`text-[12px] font-bold ${produto.custo_tabela_breakdown ? "text-emerald-400" : "text-muted-foreground"}`}>
-                                                {formatCurrencyEUR(produto.preco_custo || 0)}
-                                            </span>
-                                        </TableCell>
-                                    )}
                                     {(!hidePrices || isHam) && (
                                         <TableCell className="py-4 text-right tabular-nums">
-                                            <span className="text-primary text-sm font-bold">
+                                            <span className={cn("text-sm font-bold", hasNewPricing ? "text-emerald-400" : "text-primary")}>
                                                 {formatCurrencyEUR(produto.preco_venda)}
                                             </span>
                                         </TableCell>
@@ -243,6 +230,9 @@ export function ProdutoList({
                         produto.fornecedores?.id === FORNECEDOR_PRODUCAO_ID ||
                         produto.fornecedor_id === FORNECEDOR_PRODUCAO_ID;
                     const fornecedorNome = produto.fornecedores?.nome || "-";
+                    const hasNewPricing = isFornecedorProducao
+                        ? (produto.custo_producao != null && produto.custo_producao > 0 && produto.lucro_joel != null && produto.lucro_joel > 0)
+                        : (produto.preco_custo > 0);
 
                     return (
                         <div
@@ -316,7 +306,7 @@ export function ProdutoList({
                                     <div className="text-muted-foreground mb-1 text-[9px] leading-none font-bold tracking-widest uppercase">
                                         {t("Venda")}
                                     </div>
-                                    <div className="text-primary text-base leading-none font-bold">
+                                    <div className={cn("text-base leading-none font-bold", hasNewPricing ? "text-emerald-400" : "text-primary")}>
                                         {formatCurrencyEUR(produto.preco_venda)}
                                     </div>
                                 </div>

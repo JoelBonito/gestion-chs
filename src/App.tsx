@@ -16,6 +16,8 @@ import { usePWA } from "@/hooks/usePWA";
 import { TopBarActionsProvider } from "@/context/TopBarActionsContext";
 import { PageLoader } from "@/components/ui/loading";
 import { UserRoleProvider } from "@/contexts/UserRoleContext";
+import { AuthProvider } from "@/hooks/useAuth";
+import { fetchExchangeRate } from "@/lib/utils/currency";
 
 // Lazy loaded pages para otimização de bundle
 const Index = lazy(() => import("./pages/Index"));
@@ -43,6 +45,11 @@ const App = () => {
   const { isInstallable } = usePWA();
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
+  // Load exchange rate from DB on app mount
+  useEffect(() => {
+    fetchExchangeRate();
+  }, []);
+
   useEffect(() => {
     // Show install prompt after 30 seconds if installable
     const timer = setTimeout(() => {
@@ -57,6 +64,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <AuthProvider>
         <UserRoleProvider>
           <LocaleProvider>
             <TopBarActionsProvider>
@@ -125,6 +133,7 @@ const App = () => {
             </TopBarActionsProvider>
           </LocaleProvider>
         </UserRoleProvider>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

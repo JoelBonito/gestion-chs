@@ -36,6 +36,33 @@ export interface Produto {
   estoque_rotulos?: number;
   new_product?: boolean;
   peso?: number;
+  // New pricing model
+  custo_producao?: number | null;
+  lucro_joel?: number | null;
+  garrafa_incluso?: boolean;
+  tampa_incluso?: boolean;
+}
+
+export interface CustoProducaoEncomenda {
+  id?: string;
+  encomenda_id: string;
+  item_encomenda_id: string;
+  produto_id: string;
+  garrafa: number;
+  tampa: number;
+  rotulo: number;
+  producao_nonato: number;
+  frete_sp: number;
+  embalagem_carol: number;
+  imposto: number;
+  diversos: number;
+  custo_total_brl: number;
+  custo_total_eur: number;
+  lucro_joel_real: number;
+  garrafa_incluso?: boolean;
+  tampa_incluso?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Fornecedor {
