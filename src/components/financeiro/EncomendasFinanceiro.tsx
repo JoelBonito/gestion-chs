@@ -211,7 +211,7 @@ export default function EncomendasFinanceiro({
                           {encomenda.numero_encomenda}
                         </span>
                         {encomenda.etiqueta && (
-                          <Badge variant="info" className="mt-0.5">
+                          <Badge variant="info" className="mt-0.5 uppercase">
                             {encomenda.etiqueta}
                           </Badge>
                         )}
@@ -320,7 +320,7 @@ export default function EncomendasFinanceiro({
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold">#{e.numero_encomenda}</div>
                       {e.etiqueta && (
-                        <Badge variant="info" className="mt-0.5">
+                        <Badge variant="info" className="mt-0.5 uppercase">
                           {e.etiqueta}
                         </Badge>
                       )}
@@ -451,7 +451,7 @@ export default function EncomendasFinanceiro({
                   <div className="flex items-center gap-2 text-sm font-semibold">
                     #{selectedEncomenda.numero_encomenda}
                     {selectedEncomenda.etiqueta && (
-                      <Badge variant="info">{selectedEncomenda.etiqueta}</Badge>
+                      <Badge variant="info" className="uppercase">{selectedEncomenda.etiqueta}</Badge>
                     )}
                   </div>
                 </div>

@@ -1,14 +1,15 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { formatCurrencyEUR, formatCurrencyBRL, eurToBrl } from "@/lib/utils/currency";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Package, DollarSign, Paperclip, Truck, BarChart3, Save, Loader2, Pencil } from "lucide-react";
+import { Package, DollarSign, Paperclip, Truck, BarChart3, Save, Loader2, Pencil, History } from "lucide-react";
 import { AttachmentManager } from "@/components/shared";
 import { useAuth } from "@/hooks/useAuth";
 import { shouldHidePrices, FORNECEDOR_PRODUCAO_ID } from "@/lib/permissions";
 
 import { Produto } from "@/types/database";
+import { StatusEncomenda } from "@/types/entities";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -61,6 +62,36 @@ export default function ProdutoView({ produto: initialProduto, onClose, onEdit }
     estoqueTampas !== (produto.estoque_tampas || 0) ||
     estoqueRotulos !== (produto.estoque_rotulos || 0);
 
+  // Historico de encomendas
+  interface HistoricoItem {
+    quantidade: number;
+    preco_unitario: number;
+    subtotal: number;
+    encomendas: {
+      id: string;
+      numero_encomenda: string;
+      status: StatusEncomenda;
+      data_criacao: string;
+      clientes: { nome: string } | null;
+    } | null;
+  }
+  const [historico, setHistorico] = useState<HistoricoItem[]>([]);
+  const [loadingHistorico, setLoadingHistorico] = useState(true);
+
+  useEffect(() => {
+    const fetchHistorico = async () => {
+      setLoadingHistorico(true);
+      const { data } = await supabase
+        .from("itens_encomenda")
+        .select("quantidade, preco_unitario, subtotal, encomendas(id, numero_encomenda, status, data_criacao, clientes(nome))")
+        .eq("produto_id", produto.id)
+        .order("created_at", { ascending: false });
+      setHistorico((data as unknown as HistoricoItem[]) || []);
+      setLoadingHistorico(false);
+    };
+    fetchHistorico();
+  }, [produto.id]);
+
   // i18n
   const lang: "pt" | "fr" = isHam ? "fr" : "pt";
   const t = (k: string) => {
@@ -87,6 +118,12 @@ export default function ProdutoView({ produto: initialProduto, onClose, onEdit }
       Ativo: { pt: "Ativo", fr: "Actif" },
       Inativo: { pt: "Inativo", fr: "Inactif" },
       "Não informado": { pt: "Não informado", fr: "Non renseigné" },
+      "Histórico de Encomendas": { pt: "Histórico de Encomendas", fr: "Historique des Commandes" },
+      "Nenhuma encomenda encontrada": { pt: "Nenhuma encomenda encontrada", fr: "Aucune commande trouvée" },
+      "un": { pt: "un", fr: "u" },
+      "Total:": { pt: "Total:", fr: "Total :" },
+      "unidades": { pt: "unidades", fr: "unités" },
+      "Receita:": { pt: "Receita:", fr: "Recette :" },
     };
     return d[k]?.[lang] || k;
   };
@@ -321,6 +358,107 @@ export default function ProdutoView({ produto: initialProduto, onClose, onEdit }
           onChanged={() => { }}
           useTertiaryLayer={true}
         />
+      </div>
+
+      {/* Historico de Encomendas */}
+      <div className="bg-popover border-border/20 rounded-xl border p-5 shadow-sm">
+        <div className="border-border/10 mb-3 flex items-center gap-2 border-b pb-3 text-[10px] font-bold tracking-widest text-violet-500 uppercase">
+          <History className="h-3.5 w-3.5" />
+          <span>{t("Histórico de Encomendas")}</span>
+          {!loadingHistorico && (
+            <Badge variant="secondary" className="ml-auto text-[9px] tabular-nums">
+              {historico.length}
+            </Badge>
+          )}
+        </div>
+
+        {loadingHistorico ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-violet-500" />
+          </div>
+        ) : historico.length === 0 ? (
+          <p className="text-muted-foreground py-4 text-center text-xs">
+            {t("Nenhuma encomenda encontrada")}
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {historico.map((item, idx) => {
+              const enc = item.encomendas;
+              if (!enc) return null;
+              const statusColor: Record<string, string> = {
+                "NOVO PEDIDO": "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                "MATÉRIA PRIMA": "bg-amber-500/10 text-amber-400 border-amber-500/20",
+                "PRODUÇÃO": "bg-orange-500/10 text-orange-400 border-orange-500/20",
+                "EMBALAGENS": "bg-purple-500/10 text-purple-400 border-purple-500/20",
+                "TRANSPORTE": "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+                "ENTREGUE": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+              };
+              return (
+                <div
+                  key={`${enc.id}-${idx}`}
+                  className="bg-accent border-border/30 rounded-lg border p-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-bold text-violet-400">
+                        #{enc.numero_encomenda}
+                      </span>
+                      {enc.clientes?.nome && (
+                        <span className="text-muted-foreground text-xs">
+                          {enc.clientes.nome}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={`text-[9px] font-bold ${statusColor[enc.status] || ""}`}
+                      >
+                        {enc.status}
+                      </Badge>
+                      <span className="text-muted-foreground text-[10px] tabular-nums">
+                        {new Date(enc.data_criacao).toLocaleDateString(isHam ? "fr-FR" : "pt-BR")}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-1.5 flex items-center gap-3 text-xs">
+                    <span className="text-foreground tabular-nums">
+                      {item.quantidade} {t("un")}
+                      {!hidePrices && (
+                        <span className="text-muted-foreground">
+                          {" "}&times; {formatCurrencyEUR(item.preco_unitario)}
+                        </span>
+                      )}
+                    </span>
+                    {!hidePrices && (
+                      <span className="ml-auto font-semibold tabular-nums text-emerald-400">
+                        {formatCurrencyEUR(item.subtotal)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Totalizador */}
+            <div className="border-border/30 mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-xs">
+              <span className="text-muted-foreground">
+                {t("Total:")}{" "}
+                <span className="text-foreground font-bold tabular-nums">
+                  {historico.reduce((sum, i) => sum + i.quantidade, 0)} {t("unidades")}
+                </span>
+              </span>
+              {!hidePrices && (
+                <span className="text-muted-foreground">
+                  {t("Receita:")}{" "}
+                  <span className="font-bold tabular-nums text-emerald-400">
+                    {formatCurrencyEUR(historico.reduce((sum, i) => sum + i.subtotal, 0))}
+                  </span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

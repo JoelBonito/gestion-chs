@@ -9,7 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, Box, Package, Euro, Save, X, Loader2, CircleDollarSign } from "lucide-react";
+import { Trash2, Plus, Box, Package, Euro, Save, X, Loader2, CircleDollarSign, Gift } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/shared";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
@@ -26,6 +27,9 @@ export interface ItemEncomenda {
   preco_venda: number;
   subtotal: number;
   peso_produto?: number;
+  is_bonificacao?: boolean;
+  parent_temp_id?: string;
+  bonif_manual_edit?: boolean;
 }
 
 interface Produto {
@@ -235,7 +239,10 @@ export function ItensEncomendaManager({
   };
 
   const removerItem = (index: number) => {
-    const novosItens = itens.filter((_, i) => i !== index);
+    const item = itens[index];
+    const itemId = item.tempId || item.id;
+    // Remove the item and its bonificacao child if any
+    const novosItens = itens.filter((i, idx) => idx !== index && i.parent_temp_id !== itemId);
     onItensChange(novosItens);
   };
 
@@ -271,7 +278,35 @@ export function ItensEncomendaManager({
       const qty = parseInt(item.quantidade) || 0;
       item.subtotal = qty * item.preco_venda;
 
+      // Mark bonificacao as manually edited
+      if (item.is_bonificacao && (campo === "quantidade" || campo === "preco_venda")) {
+        item.bonif_manual_edit = true;
+      }
+
       novosItens[index] = item;
+
+      // Propagate parent changes to bonificacao child
+      if (!item.is_bonificacao) {
+        const itemId = item.tempId || item.id;
+        const bonifIndex = novosItens.findIndex((i) => i.parent_temp_id === itemId);
+        if (bonifIndex !== -1) {
+          const bonif = { ...novosItens[bonifIndex] };
+          // Update product if parent product changed
+          if (campo === "produto_id") {
+            bonif.produto_id = item.produto_id;
+            bonif.produto_nome = item.produto_nome;
+            bonif.peso_produto = item.peso_produto;
+          }
+          // Auto-recalc quantity only if not manually edited
+          if (campo === "quantidade" && !bonif.bonif_manual_edit) {
+            const parentQty = parseInt(item.quantidade) || 0;
+            bonif.quantidade = String(Math.round(parentQty * 0.10));
+            bonif.subtotal = (parseInt(bonif.quantidade) || 0) * bonif.preco_venda;
+          }
+          novosItens[bonifIndex] = bonif;
+        }
+      }
+
       onItensChange(novosItens);
     },
     [itens, produtos, onItensChange]
@@ -280,6 +315,48 @@ export function ItensEncomendaManager({
   const isFreteItem = (item: ItemEncomenda) => {
     return item.produto_id === "00000000-0000-0000-0000-000000000001";
   };
+
+  const toggleBonificacao = useCallback(
+    (index: number) => {
+      const item = itens[index];
+      const itemId = item.tempId || item.id;
+      const existingBonifIndex = itens.findIndex((i) => i.parent_temp_id === itemId);
+
+      if (existingBonifIndex !== -1) {
+        // Remove bonificacao
+        const novosItens = itens.filter((_, i) => i !== existingBonifIndex);
+        onItensChange(novosItens);
+      } else {
+        // Create bonificacao item right after the parent
+        const qty = parseInt(item.quantidade) || 0;
+        const bonifQty = Math.round(qty * 0.10);
+        const bonifItem: ItemEncomenda = {
+          tempId: crypto.randomUUID(),
+          produto_id: item.produto_id,
+          produto_nome: item.produto_nome,
+          quantidade: String(bonifQty),
+          preco_custo: 0,
+          preco_venda: 0,
+          subtotal: 0,
+          peso_produto: item.peso_produto,
+          is_bonificacao: true,
+          parent_temp_id: itemId,
+        };
+        const novosItens = [...itens];
+        novosItens.splice(index + 1, 0, bonifItem);
+        onItensChange(novosItens);
+      }
+    },
+    [itens, onItensChange]
+  );
+
+  const hasBonificacao = useCallback(
+    (item: ItemEncomenda) => {
+      const itemId = item.tempId || item.id;
+      return itens.some((i) => i.parent_temp_id === itemId);
+    },
+    [itens]
+  );
 
   return (
     <GlassCard className="border-border/50 bg-secondary/30 p-6 dark:bg-card">
@@ -348,11 +425,25 @@ export function ItensEncomendaManager({
                   {itens.map((item, index) => {
                     const itemKey = item.tempId || item.id || `fallback-${index}`;
                     const isFrete = isFreteItem(item);
+                    const isBonif = !!item.is_bonificacao;
 
                     return (
-                      <tr key={itemKey} className="group hover:bg-muted/30 transition-colors">
+                      <tr key={itemKey} className={cn(
+                        "group transition-colors",
+                        isBonif ? "bg-violet-500/5 hover:bg-violet-500/10" : "hover:bg-muted/30"
+                      )}>
                         <td className="px-4 py-2">
-                          {isFrete ? (
+                          {isBonif ? (
+                            <div className="flex items-center gap-2">
+                              <Badge className="shrink-0 border-violet-500/30 bg-violet-500/10 text-violet-400 text-[10px] font-bold uppercase">
+                                <Gift className="mr-1 h-3 w-3" />
+                                BONIF. 10%
+                              </Badge>
+                              <span className="text-xs font-medium text-muted-foreground uppercase truncate">
+                                {item.produto_nome || produtos.find(p => p.id === item.produto_id)?.nome || ""}
+                              </span>
+                            </div>
+                          ) : isFrete ? (
                             <div className="bg-info/10 dark:bg-info/5 border-info/20 text-info flex h-9 items-center rounded-md border px-3 py-2 text-xs font-medium">
                               FRETE (SP - MRS)
                             </div>
@@ -435,14 +526,42 @@ export function ItensEncomendaManager({
                           </td>
                         )}
                         <td className="px-4 py-2">
-                          <LocalInput
-                            type="text"
-                            inputMode="numeric"
-                            value={item.quantidade}
-                            onChange={(val) => atualizarItem(index, "quantidade", val)}
-                            placeholder="0"
-                            className="ml-auto h-9 w-16 bg-background text-right text-xs"
-                          />
+                          <div className="flex items-center gap-1.5 justify-end">
+                            <LocalInput
+                              type="text"
+                              inputMode="numeric"
+                              value={item.quantidade}
+                              onChange={(val) => atualizarItem(index, "quantidade", val)}
+                              placeholder="0"
+                              className="h-9 w-16 bg-background text-right text-xs"
+                            />
+                            {isOnlus && !isFrete && !isBonif && item.produto_id && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleBonificacao(index)}
+                                      className={cn(
+                                        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors cursor-pointer",
+                                        hasBonificacao(item)
+                                          ? "bg-violet-500/20 hover:bg-violet-500/30"
+                                          : "bg-muted hover:bg-violet-500/10"
+                                      )}
+                                    >
+                                      <Gift className={cn(
+                                        "h-3.5 w-3.5",
+                                        hasBonificacao(item) ? "text-violet-400" : "text-muted-foreground"
+                                      )} />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">
+                                    {hasBonificacao(item) ? "Remover bonificacao 10%" : "Adicionar bonificacao 10%"}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
                         </td>
                         {!isOnlus && (
                           <td className="px-4 py-2">
@@ -493,10 +612,16 @@ export function ItensEncomendaManager({
               {itens.map((item, index) => {
                 const itemKey = item.tempId || item.id || `fallback-${index}-mob`;
                 const isFrete = isFreteItem(item);
+                const isBonifMob = !!item.is_bonificacao;
                 return (
                   <div
                     key={itemKey}
-                    className="border-border/40 relative rounded-lg border bg-card p-4 shadow-sm"
+                    className={cn(
+                      "relative rounded-lg border p-4 shadow-sm",
+                      isBonifMob
+                        ? "border-violet-500/30 bg-violet-500/5"
+                        : "border-border/40 bg-card"
+                    )}
                   >
                     <Button
                       type="button"
@@ -512,7 +637,17 @@ export function ItensEncomendaManager({
                         <label className="text-muted-foreground mb-1 block text-[10px] font-bold uppercase">
                           Produto
                         </label>
-                        {isFrete ? (
+                        {isBonifMob ? (
+                          <div className="flex items-center gap-2">
+                            <Badge className="shrink-0 border-violet-500/30 bg-violet-500/10 text-violet-400 text-[10px] font-bold uppercase">
+                              <Gift className="mr-1 h-3 w-3" />
+                              BONIF. 10%
+                            </Badge>
+                            <span className="text-xs font-medium text-muted-foreground uppercase truncate">
+                              {item.produto_nome || produtos.find(p => p.id === item.produto_id)?.nome || ""}
+                            </span>
+                          </div>
+                        ) : isFrete ? (
                           <div className="text-info text-sm font-medium">FRETE (SP - MRS)</div>
                         ) : (
                           <TooltipProvider>
@@ -557,13 +692,32 @@ export function ItensEncomendaManager({
                           <label className="text-muted-foreground mb-1 block text-[10px] font-bold uppercase">
                             Qtd ({isFrete ? "Kg" : "Un"})
                           </label>
-                          <LocalInput
-                            type="text"
-                            inputMode={isFrete ? "decimal" : "numeric"}
-                            value={item.quantidade}
-                            onChange={(v) => atualizarItem(index, "quantidade", v)}
-                            className="h-9 w-full bg-background text-xs"
-                          />
+                          <div className="flex items-center gap-1.5">
+                            <LocalInput
+                              type="text"
+                              inputMode={isFrete ? "decimal" : "numeric"}
+                              value={item.quantidade}
+                              onChange={(v) => atualizarItem(index, "quantidade", v)}
+                              className="h-9 w-full bg-background text-xs"
+                            />
+                            {isOnlus && !isFrete && !isBonifMob && item.produto_id && (
+                              <button
+                                type="button"
+                                onClick={() => toggleBonificacao(index)}
+                                className={cn(
+                                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors cursor-pointer",
+                                  hasBonificacao(item)
+                                    ? "bg-violet-500/20 hover:bg-violet-500/30"
+                                    : "bg-muted hover:bg-violet-500/10"
+                                )}
+                              >
+                                <Gift className={cn(
+                                  "h-4 w-4",
+                                  hasBonificacao(item) ? "text-violet-400" : "text-muted-foreground"
+                                )} />
+                              </button>
+                            )}
+                          </div>
                         </div>
                         {!isOnlus && (
                           <div>

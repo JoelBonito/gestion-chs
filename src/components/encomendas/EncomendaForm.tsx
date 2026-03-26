@@ -366,7 +366,7 @@ export default function EncomendaForm({
               preco_venda: item.preco_unitario || 0,
             }));
         }
-        const initialItens = (itensData || []).map((item: any) => ({
+        const mappedItens = (itensData || []).map((item: any) => ({
           ...item,
           tempId: crypto.randomUUID(),
           quantidade: String(item.quantidade || 0),
@@ -374,7 +374,20 @@ export default function EncomendaForm({
           preco_venda: Number(item.preco_venda || item.preco_unitario || 0),
           peso_produto: Number(item.peso_produto || item.produtos?.size_weight || 0),
           produto_nome: item.produto_nome || item.produtos?.nome || "",
+          is_bonificacao: item.is_bonificacao || false,
         }));
+        // Rebuild parent_temp_id: bonificacao items follow their parent (same produto_id, is_bonificacao=true)
+        const initialItens = mappedItens.map((item: any, idx: number) => {
+          if (item.is_bonificacao && idx > 0) {
+            // Find the closest previous non-bonificacao item with same produto_id
+            for (let i = idx - 1; i >= 0; i--) {
+              if (!mappedItens[i].is_bonificacao && mappedItens[i].produto_id === item.produto_id) {
+                return { ...item, parent_temp_id: mappedItens[i].tempId };
+              }
+            }
+          }
+          return item;
+        });
         setItens(initialItens);
         setValorTotal(
           initialItens.reduce((acc: number, item: any) => acc + (item.subtotal || 0), 0)
@@ -477,6 +490,7 @@ export default function EncomendaForm({
           quantidade: parseInt(item.quantidade) || 0,
           preco_custo: item.preco_custo,
           preco_unitario: item.preco_venda,
+          is_bonificacao: item.is_bonificacao || false,
         }));
         if (itensToInsert.length > 0) {
           const { error: itemsError } = await supabase
@@ -499,6 +513,7 @@ export default function EncomendaForm({
           quantidade: parseInt(item.quantidade) || 0,
           preco_custo: item.preco_custo,
           preco_unitario: item.preco_venda,
+          is_bonificacao: item.is_bonificacao || false,
         }));
         if (itensToInsert.length > 0) {
           const { error: itemsError } = await supabase
@@ -760,7 +775,7 @@ export default function EncomendaForm({
           onValorTotalChange={setValorTotal}
           onCancel={onSuccess}
           isSubmitting={isSubmitting}
-          isOnlus={isOnlusOrder && isEditing && !!editingData?.id}
+          isOnlus={isOnlusOrder}
           custosProducao={custosProducao}
           onOpenCustoForm={handleOpenCustoForm}
         />

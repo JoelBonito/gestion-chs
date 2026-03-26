@@ -291,7 +291,7 @@ export default function ContasPagar() {
                         <span className="group-hover:text-primary transition-colors">
                           {conta.numero_encomenda}
                         </span>
-                        <Badge variant="info" className="mt-0.5">
+                        <Badge variant="info" className="mt-0.5 uppercase">
                           {conta.etiqueta || "Nenhum"}
                         </Badge>
                       </div>
@@ -440,7 +440,7 @@ export default function ContasPagar() {
                       <div className="truncate text-sm font-semibold">
                         #{conta.numero_encomenda}
                       </div>
-                      <Badge variant="info" className="mt-0.5">
+                      <Badge variant="info" className="mt-0.5 uppercase">
                         {conta.etiqueta || "Nenhum"}
                       </Badge>
                     </div>
@@ -605,7 +605,7 @@ export default function ContasPagar() {
                   <p className="flex items-center gap-2 text-sm font-semibold">
                     #{selectedConta.numero_encomenda}
                     {selectedConta.etiqueta && (
-                      <Badge variant="info">{selectedConta.etiqueta}</Badge>
+                      <Badge variant="info" className="uppercase">{selectedConta.etiqueta}</Badge>
                     )}
                   </p>
                 </div>

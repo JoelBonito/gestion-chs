@@ -13,6 +13,8 @@ import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useOrderItemsTranslation } from "@/hooks/useOrderItemsTranslation";
+import { Badge } from "@/components/ui/badge";
+import { Gift } from "lucide-react";
 
 interface OrderItem {
   id: string;
@@ -21,6 +23,7 @@ interface OrderItem {
   preco_custo: number;
   subtotal: number;
   produto_id: string;
+  is_bonificacao?: boolean;
   produtos?: {
     nome: string;
     marca: string;
@@ -59,6 +62,7 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
           preco_custo,
           subtotal,
           produto_id,
+          is_bonificacao,
           produtos(nome, marca, tipo)
         `
         )
@@ -122,10 +126,18 @@ export function OrderItemsView({ encomendaId, showCostPrices = false }: OrderIte
               {items.map((item) => (
                 <TableRow
                   key={item.id}
-                  className="hover:bg-muted/30 border-border border-b transition-colors last:border-0 dark:border-white/5"
+                  className={`border-border border-b transition-colors last:border-0 dark:border-white/5 ${item.is_bonificacao ? "bg-violet-500/5 hover:bg-violet-500/10" : "hover:bg-muted/30"}`}
                 >
                   <TableCell className="text-sm font-semibold uppercase">
-                    {item.produtos?.nome || "—"}
+                    <div className="flex items-center gap-2">
+                      {item.is_bonificacao && (
+                        <Badge className="shrink-0 border-violet-500/30 bg-violet-500/10 text-violet-400 text-[10px] font-bold uppercase">
+                          <Gift className="mr-1 h-3 w-3" />
+                          BONIF.
+                        </Badge>
+                      )}
+                      {item.produtos?.nome || "—"}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {item.produtos?.marca || "—"}

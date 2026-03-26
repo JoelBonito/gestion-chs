@@ -553,6 +553,7 @@ export type Database = {
           created_at: string | null;
           encomenda_id: string;
           id: string;
+          is_bonificacao: boolean;
           preco_custo: number;
           preco_unitario: number;
           produto_id: string;
@@ -563,6 +564,7 @@ export type Database = {
           created_at?: string | null;
           encomenda_id: string;
           id?: string;
+          is_bonificacao?: boolean;
           preco_custo?: number;
           preco_unitario: number;
           produto_id: string;
@@ -573,6 +575,7 @@ export type Database = {
           created_at?: string | null;
           encomenda_id?: string;
           id?: string;
+          is_bonificacao?: boolean;
           preco_custo?: number;
           preco_unitario?: number;
           produto_id?: string;
