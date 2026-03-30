@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
+import { useState, useEffect, useRef, memo, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +13,12 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ItensEncomendaManager, type ItemEncomenda } from "./ItensEncomendaManager";
-import { CustoProducaoForm } from "./CustoProducaoForm";
-import { formatCurrencyEUR } from "@/lib/utils/currency";
+import { GestaoProducaoSheet } from "./GestaoProducaoSheet";
+
 import { sendEmail, emailTemplates, emailRecipients } from "@/lib/email";
 import { PushNotifications } from "@/lib/push-notifications";
 import { FORNECEDOR_PRODUCAO_ID } from "@/lib/permissions";
-import { CustoProducaoEncomenda } from "@/types/database";
+
 import {
   Package,
   Truck,
@@ -33,6 +33,7 @@ import {
   Euro,
   X,
   Loader2,
+  Factory,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -202,57 +203,8 @@ export default function EncomendaForm({
   const [producaoCalendarOpen, setProducaoCalendarOpen] = useState(false);
   const [envioCalendarOpen, setEnvioCalendarOpen] = useState(false);
 
-  // Custos de producao state (Task 9)
-  const [custosProducao, setCustosProducao] = useState<CustoProducaoEncomenda[]>([]);
-  const [custoFormOpen, setCustoFormOpen] = useState(false);
-  const [custoFormItem, setCustoFormItem] = useState<{
-    itemEncomendaId: string;
-    produtoId: string;
-    produtoNome: string;
-    precoVenda: number;
-    sizeWeight?: number;
-    custoProducao?: number;
-    existingCusto?: CustoProducaoEncomenda | null;
-  } | null>(null);
-
-  const fetchCustosProducao = useCallback(async () => {
-    if (!editingData?.id) return;
-    const { data } = await supabase
-      .from("custos_producao_encomenda")
-      .select("*")
-      .eq("encomenda_id", editingData.id);
-    if (data) setCustosProducao(data as CustoProducaoEncomenda[]);
-  }, [editingData?.id]);
-
-  const handleOpenCustoForm = async (item: ItemEncomenda) => {
-    const existing = custosProducao.find(
-      (c) => c.item_encomenda_id === item.id
-    );
-    // Fetch custo_producao from product
-    let custoProducaoVal: number | undefined;
-    const { data: prodData } = await supabase
-      .from("produtos")
-      .select("custo_producao")
-      .eq("id", item.produto_id)
-      .maybeSingle();
-    if (prodData?.custo_producao) {
-      custoProducaoVal = Number(prodData.custo_producao);
-    }
-    setCustoFormItem({
-      itemEncomendaId: item.id!,
-      produtoId: item.produto_id,
-      produtoNome: item.produto_nome || "Produto",
-      precoVenda: item.preco_venda || 0,
-      sizeWeight: item.peso_produto || undefined,
-      custoProducao: custoProducaoVal,
-      existingCusto: existing || null,
-    });
-    setCustoFormOpen(true);
-  };
-
-  const handleCustoSaved = () => {
-    fetchCustosProducao();
-  };
+  // Gestão de Produção sheet state
+  const [gestaoProducaoOpen, setGestaoProducaoOpen] = useState(false);
 
   // Inicializar formData com dados da encomenda quando disponível
   const [formData, setFormData] = useState<FormData>(() => ({
@@ -268,12 +220,7 @@ export default function EncomendaForm({
 
   const isOnlusOrder = formData.fornecedor_id === FORNECEDOR_PRODUCAO_ID;
 
-  // Fetch existing custos when editing ONL'US order
-  useEffect(() => {
-    if (isEditing && isOnlusOrder && editingData?.id) {
-      fetchCustosProducao();
-    }
-  }, [isEditing, isOnlusOrder, editingData?.id, fetchCustosProducao]);
+
 
   useEffect(() => {
     if (isInitializing.current) return;
@@ -483,6 +430,8 @@ export default function EncomendaForm({
           .eq("id", encomendaId);
         if (error) throw error;
 
+        // Delete production costs first (FK dependency on itens_encomenda)
+        await supabase.from("custos_producao_encomenda").delete().eq("encomenda_id", encomendaId);
         await supabase.from("itens_encomenda").delete().eq("encomenda_id", encomendaId);
         const itensToInsert = itens.map((item) => ({
           encomenda_id: encomendaId,
@@ -776,45 +725,31 @@ export default function EncomendaForm({
           onCancel={onSuccess}
           isSubmitting={isSubmitting}
           isOnlus={isOnlusOrder}
-          custosProducao={custosProducao}
-          onOpenCustoForm={handleOpenCustoForm}
         />
       </div>
 
-      {/* Commission estimate for ONL'US orders with filled costs */}
-      {isEditing && isOnlusOrder && editingData?.id && custosProducao.length > 0 && (
-        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold tracking-wider text-emerald-400/80 uppercase">
-              Comissao Estimada (itens preenchidos)
-            </span>
-            <span className="text-lg font-bold text-emerald-400 tabular-nums">
-              {formatCurrencyEUR(
-                custosProducao.reduce((sum, c) => {
-                  const item = itens.find((i) => i.id === c.item_encomenda_id);
-                  const qty = item ? parseInt(item.quantidade) || 0 : 0;
-                  return sum + qty * c.lucro_joel_real;
-                }, 0)
-              )}
-            </span>
-          </div>
+      {/* Botão Gestão de Produção — só para ONL'US em modo edição com ID */}
+      {isEditing && isOnlusOrder && editingData?.id && (
+        <div className="mb-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-2 border-primary/30 bg-primary/5 font-bold uppercase tracking-widest text-primary hover:border-primary/60 hover:bg-primary/10"
+            onClick={() => setGestaoProducaoOpen(true)}
+          >
+            <Factory className="h-4 w-4" />
+            Gestão de Produção
+          </Button>
         </div>
       )}
 
-      {/* CustoProducaoForm Sheet */}
-      {custoFormItem && (
-        <CustoProducaoForm
-          open={custoFormOpen}
-          onOpenChange={setCustoFormOpen}
-          encomendaId={editingData?.id || ""}
-          itemEncomendaId={custoFormItem.itemEncomendaId}
-          produtoId={custoFormItem.produtoId}
-          produtoNome={custoFormItem.produtoNome}
-          precoVenda={custoFormItem.precoVenda}
-          sizeWeight={custoFormItem.sizeWeight}
-          custoProducao={custoFormItem.custoProducao}
-          existingCusto={custoFormItem.existingCusto}
-          onSaved={handleCustoSaved}
+      {/* GestaoProducaoSheet centraliza toda a gestão de custos */}
+      {editingData?.id && (
+        <GestaoProducaoSheet
+          open={gestaoProducaoOpen}
+          onOpenChange={setGestaoProducaoOpen}
+          encomendaId={editingData.id}
+          itens={itens}
         />
       )}
     </form>
