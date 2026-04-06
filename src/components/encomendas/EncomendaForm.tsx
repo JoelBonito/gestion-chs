@@ -430,10 +430,24 @@ export default function EncomendaForm({
           .eq("id", encomendaId);
         if (error) throw error;
 
-        // Delete production costs first (FK dependency on itens_encomenda)
-        await supabase.from("custos_producao_encomenda").delete().eq("encomenda_id", encomendaId);
-        await supabase.from("itens_encomenda").delete().eq("encomenda_id", encomendaId);
-        const itensToInsert = itens.map((item) => ({
+        // Sync itens: upsert existing, insert new, delete removed (preserves IDs for custos_producao)
+        const { data: existingItens } = await supabase
+          .from("itens_encomenda")
+          .select("id")
+          .eq("encomenda_id", encomendaId);
+        const existingIds = new Set((existingItens || []).map((i) => i.id));
+        const currentIds = new Set(itens.filter((i) => i.id).map((i) => i.id!));
+        const removedIds = [...existingIds].filter((id) => !currentIds.has(id));
+
+        // Delete custos and itens only for removed items
+        if (removedIds.length > 0) {
+          await supabase.from("custos_producao_encomenda").delete().in("item_encomenda_id", removedIds);
+          await supabase.from("itens_encomenda").delete().in("id", removedIds);
+        }
+
+        // Upsert existing items (preserves IDs) and insert new ones
+        const itensToUpsert = itens.map((item) => ({
+          ...(item.id ? { id: item.id } : {}),
           encomenda_id: encomendaId,
           produto_id: item.produto_id,
           quantidade: parseInt(item.quantidade) || 0,
@@ -441,10 +455,10 @@ export default function EncomendaForm({
           preco_unitario: item.preco_venda,
           is_bonificacao: item.is_bonificacao || false,
         }));
-        if (itensToInsert.length > 0) {
+        if (itensToUpsert.length > 0) {
           const { error: itemsError } = await supabase
             .from("itens_encomenda")
-            .insert(itensToInsert);
+            .upsert(itensToUpsert, { onConflict: "id" });
           if (itemsError) throw itemsError;
         }
         toast.success("Encomenda atualizada!");
