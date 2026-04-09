@@ -18,6 +18,7 @@ import { GestaoProducaoSheet } from "./GestaoProducaoSheet";
 import { sendEmail, emailTemplates, emailRecipients } from "@/lib/email";
 import { PushNotifications } from "@/lib/push-notifications";
 import { FORNECEDOR_PRODUCAO_ID } from "@/lib/permissions";
+import { CustoProducaoEncomenda } from "@/types/database";
 
 import {
   Package,
@@ -172,7 +173,12 @@ interface FormData {
   data_envio_estimada: string;
   peso_total: number;
   valor_frete: number;
+  custo_frete: number;
+  frete_ativo: boolean;
 }
+
+const FRETE_PRECO_KG = 4.95;
+const FRETE_CUSTO_KG = 4.65;
 
 const calcularPesoComEmbalagem = (listaItens: ItemEncomenda[]) => {
   const totalGramas = listaItens.reduce(
@@ -195,6 +201,7 @@ export default function EncomendaForm({
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [itens, setItens] = useState<ItemEncomenda[]>([]);
   const [valorTotal, setValorTotal] = useState(0);
+  const [custosProducao, setCustosProducao] = useState<CustoProducaoEncomenda[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isInitializing = useRef(true);
   const pesoBruto = useMemo(() => calcularPesoComEmbalagem(itens), [itens]);
@@ -216,6 +223,8 @@ export default function EncomendaForm({
     data_envio_estimada: editingData?.data_envio_estimada || "",
     peso_total: editingData?.peso_total || 0,
     valor_frete: editingData?.valor_frete || 0,
+    custo_frete: editingData?.custo_frete || 0,
+    frete_ativo: (editingData?.valor_frete || 0) > 0,
   }));
 
   const isOnlusOrder = formData.fornecedor_id === FORNECEDOR_PRODUCAO_ID;
@@ -224,8 +233,15 @@ export default function EncomendaForm({
 
   useEffect(() => {
     if (isInitializing.current) return;
-    const freteCalculado = pesoBruto * 4.5;
-    setFormData((prev) => ({ ...prev, peso_total: pesoBruto, valor_frete: freteCalculado }));
+    setFormData((prev) => {
+      if (!prev.frete_ativo) return { ...prev, peso_total: pesoBruto };
+      return {
+        ...prev,
+        peso_total: pesoBruto,
+        valor_frete: Math.round(pesoBruto * FRETE_PRECO_KG * 100) / 100,
+        custo_frete: Math.round(pesoBruto * FRETE_CUSTO_KG * 100) / 100,
+      };
+    });
   }, [pesoBruto]);
 
   const handleInputChange = (field: keyof FormData, value: any) =>
@@ -313,6 +329,15 @@ export default function EncomendaForm({
               preco_venda: item.preco_unitario || 0,
             }));
         }
+
+        // Fetch production costs for commission type badge
+        if (editingData.id) {
+          const { data: custosData } = await supabase
+            .from("custos_producao_encomenda")
+            .select("*")
+            .eq("encomenda_id", editingData.id);
+          setCustosProducao((custosData || []) as CustoProducaoEncomenda[]);
+        }
         const mappedItens = (itensData || []).map((item: any) => ({
           ...item,
           tempId: crypto.randomUUID(),
@@ -344,7 +369,9 @@ export default function EncomendaForm({
           setFormData((prev) => ({
             ...prev,
             peso_total: pesoCalculado,
-            valor_frete: pesoCalculado * 4.5,
+            valor_frete: Math.round(pesoCalculado * FRETE_PRECO_KG * 100) / 100,
+            custo_frete: Math.round(pesoCalculado * FRETE_CUSTO_KG * 100) / 100,
+            frete_ativo: true,
           }));
         }
         setTimeout(() => {
@@ -409,8 +436,9 @@ export default function EncomendaForm({
         data_envio_estimada: formData.data_envio_estimada ? formData.data_envio_estimada : null,
         // Garantir que números sejam enviados como números
         peso_total: Number(pesoBruto) || 0,
-        valor_frete: Number(formData.valor_frete) || 0,
-        valor_total: Number(valorTotal) || 0,
+        valor_frete: formData.frete_ativo ? Number(formData.valor_frete) || 0 : 0,
+        custo_frete: formData.frete_ativo ? Number(formData.custo_frete) || 0 : 0,
+        valor_total: (Number(valorTotal) || 0) + (formData.frete_ativo ? Number(formData.valor_frete) || 0 : 0),
         valor_pago: 0,
         // Adicionar status explicitamente (será removido no update)
         status: "NOVO PEDIDO" as any,
@@ -702,30 +730,87 @@ export default function EncomendaForm({
               </Popover>
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
+          {/* Peso Bruto — sempre visível */}
+          <div className="space-y-2">
+            <Label className={LabelStyles}>
+              <Calculator className="h-3 w-3" /> Peso Bruto
+            </Label>
+            <div className="bg-accent border-border text-primary flex h-10 items-center rounded-lg border px-3 font-bold shadow-sm">
+              {pesoBruto.toFixed(2)} kg
+            </div>
+          </div>
+
+          {/* Secção Frete SP → Marseille */}
+          <div className="border-border/50 mt-3 rounded-lg border bg-card/50 p-4">
+            <div className="flex items-center justify-between">
               <Label className={LabelStyles}>
-                <Calculator className="h-3 w-3" /> Peso Bruto
+                <Truck className="h-3 w-3" /> Frete SP → Marseille
               </Label>
-              <div className="bg-accent border-border text-primary flex h-10 items-center rounded-lg border px-3 font-bold shadow-sm">
-                {pesoBruto.toFixed(2)} kg
+              <Button
+                type="button"
+                variant={formData.frete_ativo ? "default" : "outline"}
+                size="sm"
+                className={cn(
+                  "h-7 gap-1.5 text-xs font-semibold uppercase tracking-wide",
+                  formData.frete_ativo && "bg-primary/90 hover:bg-primary"
+                )}
+                onClick={() => {
+                  const ativo = !formData.frete_ativo;
+                  setFormData((prev) => ({
+                    ...prev,
+                    frete_ativo: ativo,
+                    valor_frete: ativo ? Math.round(pesoBruto * FRETE_PRECO_KG * 100) / 100 : 0,
+                    custo_frete: ativo ? Math.round(pesoBruto * FRETE_CUSTO_KG * 100) / 100 : 0,
+                  }));
+                }}
+              >
+                <Truck className="h-3 w-3" />
+                {formData.frete_ativo ? "Frete Ativo" : "Adicionar Frete"}
+              </Button>
+            </div>
+
+            {formData.frete_ativo && (
+              <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Preço/kg</span>
+                  <div className="bg-accent border-border flex h-8 items-center rounded border px-2 text-xs font-bold text-primary">
+                    {FRETE_PRECO_KG.toFixed(2)}€
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Custo/kg</span>
+                  <div className="bg-accent border-border flex h-8 items-center rounded border px-2 text-xs font-bold text-muted-foreground">
+                    {FRETE_CUSTO_KG.toFixed(2)}€
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total Venda</span>
+                  <LocalInput
+                    id="valor_frete"
+                    type="text"
+                    inputMode="decimal"
+                    value={String(formData.valor_frete || "")}
+                    onChange={(v) =>
+                      handleInputChange("valor_frete", v ? parseFloat(v.replace(",", ".")) : 0)
+                    }
+                    className="h-8 text-xs font-bold text-primary"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total Custo</span>
+                  <LocalInput
+                    id="custo_frete"
+                    type="text"
+                    inputMode="decimal"
+                    value={String(formData.custo_frete || "")}
+                    onChange={(v) =>
+                      handleInputChange("custo_frete", v ? parseFloat(v.replace(",", ".")) : 0)
+                    }
+                    className="h-8 text-xs font-bold text-muted-foreground"
+                  />
+                </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label className={LabelStyles}>
-                <Euro className="h-3 w-3" /> Frete (€)
-              </Label>
-              <LocalInput
-                id="valor_frete"
-                type="text"
-                inputMode="decimal"
-                value={String(formData.valor_frete || "")}
-                onChange={(v) =>
-                  handleInputChange("valor_frete", v ? parseFloat(v.replace(",", ".")) : 0)
-                }
-                className="text-primary font-bold"
-              />
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -739,6 +824,9 @@ export default function EncomendaForm({
           onCancel={onSuccess}
           isSubmitting={isSubmitting}
           isOnlus={isOnlusOrder}
+          fornecedorId={formData.fornecedor_id}
+          numeroEncomenda={formData.numero_encomenda}
+          custosProducao={custosProducao}
         />
       </div>
 

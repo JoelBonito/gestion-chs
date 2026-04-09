@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { calcularComissaoItem } from "@/lib/utils/commission";
+import { brlToEur } from "@/lib/utils/currency";
+import { FORNECEDOR_PRODUCAO_ID } from "@/lib/permissions";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { useFormatters } from "@/hooks/useFormatters";
@@ -65,6 +67,7 @@ interface Encomenda {
   cliente_nome?: string | null;
   fornecedor_nome?: string | null;
   commission_amount?: number;
+  commission_type?: "estimado" | "parcial" | "real";
   valor_total_custo?: number;
 }
 
@@ -165,7 +168,15 @@ export default function Encomendas() {
       const { data: custosData } = orderIds.length > 0
         ? await supabase
             .from("custos_producao_encomenda")
-            .select("item_encomenda_id, lucro_joel_real")
+            .select("encomenda_id, item_encomenda_id, lucro_joel_real, garrafa, tampa, producao_nonato, embalagem_carol, imposto")
+            .in("encomenda_id", orderIds)
+        : { data: [] };
+
+      // Batch fetch payments by destinatario
+      const { data: pagamentosData } = orderIds.length > 0
+        ? await supabase
+            .from("pagamentos_fornecedor")
+            .select("encomenda_id, destinatario, valor_pagamento")
             .in("encomenda_id", orderIds)
         : { data: [] };
 
@@ -175,20 +186,56 @@ export default function Encomendas() {
         custosByItemId[c.item_encomenda_id] = c.lucro_joel_real;
       });
 
+      // Index unit costs by item_encomenda_id (values are per-unit in BRL)
+      const custoUnitByItem: Record<string, { nonato: number; carol: number }> = {};
+      (custosData || []).forEach((c) => {
+        const nonato = (c.garrafa || 0) + (c.tampa || 0) + (c.producao_nonato || 0);
+        const carol = (c.embalagem_carol || 0) + (c.imposto || 0);
+        custoUnitByItem[c.item_encomenda_id] = { nonato, carol };
+      });
+
+      // Aggregate payments by encomenda_id + destinatario
+      const pagNonatoByEnc: Record<string, number> = {};
+      const pagCarolByEnc: Record<string, number> = {};
+      (pagamentosData || []).forEach((p) => {
+        const val = p.valor_pagamento || 0;
+        if (p.destinatario === "nonato") {
+          pagNonatoByEnc[p.encomenda_id] = (pagNonatoByEnc[p.encomenda_id] || 0) + val;
+        } else if (p.destinatario === "carol") {
+          pagCarolByEnc[p.encomenda_id] = (pagCarolByEnc[p.encomenda_id] || 0) + val;
+        }
+      });
+
       const computed = (data || []).map((enc) => {
         let commission_amount = 0;
         let valor_total_custo = 0;
         let totalGramas = 0;
 
-        ((enc as EncomendaDBRow).itens_encomenda || []).forEach((it) => {
+        const itensEncomenda = (enc as EncomendaDBRow).itens_encomenda || [];
+        const isOnlus = enc.fornecedor_id === FORNECEDOR_PRODUCAO_ID;
+
+        // Count real items (non-bonification with qty > 0) and how many have real costs
+        let itensReaisCount = 0;
+        let itensComCustoRealCount = 0;
+
+        itensEncomenda.forEach((it) => {
           const q = Number(it.quantidade || 0);
           const pc = Number(it.preco_custo || 0);
           const sw = Number(it.produtos?.size_weight || 0);
+          const pu = Number(it.preco_unitario || 0);
+
+          // Count real items (non-bonification)
+          if (pu > 0 && q > 0) {
+            itensReaisCount++;
+            if (custosByItemId[it.id] != null && custosByItemId[it.id] > 0) {
+              itensComCustoRealCount++;
+            }
+          }
 
           commission_amount += calcularComissaoItem(
             {
               quantidade: q,
-              preco_unitario: Number(it.preco_unitario || 0),
+              preco_unitario: pu,
               preco_custo: pc,
               lucro_joel: it.produtos?.lucro_joel ?? null,
               lucro_joel_real: custosByItemId[it.id] ?? null,
@@ -204,12 +251,54 @@ export default function Encomendas() {
           totalGramas += q * sw;
         });
 
+        // Determine commission type
+        let commission_type: "estimado" | "parcial" | "real";
+        if (!isOnlus) {
+          commission_type = "real";
+        } else if (itensReaisCount === 0 || itensComCustoRealCount === 0) {
+          commission_type = "estimado";
+        } else if (itensComCustoRealCount >= itensReaisCount) {
+          commission_type = "real";
+        } else {
+          commission_type = "parcial";
+        }
+
+        // Calculate sinal/saldos for ONL'US orders
+        let sinal_50: number | null = null;
+        let saldo_nonato: number | null = null;
+        let saldo_carol: number | null = null;
+
+        if (isOnlus) {
+          // Sum unit costs × quantity for each item that has custos_producao
+          let totalNonatoBRL = 0;
+          let totalCarolBRL = 0;
+          itensEncomenda.forEach((it) => {
+            const unit = custoUnitByItem[it.id];
+            if (!unit) return;
+            const q = Number(it.quantidade || 0);
+            totalNonatoBRL += unit.nonato * q;
+            totalCarolBRL += unit.carol * q;
+          });
+
+          const custoFreteEUR = (enc as any).custo_frete || 0;
+          const custoNonatoEUR = brlToEur(totalNonatoBRL);
+          const custoCarolEUR = brlToEur(totalCarolBRL) + custoFreteEUR;
+
+          sinal_50 = custoNonatoEUR * 0.5;
+          saldo_nonato = custoNonatoEUR - (pagNonatoByEnc[enc.id] || 0);
+          saldo_carol = custoCarolEUR - (pagCarolByEnc[enc.id] || 0);
+        }
+
         return {
           ...enc,
           commission_amount,
+          commission_type,
           valor_total_custo,
           peso_bruto: (totalGramas * 1.3) / 1000, // kg
-        } as Encomenda & { peso_bruto: number };
+          sinal_50,
+          saldo_nonato,
+          saldo_carol,
+        } as Encomenda & { peso_bruto: number; sinal_50: number | null; saldo_nonato: number | null; saldo_carol: number | null };
       });
 
       setEncomendas(computed);

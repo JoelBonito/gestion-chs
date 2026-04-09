@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,13 +9,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, Box, Package, Euro, Save, X, Loader2, CircleDollarSign, Gift } from "lucide-react";
+import { Trash2, Plus, Box, Package, Save, X, Loader2, Gift } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/shared";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CustoProducaoEncomenda } from "@/types/database";
+import { calcularComissaoItem } from "@/lib/utils/commission";
+import { FORNECEDOR_PRODUCAO_ID } from "@/lib/permissions";
 
 export interface ItemEncomenda {
   id?: string;
@@ -40,6 +42,7 @@ interface Produto {
   preco_custo: number;
   preco_venda: number;
   size_weight: number;
+  lucro_joel?: number | null;
 }
 
 interface ItensEncomendaManagerProps {
@@ -52,6 +55,8 @@ interface ItensEncomendaManagerProps {
   isOnlus?: boolean;
   custosProducao?: CustoProducaoEncomenda[];
   onOpenCustoForm?: (item: ItemEncomenda) => void;
+  fornecedorId?: string;
+  numeroEncomenda?: string;
 }
 
 // Componente de Input isolado que gerencia estado local
@@ -181,6 +186,8 @@ export function ItensEncomendaManager({
   isOnlus = false,
   custosProducao = [],
   onOpenCustoForm,
+  fornecedorId,
+  numeroEncomenda,
 }: ItensEncomendaManagerProps) {
   const [produtos, setProdutos] = useState<Produto[]>([]);
 
@@ -189,7 +196,7 @@ export function ItensEncomendaManager({
       try {
         const { data, error } = await supabase
           .from("produtos")
-          .select("id, nome, marca, tipo, preco_custo, preco_venda, size_weight")
+          .select("id, nome, marca, tipo, preco_custo, preco_venda, size_weight, lucro_joel")
           .eq("ativo", true)
           .order("nome");
 
@@ -224,6 +231,43 @@ export function ItensEncomendaManager({
       onValorTotalChangeRef.current(valorTotal);
     }
   }, [itens]);
+
+  const comissaoTotal = useMemo(() => {
+    if (!numeroEncomenda) return 0;
+    return itens.reduce((sum, item) => {
+      const produto = produtos.find((p) => p.id === item.produto_id);
+      return sum + calcularComissaoItem(
+        {
+          quantidade: parseInt(item.quantidade) || 0,
+          preco_unitario: item.preco_venda,
+          preco_custo: item.preco_custo,
+          lucro_joel: produto?.lucro_joel ?? null,
+          fornecedor_id: fornecedorId,
+        },
+        { numero_encomenda: numeroEncomenda, status: "NOVO PEDIDO", fornecedor_id: fornecedorId }
+      );
+    }, 0);
+  }, [itens, produtos, fornecedorId, numeroEncomenda]);
+
+  const commissionType = useMemo((): "estimado" | "parcial" | "real" | null => {
+    if (!numeroEncomenda) return null;
+    const isOnlus = fornecedorId === FORNECEDOR_PRODUCAO_ID;
+    if (!isOnlus) return "real";
+
+    const itensReais = itens.filter(
+      (i) => i.preco_venda > 0 && (parseInt(i.quantidade) || 0) > 0
+    );
+    if (itensReais.length === 0) return "estimado";
+
+    const comCustoReal = itensReais.filter((i) => {
+      const custo = custosProducao.find((c) => c.item_encomenda_id === i.id);
+      return custo && custo.lucro_joel_real > 0;
+    }).length;
+
+    if (comCustoReal === 0) return "estimado";
+    if (comCustoReal >= itensReais.length) return "real";
+    return "parcial";
+  }, [itens, custosProducao, fornecedorId, numeroEncomenda]);
 
   const adicionarItem = () => {
     const novoItem: ItemEncomenda = {
@@ -312,10 +356,6 @@ export function ItensEncomendaManager({
     [itens, produtos, onItensChange]
   );
 
-  const isFreteItem = (item: ItemEncomenda) => {
-    return item.produto_id === "00000000-0000-0000-0000-000000000001";
-  };
-
   const toggleBonificacao = useCallback(
     (index: number) => {
       const item = itens[index];
@@ -393,25 +433,15 @@ export function ItensEncomendaManager({
               <table className="w-full bg-card text-sm">
                 <thead className="border-border/40 border-b bg-muted/50">
                   <tr>
-                    <th className={cn(
-                      "text-muted-foreground px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase",
-                      isOnlus ? "w-[48%]" : "w-[54%]"
-                    )}>
+                    <th className="text-muted-foreground w-[48%] px-4 py-3 text-left text-[10px] font-semibold tracking-wider uppercase">
                       Produto
                     </th>
-                    {isOnlus && (
-                      <th className="text-muted-foreground w-[6%] px-4 py-3 text-center text-[10px] font-semibold tracking-wider uppercase">
-                        Custo
-                      </th>
-                    )}
                     <th className="text-muted-foreground w-[8%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
                       Qtd.
                     </th>
-                    {!isOnlus && (
-                      <th className="text-muted-foreground w-[10%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
-                        Custo (€)
-                      </th>
-                    )}
+                    <th className="text-muted-foreground w-[10%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
+                      Custo (€)
+                    </th>
                     <th className="text-muted-foreground w-[10%] px-4 py-3 text-right text-[10px] font-semibold tracking-wider uppercase">
                       Venda (€)
                     </th>
@@ -424,7 +454,6 @@ export function ItensEncomendaManager({
                 <tbody className="divide-border/10 divide-y">
                   {itens.map((item, index) => {
                     const itemKey = item.tempId || item.id || `fallback-${index}`;
-                    const isFrete = isFreteItem(item);
                     const isBonif = !!item.is_bonificacao;
 
                     return (
@@ -442,10 +471,6 @@ export function ItensEncomendaManager({
                               <span className="text-xs font-medium text-muted-foreground uppercase truncate">
                                 {item.produto_nome || produtos.find(p => p.id === item.produto_id)?.nome || ""}
                               </span>
-                            </div>
-                          ) : isFrete ? (
-                            <div className="bg-info/10 dark:bg-info/5 border-info/20 text-info flex h-9 items-center rounded-md border px-3 py-2 text-xs font-medium">
-                              FRETE (SP - MRS)
                             </div>
                           ) : (
                             <TooltipProvider>
@@ -487,44 +512,6 @@ export function ItensEncomendaManager({
                             </TooltipProvider>
                           )}
                         </td>
-                        {isOnlus && (
-                          <td className="px-2 py-2 text-center">
-                            {item.id && item.preco_venda > 0 ? (() => {
-                              const existing = custosProducao.find(
-                                (c) => c.item_encomenda_id === item.id
-                              );
-                              const isFilled = !!existing;
-                              return (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <button
-                                        type="button"
-                                        onClick={() => onOpenCustoForm?.(item)}
-                                        className={cn(
-                                          "mx-auto flex h-7 w-7 items-center justify-center rounded-full transition-colors cursor-pointer",
-                                          isFilled
-                                            ? "bg-emerald-500/20 hover:bg-emerald-500/30"
-                                            : "bg-red-500/20 hover:bg-red-500/30"
-                                        )}
-                                      >
-                                        <CircleDollarSign className={cn(
-                                          "h-3.5 w-3.5",
-                                          isFilled ? "text-emerald-400" : "text-red-400"
-                                        )} />
-                                      </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top" className="text-xs">
-                                      {isFilled
-                                        ? `Preenchido - Lucro: ${formatCurrencyEUR(existing!.lucro_joel_real)}/un`
-                                        : "Custos pendentes - Clique para preencher"}
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              );
-                            })() : null}
-                          </td>
-                        )}
                         <td className="px-4 py-2">
                           <div className="flex items-center gap-1.5 justify-end">
                             <LocalInput
@@ -535,7 +522,7 @@ export function ItensEncomendaManager({
                               placeholder="0"
                               className="h-9 w-16 bg-background text-right text-xs"
                             />
-                            {isOnlus && !isFrete && !isBonif && item.produto_id && (
+                            {isOnlus && !isBonif && item.produto_id && (
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
@@ -563,19 +550,17 @@ export function ItensEncomendaManager({
                             )}
                           </div>
                         </td>
-                        {!isOnlus && (
-                          <td className="px-4 py-2">
-                            <LocalInput
-                              type="text"
-                              inputMode="decimal"
-                              value={item.preco_custo || ""}
-                              onChange={(val) => atualizarItem(index, "preco_custo", val)}
-                              placeholder="0.00"
-                              className="ml-auto h-9 w-24 bg-background text-right text-xs"
-                              disabled={isTransportMode}
-                            />
-                          </td>
-                        )}
+                        <td className="px-4 py-2">
+                          <LocalInput
+                            type="text"
+                            inputMode="decimal"
+                            value={item.preco_custo || ""}
+                            onChange={(val) => atualizarItem(index, "preco_custo", val)}
+                            placeholder="0.00"
+                            className="ml-auto h-9 w-24 bg-background text-right text-xs"
+                            disabled={isTransportMode}
+                          />
+                        </td>
                         <td className="px-4 py-2">
                           <LocalInput
                             type="text"
@@ -611,7 +596,6 @@ export function ItensEncomendaManager({
             <div className="space-y-4 xl:hidden">
               {itens.map((item, index) => {
                 const itemKey = item.tempId || item.id || `fallback-${index}-mob`;
-                const isFrete = isFreteItem(item);
                 const isBonifMob = !!item.is_bonificacao;
                 return (
                   <div
@@ -647,8 +631,6 @@ export function ItensEncomendaManager({
                               {item.produto_nome || produtos.find(p => p.id === item.produto_id)?.nome || ""}
                             </span>
                           </div>
-                        ) : isFrete ? (
-                          <div className="text-info text-sm font-medium">FRETE (SP - MRS)</div>
                         ) : (
                           <TooltipProvider>
                             <Tooltip>
@@ -687,20 +669,20 @@ export function ItensEncomendaManager({
                           </TooltipProvider>
                         )}
                       </div>
-                      <div className={cn("grid gap-2", isOnlus ? "grid-cols-2" : "grid-cols-3")}>
+                      <div className="grid grid-cols-3 gap-2">
                         <div>
                           <label className="text-muted-foreground mb-1 block text-[10px] font-bold uppercase">
-                            Qtd ({isFrete ? "Kg" : "Un"})
+                            Qtd (Un)
                           </label>
                           <div className="flex items-center gap-1.5">
                             <LocalInput
                               type="text"
-                              inputMode={isFrete ? "decimal" : "numeric"}
+                              inputMode="numeric"
                               value={item.quantidade}
                               onChange={(v) => atualizarItem(index, "quantidade", v)}
                               className="h-9 w-full bg-background text-xs"
                             />
-                            {isOnlus && !isFrete && !isBonifMob && item.produto_id && (
+                            {isOnlus && !isBonifMob && item.produto_id && (
                               <button
                                 type="button"
                                 onClick={() => toggleBonificacao(index)}
@@ -719,21 +701,19 @@ export function ItensEncomendaManager({
                             )}
                           </div>
                         </div>
-                        {!isOnlus && (
-                          <div>
-                            <label className="text-muted-foreground mb-1 block text-[10px] font-bold uppercase">
-                              Custo (€)
-                            </label>
-                            <LocalInput
-                              type="text"
-                              inputMode="decimal"
-                              value={item.preco_custo || ""}
-                              onChange={(v) => atualizarItem(index, "preco_custo", v)}
-                              className="h-9 w-full bg-background text-xs"
-                              disabled={isTransportMode}
-                            />
-                          </div>
-                        )}
+                        <div>
+                          <label className="text-muted-foreground mb-1 block text-[10px] font-bold uppercase">
+                            Custo (€)
+                          </label>
+                          <LocalInput
+                            type="text"
+                            inputMode="decimal"
+                            value={item.preco_custo || ""}
+                            onChange={(v) => atualizarItem(index, "preco_custo", v)}
+                            className="h-9 w-full bg-background text-xs"
+                            disabled={isTransportMode}
+                          />
+                        </div>
                         <div>
                           <label className="text-muted-foreground mb-1 block text-[10px] font-bold uppercase">
                             Venda (€)
@@ -747,29 +727,7 @@ export function ItensEncomendaManager({
                           />
                         </div>
                       </div>
-                      {isOnlus && item.id && item.preco_venda > 0 && (() => {
-                        const existing = custosProducao.find(
-                          (c) => c.item_encomenda_id === item.id
-                        );
-                        const isFilled = !!existing;
-                        return (
-                          <button
-                            type="button"
-                            onClick={() => onOpenCustoForm?.(item)}
-                            className={cn(
-                              "flex items-center gap-2 rounded-md px-3 py-1.5 text-[11px] font-medium transition-colors w-full",
-                              isFilled
-                                ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-                                : "bg-red-500/10 text-red-400 hover:bg-red-500/20"
-                            )}
-                          >
-                            <CircleDollarSign className="h-3.5 w-3.5" />
-                            {isFilled
-                              ? `Custo preenchido - Lucro: ${formatCurrencyEUR(existing!.lucro_joel_real)}/un`
-                              : "Preencher custos de producao"}
-                          </button>
-                        );
-                      })()}
+
                       <div className="border-border/20 flex items-center justify-between rounded border bg-muted/50 p-2 text-xs">
                         <span className="text-muted-foreground font-semibold">SUBTOTAL</span>
                         <span className="text-primary font-bold">
@@ -813,13 +771,38 @@ export function ItensEncomendaManager({
               </Button>
             </div>
 
-            <div className="border-border order-1 flex items-center gap-3 rounded-xl border bg-card px-6 py-2.5 shadow-sm sm:order-2">
-              <span className="text-sm font-medium tracking-wider text-muted-foreground uppercase">
-                Valor Total:
-              </span>
-              <span className="text-primary text-2xl font-bold">
-                {formatCurrencyEUR(itens.reduce((total, item) => total + (item.subtotal || 0), 0))}
-              </span>
+            <div className="order-1 flex items-center gap-3 sm:order-2">
+              {numeroEncomenda && (
+                <div className="border-border flex items-center gap-3 rounded-xl border bg-card px-6 py-2.5 shadow-sm">
+                  <span className="text-sm font-medium tracking-wider text-muted-foreground uppercase">
+                    Comissão:
+                  </span>
+                  <span className={cn("text-2xl font-bold", comissaoTotal >= 0 ? "text-emerald-500" : "text-red-500")}>
+                    {formatCurrencyEUR(comissaoTotal)}
+                  </span>
+                  {commissionType && (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "px-1.5 py-0 text-[10px] font-semibold uppercase leading-4",
+                        commissionType === "real" && "border-emerald-500/50 bg-emerald-500/10 text-emerald-500",
+                        commissionType === "parcial" && "border-blue-500/50 bg-blue-500/10 text-blue-500",
+                        commissionType === "estimado" && "border-amber-500/50 bg-amber-500/10 text-amber-500"
+                      )}
+                    >
+                      {commissionType === "real" ? "Real" : commissionType === "parcial" ? "Parcial" : "Estimado"}
+                    </Badge>
+                  )}
+                </div>
+              )}
+              <div className="border-border flex items-center gap-3 rounded-xl border bg-card px-6 py-2.5 shadow-sm">
+                <span className="text-sm font-medium tracking-wider text-muted-foreground uppercase">
+                  Valor Total:
+                </span>
+                <span className="text-primary text-2xl font-bold">
+                  {formatCurrencyEUR(itens.reduce((total, item) => total + (item.subtotal || 0), 0))}
+                </span>
+              </div>
             </div>
           </div>
         )}

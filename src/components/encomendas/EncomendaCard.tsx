@@ -47,8 +47,12 @@ interface Encomenda {
   cliente_nome?: string | null;
   fornecedor_nome?: string | null;
   commission_amount?: number;
+  commission_type?: "estimado" | "parcial" | "real";
   valor_total_custo?: number;
   peso_bruto?: number;
+  sinal_50?: number | null;
+  saldo_nonato?: number | null;
+  saldo_carol?: number | null;
 }
 
 interface EncomendaCardProps {
@@ -336,7 +340,57 @@ function EncomendaCardComponent({
                 <span className="font-medium text-foreground">
                   {formatCurrency(e.commission_amount)}
                 </span>
+                {e.commission_type && (
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "ml-1 px-1.5 py-0 text-[10px] font-semibold uppercase leading-4",
+                      e.commission_type === "real" && "border-emerald-500/50 bg-emerald-500/10 text-emerald-500",
+                      e.commission_type === "parcial" && "border-blue-500/50 bg-blue-500/10 text-blue-500",
+                      e.commission_type === "estimado" && "border-amber-500/50 bg-amber-500/10 text-amber-500"
+                    )}
+                  >
+                    {e.commission_type === "real" ? "Real" : e.commission_type === "parcial" ? "Parcial" : "Estimado"}
+                  </Badge>
+                )}
               </div>
+            )}
+
+            {/* Sinal / Saldos — only for ONL'US orders with data */}
+            {e.sinal_50 != null && (
+              <>
+                <span className="text-border/40 hidden select-none sm:inline">│</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Sinal 50%:</span>
+                  <span className="font-medium text-amber-400">
+                    {formatCurrency(e.sinal_50)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Saldo Nonato:</span>
+                  {(e.saldo_nonato ?? 0) <= 0 ? (
+                    <Badge variant="outline" className="border-emerald-500/50 bg-emerald-500/10 px-1.5 py-0 text-[10px] font-semibold uppercase leading-4 text-emerald-500">
+                      Pago
+                    </Badge>
+                  ) : (
+                    <span className="font-medium text-orange-400">
+                      {formatCurrency(e.saldo_nonato!)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Saldo Carol:</span>
+                  {(e.saldo_carol ?? 0) <= 0 ? (
+                    <Badge variant="outline" className="border-emerald-500/50 bg-emerald-500/10 px-1.5 py-0 text-[10px] font-semibold uppercase leading-4 text-emerald-500">
+                      Pago
+                    </Badge>
+                  ) : (
+                    <span className="font-medium text-rose-400">
+                      {formatCurrency(e.saldo_carol!)}
+                    </span>
+                  )}
+                </div>
+              </>
             )}
           </div>
         )}
