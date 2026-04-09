@@ -167,7 +167,7 @@ export default function Produtos() {
                   <span className="sm:hidden">{t("Novo Produto")}</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-card border-border/50 max-w-2xl">
+              <DialogContent className="bg-card max-h-[90vh] w-[95vw] max-w-2xl overflow-y-auto border-none shadow-2xl">
                 <DialogHeader>
                   <DialogTitle>
                     {duplicateProduto ? "Duplicar Produto" : t("Novo Produto")}

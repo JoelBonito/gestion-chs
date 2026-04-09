@@ -405,6 +405,8 @@ Você tem acesso de LEITURA total via SQL a estas tabelas:
         query = query.replace(/--.*$/gm, ' ').trim();
         // Remove múltiplos espaços/newlines
         query = query.replace(/\s+/g, ' ').trim();
+        // Remove trailing semicolon (breaks RPC subquery wrapping)
+        query = query.replace(/;\s*$/, '').trim();
 
         // LOG TEMP: Capturar SQL gerado
         console.log('[DEBUG] SQL Cleaned:', query);

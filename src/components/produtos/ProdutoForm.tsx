@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -24,11 +24,12 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Save, X, Plus, Package, Truck, Info, Euro, BarChart3 } from "lucide-react";
+import { Loader2, Save, X, Plus, Package, Truck, Info, Euro, BarChart3, Factory, ChevronDown, Droplets, Tag, Hand, Receipt, CircleDollarSign, TrendingUp } from "lucide-react";
 import { Produto } from "@/types/database";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
 import { cn } from "@/lib/utils";
 import { eurToBrl, brlToEur, formatCurrencyBRL, formatCurrencyEUR } from "@/lib/utils/currency";
+import { calcularCustosAutomaticos } from "@/lib/config/cost-calculations";
 
 // Schema de Validação
 const produtoSchema = z.object({
@@ -51,11 +52,44 @@ const produtoSchema = z.object({
 
 type ProdutoFormValues = z.infer<typeof produtoSchema>;
 
+type BreakdownFields = {
+  garrafa: number;
+  tampa: number;
+  rotulo: number;
+  producao_nonato: number;
+  frete_sp: number;
+  embalagem_carol: number;
+  imposto: number;
+  diversos: number;
+};
+
+const BREAKDOWN_CONFIG: { key: keyof BreakdownFields; label: string; icon: React.ElementType }[] = [
+  { key: "garrafa", label: "Garrafa", icon: Package },
+  { key: "tampa", label: "Tampa", icon: Droplets },
+  { key: "rotulo", label: "Rótulo", icon: Tag },
+  { key: "producao_nonato", label: "Produção", icon: Factory },
+  { key: "frete_sp", label: "Frete SP", icon: Truck },
+  { key: "embalagem_carol", label: "Embalagem Carol", icon: Hand },
+  { key: "imposto", label: "Imposto", icon: Receipt },
+  { key: "diversos", label: "Diversos", icon: CircleDollarSign },
+];
+
+const EMPTY_BREAKDOWN: BreakdownFields = {
+  garrafa: 0, tampa: 0, rotulo: 0, producao_nonato: 0,
+  frete_sp: 0, embalagem_carol: 0, imposto: 0, diversos: 0,
+};
+
 interface ProdutoFormProps {
   onSuccess?: () => void;
   produto?: Produto | null;
   isEditing?: boolean;
 }
+
+type ProdutoComFornecedor = Produto & {
+  fornecedores?: {
+    nome?: string | null;
+  } | null;
+};
 
 const SectionStyles =
   "bg-popover border border-border/20 rounded-xl p-5 mb-4 hover:border-primary/50 transition-all duration-300 shadow-sm";
@@ -65,11 +99,17 @@ const InputStyles =
   "bg-accent border-border/50 text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all h-10";
 
 export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false }: ProdutoFormProps) {
+  const produtoWithFornecedor = produtoProp as ProdutoComFornecedor | null | undefined;
+  const initialBreakdown = (() => {
+    const b = produtoProp?.custo_nonato_breakdown;
+    if (b && typeof b === "object") return { ...EMPTY_BREAKDOWN, ...b } as BreakdownFields;
+    return { ...EMPTY_BREAKDOWN };
+  })();
   const [loading, setLoading] = useState(false);
   const [fornecedores, setFornecedores] = useState<{ id: string; nome: string }[]>(
     // Seed with the current product's supplier so the Select can display it immediately
-    produtoProp?.fornecedor_id && (produtoProp as any).fornecedores
-      ? [{ id: produtoProp.fornecedor_id, nome: (produtoProp as any).fornecedores.nome }]
+    produtoProp?.fornecedor_id && produtoWithFornecedor?.fornecedores?.nome
+      ? [{ id: produtoProp.fornecedor_id, nome: produtoWithFornecedor.fornecedores.nome }]
       : []
   );
   const [tipos, setTipos] = useState<string[]>(
@@ -80,13 +120,65 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
   const [produto, setProduto] = useState(produtoProp);
   const { isCollaborator } = useIsCollaborator();
   const [custoProducaoBRL, setCustoProducaoBRL] = useState(
-    produtoProp?.custo_producao ? Math.round(eurToBrl(produtoProp.custo_producao) * 100) / 100 : 0
+    produtoProp?.custo_producao
+      ? eurToBrl(produtoProp.custo_producao)
+      : initialBreakdown.producao_nonato
+      ? Number(initialBreakdown.producao_nonato)
+      : 0
   );
   const [garrafaIncluso, setGarrafaIncluso] = useState(produtoProp?.garrafa_incluso ?? false);
   const [tampaIncluso, setTampaIncluso] = useState(produtoProp?.tampa_incluso ?? false);
 
+  const [breakdown, setBreakdown] = useState<BreakdownFields>(initialBreakdown);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
+  const [lucroRealUltimaProducao, setLucroRealUltimaProducao] = useState<number | null>(null);
+
+  const effectiveBreakdown: BreakdownFields = {
+    ...breakdown,
+    garrafa: garrafaIncluso ? 0 : Number(breakdown.garrafa) || 0,
+    tampa: tampaIncluso ? 0 : Number(breakdown.tampa) || 0,
+    producao_nonato: Number(custoProducaoBRL) || 0,
+  };
+
+  const breakdownTotalBRL = Object.values(effectiveBreakdown).reduce((s, v) => s + (Number(v) || 0), 0);
+
+  useEffect(() => {
+    if (!isEditing || !produtoProp?.id) return;
+    supabase
+      .from("custos_producao_encomenda")
+      .select("lucro_joel_real, updated_at, created_at")
+      .eq("produto_id", produtoProp.id)
+      .order("updated_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false, nullsFirst: false })
+      .limit(1)
+      .then(({ data }) => {
+        const latest = data?.[0];
+        setLucroRealUltimaProducao(
+          latest?.lucro_joel_real != null ? Math.round(latest.lucro_joel_real * 100) / 100 : null
+        );
+      });
+  }, [isEditing, produtoProp?.id]);
+
+  useEffect(() => {
+    setBreakdown((prev) =>
+      prev.producao_nonato === custoProducaoBRL
+        ? prev
+        : { ...prev, producao_nonato: custoProducaoBRL }
+    );
+  }, [custoProducaoBRL]);
+
+  useEffect(() => {
+    if (!garrafaIncluso) return;
+    setBreakdown((prev) => (prev.garrafa === 0 ? prev : { ...prev, garrafa: 0 }));
+  }, [garrafaIncluso]);
+
+  useEffect(() => {
+    if (!tampaIncluso) return;
+    setBreakdown((prev) => (prev.tampa === 0 ? prev : { ...prev, tampa: 0 }));
+  }, [tampaIncluso]);
+
   const form = useForm<ProdutoFormValues>({
-    resolver: zodResolver(produtoSchema) as any,
+    resolver: zodResolver(produtoSchema),
     defaultValues: {
       nome: produto?.nome || "",
       marca: produto?.marca || "",
@@ -133,7 +225,37 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
   };
 
   const watchedFornecedorId = form.watch("fornecedor_id");
+  const watchedPrecoVenda = Number(form.watch("preco_venda")) || 0;
+  const watchedSizeWeight = Number(form.watch("size_weight")) || 0;
   const isProducao = watchedFornecedorId === FORNECEDOR_PRODUCAO_ID;
+  const autoCalcValues = useMemo(
+    () => (watchedSizeWeight > 0 ? calcularCustosAutomaticos(watchedSizeWeight) : null),
+    [watchedSizeWeight]
+  );
+  const lucroRealCalculadoAtual =
+    watchedPrecoVenda > 0
+      ? Math.round((watchedPrecoVenda - Math.round(brlToEur(breakdownTotalBRL) * 100) / 100) * 100) / 100
+      : null;
+  const lucroRealDisplay = lucroRealUltimaProducao ?? lucroRealCalculadoAtual;
+
+  useEffect(() => {
+    if (!isProducao || !autoCalcValues) return;
+    setBreakdown((prev) => {
+      if (
+        prev.frete_sp === autoCalcValues.frete_sp &&
+        prev.embalagem_carol === autoCalcValues.manuseio_carol &&
+        prev.imposto === autoCalcValues.imposto
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        frete_sp: autoCalcValues.frete_sp,
+        embalagem_carol: autoCalcValues.manuseio_carol,
+        imposto: autoCalcValues.imposto,
+      };
+    });
+  }, [isProducao, autoCalcValues]);
 
   const onSubmit = async (values: ProdutoFormValues) => {
     console.log("🔵 [ProdutoForm] Iniciando onSubmit", { isEditing, produtoId: produto?.id });
@@ -142,14 +264,16 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
     const submitIsProducao = values.fornecedor_id === FORNECEDOR_PRODUCAO_ID;
 
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         nome: values.nome,
         marca: values.marca,
         tipo: values.tipo,
         size_weight: Number(values.size_weight) || 0,
         preco_venda: Number(values.preco_venda) || 0,
         preco_custo: submitIsProducao ? (produto?.preco_custo || 0) : (Number(values.preco_custo) || 0),
-        custo_producao: submitIsProducao ? (Number(values.custo_producao) || null) : null,
+        custo_producao: submitIsProducao
+          ? (Number(custoProducaoBRL) > 0 ? brlToEur(custoProducaoBRL) : null)
+          : null,
         lucro_joel: submitIsProducao
           ? (Number(values.lucro_joel) || null)
           : (Number(values.preco_venda) - Number(values.preco_custo || 0)) || null,
@@ -161,6 +285,7 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
         estoque_rotulos: Number(values.estoque_rotulos) || 0,
         garrafa_incluso: submitIsProducao ? garrafaIncluso : false,
         tampa_incluso: submitIsProducao ? tampaIncluso : false,
+        custo_nonato_breakdown: submitIsProducao ? effectiveBreakdown : null,
       };
 
       if (values.fornecedor_id) {
@@ -170,6 +295,22 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
       console.log("🔵 [ProdutoForm] Payload preparado:", payload);
 
       if (isEditing && produto) {
+        // Verificar se tem encomendas vinculadas
+        const { count, error: countError } = await supabase
+          .from("itens_encomenda")
+          .select("*", { count: "exact", head: true })
+          .eq("produto_id", produto.id);
+
+        if (countError) throw countError;
+
+        if (count && count > 0) {
+          const confirmMsg = `⚠️ ALERTA: Este produto possui ${count} encomenda(s) vinculada(s) no histórico!\n\nAlterar os dados deste produto afetará como ele aparece nessas encomendas passadas.\n\nVocê tem certeza que deseja SUBSTITUIR este produto? (Se deseja criar um novo, clique em Cancelar e use a opção Duplicar/Novo).`;
+          if (!window.confirm(confirmMsg)) {
+            setLoading(false);
+            return;
+          }
+        }
+
         console.log("🔵 [ProdutoForm] Executando UPDATE para produto:", produto.id);
         const { error } = await supabase
           .from("produtos")
@@ -194,9 +335,10 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
 
       console.log("🟢 [ProdutoForm] Operação concluída com sucesso, chamando onSuccess");
       onSuccess?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("🔴 [ProdutoForm] Erro ao salvar produto:", error);
-      toast.error(error.message || "Erro ao salvar produto");
+      const message = error instanceof Error ? error.message : "Erro ao salvar produto";
+      toast.error(message);
     } finally {
       console.log("🔵 [ProdutoForm] Finalizando (setLoading false)");
       setLoading(false);
@@ -396,7 +538,7 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
                       onChange={(e) => {
                         const brl = parseFloat(e.target.value) || 0;
                         setCustoProducaoBRL(brl);
-                        form.setValue("custo_producao", Math.round(brlToEur(brl) * 100) / 100);
+                        form.setValue("custo_producao", brlToEur(brl));
                       }}
                       className={cn(InputStyles, "border-orange-500/20 text-orange-400 tabular-nums pl-9")}
                     />
@@ -452,7 +594,7 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className={cn(LabelStyles, "text-emerald-400")}>
-                        <Euro className="h-3 w-3 text-emerald-400" /> Lucro Joel
+                        <Euro className="h-3 w-3 text-emerald-400" /> Lucro Estimado
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -474,13 +616,37 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
                         );
                       })()}
                       <FormMessage />
+                      <div className="mt-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400/70">
+                          Lucro Real
+                        </div>
+                        <div
+                          className={cn(
+                            "mt-1 text-sm font-bold tabular-nums",
+                            lucroRealDisplay === null
+                              ? "text-muted-foreground/40"
+                              : lucroRealDisplay >= 0
+                              ? "text-emerald-400"
+                              : "text-red-400"
+                          )}
+                        >
+                          {lucroRealDisplay !== null
+                            ? formatCurrencyEUR(lucroRealDisplay)
+                            : "—"}
+                        </div>
+                        {lucroRealUltimaProducao === null && lucroRealCalculadoAtual !== null && (
+                          <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                            Calculado pelo formulário atual
+                          </div>
+                        )}
+                      </div>
                     </FormItem>
                   )}
                 />
               ) : (
                 <div>
                   <div className={cn(LabelStyles, "text-emerald-400")}>
-                    <Euro className="h-3 w-3 text-emerald-400" /> Lucro Joel
+                    <Euro className="h-3 w-3 text-emerald-400" /> Lucro Estimado
                   </div>
                   {(() => {
                     const pv = Number(form.watch("preco_venda")) || 0;
@@ -555,7 +721,129 @@ export function ProdutoForm({ onSuccess, produto: produtoProp, isEditing = false
 
           </div>
 
-          {/* Seção 3: Estoque de Insumos */}
+          {/* Seção 2b: Custo Real de Produção — só para ONL'US */}
+          {isProducao && (
+            <div className={cn(SectionStyles, "p-0 overflow-hidden")}>
+              {/* Header clicável */}
+              <button
+                type="button"
+                onClick={() => setBreakdownOpen((o) => !o)}
+                className="w-full flex items-center justify-between px-5 py-3.5 text-left hover:bg-muted/20 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Factory className="h-3.5 w-3.5 text-orange-400" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-orange-400">
+                    Custo Real de Produção
+                  </span>
+                  {breakdownTotalBRL > 0 && (
+                    <span className="rounded-full border border-orange-500/20 bg-orange-500/10 px-2 py-0.5 text-[9px] font-bold text-orange-400 tabular-nums">
+                      R$ {breakdownTotalBRL.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                    breakdownOpen && "rotate-180"
+                  )}
+                />
+              </button>
+
+              {/* Conteúdo expandido */}
+              {breakdownOpen && (
+                <div className="px-5 pb-5 pt-1 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    {BREAKDOWN_CONFIG.map(({ key, label, icon: Icon }) => (
+                      <div key={key}>
+                        <div className={cn(LabelStyles, "text-orange-400/80")}>
+                          <Icon className="h-3 w-3" />
+                          {label}
+                        </div>
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-medium text-muted-foreground">
+                            R$
+                          </span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0,00"
+                            value={
+                              key === "producao_nonato"
+                                ? custoProducaoBRL || ""
+                                : key === "garrafa" && garrafaIncluso
+                                ? ""
+                                : key === "tampa" && tampaIncluso
+                                ? ""
+                                : breakdown[key] || ""
+                            }
+                            onChange={(e) => {
+                              if (key === "producao_nonato") return;
+                              const val = parseFloat(e.target.value) || 0;
+                              setBreakdown((prev) => ({ ...prev, [key]: val }));
+                            }}
+                            disabled={
+                              key === "producao_nonato" ||
+                              (key === "garrafa" && garrafaIncluso) ||
+                              (key === "tampa" && tampaIncluso)
+                            }
+                            className={cn(
+                              InputStyles,
+                              "pl-9 tabular-nums border-orange-500/10 text-orange-300 text-sm",
+                              (key === "producao_nonato" ||
+                                (key === "garrafa" && garrafaIncluso) ||
+                                (key === "tampa" && tampaIncluso)) &&
+                                "cursor-not-allowed opacity-60"
+                            )}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Total do breakdown */}
+                  <div className="flex items-center justify-between rounded-lg border border-orange-500/20 bg-orange-500/5 px-3 py-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-orange-400/70">
+                      Total Custo Produção
+                    </span>
+                    <div className="text-right">
+                      <span className="block text-sm font-bold text-orange-400 tabular-nums">
+                        R$ {breakdownTotalBRL.toFixed(2)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                        ~ {formatCurrencyEUR(Math.round(brlToEur(breakdownTotalBRL) * 100) / 100)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Lucro Real da última produção */}
+                  {isEditing && (
+                    <div className="flex items-center justify-between rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2">
+                      <div className="flex items-center gap-1.5">
+                        <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400/70">
+                          Lucro Real da Última Produção
+                        </span>
+                      </div>
+                      <span
+                        className={cn(
+                          "text-sm font-bold tabular-nums",
+                          lucroRealUltimaProducao === null
+                            ? "text-muted-foreground/40"
+                            : lucroRealUltimaProducao >= 0
+                            ? "text-emerald-400"
+                            : "text-red-400"
+                        )}
+                      >
+                        {lucroRealUltimaProducao !== null ? formatCurrencyEUR(lucroRealUltimaProducao) : "—"}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {isEditing && (
             <div className={SectionStyles}>
               <div className="border-border/10 mb-3 flex items-center gap-2 border-b pb-3 text-[10px] font-bold tracking-widest text-cyan-500 uppercase">

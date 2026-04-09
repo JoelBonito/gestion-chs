@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, Receipt, DollarSign, Plus, Paperclip } from "lucide-react";
+import { Eye, Receipt, DollarSign, Plus, Paperclip, ChevronDown, ChevronRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { formatCurrencyEUR } from "@/lib/utils/currency";
+import { formatCurrencyEUR, brlToEur } from "@/lib/utils/currency";
 import { useToast } from "@/hooks/use-toast";
 import { EncomendaView } from "@/components/encomendas";
 import { PagamentoFornecedorForm } from "@/components/financeiro";
@@ -46,6 +46,34 @@ interface ContaPagar {
   encomenda_id: string;
 }
 
+interface CustosPorDestinatario {
+  destinatario: string;
+  label: string;
+  categorias: { categoria: string; label: string; previsto: number; pago: number }[];
+  totalPrevisto: number;
+  totalPago: number;
+  saldo: number;
+}
+
+const CATEGORIA_MAP: Record<string, { destinatario: string; label: string; categoriaLabel: string }> = {
+  garrafa: { destinatario: "nonato", label: "Nonato (Produção)", categoriaLabel: "Garrafa" },
+  tampa: { destinatario: "nonato", label: "Nonato (Produção)", categoriaLabel: "Tampa" },
+  producao_nonato: { destinatario: "nonato", label: "Nonato (Produção)", categoriaLabel: "Produção" },
+  embalagem_carol: { destinatario: "carol", label: "Carol (Manuseamento)", categoriaLabel: "Embalagem" },
+  imposto: { destinatario: "carol", label: "Carol (Manuseamento)", categoriaLabel: "Imposto" },
+  frete_sp: { destinatario: "carol", label: "Carol (Manuseamento)", categoriaLabel: "Frete" },
+};
+
+// Map: DB field -> categoria key used in pagamentos_fornecedor
+const FIELD_TO_CATEGORIA_KEY: Record<string, string> = {
+  garrafa: "garrafa",
+  tampa: "tampa",
+  producao_nonato: "producao",
+  embalagem_carol: "embalagem",
+  imposto: "imposto",
+  frete_sp: "frete",
+};
+
 export default function ContasPagar() {
   const [contas, setContas] = useState<ContaPagar[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +86,9 @@ export default function ContasPagar() {
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [selectedPaymentConta, setSelectedPaymentConta] = useState<ContaPagar | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [custosData, setCustosData] = useState<Record<string, CustosPorDestinatario[]>>({});
+  const [selectedDestinatario, setSelectedDestinatario] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { t, isHam, isFelipe } = useContasPagarTranslation();
@@ -68,6 +99,87 @@ export default function ContasPagar() {
       setUserEmail(data?.user?.email ?? null);
     };
     getUser();
+  }, []);
+
+  const fetchCustosForOrders = useCallback(async (orderIds: string[]) => {
+    if (orderIds.length === 0) return;
+
+    // Fetch custos_producao_encomenda for all orders
+    const { data: custos } = await supabase
+      .from("custos_producao_encomenda")
+      .select("encomenda_id, garrafa, tampa, producao_nonato, embalagem_carol, imposto, frete_sp")
+      .in("encomenda_id", orderIds);
+
+    // Fetch pagamentos_fornecedor with destinatario/categoria for all orders
+    const { data: pagamentos } = await supabase
+      .from("pagamentos_fornecedor")
+      .select("encomenda_id, destinatario, categoria, valor_pagamento")
+      .in("encomenda_id", orderIds);
+
+    const result: Record<string, CustosPorDestinatario[]> = {};
+
+    for (const orderId of orderIds) {
+      const orderCustos = (custos || []).filter(c => c.encomenda_id === orderId);
+      const orderPagamentos = (pagamentos || []).filter(p => p.encomenda_id === orderId);
+
+      // Sum costs by categoria key across all items
+      const categoriaTotals: Record<string, number> = {};
+      for (const custo of orderCustos) {
+        for (const [field] of Object.entries(CATEGORIA_MAP)) {
+          const value = (custo as Record<string, unknown>)[field] as number || 0;
+          const catKey = FIELD_TO_CATEGORIA_KEY[field];
+          categoriaTotals[catKey] = (categoriaTotals[catKey] || 0) + value;
+        }
+      }
+
+      // Sum payments by destinatario+categoria
+      const pagamentoTotals: Record<string, number> = {};
+      for (const pag of orderPagamentos) {
+        if (pag.destinatario && pag.categoria) {
+          const key = `${pag.destinatario}_${pag.categoria}`;
+          pagamentoTotals[key] = (pagamentoTotals[key] || 0) + pag.valor_pagamento;
+        }
+      }
+
+      // Build grouped structure by destinatário
+      const destinatarioMap: Record<string, CustosPorDestinatario> = {};
+
+      for (const [field, mapping] of Object.entries(CATEGORIA_MAP)) {
+        const catKey = FIELD_TO_CATEGORIA_KEY[field];
+        const previsto = categoriaTotals[catKey] || 0;
+        const previstoEur = brlToEur(previsto);
+        const pago = pagamentoTotals[`${mapping.destinatario}_${catKey}`] || 0;
+
+        if (!destinatarioMap[mapping.destinatario]) {
+          destinatarioMap[mapping.destinatario] = {
+            destinatario: mapping.destinatario,
+            label: mapping.label,
+            categorias: [],
+            totalPrevisto: 0,
+            totalPago: 0,
+            saldo: 0,
+          };
+        }
+
+        destinatarioMap[mapping.destinatario].categorias.push({
+          categoria: catKey,
+          label: mapping.categoriaLabel,
+          previsto: previstoEur,
+          pago,
+        });
+        destinatarioMap[mapping.destinatario].totalPrevisto += previstoEur;
+        destinatarioMap[mapping.destinatario].totalPago += pago;
+      }
+
+      // Calculate saldo for each destinatário
+      for (const dest of Object.values(destinatarioMap)) {
+        dest.saldo = dest.totalPrevisto - dest.totalPago;
+      }
+
+      result[orderId] = Object.values(destinatarioMap);
+    }
+
+    setCustosData(result);
   }, []);
 
   const fetchContas = useCallback(async () => {
@@ -117,6 +229,10 @@ export default function ContasPagar() {
         };
       });
       setContas(contasPagar);
+
+      // Fetch custos for all orders
+      const orderIds = contasPagar.map(c => c.id);
+      fetchCustosForOrders(orderIds);
     } catch (error) {
       console.error("Erro ao carregar contas a pagar:", error);
       toast({
@@ -127,7 +243,7 @@ export default function ContasPagar() {
     } finally {
       setLoading(false);
     }
-  }, [showCompleted, isFelipe, toast]);
+  }, [showCompleted, isFelipe, toast, fetchCustosForOrders]);
 
   useEffect(() => {
     fetchContas();
@@ -150,6 +266,15 @@ export default function ContasPagar() {
     fetchContas();
     loadAttachmentCounts();
     loadPaymentCounts();
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   const loadAttachmentCounts = useCallback(async () => {
@@ -210,6 +335,57 @@ export default function ContasPagar() {
     }
   }, [contas, loadAttachmentCounts, loadPaymentCounts]);
 
+  // Render the expanded destinatário blocks for an order
+  const renderDestinatarioBlocks = (conta: ContaPagar) => {
+    const destData = custosData[conta.id];
+    if (!destData) return null;
+
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {destData.map(dest => (
+          <div key={dest.destinatario} className="bg-popover rounded-xl border border-border/40 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold flex items-center gap-2">
+                {dest.destinatario === "nonato" ? "👤" : "👩"} {dest.label}
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-0.5">
+                <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Previsto</span>
+                <p className="text-sm font-semibold">{formatCurrencyEUR(dest.totalPrevisto)}</p>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Pago</span>
+                <p className="text-sm font-bold text-success">{formatCurrencyEUR(dest.totalPago)}</p>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Saldo</span>
+                <p className="text-sm font-black text-warning">{formatCurrencyEUR(dest.saldo)}</p>
+              </div>
+            </div>
+
+            {!isFelipe && dest.saldo > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full border border-emerald-200/30 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 dark:border-emerald-800/30 dark:text-emerald-400"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedConta(conta);
+                  setSelectedDestinatario(dest.destinatario);
+                  setShowPaymentForm(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Registrar Pagamento
+              </Button>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <Card>
@@ -263,7 +439,7 @@ export default function ContasPagar() {
         </CardHeader>
 
         <CardContent className="px-4 sm:px-6">
-          {/* Tabela apenas no desktop */}
+          {/* Desktop table */}
           <div className="border-border/40 bg-popover dark:bg-[#1c202a] hidden overflow-hidden overflow-x-auto rounded-xl border shadow-sm xl:block">
             <Table>
               <TableHeader className="bg-popover border-border/40 border-b">
@@ -281,131 +457,149 @@ export default function ContasPagar() {
 
               <TableBody>
                 {contas.map((conta) => (
-                  <TableRow
-                    key={conta.id}
-                    className="bg-popover hover:bg-muted/30 border-border group cursor-pointer border-b transition-colors last:border-0 dark:border-white/5"
-                    onClick={() => handleViewDetails(conta)}
-                  >
-                    <TableCell className="font-medium">
-                      <div className="flex flex-col">
-                        <span className="group-hover:text-primary transition-colors">
-                          {conta.numero_encomenda}
-                        </span>
-                        <Badge variant="info" className="mt-0.5 uppercase">
-                          {conta.etiqueta || "Nenhum"}
-                        </Badge>
-                      </div>
-                    </TableCell>
+                  <React.Fragment key={conta.id}>
+                    <TableRow
+                      className="bg-popover hover:bg-muted/30 border-border group cursor-pointer border-b transition-colors last:border-0 dark:border-white/5"
+                      onClick={() => toggleExpand(conta.id)}
+                    >
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {expandedRows.has(conta.id) ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                          )}
+                          <div className="flex flex-col">
+                            <span className="group-hover:text-primary transition-colors">
+                              {conta.numero_encomenda}
+                            </span>
+                            <Badge variant="info" className="mt-0.5 uppercase">
+                              {conta.etiqueta || "Nenhum"}
+                            </Badge>
+                          </div>
+                        </div>
+                      </TableCell>
 
-                    <TableCell>{conta.fornecedores?.nome || "N/A"}</TableCell>
+                      <TableCell>{conta.fornecedores?.nome || "N/A"}</TableCell>
 
-                    <TableCell className="text-muted-foreground text-sm">
-                      {new Date(conta.data_criacao).toLocaleDateString()}
-                    </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {new Date(conta.data_criacao).toLocaleDateString()}
+                      </TableCell>
 
-                    <TableCell className="font-semibold">
-                      {formatCurrencyEUR(conta.valor_total_custo)}
-                    </TableCell>
+                      <TableCell className="font-semibold">
+                        {formatCurrencyEUR(conta.valor_total_custo)}
+                      </TableCell>
 
-                    <TableCell className="text-success">
-                      {formatCurrencyEUR(conta.valor_pago_fornecedor)}
-                    </TableCell>
+                      <TableCell className="text-success">
+                        {formatCurrencyEUR(conta.valor_pago_fornecedor)}
+                      </TableCell>
 
-                    <TableCell className="text-warning font-semibold">
-                      {formatCurrencyEUR(conta.saldo_devedor_fornecedor)}
-                    </TableCell>
+                      <TableCell className="text-warning font-semibold">
+                        {formatCurrencyEUR(conta.saldo_devedor_fornecedor)}
+                      </TableCell>
 
-                    <TableCell className="text-muted-foreground text-sm">
-                      {paymentCounts[conta.id] > 0 ? (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          className="text-primary h-auto p-0 underline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedPaymentConta(conta);
-                            setShowPaymentDetails(true);
-                          }}
-                        >
-                          {paymentCounts[conta.id]} pag.
-                        </Button>
-                      ) : (
-                        "Nenhum"
-                      )}
-                    </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {paymentCounts[conta.id] > 0 ? (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            className="text-primary h-auto p-0 underline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedPaymentConta(conta);
+                              setShowPaymentDetails(true);
+                            }}
+                          >
+                            {paymentCounts[conta.id]} pag.
+                          </Button>
+                        ) : (
+                          "Nenhum"
+                        )}
+                      </TableCell>
 
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewDetails(conta);
-                          }}
-                          title={t("Ver Detalhes")}
-                          type="button"
-                          className="hover:text-primary hover:bg-primary/10 transition-colors"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-
-                        {!isFelipe && (
+                      <TableCell>
+                        <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            title={t("Registrar Pagamento")}
-                            type="button"
-                            className="hover:text-primary hover:bg-primary/10 transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setSelectedConta(conta);
-                              // Aqui precisamos de uma forma de abrir o modal de pagamento
-                              // Como estava dentro de um DialogTrigger, vamos mudar a lógica para usar estado
-                              setShowPaymentForm(true);
+                              handleViewDetails(conta);
                             }}
+                            title={t("Ver Detalhes")}
+                            type="button"
+                            className="hover:text-primary hover:bg-primary/10 transition-colors"
                           >
-                            <Plus className="h-4 w-4" />
+                            <Eye className="h-4 w-4" />
                           </Button>
-                        )}
 
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title={t("Anexar Comprovante")}
-                                type="button"
-                              >
-                                <IconWithBadge
-                                  icon={<Paperclip className="h-4 w-4" />}
-                                  count={attachmentCounts[conta.id] || 0}
-                                />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent
-                              className="bg-background border-border max-h-[90vh] w-[95vw] max-w-2xl overflow-y-auto"
-                              aria-describedby=""
+                          {!isFelipe && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title={t("Registrar Pagamento")}
+                              type="button"
+                              className="hover:text-primary hover:bg-primary/10 transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedConta(conta);
+                                setSelectedDestinatario(null);
+                                setShowPaymentForm(true);
+                              }}
                             >
-                              <DialogHeader className="mb-4 border-b pb-4">
-                                <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-                                  <Paperclip className="text-primary h-5 w-5" />
-                                  {t("Anexar Comprovante")}
-                                </DialogTitle>
-                              </DialogHeader>
-                              <AttachmentManager
-                                entityType="payable"
-                                entityId={conta.id}
-                                title={t("Anexar Comprovante")}
-                                onChanged={handleAttachmentChange}
-                              />
-                            </DialogContent>
-                          </Dialog>
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          )}
+
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  title={t("Anexar Comprovante")}
+                                  type="button"
+                                >
+                                  <IconWithBadge
+                                    icon={<Paperclip className="h-4 w-4" />}
+                                    count={attachmentCounts[conta.id] || 0}
+                                  />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent
+                                className="bg-background border-border max-h-[90vh] w-[95vw] max-w-2xl overflow-y-auto"
+                                aria-describedby=""
+                              >
+                                <DialogHeader className="mb-4 border-b pb-4">
+                                  <DialogTitle className="flex items-center gap-2 text-xl font-bold">
+                                    <Paperclip className="text-primary h-5 w-5" />
+                                    {t("Anexar Comprovante")}
+                                  </DialogTitle>
+                                </DialogHeader>
+                                <AttachmentManager
+                                  entityType="payable"
+                                  entityId={conta.id}
+                                  title={t("Anexar Comprovante")}
+                                  onChanged={handleAttachmentChange}
+                                />
+                              </DialogContent>
+                            </Dialog>
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                    </TableRow>
+
+                    {/* Expanded row with destinatário blocks */}
+                    {expandedRows.has(conta.id) && custosData[conta.id] && (
+                      <TableRow className="hover:bg-transparent">
+                        <TableCell colSpan={8} className="p-0">
+                          <div className="bg-muted/20 border-t border-border/40 p-4">
+                            {renderDestinatarioBlocks(conta)}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
                 ))}
 
                 {contas.length === 0 && (
@@ -419,7 +613,7 @@ export default function ContasPagar() {
             </Table>
           </div>
 
-          {/* Lista em cartões no mobile/tablet */}
+          {/* Mobile/tablet cards */}
           <div className="space-y-3 xl:hidden">
             {contas.length === 0 && (
               <Card className="border-dashed shadow-none">
@@ -432,17 +626,24 @@ export default function ContasPagar() {
               <Card
                 key={conta.id}
                 className="bg-popover border-border/50 cursor-pointer overflow-hidden transition-all active:scale-[0.98]"
-                onClick={() => handleViewDetails(conta)}
+                onClick={() => toggleExpand(conta.id)}
               >
                 <CardContent className="space-y-2 p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold">
-                        #{conta.numero_encomenda}
+                    <div className="flex items-center gap-2 min-w-0">
+                      {expandedRows.has(conta.id) ? (
+                        <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold">
+                          #{conta.numero_encomenda}
+                        </div>
+                        <Badge variant="info" className="mt-0.5 uppercase">
+                          {conta.etiqueta || "Nenhum"}
+                        </Badge>
                       </div>
-                      <Badge variant="info" className="mt-0.5 uppercase">
-                        {conta.etiqueta || "Nenhum"}
-                      </Badge>
                     </div>
                     <div className="text-muted-foreground shrink-0 text-sm">
                       {new Date(conta.data_criacao).toLocaleDateString()}
@@ -485,6 +686,14 @@ export default function ContasPagar() {
                       "Nenhum"
                     )}
                   </div>
+
+                  {/* Expanded destinatário blocks for mobile */}
+                  {expandedRows.has(conta.id) && custosData[conta.id] && (
+                    <div className="pt-2 border-t border-border/40" onClick={(e) => e.stopPropagation()}>
+                      {renderDestinatarioBlocks(conta)}
+                    </div>
+                  )}
+
                   <div
                     className="flex flex-col gap-2 pt-1 sm:flex-row"
                     onClick={(ev) => ev.stopPropagation()}
@@ -504,6 +713,7 @@ export default function ContasPagar() {
                         className="w-full border border-emerald-200/30 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 sm:w-auto dark:border-emerald-800/30 dark:text-emerald-400"
                         onClick={() => {
                           setSelectedConta(conta);
+                          setSelectedDestinatario(null);
                           setShowPaymentForm(true);
                         }}
                       >
@@ -553,7 +763,10 @@ export default function ContasPagar() {
 
       {/* Dialog: Registrar Pagamento Fornecedor */}
       {!isFelipe && selectedConta && (
-        <Dialog open={showPaymentForm} onOpenChange={setShowPaymentForm}>
+        <Dialog open={showPaymentForm} onOpenChange={(open) => {
+          setShowPaymentForm(open);
+          if (!open) setSelectedDestinatario(null);
+        }}>
           <DialogContent
             className="bg-card border-border max-h-[90vh] w-[95vw] max-w-2xl overflow-y-auto"
             aria-describedby=""
@@ -569,9 +782,11 @@ export default function ContasPagar() {
             </DialogHeader>
             <PagamentoFornecedorForm
               conta={{ ...selectedConta, encomenda_id: selectedConta.id }}
+              defaultDestinatario={selectedDestinatario || undefined}
               onSuccess={() => {
                 handlePaymentSuccess();
                 setShowPaymentForm(false);
+                setSelectedDestinatario(null);
               }}
             />
           </DialogContent>

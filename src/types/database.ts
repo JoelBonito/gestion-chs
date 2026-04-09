@@ -1,11 +1,12 @@
 export interface CustoBreakdown {
-  embalagem: number;
+  garrafa: number;
   tampa: number;
   rotulo: number;
   producao_nonato: number;
   frete_sp: number;
-  manuseio_carol: number;
+  embalagem_carol: number;
   imposto: number;
+  diversos: number;
 }
 
 export interface Produto {

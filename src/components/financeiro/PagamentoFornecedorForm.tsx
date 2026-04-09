@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,7 +20,28 @@ import { sendEmail, emailTemplates, emailRecipients } from "@/lib/email";
 import { PushNotifications } from "@/lib/push-notifications";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 
+const DESTINATARIO_CATEGORIAS: Record<string, { label: string; categorias: { value: string; label: string }[] }> = {
+  nonato: {
+    label: "Nonato (Produção)",
+    categorias: [
+      { value: "garrafa", label: "Garrafa" },
+      { value: "tampa", label: "Tampa" },
+      { value: "producao", label: "Produção" },
+    ],
+  },
+  carol: {
+    label: "Carol (Manuseamento)",
+    categorias: [
+      { value: "embalagem", label: "Embalagem" },
+      { value: "imposto", label: "Imposto" },
+      { value: "frete", label: "Frete SP → Marseille" },
+    ],
+  },
+};
+
 const pagamentoFornecedorSchema = z.object({
+  destinatario: z.string().min(1, "Destinatário é obrigatório"),
+  categoria: z.string().optional(),
   valor_pagamento: z.string().min(1, "Valor é obrigatório"),
   forma_pagamento: z.string().min(1, "Forma de pagamento é obrigatória"),
   data_pagamento: z.string().min(1, "Data é obrigatória"),
@@ -41,11 +62,13 @@ interface ContaPagar {
 interface PagamentoFornecedorFormProps {
   onSuccess: () => void;
   conta: ContaPagar;
+  defaultDestinatario?: string;
 }
 
 export default function PagamentoFornecedorForm({
   onSuccess,
   conta,
+  defaultDestinatario,
 }: PagamentoFornecedorFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -55,14 +78,24 @@ export default function PagamentoFornecedorForm({
     handleSubmit,
     control,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<PagamentoFornecedorFormData>({
     resolver: zodResolver(pagamentoFornecedorSchema),
     defaultValues: {
+      destinatario: defaultDestinatario || "",
+      categoria: "",
       data_pagamento: new Date().toISOString().split("T")[0],
       forma_pagamento: "transferencia",
     },
   });
+
+  const watchDestinatario = watch("destinatario");
+
+  useEffect(() => {
+    setValue("categoria", "");
+  }, [watchDestinatario, setValue]);
 
   const onSubmit = async (data: PagamentoFornecedorFormData) => {
     try {
@@ -70,6 +103,8 @@ export default function PagamentoFornecedorForm({
 
       const { error } = await supabase.from("pagamentos_fornecedor").insert({
         encomenda_id: conta.encomenda_id,
+        destinatario: data.destinatario,
+        categoria: data.categoria || null,
         valor_pagamento: parseFloat(data.valor_pagamento),
         forma_pagamento: data.forma_pagamento,
         data_pagamento: data.data_pagamento,
@@ -83,7 +118,7 @@ export default function PagamentoFornecedorForm({
         const valorFormatado = `€${parseFloat(data.valor_pagamento).toFixed(2)}`;
         await sendEmail(
           emailRecipients.lipe,
-          `💳 Pagamento realizado — ${conta.numero_encomenda}`,
+          `💳 Pagamento realizado — ${conta.numero_encomenda}${data.categoria ? ` (${data.categoria})` : ""}`,
           emailTemplates.pagamentoFornecedor(conta.numero_encomenda, "N/A", valorFormatado)
         );
       } catch (emailError) {
@@ -152,6 +187,64 @@ export default function PagamentoFornecedorForm({
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+          {/* Destinatário */}
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+              Destinatário
+            </Label>
+            <Controller
+              name="destinatario"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger className="bg-popover border-border/40 focus:ring-primary/20 h-11 font-semibold transition-all">
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border/40">
+                    {Object.entries(DESTINATARIO_CATEGORIAS).map(([key, { label }]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.destinatario && (
+              <span className="text-xs font-medium tracking-tight text-red-500">
+                {errors.destinatario.message}
+              </span>
+            )}
+          </div>
+
+          {/* Categoria */}
+          <div className="space-y-2">
+            <Label className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
+              Categoria <span className="font-normal normal-case tracking-normal">(opcional)</span>
+            </Label>
+            <Controller
+              name="categoria"
+              control={control}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value} disabled={!watchDestinatario}>
+                  <SelectTrigger className="bg-popover border-border/40 focus:ring-primary/20 h-11 font-semibold transition-all">
+                    <SelectValue placeholder={watchDestinatario ? "Selecione..." : "Escolha o destinatário primeiro"} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border/40">
+                    {watchDestinatario && DESTINATARIO_CATEGORIAS[watchDestinatario]?.categorias.map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.categoria && (
+              <span className="text-xs font-medium tracking-tight text-red-500">
+                {errors.categoria.message}
+              </span>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label

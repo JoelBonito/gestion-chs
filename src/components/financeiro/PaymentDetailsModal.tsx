@@ -26,6 +26,8 @@ interface Payment {
   forma_pagamento: string;
   valor_pagamento: number;
   observacoes?: string;
+  destinatario?: string | null;
+  categoria?: string | null;
 }
 
 interface PaymentDetailsModalProps {
@@ -67,6 +69,8 @@ export function PaymentDetailsModal({
       Fechar: { pt: "Fechar", fr: "Fermer" },
       "Total Acumulado:": { pt: "Total Acumulado:", fr: "Total cumulé :" },
       "Total:": { pt: "Total:", fr: "Total :" },
+      "Destinatário": { pt: "Destinatário", fr: "Destinataire" },
+      "Categoria": { pt: "Categoria", fr: "Catégorie" },
     };
     return dict[k]?.[lang] ?? k;
   };
@@ -78,9 +82,13 @@ export function PaymentDetailsModal({
     try {
       const tableName = paymentType === "cliente" ? "pagamentos" : "pagamentos_fornecedor";
 
+      const selectFields = paymentType === "fornecedor"
+        ? "id, data_pagamento, forma_pagamento, valor_pagamento, observacoes, destinatario, categoria"
+        : "id, data_pagamento, forma_pagamento, valor_pagamento, observacoes";
+
       const { data, error } = await supabase
         .from(tableName)
-        .select("id, data_pagamento, forma_pagamento, valor_pagamento, observacoes")
+        .select(selectFields)
         .eq("encomenda_id", encomendaId)
         .order("data_pagamento", { ascending: false });
 
@@ -139,6 +147,9 @@ export function PaymentDetailsModal({
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="font-bold">{t("Data")}</TableHead>
                     <TableHead className="font-bold">{t("Método")}</TableHead>
+                    {paymentType === "fornecedor" && (
+                      <TableHead className="font-bold">{t("Destinatário")}</TableHead>
+                    )}
                     <TableHead className="font-bold">{t("Valor")}</TableHead>
                     <TableHead className="font-bold">{t("Observações")}</TableHead>
                   </TableRow>
@@ -153,6 +164,22 @@ export function PaymentDetailsModal({
                         {formatDate(payment.data_pagamento)}
                       </TableCell>
                       <TableCell className="text-sm">{payment.forma_pagamento}</TableCell>
+                      {paymentType === "fornecedor" && (
+                        <TableCell className="text-sm">
+                          {payment.destinatario ? (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium capitalize">{payment.destinatario}</span>
+                              {payment.categoria && (
+                                <span className="text-muted-foreground bg-muted/40 w-fit rounded-full px-2 py-0.5 text-[10px] font-medium capitalize">
+                                  {payment.categoria}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      )}
                       <TableCell className="text-success text-sm font-bold">
                         {formatCurrencyEUR(payment.valor_pagamento)}
                       </TableCell>
@@ -190,6 +217,18 @@ export function PaymentDetailsModal({
                     <div className="bg-muted/40 w-fit rounded-full px-2 py-0.5 text-xs font-medium">
                       {payment.forma_pagamento}
                     </div>
+                    {paymentType === "fornecedor" && payment.destinatario && (
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 w-fit rounded-full px-2 py-0.5 text-xs font-medium capitalize">
+                          {payment.destinatario}
+                        </span>
+                        {payment.categoria && (
+                          <span className="bg-amber-500/10 text-amber-600 dark:text-amber-400 w-fit rounded-full px-2 py-0.5 text-xs font-medium capitalize">
+                            {payment.categoria}
+                          </span>
+                        )}
+                      </div>
+                    )}
                     {payment.observacoes && (
                       <div className="text-muted-foreground bg-muted/10 border-primary/20 rounded border-l-2 p-2 text-xs">
                         {payment.observacoes}
