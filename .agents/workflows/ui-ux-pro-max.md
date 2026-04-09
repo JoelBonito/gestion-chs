@@ -113,9 +113,18 @@ After generating the design system, create visual mockups to validate design tok
    - Is the typography hierarchy visible?
 5. **Iterate if needed:**
    - If mockups reveal token issues, adjust the design system and regenerate
+   - Use `edit_screens` for partial changes, `generate_variants` for alternatives
    - Load `stitch-ui-design` skill for detailed prompt engineering guidance
+6. **Sync Stitch Design System:**
+   - Call `list_design_systems(projectId)` to check for existing DS
+   - If none: call `create_design_system(projectId, name, description)` with token summary from Step 2
+   - Call `apply_design_system(projectId, designSystemId, screenId)` on each screen for consistency
+7. **Extract code (if approved):**
+   - Call `fetch_screen_code(projectId, screenId)` for each approved screen
+   - Save to `docs/01-Planejamento/03.5-visual-mockups/generated-code/`
+   - Code is ~90% production-ready — use as base for implementation
 
-> **Skill:** Load `stitch-ui-design` for prompt templates and anti-cliche rules.
+> **Skill:** Load `stitch-ui-design` for prompt templates, anti-cliche rules, and code handoff protocol.
 > **Note:** This step validates the design system visually and is REQUIRED for all UI projects.
 
 ### Step 3: Supplement with Detailed Searches (as needed)

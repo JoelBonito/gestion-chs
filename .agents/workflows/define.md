@@ -761,6 +761,17 @@ Por favor, revise o UX Concept e responda:
 7. **Documentar resultados**
    - Criar arquivo de output com template abaixo
 
+8. **Extrair codigo gerado (CRITICO)**
+   - Criar diretorio: `mkdir -p docs/01-Planejamento/03.5-visual-mockups/generated-code`
+   - Para CADA tela aprovada, invocar `mcp__stitch__fetch_screen_code(projectId, screenId)`
+   - Salvar como `generated-code/{nome-da-tela}-{device}.html`
+   - Codigo e ~90% production-ready — usar como base para componentes React
+
+9. **Salvar imagens de referencia (Recomendado)**
+   - Criar diretorio: `mkdir -p docs/01-Planejamento/03.5-visual-mockups/images`
+   - Para cada tela aprovada, invocar `mcp__stitch__fetch_screen_image(projectId, screenId)`
+   - Imagens servem como referencia offline para sessoes futuras
+
 ```markdown
 # Visual Mockups: {Nome do Projeto}
 

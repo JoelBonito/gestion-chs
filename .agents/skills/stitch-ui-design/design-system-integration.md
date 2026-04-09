@@ -175,3 +175,64 @@ Geometry: [RADIUS]px border radius, [GEOMETRY_STYLE] edges. ..."
 ```
 
 This ensures mockups validate the actual token values, not abstract descriptions.
+
+---
+
+## Stitch Design System Management
+
+Stitch has its own Design System feature that mirrors your project's Design System document. Use it to enforce visual consistency across all generated screens.
+
+### Available Tools
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `list_design_systems` | Check for existing DS in Stitch | Before creating a new one — avoid duplicates |
+| `create_design_system` | Create a DS in Stitch from your tokens | After Design System doc is finalized (Phase 7) |
+| `apply_design_system` | Apply DS to a specific screen | When generating or editing screens for consistency |
+| `update_design_system` | Update DS when tokens change | After Design System doc is revised |
+
+### Sync Protocol
+
+```
+Design System Document (source of truth)
+        │
+        ▼
+create_design_system (initial sync)
+        │
+        ▼
+Stitch Design System (visual enforcement)
+        │
+        ├── apply_design_system → each screen
+        │
+        └── update_design_system ← when tokens change
+```
+
+### When to Create a Stitch Design System
+
+| Workflow | Trigger | Action |
+|----------|---------|--------|
+| `/define` Phase 7 | Design System doc is written | Create Stitch DS with tokens from the doc |
+| `/ui-ux-pro-max` Step 2b | Design System is persisted | Create Stitch DS from persisted tokens |
+| Manual | User asks for consistency enforcement | Create from existing Design System doc |
+
+### How to Create
+
+1. **Check for existing DS:** Call `list_design_systems(projectId)`
+2. **If none exists:** Call `create_design_system(projectId, name, description)` with token summary
+3. **Apply to screens:** For each screen, call `apply_design_system(projectId, designSystemId, screenId)`
+4. **Document:** Record DS ID in the mockups output document
+
+### When to Update
+
+- Design System doc tokens change (color, typography, geometry)
+- Stakeholder feedback requires visual direction change
+- After regenerating key screens with new direction
+
+Call `update_design_system(projectId, designSystemId)` and re-apply to affected screens.
+
+### Consistency Rules for Stitch DS
+
+1. **One DS per project** — Do not create multiple design systems for the same project
+2. **DS doc is source of truth** — If Stitch DS and Design System doc conflict, the doc wins
+3. **Apply before generating** — When DS exists, apply it to screens before generating new content
+4. **Update, don't recreate** — When tokens change, update the existing DS rather than creating a new one

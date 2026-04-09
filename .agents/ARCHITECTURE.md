@@ -120,7 +120,7 @@ Skills are modular knowledge domains in `.agents/skills/`. Each contains at mini
 | `tailwind-patterns` | Tailwind CSS utility patterns and best practices |
 | `frontend-design` | UI/UX patterns, design systems, color/typography systems |
 | `web-design-guidelines` | UI audit against Web Interface Guidelines |
-| `stitch-ui-design` | Stitch MCP integration for generating high-fidelity UI designs from textual wireframes |
+| `stitch-ui-design` | Stitch MCP integration for generating mockups, extracting production-ready code, and managing design systems (14 MCP tools). Sub-docs: prompt-engineering, wireframe-to-prompt, design-system-integration, validation-checklist, code-handoff |
 
 ### Backend and API
 
@@ -128,6 +128,7 @@ Skills are modular knowledge domains in `.agents/skills/`. Each contains at mini
 | ----- | ----------- |
 | `api-patterns` | REST, GraphQL, tRPC design patterns and documentation |
 | `nodejs-best-practices` | Node.js async patterns, modules, error handling |
+| `firebase-patterns` | Firestore data modeling, Cloud Functions v2, Security Rules, SDK version management. Sub-docs: firestore-design, cloud-functions, security-rules, version-guide |
 | `python-patterns` | Python standards, FastAPI, idiomatic patterns |
 
 ### Database

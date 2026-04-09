@@ -88,7 +88,8 @@ CORE_SKILLS = {
     "vulnerability-scanner",
     "web-design-guidelines",
     "webapp-testing",
-}  # 41
+    "firebase-patterns",
+}  # 42
 
 CORE_WORKFLOWS = {
     "brainstorm.md",
@@ -546,7 +547,7 @@ def validate_installation(verbose: bool = False, mode: str = "warn"):
     print("=" * 64)
 
     # Counts
-    print(f"  Core expected: {21} agents | {41} skills | {22} workflows | {22} scripts")
+    print(f"  Core expected: {21} agents | {42} skills | {22} workflows | {22} scripts")
     print()
 
     has_issues = False

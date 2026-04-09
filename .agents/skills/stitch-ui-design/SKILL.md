@@ -1,7 +1,7 @@
 ---
 name: stitch-ui-design
-description: Knowledge on how to use Stitch MCP to generate high-fidelity UI designs from textual wireframes. Integrates with UX Concept and Design System workflows.
-allowed-tools: Read, Glob, Grep
+description: Knowledge on how to use Stitch MCP to generate high-fidelity UI designs from textual wireframes, extract production-ready code, and manage design systems. Integrates with UX Concept and Design System workflows.
+allowed-tools: Read, Glob, Grep, mcp__stitch__create_project, mcp__stitch__list_projects, mcp__stitch__get_project, mcp__stitch__list_screens, mcp__stitch__get_screen, mcp__stitch__generate_screen_from_text, mcp__stitch__fetch_screen_code, mcp__stitch__fetch_screen_image, mcp__stitch__edit_screens, mcp__stitch__generate_variants, mcp__stitch__create_design_system, mcp__stitch__apply_design_system, mcp__stitch__list_design_systems, mcp__stitch__update_design_system
 ---
 
 # Stitch UI Design Skill
@@ -19,8 +19,9 @@ allowed-tools: Read, Glob, Grep
 |------|--------|--------------|
 | [prompt-engineering.md](prompt-engineering.md) | REQUIRED | Always read before generating any screen |
 | [wireframe-to-prompt.md](wireframe-to-prompt.md) | REQUIRED | When converting UX Concept wireframes to Stitch prompts |
-| [design-system-integration.md](design-system-integration.md) | Optional | When extracting design tokens from generated mockups |
+| [design-system-integration.md](design-system-integration.md) | Optional | When extracting design tokens or syncing Stitch Design Systems |
 | [validation-checklist.md](validation-checklist.md) | Optional | When validating generated screens before delivery |
+| [code-handoff.md](code-handoff.md) | Optional | When extracting code from approved mockups for implementation |
 
 > **prompt-engineering.md + wireframe-to-prompt.md = ALWAYS READ. Others = only when relevant.**
 
@@ -28,14 +29,34 @@ allowed-tools: Read, Glob, Grep
 
 ## Stitch MCP Tools Reference
 
+### Project Management
+
 | Tool | Purpose | When to Use |
 |------|---------|-------------|
 | `mcp__stitch__create_project` | Create a new Stitch project container | Start of a new project or design session |
 | `mcp__stitch__list_projects` | List all accessible projects | Find existing project to reuse |
 | `mcp__stitch__get_project` | Get project details by name | Verify project exists and retrieve metadata |
+
+### Screen Generation & Retrieval
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `mcp__stitch__generate_screen_from_text` | Generate a screen from a text prompt | Core generation tool — produce visual mockups |
+| `mcp__stitch__generate_variants` | Generate design variants of an existing screen | Explore alternative designs for stakeholder review |
 | `mcp__stitch__list_screens` | List all screens in a project | Inventory existing screens before generating new ones |
 | `mcp__stitch__get_screen` | Get screen details and output | Review a generated screen, check for suggestions |
-| `mcp__stitch__generate_screen_from_text` | Generate a screen from a text prompt | Core generation tool — produce visual mockups |
+| `mcp__stitch__fetch_screen_image` | Download the generated screen image | Save mockup PNG for offline reference or documentation |
+| `mcp__stitch__fetch_screen_code` | **Extract the generated HTML/React code** | **CRITICAL — Get production-ready code from mockups** |
+| `mcp__stitch__edit_screens` | Edit/refine an existing screen | Iterate on a screen without regenerating from scratch |
+
+### Design System Management
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `mcp__stitch__create_design_system` | Create a design system in Stitch | After Design System doc is defined (Phase 7) |
+| `mcp__stitch__list_design_systems` | List available design systems | Check for reusable DS before creating a new one |
+| `mcp__stitch__apply_design_system` | Apply a design system to screens | Enforce visual consistency across all mockups |
+| `mcp__stitch__update_design_system` | Update an existing design system | When design tokens change and DS needs sync |
 
 ### Tool Parameters Quick Reference
 
@@ -44,6 +65,33 @@ allowed-tools: Read, Glob, Grep
 - `prompt` (required): Detailed description of the screen to generate
 - `deviceType` (optional): `MOBILE` (default) or `DESKTOP`
 - `modelId` (optional): `GEMINI_3_FLASH` (default, faster) or `GEMINI_3_PRO` (higher quality)
+
+**fetch_screen_code:**
+- `projectId` (required): Project ID
+- `screenId` (required): Screen ID from the generated screen
+
+**fetch_screen_image:**
+- `projectId` (required): Project ID
+- `screenId` (required): Screen ID from the generated screen
+
+**edit_screens:**
+- `projectId` (required): Project ID
+- `screenId` (required): Screen ID to edit
+- `prompt` (required): Description of changes to apply
+
+**generate_variants:**
+- `projectId` (required): Project ID
+- `screenId` (required): Screen ID to create variants from
+
+**create_design_system:**
+- `projectId` (required): Project ID
+- `name` (required): Design system name
+- `description` (optional): Description of the design system
+
+**apply_design_system:**
+- `projectId` (required): Project ID
+- `designSystemId` (required): Design system ID to apply
+- `screenId` (required): Screen to apply the design system to
 
 > **GEMINI_3_PRO** for key screens (Dashboard, Landing, Onboarding). **GEMINI_3_FLASH** for secondary screens (Settings, Lists).
 
@@ -86,6 +134,62 @@ Load `validation-checklist.md` and verify all generated screens.
 ### Step 7: Document
 Create the output document with all screen IDs, project ID, and coverage mapping.
 
+### Step 8: Fetch Generated Code (CRITICAL)
+
+> **This step is the difference between 30 minutes and 3 hours of implementation work.**
+> Stitch generates production-ready HTML/React code alongside every mockup. Skipping this step means rewriting from scratch what already exists.
+
+After screens are approved by the user:
+
+1. **Create output directory:**
+   ```
+   mkdir -p docs/01-Planejamento/03.5-visual-mockups/generated-code
+   ```
+2. **For each approved screen**, call `fetch_screen_code(projectId, screenId)`
+3. **Save each file** as `generated-code/{screenName}-{deviceType}.html`
+   - Example: `generated-code/dashboard-mobile.html`, `generated-code/login-desktop.html`
+4. **Add code links** to the output document (from Step 7) in a "Generated Code" section
+5. **Handoff note:** Load `code-handoff.md` for the protocol on converting this code to React components
+
+```markdown
+## Generated Code
+
+| Screen | Device | Code File | Status |
+|--------|--------|-----------|--------|
+| Dashboard | MOBILE | [dashboard-mobile.html](generated-code/dashboard-mobile.html) | Extracted |
+| Dashboard | DESKTOP | [dashboard-desktop.html](generated-code/dashboard-desktop.html) | Extracted |
+```
+
+> **Rule:** Code is ~90% production-ready. Use it as the base for React components — add state, handlers, and TypeScript types. Do NOT rewrite from scratch.
+
+### Step 9: Fetch Screen Images (Recommended)
+
+Save mockup images for offline reference and documentation:
+
+1. **For each approved screen**, call `fetch_screen_image(projectId, screenId)`
+2. **Save images** in `docs/01-Planejamento/03.5-visual-mockups/images/`
+3. Images serve as reference when Stitch MCP is unavailable in future sessions
+
+> **Optional but recommended:** Images allow stakeholder review without Stitch access.
+
+### Step 10: Iteration Protocol
+
+When refinements are needed after initial generation:
+
+1. **Partial changes** (color, text, small layout tweaks):
+   - Use `edit_screens(projectId, screenId, prompt)` — describe only what to change
+   - Do NOT regenerate the entire screen
+2. **Design exploration** (stakeholder wants alternatives):
+   - Use `generate_variants(projectId, screenId)` to create variations
+   - Present variants to user for selection
+3. **Design System enforcement** (ensure consistency across screens):
+   - Use `create_design_system` or `list_design_systems` to manage DS in Stitch
+   - Use `apply_design_system` to enforce DS on individual screens
+   - Load `design-system-integration.md` for the full DS sync protocol
+4. **After any iteration**, re-run `fetch_screen_code` for updated screens
+
+> **Rule:** `edit_screens` for refinement, `generate_screen_from_text` for new screens, `generate_variants` for exploration. Never regenerate what can be edited.
+
 ---
 
 ## When to Use This Skill
@@ -125,11 +229,12 @@ Create the output document with all screen IDs, project ID, and coverage mapping
 | Component | Relationship | Direction |
 |-----------|-------------|-----------|
 | `@ux-researcher` | Produces wireframes (Section 4 of UX Concept) | Input to this skill |
-| `@frontend-specialist` | Consumes mockups for design system + implementation reference | Output from this skill |
+| `@frontend-specialist` | Consumes mockups + **generated code** for design system + implementation | Output from this skill |
 | `frontend-design` skill | Provides anti-cliche rules and design principles | Rules applied to prompts |
-| `/define` workflow | Phase 3.5 uses this skill for visual mockups | Workflow integration |
-| `/ui-ux-pro-max` workflow | Step 2c uses this skill for visual preview | Workflow integration |
-| Design System document | Mockups inform color, typography, and component decisions | Downstream reference |
+| `/define` workflow | Phase 3.5 uses this skill for visual mockups + code extraction | Workflow integration |
+| `/ui-ux-pro-max` workflow | Step 2c uses this skill for visual preview + DS sync | Workflow integration |
+| Design System document | Mockups inform tokens; **Stitch DS enforces consistency** | Bidirectional |
+| Stitch Design System | Mirror of Design System doc inside Stitch platform | Sync via create/apply/update tools |
 
 ---
 
@@ -167,6 +272,21 @@ When generating mockups, create:
 - **Typography style:** [serif/sans/display from mockups]
 - **Geometry:** [sharp/rounded/mixed from mockups]
 - **Key patterns:** [notable UI patterns from mockups]
+
+## Generated Code (Step 8)
+
+| Screen | Device | Code File | Status |
+|--------|--------|-----------|--------|
+| [Name] | MOBILE | [generated-code/{name}-mobile.html](generated-code/{name}-mobile.html) | Extracted |
+| [Name] | DESKTOP | [generated-code/{name}-desktop.html](generated-code/{name}-desktop.html) | Extracted |
+
+> Code is ~90% production-ready. See `code-handoff.md` for the conversion protocol to React components.
+
+## Stitch Design System (Step 10, if applicable)
+
+- **DS ID:** [design_system_id]
+- **DS Name:** [name]
+- **Applied to screens:** [list of screen IDs]
 ```
 
 > **Note:** Always integrate the guidelines from `@frontend-specialist` to ensure generated designs are truly premium and unique. Load `prompt-engineering.md` before every generation session.

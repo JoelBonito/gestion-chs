@@ -96,6 +96,29 @@ Which screens need attention?
 
 ---
 
+## 5. Code Extraction
+
+| Check | Pass | Fail |
+|-------|------|------|
+| **Code fetched for all approved screens** | Every approved screen has a corresponding `.html` file in `generated-code/` | Missing code files for approved screens |
+| **Code files are valid HTML** | Files open correctly and contain structured markup | Empty files, broken HTML, or error responses |
+| **Code files are saved in correct location** | Files in `docs/01-Planejamento/03.5-visual-mockups/generated-code/` | Files scattered or missing |
+| **Output document has code links** | "Generated Code" section in mockups doc lists all files | No code section in output document |
+
+---
+
+## 6. Design System Sync
+
+| Check | Pass | Fail |
+|-------|------|------|
+| **Stitch DS exists (if DS doc exists)** | `list_design_systems` returns a DS matching the project | Design System doc exists but no Stitch DS created |
+| **DS applied to all screens** | All screens reference the same DS ID | Some screens generated without DS applied |
+| **DS tokens match doc** | Stitch DS reflects current Design System document values | Stitch DS is outdated or diverges from doc |
+
+> **Note:** Section 6 only applies when a Design System document exists (Phase 7 in `/define` or Step 2b in `/ui-ux-pro-max`). Skip for early prototyping phases.
+
+---
+
 ## Quick Validation (Minimum Viable Check)
 
 For fast iterations or prototyping, verify at minimum:
@@ -105,3 +128,4 @@ For fast iterations or prototyping, verify at minimum:
 - [ ] Layout follows wireframe structure
 - [ ] Project ID and screen IDs are documented
 - [ ] User has seen and acknowledged the mockups
+- [ ] Code extracted for approved screens (Step 8)
