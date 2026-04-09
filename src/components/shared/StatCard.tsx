@@ -6,6 +6,7 @@ import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 interface StatCardProps {
   title: string;
   value: string | number;
+  secondaryValue?: string;
   subtitle?: string | ReactNode;
   icon?: ReactNode;
   trend?: {
@@ -20,6 +21,7 @@ interface StatCardProps {
 export default function StatCard({
   title,
   value,
+  secondaryValue,
   subtitle,
   icon,
   trend,
@@ -84,6 +86,9 @@ export default function StatCard({
 
         <div className="mt-2 flex flex-col gap-1">
           <div className="text-2xl font-bold tracking-tight text-[var(--foreground)]">{value}</div>
+          {secondaryValue && (
+            <div className="text-xs font-medium text-muted-foreground">{secondaryValue}</div>
+          )}
 
           {(trend || subtitle) && (
             <div className="mt-1 flex items-center gap-2 text-xs">

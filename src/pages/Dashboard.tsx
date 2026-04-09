@@ -5,7 +5,7 @@ import { StatCard } from "@/components/shared";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
-import { formatCurrencyEUR } from "@/lib/utils/currency";
+import { formatCurrencyEUR, formatCurrencyBRL, eurToBrl } from "@/lib/utils/currency";
 import { RoleBasedGuard } from "@/components/RoleBasedGuard";
 import { useAuth } from "@/hooks/useAuth";
 import { Home, ClipboardList, DollarSign, Truck, Package, Factory, TrendingUp, Edit2, Save, RefreshCw } from "lucide-react";
@@ -17,6 +17,12 @@ import { cn } from "@/lib/utils";
 import { getExchangeRate, updateExchangeRate, fetchExchangeRate } from "@/lib/utils/currency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -31,6 +37,7 @@ export default function Dashboard() {
 
   // Estados para seleção de ano
   const [performanceYear, setPerformanceYear] = useState(2026);
+  const [comissaoModalData, setComissaoModalData] = useState<{ title: string; encomendas: ComissaoEncomenda[]; total: number } | null>(null);
   const [comissoesAnoYear, setComissoesAnoYear] = useState(2026);
 
   // Exchange rate state
@@ -146,10 +153,24 @@ export default function Dashboard() {
     produtos: { lucro_joel: number | null; fornecedor_id: string | null } | null;
     encomendas: {
       numero_encomenda: string;
+      etiqueta: string | null;
       status: string;
       fornecedor_id: string | null;
       data_producao_estimada: string | null;
+      valor_frete: number | null;
+      custo_frete: number | null;
     } | null;
+  }
+
+  interface ComissaoEncomenda {
+    numero_encomenda: string;
+    etiqueta: string | null;
+    comissao: number;
+  }
+
+  interface MesComissaoData {
+    total: number;
+    encomendas: ComissaoEncomenda[];
   }
 
   interface CustoRow {
@@ -249,7 +270,7 @@ export default function Dashboard() {
     },
   });
 
-  const { data: comissoesPorMes = [] } = useQuery({
+  const { data: comissoesPorMes = [] } = useQuery<MesComissaoData[]>({
     queryKey: ["comissoes-por-mes", performanceYear],
     queryFn: async () => {
       const { data: itens, error } = await supabase
@@ -261,23 +282,27 @@ export default function Dashboard() {
           preco_unitario,
           preco_custo,
           produtos(lucro_joel, fornecedor_id),
-          encomendas!inner(numero_encomenda, status, fornecedor_id, data_producao_estimada)
+          encomendas!inner(numero_encomenda, etiqueta, status, fornecedor_id, data_producao_estimada, valor_frete, custo_frete)
         `
         )
         .gte("encomendas.data_producao_estimada", `${performanceYear}-01-01`)
         .lt("encomendas.data_producao_estimada", `${performanceYear + 1}-01-01`);
-      if (error || !itens) return [];
+      if (error || !itens) return Array.from({ length: 12 }, () => ({ total: 0, encomendas: [] }));
 
       const typedItens = itens as unknown as CommissionItemRow[];
       const custosByItemId = await fetchCustos(typedItens.map((it) => it.id));
 
-      const meses = Array(12).fill(0);
+      // Group by month and by order
+      const meses: MesComissaoData[] = Array.from({ length: 12 }, () => ({ total: 0, encomendas: [] }));
+      // Track per-order commission per month: meses[month][numero_encomenda] = { ... }
+      const mesOrderMap: Record<number, Record<string, ComissaoEncomenda>> = {};
+
       typedItens.forEach((item) => {
         const enc = item.encomendas;
         const dataProd = enc?.data_producao_estimada;
         if (!dataProd) return;
         const mes = new Date(dataProd).getMonth();
-        meses[mes] += calcularComissaoItem(
+        const comissao = calcularComissaoItem(
           {
             quantidade: item.quantidade || 0,
             preco_unitario: item.preco_unitario || 0,
@@ -292,7 +317,43 @@ export default function Dashboard() {
             fornecedor_id: enc?.fornecedor_id ?? undefined,
           }
         );
+        meses[mes].total += comissao;
+
+        if (!mesOrderMap[mes]) mesOrderMap[mes] = {};
+        const numEnc = enc?.numero_encomenda || "";
+        if (!mesOrderMap[mes][numEnc]) {
+          mesOrderMap[mes][numEnc] = { numero_encomenda: numEnc, etiqueta: enc?.etiqueta || null, comissao: 0 };
+        }
+        mesOrderMap[mes][numEnc].comissao += comissao;
       });
+
+      // Add frete margin per order (once per unique order per month)
+      const freteAdded = new Set<string>();
+      typedItens.forEach((item) => {
+        const enc = item.encomendas;
+        if (!enc?.data_producao_estimada) return;
+        const numEnc = enc.numero_encomenda;
+        const mes = new Date(enc.data_producao_estimada).getMonth();
+        const key = `${mes}_${numEnc}`;
+        if (freteAdded.has(key)) return;
+        freteAdded.add(key);
+        const freteMargin = (enc.valor_frete || 0) - (enc.custo_frete || 0);
+        if (freteMargin > 0) {
+          meses[mes].total += freteMargin;
+          if (mesOrderMap[mes]?.[numEnc]) {
+            mesOrderMap[mes][numEnc].comissao += freteMargin;
+          }
+        }
+      });
+
+      // Convert order maps to sorted arrays
+      for (let m = 0; m < 12; m++) {
+        if (mesOrderMap[m]) {
+          meses[m].encomendas = Object.values(mesOrderMap[m])
+            .filter(e => e.comissao !== 0)
+            .sort((a, b) => b.comissao - a.comissao);
+        }
+      }
       return meses;
     },
   });
@@ -442,6 +503,7 @@ export default function Dashboard() {
               <StatCard
                 title="A Receber"
                 value={formatCurrencyEUR(aReceber)}
+                secondaryValue={formatCurrencyBRL(eurToBrl(aReceber))}
                 subtitle="Dos clientes"
                 icon={<DollarSign className="h-5 w-5" />}
                 variant="success"
@@ -451,6 +513,7 @@ export default function Dashboard() {
               <StatCard
                 title="A Pagar"
                 value={formatCurrencyEUR(aPagar)}
+                secondaryValue={formatCurrencyBRL(eurToBrl(aPagar))}
                 subtitle="Aos fornecedores"
                 icon={<Truck className="h-5 w-5" />}
                 variant="warning"
@@ -460,15 +523,27 @@ export default function Dashboard() {
               <StatCard
                 title="Comissões (Mês)"
                 value={formatCurrencyEUR(comissoesMensais)}
+                secondaryValue={formatCurrencyBRL(eurToBrl(comissoesMensais))}
                 subtitle="Lucro Atual"
                 icon={<TrendingUp className="h-5 w-5" />}
                 variant="default"
               />
             </motion.div>
-            <motion.div variants={item} className="h-full">
+            <motion.div variants={item} className="h-full cursor-pointer" onClick={() => {
+              const allEncomendas: Record<string, ComissaoEncomenda> = {};
+              comissoesPorMes.forEach((m) => {
+                (m?.encomendas || []).forEach((e) => {
+                  if (!allEncomendas[e.numero_encomenda]) allEncomendas[e.numero_encomenda] = { ...e, comissao: 0 };
+                  allEncomendas[e.numero_encomenda].comissao += e.comissao;
+                });
+              });
+              const sorted = Object.values(allEncomendas).filter(e => e.comissao !== 0).sort((a, b) => b.comissao - a.comissao);
+              setComissaoModalData({ title: `Comissões ${comissoesAnoYear}`, encomendas: sorted, total: comissoesAnuais });
+            }}>
               <StatCard
                 title="Comissões (Ano)"
                 value={formatCurrencyEUR(comissoesAnuais)}
+                secondaryValue={formatCurrencyBRL(eurToBrl(comissoesAnuais))}
                 subtitle={`Acumulado ${comissoesAnoYear}`}
                 icon={<Factory className="h-5 w-5" />}
                 variant="default"
@@ -568,42 +643,52 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-              {["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"].map((mes, i) => (
-                <motion.div
-                  key={mes}
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300 }}
-                >
-                  <StatCard
-                    title={`${mes}`}
-                    value={formatCurrencyEUR(comissoesPorMes[i] || 0)}
-                    subtitle={i < new Date().getMonth() ? "Finalizado" : "Projetado"}
-                    className={comissoesPorMes[i] > 0 ? "" : "opacity-70"}
-                  />
-                </motion.div>
-              ))}
+              {["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"].map((mes, i) => {
+                const d = comissoesPorMes[i];
+                const total = d?.total || 0;
+                return (
+                  <motion.div
+                    key={mes}
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                    onClick={() => total > 0 && d && setComissaoModalData({ title: `${mes} ${performanceYear}`, encomendas: d.encomendas, total })}
+                    className={total > 0 ? "cursor-pointer" : ""}
+                  >
+                    <StatCard
+                      title={`${mes}`}
+                      value={formatCurrencyEUR(total)}
+                      secondaryValue={total > 0 ? formatCurrencyBRL(eurToBrl(total)) : undefined}
+                      subtitle={i < new Date().getMonth() ? "Finalizado" : "Projetado"}
+                      className={total > 0 ? "" : "opacity-70"}
+                    />
+                  </motion.div>
+                );
+              })}
             </div>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
               {["Jul", "Ago", "Set", "Out", "Nov", "Dez"].map((mes, i) => {
-                const monthIndex = i + 6; // Jul=6, Ago=7, ..., Dez=11
+                const monthIndex = i + 6;
                 const currentMonth = new Date().getMonth();
                 const isFinalizado = monthIndex <= currentMonth;
+                const d = comissoesPorMes[monthIndex];
+                const total = d?.total || 0;
 
                 return (
                   <motion.div
                     key={mes}
                     whileHover={{ scale: 1.02 }}
                     transition={{ type: "spring", stiffness: 300 }}
+                    onClick={() => total > 0 && d && setComissaoModalData({ title: `${mes} ${performanceYear}`, encomendas: d.encomendas, total })}
+                    className={total > 0 ? "cursor-pointer" : ""}
                   >
                     <StatCard
                       title={`${mes}`}
-                      value={formatCurrencyEUR(comissoesPorMes[monthIndex] || 0)}
+                      value={formatCurrencyEUR(total)}
+                      secondaryValue={total > 0 ? formatCurrencyBRL(eurToBrl(total)) : undefined}
                       subtitle={isFinalizado ? "Finalizado" : "Futuro"}
                       className={
                         isFinalizado
-                          ? comissoesPorMes[monthIndex] > 0
-                            ? ""
-                            : "opacity-70"
+                          ? total > 0 ? "" : "opacity-70"
                           : "opacity-60"
                       }
                     />
@@ -763,6 +848,47 @@ export default function Dashboard() {
           </motion.div>
         </div>
       </div>
+      {/* Modal de detalhes de comissão */}
+      <Dialog open={!!comissaoModalData} onOpenChange={() => setComissaoModalData(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Comissões — {comissaoModalData?.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="max-h-[400px] overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b text-xs text-muted-foreground">
+                  <tr>
+                    <th className="pb-2 text-left font-semibold">Encomenda</th>
+                    <th className="pb-2 text-left font-semibold">Etiqueta</th>
+                    <th className="pb-2 text-right font-semibold">Comissão</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/20">
+                  {comissaoModalData?.encomendas.map((e) => (
+                    <tr key={e.numero_encomenda}>
+                      <td className="py-2 font-mono font-semibold text-primary">{e.numero_encomenda}</td>
+                      <td className="py-2">
+                        {e.etiqueta ? (
+                          <Badge variant="secondary" className="text-[10px] uppercase">{e.etiqueta}</Badge>
+                        ) : "—"}
+                      </td>
+                      <td className="py-2 text-right font-semibold">{formatCurrencyEUR(e.comissao)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex items-center justify-between border-t pt-3">
+              <span className="text-sm font-bold uppercase text-muted-foreground">Total</span>
+              <div className="text-right">
+                <span className="text-lg font-bold text-primary">{formatCurrencyEUR(comissaoModalData?.total || 0)}</span>
+                <span className="ml-2 text-xs text-muted-foreground">{formatCurrencyBRL(eurToBrl(comissaoModalData?.total || 0))}</span>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </RoleBasedGuard>
   );
 }
