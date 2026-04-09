@@ -17,6 +17,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { format } from "date-fns";
+import { formatCurrencyBRL, brlToEur, formatCurrencyEUR } from "@/lib/utils/currency";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,7 @@ interface Encomenda {
   valor_frete?: number | null;
   peso_bruto?: number;
   sinal_50?: number | null;
+  sinal_pago?: boolean | null;
   saldo_nonato?: number | null;
   saldo_carol?: number | null;
 }
@@ -363,9 +365,15 @@ function EncomendaCardComponent({
                 <span className="text-border/40 hidden select-none sm:inline">│</span>
                 <div className="flex items-center gap-1.5">
                   <span className="text-muted-foreground">Sinal 50%:</span>
-                  <span className="font-medium text-amber-400">
-                    {formatCurrency(e.sinal_50)}
-                  </span>
+                  {e.sinal_pago ? (
+                    <Badge variant="outline" className="border-emerald-500/50 bg-emerald-500/10 px-1.5 py-0 text-[10px] font-semibold uppercase leading-4 text-emerald-500">
+                      Pago
+                    </Badge>
+                  ) : (
+                    <span className="font-medium text-amber-400">
+                      {formatCurrencyBRL(e.sinal_50)} <span className="text-[10px] text-muted-foreground">({formatCurrencyEUR(brlToEur(e.sinal_50 || 0))})</span>
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-muted-foreground">Saldo Nonato:</span>
@@ -375,7 +383,7 @@ function EncomendaCardComponent({
                     </Badge>
                   ) : (
                     <span className="font-medium text-orange-400">
-                      {formatCurrency(e.saldo_nonato!)}
+                      {formatCurrencyBRL(e.saldo_nonato!)} <span className="text-[10px] text-muted-foreground">({formatCurrencyEUR(brlToEur(e.saldo_nonato!))})</span>
                     </span>
                   )}
                 </div>

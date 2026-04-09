@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { calcularComissaoItem } from "@/lib/utils/commission";
-import { brlToEur } from "@/lib/utils/currency";
+import { brlToEur, eurToBrl } from "@/lib/utils/currency";
 import { FORNECEDOR_PRODUCAO_ID } from "@/lib/permissions";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useIsCollaborator } from "@/hooks/useIsCollaborator";
@@ -287,11 +287,14 @@ export default function Encomendas() {
           });
 
           const custoFreteEUR = (enc as any).custo_frete || 0;
-          const custoNonatoEUR = brlToEur(totalNonatoBRL);
           const custoCarolEUR = brlToEur(totalCarolBRL) + custoFreteEUR;
 
-          sinal_50 = custoNonatoEUR * 0.5;
-          saldo_nonato = custoNonatoEUR - (pagNonatoByEnc[enc.id] || 0);
+          // Nonato: values in BRL (payments converted EUR→BRL)
+          const pagNonatoEUR = pagNonatoByEnc[enc.id] || 0;
+          sinal_50 = totalNonatoBRL * 0.5;
+          saldo_nonato = totalNonatoBRL - eurToBrl(pagNonatoEUR);
+
+          // Carol: values in EUR
           saldo_carol = custoCarolEUR - (pagCarolByEnc[enc.id] || 0);
         }
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -20,7 +21,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { formatCurrencyEUR, brlToEur } from "@/lib/utils/currency";
+import { formatCurrencyEUR, formatCurrencyBRL, brlToEur, eurToBrl } from "@/lib/utils/currency";
 import { useToast } from "@/hooks/use-toast";
 import { EncomendaView } from "@/components/encomendas";
 import { PagamentoFornecedorForm } from "@/components/financeiro";
@@ -44,6 +45,7 @@ interface ContaPagar {
   status: string;
   etiqueta: string;
   encomenda_id: string;
+  sinal_pago?: boolean;
 }
 
 interface CustosPorDestinatario {
@@ -107,8 +109,19 @@ export default function ContasPagar() {
     // Fetch custos_producao_encomenda for all orders
     const { data: custos } = await supabase
       .from("custos_producao_encomenda")
-      .select("encomenda_id, garrafa, tampa, producao_nonato, embalagem_carol, imposto, frete_sp")
+      .select("encomenda_id, item_encomenda_id, garrafa, tampa, producao_nonato, embalagem_carol, imposto, frete_sp")
       .in("encomenda_id", orderIds);
+
+    // Fetch quantities for each item to multiply unit costs
+    const itemIds = (custos || []).map(c => c.item_encomenda_id).filter(Boolean);
+    const { data: itensData } = itemIds.length > 0
+      ? await supabase
+          .from("itens_encomenda")
+          .select("id, quantidade")
+          .in("id", itemIds)
+      : { data: [] };
+    const qtyByItemId: Record<string, number> = {};
+    (itensData || []).forEach(i => { qtyByItemId[i.id] = i.quantidade || 0; });
 
     // Fetch pagamentos_fornecedor with destinatario/categoria for all orders
     const { data: pagamentos } = await supabase
@@ -122,22 +135,27 @@ export default function ContasPagar() {
       const orderCustos = (custos || []).filter(c => c.encomenda_id === orderId);
       const orderPagamentos = (pagamentos || []).filter(p => p.encomenda_id === orderId);
 
-      // Sum costs by categoria key across all items
+      // Sum costs by categoria key across all items (unit cost × quantity)
       const categoriaTotals: Record<string, number> = {};
       for (const custo of orderCustos) {
+        const qty = qtyByItemId[custo.item_encomenda_id] || 1;
         for (const [field] of Object.entries(CATEGORIA_MAP)) {
-          const value = (custo as Record<string, unknown>)[field] as number || 0;
+          const unitValue = (custo as Record<string, unknown>)[field] as number || 0;
           const catKey = FIELD_TO_CATEGORIA_KEY[field];
-          categoriaTotals[catKey] = (categoriaTotals[catKey] || 0) + value;
+          categoriaTotals[catKey] = (categoriaTotals[catKey] || 0) + (unitValue * qty);
         }
       }
 
-      // Sum payments by destinatario+categoria
+      // Sum payments by destinatario (+ optional categoria breakdown)
       const pagamentoTotals: Record<string, number> = {};
+      const pagamentoPorDestinatario: Record<string, number> = {};
       for (const pag of orderPagamentos) {
-        if (pag.destinatario && pag.categoria) {
-          const key = `${pag.destinatario}_${pag.categoria}`;
-          pagamentoTotals[key] = (pagamentoTotals[key] || 0) + pag.valor_pagamento;
+        if (pag.destinatario) {
+          pagamentoPorDestinatario[pag.destinatario] = (pagamentoPorDestinatario[pag.destinatario] || 0) + pag.valor_pagamento;
+          if (pag.categoria) {
+            const key = `${pag.destinatario}_${pag.categoria}`;
+            pagamentoTotals[key] = (pagamentoTotals[key] || 0) + pag.valor_pagamento;
+          }
         }
       }
 
@@ -146,8 +164,10 @@ export default function ContasPagar() {
 
       for (const [field, mapping] of Object.entries(CATEGORIA_MAP)) {
         const catKey = FIELD_TO_CATEGORIA_KEY[field];
-        const previsto = categoriaTotals[catKey] || 0;
-        const previstoEur = brlToEur(previsto);
+        const previstoRaw = categoriaTotals[catKey] || 0;
+        // Nonato stays in BRL, Carol converts to EUR
+        const isNonato = mapping.destinatario === "nonato";
+        const previsto = isNonato ? previstoRaw : brlToEur(previstoRaw);
         const pago = pagamentoTotals[`${mapping.destinatario}_${catKey}`] || 0;
 
         if (!destinatarioMap[mapping.destinatario]) {
@@ -164,15 +184,18 @@ export default function ContasPagar() {
         destinatarioMap[mapping.destinatario].categorias.push({
           categoria: catKey,
           label: mapping.categoriaLabel,
-          previsto: previstoEur,
+          previsto,
           pago,
         });
-        destinatarioMap[mapping.destinatario].totalPrevisto += previstoEur;
-        destinatarioMap[mapping.destinatario].totalPago += pago;
+        destinatarioMap[mapping.destinatario].totalPrevisto += previsto;
       }
 
-      // Calculate saldo for each destinatário
+      // Set totalPago from aggregated payments per destinatario
+      // Nonato: convert EUR payments to BRL (previsto is in BRL)
+      // Carol: keep in EUR
       for (const dest of Object.values(destinatarioMap)) {
+        const pagoEur = pagamentoPorDestinatario[dest.destinatario] || 0;
+        dest.totalPago = dest.destinatario === "nonato" ? eurToBrl(pagoEur) : pagoEur;
         dest.saldo = dest.totalPrevisto - dest.totalPago;
       }
 
@@ -196,6 +219,7 @@ export default function ContasPagar() {
           valor_total_custo,
           valor_pago_fornecedor,
           saldo_devedor_fornecedor,
+          sinal_pago,
           data_criacao,
           status,
           etiqueta
@@ -353,33 +377,76 @@ export default function ContasPagar() {
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-0.5">
                 <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Previsto</span>
-                <p className="text-sm font-semibold">{formatCurrencyEUR(dest.totalPrevisto)}</p>
+                {dest.destinatario === "nonato" ? (
+                  <div>
+                    <p className="text-sm font-semibold">{formatCurrencyBRL(dest.totalPrevisto)}</p>
+                    <p className="text-xs text-muted-foreground">({formatCurrencyEUR(brlToEur(dest.totalPrevisto))})</p>
+                  </div>
+                ) : (
+                  <p className="text-sm font-semibold">{formatCurrencyEUR(dest.totalPrevisto)}</p>
+                )}
               </div>
               <div className="space-y-0.5">
                 <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Pago</span>
-                <p className="text-sm font-bold text-success">{formatCurrencyEUR(dest.totalPago)}</p>
+                {dest.destinatario === "nonato" ? (
+                  <div>
+                    <p className="text-sm font-bold text-success">{formatCurrencyBRL(dest.totalPago)}</p>
+                    <p className="text-xs text-muted-foreground">({formatCurrencyEUR(brlToEur(dest.totalPago))})</p>
+                  </div>
+                ) : (
+                  <p className="text-sm font-bold text-success">{formatCurrencyEUR(dest.totalPago)}</p>
+                )}
               </div>
               <div className="space-y-0.5">
                 <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Saldo</span>
-                <p className="text-sm font-black text-warning">{formatCurrencyEUR(dest.saldo)}</p>
+                {dest.destinatario === "nonato" ? (
+                  <div>
+                    <p className="text-sm font-black text-warning">{formatCurrencyBRL(dest.saldo)}</p>
+                    <p className="text-xs text-muted-foreground">({formatCurrencyEUR(brlToEur(dest.saldo))})</p>
+                  </div>
+                ) : (
+                  <p className="text-sm font-black text-warning">{formatCurrencyEUR(dest.saldo)}</p>
+                )}
               </div>
             </div>
 
-            {!isFelipe && dest.saldo > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full border border-emerald-200/30 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 dark:border-emerald-800/30 dark:text-emerald-400"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedConta(conta);
-                  setSelectedDestinatario(dest.destinatario);
-                  setShowPaymentForm(true);
-                }}
-              >
-                <Plus className="mr-2 h-4 w-4" /> Registrar Pagamento
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {!isFelipe && dest.destinatario === "nonato" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "flex-1 border text-xs font-semibold",
+                    conta.sinal_pago
+                      ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-500"
+                      : "border-amber-500/30 bg-amber-500/5 text-amber-500 hover:bg-amber-500/10"
+                  )}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const newValue = !conta.sinal_pago;
+                    await supabase.from("encomendas").update({ sinal_pago: newValue }).eq("id", conta.id);
+                    setContas(prev => prev.map(c => c.id === conta.id ? { ...c, sinal_pago: newValue } : c));
+                  }}
+                >
+                  {conta.sinal_pago ? "Sinal Pago" : "Marcar Sinal Pago"}
+                </Button>
+              )}
+              {!isFelipe && dest.saldo > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex-1 border border-emerald-200/30 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 dark:border-emerald-800/30 dark:text-emerald-400"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedConta(conta);
+                    setSelectedDestinatario(dest.destinatario);
+                    setShowPaymentForm(true);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Registrar Pagamento
+                </Button>
+              )}
+            </div>
           </div>
         ))}
       </div>

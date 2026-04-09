@@ -473,9 +473,9 @@ export default function EncomendaForm({
           await supabase.from("itens_encomenda").delete().in("id", removedIds);
         }
 
-        // Upsert existing items (preserves IDs) and insert new ones
-        const itensToUpsert = itens.map((item) => ({
-          ...(item.id ? { id: item.id } : {}),
+        // Separate existing items (upsert) from new items (insert)
+        const existingItems = itens.filter((i) => i.id).map((item) => ({
+          id: item.id!,
           encomenda_id: encomendaId,
           produto_id: item.produto_id,
           quantidade: parseInt(item.quantidade) || 0,
@@ -483,11 +483,25 @@ export default function EncomendaForm({
           preco_unitario: item.preco_venda,
           is_bonificacao: item.is_bonificacao || false,
         }));
-        if (itensToUpsert.length > 0) {
-          const { error: itemsError } = await supabase
+        const newItems = itens.filter((i) => !i.id).map((item) => ({
+          encomenda_id: encomendaId,
+          produto_id: item.produto_id,
+          quantidade: parseInt(item.quantidade) || 0,
+          preco_custo: item.preco_custo,
+          preco_unitario: item.preco_venda,
+          is_bonificacao: item.is_bonificacao || false,
+        }));
+        if (existingItems.length > 0) {
+          const { error: upsertErr } = await supabase
             .from("itens_encomenda")
-            .upsert(itensToUpsert, { onConflict: "id" });
-          if (itemsError) throw itemsError;
+            .upsert(existingItems, { onConflict: "id" });
+          if (upsertErr) throw upsertErr;
+        }
+        if (newItems.length > 0) {
+          const { error: insertErr } = await supabase
+            .from("itens_encomenda")
+            .insert(newItems);
+          if (insertErr) throw insertErr;
         }
         toast.success("Encomenda atualizada!");
       } else {

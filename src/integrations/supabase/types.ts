@@ -330,6 +330,7 @@ export type Database = {
           referencia_interna: string | null
           saldo_devedor: number | null
           saldo_devedor_fornecedor: number | null
+          sinal_pago: boolean | null
           status: Database["public"]["Enums"]["status_encomenda"]
           status_producao: string | null
           updated_at: string | null
@@ -363,6 +364,7 @@ export type Database = {
           referencia_interna?: string | null
           saldo_devedor?: number | null
           saldo_devedor_fornecedor?: number | null
+          sinal_pago?: boolean | null
           status?: Database["public"]["Enums"]["status_encomenda"]
           status_producao?: string | null
           updated_at?: string | null
@@ -396,6 +398,7 @@ export type Database = {
           referencia_interna?: string | null
           saldo_devedor?: number | null
           saldo_devedor_fornecedor?: number | null
+          sinal_pago?: boolean | null
           status?: Database["public"]["Enums"]["status_encomenda"]
           status_producao?: string | null
           updated_at?: string | null

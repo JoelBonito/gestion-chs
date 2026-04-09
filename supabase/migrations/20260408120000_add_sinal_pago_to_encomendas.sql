@@ -1,0 +1,1 @@
+ALTER TABLE encomendas ADD COLUMN IF NOT EXISTS sinal_pago BOOLEAN DEFAULT false;

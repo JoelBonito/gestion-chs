@@ -561,15 +561,35 @@ export function ItensEncomendaManager({
                           </div>
                         </td>
                         <td className="px-4 py-2">
-                          <LocalInput
-                            type="text"
-                            inputMode="decimal"
-                            value={item.preco_custo || ""}
-                            onChange={(val) => atualizarItem(index, "preco_custo", val)}
-                            placeholder="0.00"
-                            className="ml-auto h-9 w-24 bg-background text-right text-xs"
-                            disabled={isTransportMode}
-                          />
+                          {(() => {
+                            const custoReal = isOnlus && item.id
+                              ? custosProducao.find(c => c.item_encomenda_id === item.id)
+                              : null;
+                            return custoReal && custoReal.custo_total_eur > 0 ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="ml-auto flex h-9 w-24 items-center justify-end rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 text-xs font-semibold text-emerald-500">
+                                      {custoReal.custo_total_eur.toFixed(2)}
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">
+                                    Custo real (gestão de produção)
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : (
+                              <LocalInput
+                                type="text"
+                                inputMode="decimal"
+                                value={item.preco_custo || ""}
+                                onChange={(val) => atualizarItem(index, "preco_custo", val)}
+                                placeholder="0.00"
+                                className="ml-auto h-9 w-24 bg-background text-right text-xs"
+                                disabled={isTransportMode}
+                              />
+                            );
+                          })()}
                         </td>
                         <td className="px-4 py-2">
                           <LocalInput
@@ -745,14 +765,25 @@ export function ItensEncomendaManager({
                           <label className="text-muted-foreground mb-1 block text-[10px] font-bold uppercase">
                             Custo (€)
                           </label>
-                          <LocalInput
-                            type="text"
-                            inputMode="decimal"
-                            value={item.preco_custo || ""}
-                            onChange={(v) => atualizarItem(index, "preco_custo", v)}
-                            className="h-9 w-full bg-background text-xs"
-                            disabled={isTransportMode}
-                          />
+                          {(() => {
+                            const custoReal = isOnlus && item.id
+                              ? custosProducao.find(c => c.item_encomenda_id === item.id)
+                              : null;
+                            return custoReal && custoReal.custo_total_eur > 0 ? (
+                              <div className="flex h-9 w-full items-center rounded-md border border-emerald-500/30 bg-emerald-500/5 px-3 text-xs font-semibold text-emerald-500">
+                                {custoReal.custo_total_eur.toFixed(2)}
+                              </div>
+                            ) : (
+                              <LocalInput
+                                type="text"
+                                inputMode="decimal"
+                                value={item.preco_custo || ""}
+                                onChange={(v) => atualizarItem(index, "preco_custo", v)}
+                                className="h-9 w-full bg-background text-xs"
+                                disabled={isTransportMode}
+                              />
+                            );
+                          })()}
                         </div>
                         <div>
                           <label className="text-muted-foreground mb-1 block text-[10px] font-bold uppercase">
