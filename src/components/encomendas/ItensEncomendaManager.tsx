@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, Box, Package, Save, X, Loader2, Gift } from "lucide-react";
+import { Trash2, Plus, Box, Package, Save, X, Loader2, Gift, Truck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { GlassCard } from "@/components/shared";
@@ -57,6 +57,9 @@ interface ItensEncomendaManagerProps {
   onOpenCustoForm?: (item: ItemEncomenda) => void;
   fornecedorId?: string;
   numeroEncomenda?: string;
+  freteAtivo?: boolean;
+  valorFrete?: number;
+  pesoBruto?: number;
 }
 
 // Componente de Input isolado que gerencia estado local
@@ -188,6 +191,9 @@ export function ItensEncomendaManager({
   onOpenCustoForm,
   fornecedorId,
   numeroEncomenda,
+  freteAtivo = false,
+  valorFrete = 0,
+  pesoBruto = 0,
 }: ItensEncomendaManagerProps) {
   const [produtos, setProdutos] = useState<Produto[]>([]);
 
@@ -234,20 +240,24 @@ export function ItensEncomendaManager({
 
   const comissaoTotal = useMemo(() => {
     if (!numeroEncomenda) return 0;
-    return itens.reduce((sum, item) => {
+    const itensComissao = itens.reduce((sum, item) => {
       const produto = produtos.find((p) => p.id === item.produto_id);
+      const custo = custosProducao.find((c) => c.item_encomenda_id === item.id);
       return sum + calcularComissaoItem(
         {
           quantidade: parseInt(item.quantidade) || 0,
           preco_unitario: item.preco_venda,
           preco_custo: item.preco_custo,
           lucro_joel: produto?.lucro_joel ?? null,
+          lucro_joel_real: custo?.lucro_joel_real ?? null,
           fornecedor_id: fornecedorId,
         },
         { numero_encomenda: numeroEncomenda, status: "NOVO PEDIDO", fornecedor_id: fornecedorId }
       );
     }, 0);
-  }, [itens, produtos, fornecedorId, numeroEncomenda]);
+    const freteMargin = freteAtivo ? 0.30 * pesoBruto : 0;
+    return itensComissao + freteMargin;
+  }, [itens, produtos, fornecedorId, numeroEncomenda, custosProducao, freteAtivo, pesoBruto]);
 
   const commissionType = useMemo((): "estimado" | "parcial" | "real" | null => {
     if (!numeroEncomenda) return null;
@@ -589,6 +599,36 @@ export function ItensEncomendaManager({
                     );
                   })}
                 </tbody>
+                {freteAtivo && (
+                  <tfoot>
+                    <tr className="border-t-2 border-dashed border-info/30 bg-info/5">
+                      <td className="px-4 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <Truck className="h-4 w-4 text-info" />
+                          <span className="text-xs font-bold uppercase tracking-wide text-info">
+                            Frete SP → Marseille
+                          </span>
+                          <Badge variant="outline" className="border-info/30 bg-info/10 px-1.5 py-0 text-[10px] font-semibold text-info">
+                            {pesoBruto.toFixed(1)} kg
+                          </Badge>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">
+                        {pesoBruto.toFixed(1)}
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">
+                        4,65
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-xs text-muted-foreground">
+                        4,95
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-xs font-bold text-info">
+                        {formatCurrencyEUR(valorFrete)}
+                      </td>
+                      <td className="px-4 py-2.5"></td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </div>
 
@@ -738,6 +778,23 @@ export function ItensEncomendaManager({
                   </div>
                 );
               })}
+              {freteAtivo && (
+                <div className="rounded-lg border-2 border-dashed border-info/30 bg-info/5 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Truck className="h-4 w-4 text-info" />
+                      <span className="text-sm font-bold uppercase text-info">Frete SP → MRS</span>
+                    </div>
+                    <Badge variant="outline" className="border-info/30 bg-info/10 text-[10px] font-semibold text-info">
+                      {pesoBruto.toFixed(1)} kg
+                    </Badge>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{pesoBruto.toFixed(1)} kg × 4,95€</span>
+                    <span className="font-bold text-info">{formatCurrencyEUR(valorFrete)}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -800,7 +857,7 @@ export function ItensEncomendaManager({
                   Valor Total:
                 </span>
                 <span className="text-primary text-2xl font-bold">
-                  {formatCurrencyEUR(itens.reduce((total, item) => total + (item.subtotal || 0), 0))}
+                  {formatCurrencyEUR(itens.reduce((total, item) => total + (item.subtotal || 0), 0) + (freteAtivo ? valorFrete : 0))}
                 </span>
               </div>
             </div>

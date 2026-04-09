@@ -224,7 +224,7 @@ export default function EncomendaForm({
     peso_total: editingData?.peso_total || 0,
     valor_frete: editingData?.valor_frete || 0,
     custo_frete: editingData?.custo_frete || 0,
-    frete_ativo: (editingData?.valor_frete || 0) > 0,
+    frete_ativo: isEditing && (editingData?.valor_frete || 0) > 0,
   }));
 
   const isOnlusOrder = formData.fornecedor_id === FORNECEDOR_PRODUCAO_ID;
@@ -438,7 +438,7 @@ export default function EncomendaForm({
         peso_total: Number(pesoBruto) || 0,
         valor_frete: formData.frete_ativo ? Number(formData.valor_frete) || 0 : 0,
         custo_frete: formData.frete_ativo ? Number(formData.custo_frete) || 0 : 0,
-        valor_total: (Number(valorTotal) || 0) + (formData.frete_ativo ? Number(formData.valor_frete) || 0 : 0),
+        valor_total: Number(valorTotal) || 0,
         valor_pago: 0,
         // Adicionar status explicitamente (será removido no update)
         status: "NOVO PEDIDO" as any,
@@ -730,17 +730,7 @@ export default function EncomendaForm({
               </Popover>
             </div>
           </div>
-          {/* Peso Bruto — sempre visível */}
-          <div className="space-y-2">
-            <Label className={LabelStyles}>
-              <Calculator className="h-3 w-3" /> Peso Bruto
-            </Label>
-            <div className="bg-accent border-border text-primary flex h-10 items-center rounded-lg border px-3 font-bold shadow-sm">
-              {pesoBruto.toFixed(2)} kg
-            </div>
-          </div>
-
-          {/* Secção Frete SP → Marseille */}
+          {/* Secção Frete SP → Marseille — sempre visível */}
           <div className="border-border/50 mt-3 rounded-lg border bg-card/50 p-4">
             <div className="flex items-center justify-between">
               <Label className={LabelStyles}>
@@ -769,48 +759,56 @@ export default function EncomendaForm({
               </Button>
             </div>
 
-            {formData.frete_ativo && (
-              <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Preço/kg</span>
-                  <div className="bg-accent border-border flex h-8 items-center rounded border px-2 text-xs font-bold text-primary">
-                    {FRETE_PRECO_KG.toFixed(2)}€
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Custo/kg</span>
-                  <div className="bg-accent border-border flex h-8 items-center rounded border px-2 text-xs font-bold text-muted-foreground">
-                    {FRETE_CUSTO_KG.toFixed(2)}€
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total Venda</span>
-                  <LocalInput
-                    id="valor_frete"
-                    type="text"
-                    inputMode="decimal"
-                    value={String(formData.valor_frete || "")}
-                    onChange={(v) =>
-                      handleInputChange("valor_frete", v ? parseFloat(v.replace(",", ".")) : 0)
-                    }
-                    className="h-8 text-xs font-bold text-primary"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total Custo</span>
-                  <LocalInput
-                    id="custo_frete"
-                    type="text"
-                    inputMode="decimal"
-                    value={String(formData.custo_frete || "")}
-                    onChange={(v) =>
-                      handleInputChange("custo_frete", v ? parseFloat(v.replace(",", ".")) : 0)
-                    }
-                    className="h-8 text-xs font-bold text-muted-foreground"
-                  />
+            <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-5">
+              <div className="space-y-1">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Peso Bruto</span>
+                <div className="bg-accent border-border flex h-8 items-center rounded border px-2 text-xs font-bold text-primary">
+                  {pesoBruto.toFixed(2)} kg
                 </div>
               </div>
-            )}
+              <div className="space-y-1">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Preço/kg</span>
+                <div className="bg-accent border-border flex h-8 items-center rounded border px-2 text-xs font-bold text-muted-foreground">
+                  {FRETE_PRECO_KG.toFixed(2)}€
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Custo/kg</span>
+                <div className="bg-accent border-border flex h-8 items-center rounded border px-2 text-xs font-bold text-muted-foreground">
+                  {FRETE_CUSTO_KG.toFixed(2)}€
+                </div>
+              </div>
+              {formData.frete_ativo && (
+                <>
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total Venda</span>
+                    <LocalInput
+                      id="valor_frete"
+                      type="text"
+                      inputMode="decimal"
+                      value={String(formData.valor_frete || "")}
+                      onChange={(v) =>
+                        handleInputChange("valor_frete", v ? parseFloat(v.replace(",", ".")) : 0)
+                      }
+                      className="h-8 text-xs font-bold text-primary"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Total Custo</span>
+                    <LocalInput
+                      id="custo_frete"
+                      type="text"
+                      inputMode="decimal"
+                      value={String(formData.custo_frete || "")}
+                      onChange={(v) =>
+                        handleInputChange("custo_frete", v ? parseFloat(v.replace(",", ".")) : 0)
+                      }
+                      className="h-8 text-xs font-bold text-muted-foreground"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -827,6 +825,9 @@ export default function EncomendaForm({
           fornecedorId={formData.fornecedor_id}
           numeroEncomenda={formData.numero_encomenda}
           custosProducao={custosProducao}
+          freteAtivo={formData.frete_ativo}
+          valorFrete={formData.valor_frete}
+          pesoBruto={pesoBruto}
         />
       </div>
 

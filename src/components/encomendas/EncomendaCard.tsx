@@ -49,6 +49,7 @@ interface Encomenda {
   commission_amount?: number;
   commission_type?: "estimado" | "parcial" | "real";
   valor_total_custo?: number;
+  valor_frete?: number | null;
   peso_bruto?: number;
   sinal_50?: number | null;
   saldo_nonato?: number | null;
@@ -326,7 +327,7 @@ function EncomendaCardComponent({
             <div className="flex items-center gap-1.5">
               <CreditCard className="h-3.5 w-3.5 text-blue-500" />
               <span className="text-muted-foreground">{t.total}:</span>
-              <span className="font-bold text-primary">{formatCurrency(e.valor_total || 0)}</span>
+              <span className="font-bold text-primary">{formatCurrency((e.valor_total || 0) + (e.valor_frete || 0))}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />

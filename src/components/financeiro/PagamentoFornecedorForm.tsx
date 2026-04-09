@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { sendEmail, emailTemplates, emailRecipients } from "@/lib/email";
 import { PushNotifications } from "@/lib/push-notifications";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
+import { FORNECEDOR_PRODUCAO_ID } from "@/lib/permissions";
 
 const DESTINATARIO_CATEGORIAS: Record<string, { label: string; categorias: { value: string; label: string }[] }> = {
   nonato: {
@@ -40,7 +41,7 @@ const DESTINATARIO_CATEGORIAS: Record<string, { label: string; categorias: { val
 };
 
 const pagamentoFornecedorSchema = z.object({
-  destinatario: z.string().min(1, "Destinatário é obrigatório"),
+  destinatario: z.string().optional(),
   categoria: z.string().optional(),
   valor_pagamento: z.string().min(1, "Valor é obrigatório"),
   forma_pagamento: z.string().min(1, "Forma de pagamento é obrigatória"),
@@ -53,6 +54,7 @@ type PagamentoFornecedorFormData = z.infer<typeof pagamentoFornecedorSchema>;
 interface ContaPagar {
   encomenda_id: string;
   numero_encomenda: string;
+  fornecedor_id?: string;
   fornecedores?: { nome: string } | null;
   valor_total_custo: number;
   valor_pago_fornecedor: number;
@@ -72,6 +74,7 @@ export default function PagamentoFornecedorForm({
 }: PagamentoFornecedorFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const isOnlus = conta.fornecedor_id === FORNECEDOR_PRODUCAO_ID;
 
   const {
     register,
@@ -101,10 +104,16 @@ export default function PagamentoFornecedorForm({
     try {
       setIsLoading(true);
 
+      if (isOnlus && !data.destinatario) {
+        toast({ title: "Selecione o destinatário", variant: "destructive" });
+        setIsLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from("pagamentos_fornecedor").insert({
         encomenda_id: conta.encomenda_id,
-        destinatario: data.destinatario,
-        categoria: data.categoria || null,
+        destinatario: isOnlus ? data.destinatario : null,
+        categoria: isOnlus ? data.categoria || null : null,
         valor_pagamento: parseFloat(data.valor_pagamento),
         forma_pagamento: data.forma_pagamento,
         data_pagamento: data.data_pagamento,
@@ -188,7 +197,9 @@ export default function PagamentoFornecedorForm({
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
-          {/* Destinatário */}
+          {/* Destinatário + Categoria — só para ONL'US */}
+          {isOnlus && (
+          <>
           <div className="space-y-2">
             <Label className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
               Destinatário
@@ -243,6 +254,8 @@ export default function PagamentoFornecedorForm({
               </span>
             )}
           </div>
+          </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">

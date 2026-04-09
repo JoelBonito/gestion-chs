@@ -251,6 +251,12 @@ export default function Encomendas() {
           totalGramas += q * sw;
         });
 
+        // Add freight margin to commission
+        const freteMargin = ((enc as any).valor_frete || 0) - ((enc as any).custo_frete || 0);
+        if (freteMargin > 0) {
+          commission_amount += freteMargin;
+        }
+
         // Determine commission type
         let commission_type: "estimado" | "parcial" | "real";
         if (!isOnlus) {
