@@ -19,30 +19,33 @@ export const useInvoices = () => {
   } = useQuery({
     queryKey,
     queryFn: async (): Promise<Invoice[]> => {
-      // Using JOIN to fetch invoices with attachments in a single query (fixes N+1 problem)
       const { data: invoicesData, error: invoicesError } = await supabase
         .from("invoices")
-        .select(`
-          id,
-          invoice_date,
-          amount,
-          description,
-          attachment_id,
-          created_at,
-          created_by,
-          attachment:attachments(id, file_name, file_type, storage_url, storage_path)
-        `)
+        .select("*")
         .order("invoice_date", { ascending: false });
 
-      if (invoicesError) {
-        throw invoicesError;
+      if (invoicesError) throw invoicesError;
+      if (!invoicesData || invoicesData.length === 0) return [];
+
+      const attachmentIds = invoicesData
+        .map((i) => i.attachment_id)
+        .filter((id): id is string => Boolean(id));
+
+      const attachmentsById: Record<string, Invoice["attachment"]> = {};
+      if (attachmentIds.length > 0) {
+        const { data: attachments } = await supabase
+          .from("attachments")
+          .select("id, file_name, file_type, storage_url, storage_path")
+          .in("id", attachmentIds);
+        (attachments || []).forEach((a) => {
+          attachmentsById[a.id] = a;
+        });
       }
 
-      if (!invoicesData || invoicesData.length === 0) {
-        return [];
-      }
-
-      return invoicesData as Invoice[];
+      return invoicesData.map((invoice) => ({
+        ...invoice,
+        attachment: invoice.attachment_id ? attachmentsById[invoice.attachment_id] ?? null : null,
+      })) as Invoice[];
     },
     // Cache for 2 minutes - invalidated on mutations
     staleTime: 1000 * 60 * 2,

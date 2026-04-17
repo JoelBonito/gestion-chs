@@ -1,5 +1,6 @@
 export { default as ContasPagar } from './ContasPagar';
 export { default as EncomendasFinanceiro } from './EncomendasFinanceiro';
+export { default as SaldoEncomendas } from './SaldoEncomendas';
 export { default as PagamentoForm } from './PagamentoForm';
 export { default as PagamentoFornecedorForm } from './PagamentoFornecedorForm';
 export { FinancialAttachmentButton } from './FinancialAttachmentButton';

@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { formatCurrencyEUR } from "@/lib/utils/currency";
-import { EncomendasFinanceiro, ContasPagar, Invoices } from "@/components/financeiro";
+import { formatCurrencyEUR, formatCurrencyBRL, eurToBrl } from "@/lib/utils/currency";
+import { EncomendasFinanceiro, ContasPagar, Invoices, SaldoEncomendas } from "@/components/financeiro";
 import { PageContainer, GlassCard } from "@/components/shared";
 import { useFinanceiroTranslation } from "@/hooks/useFinanceiroTranslation";
 import { TrendingUp, TrendingDown, Wallet } from "lucide-react";
 
-type TabKey = "encomendas" | "pagar" | "faturas";
+type TabKey = "encomendas" | "pagar" | "faturas" | "saldo";
 
 export default function Financeiro() {
   const [activeTab, setActiveTab] = useState<TabKey>("encomendas");
-  const { t, isHam, isFelipe } = useFinanceiroTranslation();
+  const { t, isHam, isFelipe, isJoel } = useFinanceiroTranslation();
   const [resumo, setResumo] = useState({ a_receber: 0, a_pagar: 0, saldo: 0 });
   const [loadingResumo, setLoadingResumo] = useState(true);
 
@@ -95,6 +95,9 @@ export default function Financeiro() {
                   <span className="text-foreground text-3xl font-bold tracking-tight">
                     {formatCurrencyEUR(resumo.a_receber)}
                   </span>
+                  <span className="text-muted-foreground text-xs">
+                    {formatCurrencyBRL(eurToBrl(resumo.a_receber))}
+                  </span>
                 </div>
                 <div className="absolute top-0 right-0 p-4 opacity-5 transition-opacity group-hover:opacity-10">
                   <TrendingUp className="h-16 w-16" />
@@ -109,6 +112,9 @@ export default function Financeiro() {
                   </span>
                   <span className="text-foreground text-3xl font-bold tracking-tight">
                     {formatCurrencyEUR(resumo.a_pagar)}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {formatCurrencyBRL(eurToBrl(resumo.a_pagar))}
                   </span>
                 </div>
                 <div className="absolute top-0 right-0 p-4 opacity-5 transition-opacity group-hover:opacity-10">
@@ -126,6 +132,9 @@ export default function Financeiro() {
                     className={`text-3xl font-bold tracking-tight ${resumo.saldo >= 0 ? "text-primary" : "text-destructive"}`}
                   >
                     {formatCurrencyEUR(resumo.saldo)}
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    {formatCurrencyBRL(eurToBrl(resumo.saldo))}
                   </span>
                 </div>
                 <div className="absolute top-0 right-0 p-4 opacity-5 transition-opacity group-hover:opacity-10">
@@ -167,6 +176,14 @@ export default function Financeiro() {
               {t("Faturas")}
             </TabsTrigger>
           )}
+          {isJoel && (
+            <TabsTrigger
+              value="saldo"
+              className="data-[state=active]:border-primary data-[state=active]:text-primary hover:text-primary/80 rounded-none border-b-2 border-transparent bg-transparent px-0 pb-4 font-semibold transition-all data-[state=active]:bg-transparent"
+            >
+              {t("Saldo")}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {!hideVendas && (
@@ -184,6 +201,12 @@ export default function Financeiro() {
         {!hideFaturas && (
           <TabsContent value="faturas" className="mt-0">
             <Invoices />
+          </TabsContent>
+        )}
+
+        {isJoel && (
+          <TabsContent value="saldo" className="mt-0">
+            <SaldoEncomendas />
           </TabsContent>
         )}
       </Tabs>
