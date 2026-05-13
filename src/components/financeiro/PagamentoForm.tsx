@@ -60,6 +60,10 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
   } = useForm<PagamentoFormData>({
     resolver: zodResolver(pagamentoSchema),
     defaultValues: {
+      encomenda_id: "",
+      valor_pagamento: "",
+      forma_pagamento: "",
+      observacoes: "",
       data_pagamento: new Date(),
     },
   });
@@ -117,7 +121,7 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
               Encomenda
             </Label>
             <Select
-              value={selectedEncomendaId}
+              value={selectedEncomendaId ?? ""}
               onValueChange={(value) => setValue("encomenda_id", value)}
             >
               <SelectTrigger className="bg-popover border-border/40 h-11 font-semibold">
@@ -202,7 +206,10 @@ export default function PagamentoForm({ onSuccess, encomendas }: PagamentoFormPr
               >
                 Forma de Pagamento
               </Label>
-              <Select onValueChange={(value) => setValue("forma_pagamento", value)}>
+              <Select
+                value={watch("forma_pagamento") ?? ""}
+                onValueChange={(value) => setValue("forma_pagamento", value)}
+              >
                 <SelectTrigger className="bg-popover border-border/40 font-semibold">
                   <SelectValue placeholder="Selecione..." />
                 </SelectTrigger>

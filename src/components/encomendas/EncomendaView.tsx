@@ -25,6 +25,10 @@ type Encomenda = {
   observacoes_joel?: string | null;
   observacoes_felipe?: string | null;
   fornecedor_id?: string | null;
+  valor_frete?: number | null;
+  custo_frete?: number | null;
+  frete_ativo?: boolean | null;
+  peso_total?: number | null;
   clientes?: { nome?: string | null } | null;
   fornecedores?: { nome?: string | null } | null;
 };
@@ -229,23 +233,33 @@ export default function EncomendaView({ encomendaId }: Props) {
     }
   };
 
-  // Subtotais (conforme perfil)
-  const subtotalVenda = (itens || []).reduce((acc, it) => {
+  // Frete (alinha com cálculo do form/modal)
+  const freteAtivo = !!encomenda?.frete_ativo;
+  const valorFrete = freteAtivo ? Number(encomenda?.valor_frete ?? 0) || 0 : 0;
+  const custoFrete = freteAtivo ? Number(encomenda?.custo_frete ?? 0) || 0 : 0;
+  const pesoTotal = Number(encomenda?.peso_total ?? 0) || 0;
+
+  // Subtotais de itens (sem frete)
+  const subtotalItensVenda = (itens || []).reduce((acc, it) => {
     const q = Number(it.quantidade ?? 0) || 0;
     const pu = Number(it.preco_unitario ?? 0) || 0;
     return acc + q * pu;
   }, 0);
 
-  const subtotalCusto = (itens || []).reduce((acc, it) => {
+  const subtotalItensCusto = (itens || []).reduce((acc, it) => {
     const q = Number(it.quantidade ?? 0) || 0;
     const pc = Number(it.preco_custo ?? 0) || 0;
     return acc + q * pc;
   }, 0);
 
+  // Totais (com frete) — alinhados com o modal de edição
+  const subtotalVenda = subtotalItensVenda + valorFrete;
+  const subtotalCusto = subtotalItensCusto + custoFrete;
+
   // Commission-based profit calculation using calcularComissaoItem
   const lucro = useMemo(() => {
     if (!encomenda) return 0;
-    return (itens || []).reduce((acc, item) => {
+    const lucroItens = (itens || []).reduce((acc, item) => {
       const q = Number(item.quantidade ?? 0) || 0;
       const pu = Number(item.preco_unitario ?? 0) || 0;
       const pc = Number(item.preco_custo ?? 0) || 0;
@@ -265,7 +279,9 @@ export default function EncomendaView({ encomendaId }: Props) {
         }
       );
     }, 0);
-  }, [itens, encomenda, custosByItemId]);
+    const freteMargin = freteAtivo ? 0.30 * pesoTotal : 0;
+    return lucroItens + freteMargin;
+  }, [itens, encomenda, custosByItemId, freteAtivo, pesoTotal]);
   const percentLucro = subtotalVenda > 0 ? (lucro / subtotalVenda) * 100 : 0;
 
   const handleDownloadPDF = async () => {
@@ -346,7 +362,8 @@ export default function EncomendaView({ encomendaId }: Props) {
       toast.success("PDF baixado com sucesso!", { id: toastId });
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
-      toast.error("Erro ao gerar PDF: Cores incompatíveis", { id: toastId });
+      const msg = error instanceof Error ? error.message : String(error ?? "Erro desconhecido");
+      toast.error(`Erro ao gerar PDF: ${msg}`, { id: toastId });
     }
   };
 
@@ -434,12 +451,35 @@ export default function EncomendaView({ encomendaId }: Props) {
             </div>
           </div>
 
+          {/* Frete (quando ativo) */}
+          {freteAtivo && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="bg-accent border-border/40 rounded-md border p-3">
+                <div className="mb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
+                  {isHam ? "Frais de port" : "Frete"}
+                </div>
+                <div className="font-semibold text-foreground">
+                  {formatCurrencyEUR(isFelipe ? custoFrete : valorFrete)}
+                  {pesoTotal > 0 && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      ({pesoTotal.toFixed(2)} kg)
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Totais - para Rosa esconder subtotal, valor pago e lucro estimado */}
           {(!isRosa || isHam) && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
               <div className="bg-accent border-border/40 rounded-md border p-3">
                 <div className="mb-1 text-xs font-medium tracking-wider text-muted-foreground uppercase">
-                  {isFelipe ? t.totalCost : t.subtotalItems}
+                  {isFelipe
+                    ? t.totalCost
+                    : freteAtivo
+                      ? (isHam ? "Total" : "Total")
+                      : t.subtotalItems}
                 </div>
                 <div className="font-semibold text-foreground">
                   {formatCurrencyEUR(isFelipe ? subtotalCusto : subtotalVenda)}
@@ -718,23 +758,62 @@ export default function EncomendaView({ encomendaId }: Props) {
                   })}
                 </tbody>
                 {/* Footer de totais */}
-                {(!hidePrices || isHam) && (
-                  <tfoot>
-                    <tr className="bg-accent border-border border-t-2 dark:border-white/10">
-                      <td
-                        className="text-foreground px-4 py-4 font-bold"
-                        colSpan={isFelipe || (hidePrices && !isHam) ? 1 : 2}
-                      >
-                        {isFelipe ? t.totalCostFooter : t.subtotalFooter}
-                      </td>
-                      {!isFelipe && (!hidePrices || isHam) && <td className="px-4 py-4"></td>}
-                      {!isHam && !hidePrices && <td className="px-4 py-4"></td>}
-                      <td className="text-foreground px-4 py-4 text-right text-base font-black tabular-nums">
-                        {formatCurrencyEUR(isFelipe ? subtotalCusto : subtotalVenda)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                )}
+                {(!hidePrices || isHam) && (() => {
+                  const showPrecoUnit = !isFelipe && (!hidePrices || isHam);
+                  const showCustoUnit = !isHam && !hidePrices;
+                  const showTotal = !hidePrices || isHam;
+                  const totalCols = 2 + (showPrecoUnit ? 1 : 0) + (showCustoUnit ? 1 : 0) + (showTotal ? 1 : 0);
+                  const labelColSpan = totalCols - 1;
+                  return (
+                    <tfoot>
+                      {/* Subtotal de itens */}
+                      <tr className="bg-accent border-border border-t-2 dark:border-white/10">
+                        <td
+                          className="text-foreground px-4 py-3 font-bold"
+                          colSpan={labelColSpan}
+                        >
+                          {isFelipe ? t.totalCostFooter : t.subtotalFooter}
+                        </td>
+                        <td className="text-foreground px-4 py-3 text-right font-bold tabular-nums">
+                          {formatCurrencyEUR(isFelipe ? subtotalItensCusto : subtotalItensVenda)}
+                        </td>
+                      </tr>
+                      {/* Frete (quando ativo) */}
+                      {freteAtivo && (
+                        <tr className="bg-accent border-border border-t border-dashed dark:border-white/10">
+                          <td
+                            className="text-info px-4 py-3 font-semibold uppercase"
+                            colSpan={labelColSpan}
+                          >
+                            {isHam ? "Frais SP → Marseille" : "Frete SP → Marseille"}
+                            {pesoTotal > 0 && (
+                              <span className="ml-2 text-xs font-normal text-muted-foreground normal-case">
+                                ({pesoTotal.toFixed(2)} kg)
+                              </span>
+                            )}
+                          </td>
+                          <td className="text-info px-4 py-3 text-right font-semibold tabular-nums">
+                            {formatCurrencyEUR(isFelipe ? custoFrete : valorFrete)}
+                          </td>
+                        </tr>
+                      )}
+                      {/* Total final (só se houver frete, para não duplicar) */}
+                      {freteAtivo && (
+                        <tr className="bg-accent border-border border-t-2 dark:border-white/10">
+                          <td
+                            className="text-foreground px-4 py-4 font-black uppercase"
+                            colSpan={labelColSpan}
+                          >
+                            {isHam ? "Total" : "Total"}
+                          </td>
+                          <td className="text-foreground px-4 py-4 text-right text-base font-black tabular-nums">
+                            {formatCurrencyEUR(isFelipe ? subtotalCusto : subtotalVenda)}
+                          </td>
+                        </tr>
+                      )}
+                    </tfoot>
+                  );
+                })()}
               </table>
             </div>
           )}
