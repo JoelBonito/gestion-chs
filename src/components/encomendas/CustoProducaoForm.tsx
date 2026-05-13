@@ -27,10 +27,10 @@ import {
   Calculator,
 } from "lucide-react";
 import { formatCurrencyEUR, formatCurrencyBRL, brlToEur, eurToBrl } from "@/lib/utils/currency";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { CustoProducaoEncomenda, CustoBreakdown } from "@/types/database";
+import { CustoProducaoEncomenda, CustoBreakdown, FornecedorBreakdown } from "@/types/database";
 import { calcularCustosAutomaticos, getAutoCalcTooltip } from "@/lib/config/cost-calculations";
+import { FornecedorSelect } from "@/components/shared";
 
 interface CustoProducaoValues {
   garrafa: number;
@@ -54,15 +54,21 @@ const EMPTY_VALUES: CustoProducaoValues = {
   diversos: 0,
 };
 
-const FIELD_CONFIG = [
-  { key: "garrafa" as const, label: "Garrafa", icon: Package },
-  { key: "tampa" as const, label: "Tampa", icon: Droplets },
-  { key: "rotulo" as const, label: "Rotulo", icon: Tag },
-  { key: "producao_nonato" as const, label: "Produção", icon: Factory },
-  { key: "frete_sp" as const, label: "Frete SP", icon: Truck },
-  { key: "embalagem_carol" as const, label: "Embalagem", icon: Hand },
-  { key: "imposto" as const, label: "Imposto", icon: Receipt },
-  { key: "diversos" as const, label: "Diversos", icon: CircleDollarSign },
+interface FieldConfigItem {
+  key: keyof CustoProducaoValues;
+  label: string;
+  icon: React.ElementType;
+}
+
+const FIELD_CONFIG: FieldConfigItem[] = [
+  { key: "garrafa", label: "Garrafa", icon: Package },
+  { key: "tampa", label: "Tampa", icon: Droplets },
+  { key: "rotulo", label: "Rotulo", icon: Tag },
+  { key: "producao_nonato", label: "Produção", icon: Factory },
+  { key: "frete_sp", label: "Frete SP", icon: Truck },
+  { key: "embalagem_carol", label: "Embalagem", icon: Hand },
+  { key: "imposto", label: "Imposto", icon: Receipt },
+  { key: "diversos", label: "Diversos", icon: CircleDollarSign },
 ];
 
 const AUTO_FIELDS = new Set(["frete_sp", "embalagem_carol", "imposto"]);
@@ -77,6 +83,7 @@ interface CustoProducaoFormProps {
   sizeWeight?: number;
   custoProducao?: number;
   breakdownDefault?: CustoBreakdown | null;
+  fornecedorBreakdownDefault?: FornecedorBreakdown | null;
   existingCusto?: CustoProducaoEncomenda | null;
   onSaved: () => void;
 }
@@ -91,16 +98,15 @@ export function CustoProducaoForm({
   sizeWeight,
   custoProducao,
   breakdownDefault,
+  fornecedorBreakdownDefault,
   existingCusto,
   onSaved,
 }: CustoProducaoFormProps) {
   const [loading, setLoading] = useState(false);
-  const [garrafaIncluso, setGarrafaIncluso] = useState(
-    existingCusto?.garrafa_incluso ?? false
-  );
-  const [tampaIncluso, setTampaIncluso] = useState(
-    existingCusto?.tampa_incluso ?? false
-  );
+  const [defaultFornecedores, setDefaultFornecedores] = useState<{
+    nonato?: { id: string; nome: string };
+    carol?: { id: string; nome: string };
+  }>({});
 
   const autoCalcValues = useMemo(
     () => (sizeWeight && sizeWeight > 0 ? calcularCustosAutomaticos(sizeWeight) : null),
@@ -144,18 +150,57 @@ export function CustoProducaoForm({
 
   const [values, setValues] = useState<CustoProducaoValues>(initialValues);
 
+  // Fornecedor breakdown state
+  const initialFornecedores = useMemo((): FornecedorBreakdown => {
+    if (existingCusto?.fornecedor_breakdown) {
+      return existingCusto.fornecedor_breakdown;
+    }
+    if (fornecedorBreakdownDefault) {
+      return fornecedorBreakdownDefault;
+    }
+    return {};
+  }, [existingCusto, fornecedorBreakdownDefault]);
+
+  const [fornecedores, setFornecedores] = useState<FornecedorBreakdown>(initialFornecedores);
+
   useEffect(() => {
     setValues(initialValues);
-  }, [initialValues]);
+    setFornecedores(initialFornecedores);
+  }, [initialValues, initialFornecedores]);
 
-  const INCLUSO_FIELDS: Record<string, { get: boolean; set: (v: boolean) => void }> = {
-    garrafa: { get: garrafaIncluso, set: (v) => { setGarrafaIncluso(v); if (v) setValues((p) => ({ ...p, garrafa: 0 })); } },
-    tampa: { get: tampaIncluso, set: (v) => { setTampaIncluso(v); if (v) setValues((p) => ({ ...p, tampa: 0 })); } },
+  useEffect(() => {
+    const fetchDefaultFornecedores = async () => {
+      const { data } = await supabase
+        .from("fornecedores")
+        .select("id, nome")
+        .eq("active", true)
+        .order("nome");
+
+      const all = data || [];
+      const findByName = (...names: string[]) =>
+        all.find((fornecedor) =>
+          names.some((name) => fornecedor.nome.toLowerCase().includes(name))
+        );
+
+      setDefaultFornecedores({
+        nonato: findByName("nonato", "novic"),
+        carol: findByName("carol", "oklan"),
+      });
+    };
+
+    fetchDefaultFornecedores();
+  }, []);
+
+  const getSuggestedFornecedor = (key: keyof CustoProducaoValues) => {
+    if (key === "producao_nonato") return defaultFornecedores.nonato ?? null;
+    if (key === "embalagem_carol" || key === "imposto") return defaultFornecedores.carol ?? null;
+    return null;
   };
+
+
 
   const handleFieldChange = (key: keyof CustoProducaoValues, raw: string) => {
     if (raw === "") {
-      // allow empty intermediate states if needed, but save as 0
       setValues((prev) => ({ ...prev, [key]: 0 }));
       return;
     }
@@ -163,6 +208,10 @@ export function CustoProducaoForm({
     if (!isNaN(num)) {
       setValues((prev) => ({ ...prev, [key]: num }));
     }
+  };
+
+  const handleFornecedorChange = (key: string, fornecedorId: string | null) => {
+    setFornecedores((prev) => ({ ...prev, [key]: fornecedorId }));
   };
 
   const totalBRL = useMemo(
@@ -174,7 +223,7 @@ export function CustoProducaoForm({
     () => Math.round((precoVenda - totalEUR) * 100) / 100,
     [precoVenda, totalEUR]
   );
-  
+
   const isFilled = !!existingCusto;
 
   const handleSave = async () => {
@@ -184,23 +233,38 @@ export function CustoProducaoForm({
       const custoTotalEur = Math.round(totalEUR * 100) / 100;
       const lucroReal = Math.round((precoVenda - custoTotalEur) * 100) / 100;
 
+      // Build fornecedor breakdown payload (only non-fixed, non-null values)
+      const fornecedorPayload: FornecedorBreakdown = {};
+      FIELD_CONFIG.forEach(({ key }) => {
+        const selectedFornecedor = fornecedores[key];
+        const legacyFornecedor =
+          selectedFornecedor === "nonato"
+            ? defaultFornecedores.nonato?.id
+            : selectedFornecedor === "carol"
+              ? defaultFornecedores.carol?.id
+              : selectedFornecedor;
+        const fid = legacyFornecedor || getSuggestedFornecedor(key)?.id;
+        if (fid) {
+          fornecedorPayload[key] = fid;
+        }
+      });
+
       const payload = {
         encomenda_id: encomendaId,
         item_encomenda_id: itemEncomendaId,
         produto_id: produtoId,
-        garrafa: garrafaIncluso ? 0 : values.garrafa,
-        tampa: tampaIncluso ? 0 : values.tampa,
+        garrafa: values.garrafa,
+        tampa: values.tampa,
         rotulo: values.rotulo,
         producao_nonato: values.producao_nonato,
         frete_sp: values.frete_sp,
         embalagem_carol: values.embalagem_carol,
         imposto: values.imposto,
         diversos: values.diversos,
+        fornecedor_breakdown: Object.keys(fornecedorPayload).length > 0 ? fornecedorPayload : null,
         custo_total_brl: custoTotalBrl,
         custo_total_eur: custoTotalEur,
         lucro_joel_real: lucroReal,
-        garrafa_incluso: garrafaIncluso,
-        tampa_incluso: tampaIncluso,
         updated_at: new Date().toISOString(),
       };
 
@@ -209,6 +273,14 @@ export function CustoProducaoForm({
         .upsert(payload, { onConflict: "encomenda_id,item_encomenda_id" });
 
       if (error) throw error;
+
+      // Persist fornecedor breakdown to produtos for future orders
+      if (Object.keys(fornecedorPayload).length > 0) {
+        await supabase
+          .from("produtos")
+          .update({ fornecedor_breakdown: fornecedorPayload })
+          .eq("id", produtoId);
+      }
 
       toast.success("Custos salvos para " + produtoNome);
       onSaved();
@@ -257,15 +329,14 @@ export function CustoProducaoForm({
         </div>
       </div>
 
-      {/* INPUTS GRID */}
+      {/* INPUTS GRID with Fornecedor Select */}
       <TooltipProvider>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 lg:gap-4 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mt-2">
           {FIELD_CONFIG.map(({ key, label, icon: Icon }) => {
-            const inclusoConfig = INCLUSO_FIELDS[key];
-            const isIncluso = inclusoConfig?.get ?? false;
             const brlValue = values[key] || 0;
             const isAutoField = AUTO_FIELDS.has(key);
             const hasAutoValue = isAutoField && autoCalcValues && sizeWeight && sizeWeight > 0;
+            const suggestedFornecedor = getSuggestedFornecedor(key);
 
             const autoKey = key === "embalagem_carol" ? "manuseio_carol" : key;
             const autoValue = hasAutoValue
@@ -280,10 +351,9 @@ export function CustoProducaoForm({
                     <Icon className="h-3 w-3 text-amber-500/70" />
                     {label}
                   </span>
-                  
-                  {/* Tooltips and Icons */}
+
                   <div className="flex items-center gap-1">
-                    {hasAutoValue && !isIncluso && (
+                    {hasAutoValue && (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span
@@ -314,14 +384,6 @@ export function CustoProducaoForm({
                         </TooltipContent>
                       </Tooltip>
                     )}
-                    {inclusoConfig && (
-                      <Switch
-                        checked={isIncluso}
-                        onCheckedChange={inclusoConfig.set}
-                        className="h-3 w-5 data-[state=checked]:bg-blue-500 shrink-0 shadow-sm"
-                        aria-label="Incluso na produção"
-                      />
-                    )}
                   </div>
                 </label>
 
@@ -333,15 +395,23 @@ export function CustoProducaoForm({
                     type="number"
                     step="0.01"
                     min="0"
-                    value={isIncluso ? "" : (brlValue || "")}
+                    value={brlValue || ""}
                     onChange={(e) => handleFieldChange(key, e.target.value)}
-                    placeholder={isIncluso ? "Incl." : "0"}
-                    disabled={isIncluso}
+                    placeholder="0"
                     className={cn(
                       "bg-accent border-border/50 text-foreground text-sm font-medium placeholder:text-muted-foreground/40 transition-all h-9 pl-7 pr-2 tabular-nums rounded-md focus-visible:ring-1 focus-visible:ring-amber-500",
-                      isAutoApplied && !isIncluso && "border-emerald-500/30 bg-emerald-500/5",
-                      isIncluso && "opacity-40 cursor-not-allowed bg-muted"
+                      isAutoApplied && "border-emerald-500/30 bg-emerald-500/5"
                     )}
+                  />
+                </div>
+
+                {/* Fornecedor Select */}
+                <div className="pt-0.5">
+                  <FornecedorSelect
+                    value={fornecedores[key]}
+                    onChange={(fid) => handleFornecedorChange(key, fid)}
+                    placeholder="Fornecedor..."
+                    suggestedFornecedor={suggestedFornecedor}
                   />
                 </div>
               </div>
@@ -352,7 +422,7 @@ export function CustoProducaoForm({
 
       {/* FOOTER TOTALS */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-4 mt-2 border-t border-border/50">
-        
+
         {/* Cost & Margins */}
         <div className="flex flex-wrap items-center gap-4 sm:gap-6">
           <div className="flex flex-col gap-0.5 pr-4 sm:pr-6 border-r border-border/40">
@@ -384,7 +454,7 @@ export function CustoProducaoForm({
             </span>
             <div className="flex items-center gap-1.5 mt-0.5">
                <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                  Comissão na Linha: 
+                  Comissão na Linha:
                </span>
                <span className={cn("text-[11px] font-bold tabular-nums whitespace-nowrap", lucroJoelReal >= 0 ? "text-emerald-500" : "text-red-500")}>
                   {formatCurrencyEUR(lucroJoelReal * quantidade)}

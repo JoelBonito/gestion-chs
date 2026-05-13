@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -7,28 +6,31 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
-import { InvoiceForm } from "./InvoiceForm";
+import { cn } from "@/lib/utils";
+import { NovaFaturaTabs } from "./NovaFaturaTabs";
 import { InvoiceList } from "./InvoiceList";
 import { useInvoices } from "@/hooks/useInvoices";
 import { useInvoicesTranslation } from "@/hooks/useInvoicesTranslation";
-import { useLocale } from "@/contexts/LocaleContext";
 import { InvoiceFormData } from "@/types/invoice";
 
 export const Invoices: React.FC = () => {
   const [showNewInvoiceDialog, setShowNewInvoiceDialog] = useState(false);
+  const [mode, setMode] = useState<"anexar" | "emitir">("anexar");
   const { t } = useInvoicesTranslation();
 
-  const { invoices, isLoading, createInvoice, updateInvoice, deleteInvoice, refetch, isCreating } =
-    useInvoices();
+  const {
+    invoices,
+    isLoading,
+    createInvoice,
+    updateInvoice,
+    deleteInvoice,
+    refetch,
+    isCreating,
+    isUpdating,
+  } = useInvoices();
 
   const handleCreateInvoice = async (data: InvoiceFormData) => {
-    try {
-      await createInvoice(data);
-      setShowNewInvoiceDialog(false);
-    } catch (error) {
-      console.error("Erro ao criar fatura:", error);
-    }
+    await createInvoice(data);
   };
 
   return (
@@ -36,21 +38,37 @@ export const Invoices: React.FC = () => {
       <InvoiceList
         invoices={invoices}
         onUpdate={updateInvoice}
+        onCreate={handleCreateInvoice}
         onDelete={deleteInvoice}
         onRefresh={refetch}
         isLoading={isLoading}
-        onAddNew={() => setShowNewInvoiceDialog(true)}
+        isUpdating={isUpdating}
+        isCreating={isCreating}
+        onAddNew={() => {
+          setMode("anexar");
+          setShowNewInvoiceDialog(true);
+        }}
       />
 
       <Dialog open={showNewInvoiceDialog} onOpenChange={setShowNewInvoiceDialog}>
-        <DialogContent className="bg-card dark:bg-[#1c202a] border-border/50 w-[95vw] max-w-2xl">
+        <DialogContent
+          className={cn(
+            "bg-card dark:bg-[#1c202a] border-border/50 w-[95vw] max-h-[90vh] overflow-y-auto transition-all",
+            mode === "emitir" ? "max-w-4xl" : "max-w-2xl"
+          )}
+        >
           <DialogHeader>
             <DialogTitle>{t("Nova Fatura")}</DialogTitle>
             <DialogDescription>
               {t("Preencha os dados para criar uma nova fatura.")}
             </DialogDescription>
           </DialogHeader>
-          <InvoiceForm onSubmit={handleCreateInvoice} isSubmitting={isCreating} />
+          <NovaFaturaTabs
+            onSubmit={handleCreateInvoice}
+            isSubmitting={isCreating}
+            onSuccess={() => setShowNewInvoiceDialog(false)}
+            onModeChange={setMode}
+          />
         </DialogContent>
       </Dialog>
     </div>

@@ -9,6 +9,17 @@ export interface CustoBreakdown {
   diversos: number;
 }
 
+export interface FornecedorBreakdown {
+  garrafa?: string | null;
+  tampa?: string | null;
+  rotulo?: string | null;
+  producao_nonato?: string | null;
+  frete_sp?: string | null;
+  embalagem_carol?: string | null;
+  imposto?: string | null;
+  diversos?: string | null;
+}
+
 export interface Produto {
   id: string;
   nome: string;
@@ -57,6 +68,7 @@ export interface CustoProducaoEncomenda {
   embalagem_carol: number;
   imposto: number;
   diversos: number;
+  fornecedor_breakdown?: FornecedorBreakdown | null;
   custo_total_brl: number;
   custo_total_eur: number;
   lucro_joel_real: number;

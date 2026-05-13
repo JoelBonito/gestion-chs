@@ -16,11 +16,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Eye, Download, Edit, Trash2, FileText, ExternalLink, Paperclip, Plus } from "lucide-react";
-import { Invoice } from "@/types/invoice";
+import { Input } from "@/components/ui/input";
+import { Eye, Download, Edit, Trash2, FileText, ExternalLink, Paperclip, Plus, Check, X, Pencil, Copy } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Invoice, InvoiceFormData } from "@/types/invoice";
+import { EditInvoiceTabs } from "./EditInvoiceTabs";
+import { EmitirFaturaPanel, type EmitirFaturaInitialData } from "@/components/fatura/EmitirFaturaPanel";
+import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,36 +36,101 @@ interface InvoiceListProps {
   invoices: Invoice[];
   onUpdate: (
     id: string,
-    data: { invoice_date: string; amount: number; description?: string }
-  ) => void;
+    data: Partial<InvoiceFormData>,
+    currentInvoice?: Invoice
+  ) => Promise<unknown> | void;
+  onCreate?: (data: InvoiceFormData) => Promise<unknown>;
   onDelete: (invoice: Invoice) => void;
   onRefresh: () => void;
   isLoading?: boolean;
   onAddNew?: () => void;
+  isUpdating?: boolean;
+  isCreating?: boolean;
 }
 
 export const InvoiceList: React.FC<InvoiceListProps> = ({
   invoices,
   onUpdate,
+  onCreate,
   onDelete,
   onRefresh,
   isLoading = false,
   onAddNew,
+  isUpdating = false,
+  isCreating = false,
 }) => {
   const { hasRole } = useUserRole();
   const { user } = useAuth();
   const { locale } = useLocale();
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [editMode, setEditMode] = useState<"editar" | "emitir">("editar");
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
-  const [editFormData, setEditFormData] = useState({
-    invoice_date: "",
-    amount: 0,
-    description: "",
-  });
   const [previewModal, setPreviewModal] = useState<{
     url: string;
     fileName: string;
   } | null>(null);
+  const [editingDescriptionId, setEditingDescriptionId] = useState<string | null>(null);
+  const [descriptionDraft, setDescriptionDraft] = useState<string>("");
+  const [savingDescription, setSavingDescription] = useState(false);
+  const [duplicateInitialData, setDuplicateInitialData] = useState<EmitirFaturaInitialData | null>(null);
+  const [loadingDuplicate, setLoadingDuplicate] = useState(false);
+
+  const handleDuplicate = async (invoice: Invoice) => {
+    if (!invoice.fatura_emitida_id) return;
+    setLoadingDuplicate(true);
+    try {
+      const { data, error } = await supabase
+        .from("faturas_emitidas")
+        .select("cliente_id, linhas, condicoes_pagamento, moeda")
+        .eq("id", invoice.fatura_emitida_id)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) {
+        toast.error("Fatura emitida original não encontrada.");
+        return;
+      }
+      const linhas = Array.isArray(data.linhas) ? (data.linhas as EmitirFaturaInitialData["linhas"]) : [];
+      setDuplicateInitialData({
+        cliente_id: data.cliente_id,
+        linhas,
+        descricao_extra: invoice.description ?? "",
+        condicoes_pagamento: data.condicoes_pagamento ?? "Pronto Pagamento",
+        moeda: data.moeda ?? "Euro",
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Erro ao carregar dados para duplicação: ${msg}`);
+    } finally {
+      setLoadingDuplicate(false);
+    }
+  };
+
+  const startEditDescription = (invoice: Invoice) => {
+    setEditingDescriptionId(invoice.id);
+    setDescriptionDraft(invoice.description ?? "");
+  };
+
+  const cancelEditDescription = () => {
+    setEditingDescriptionId(null);
+    setDescriptionDraft("");
+  };
+
+  const saveDescription = async (invoice: Invoice) => {
+    const next = descriptionDraft.trim();
+    if (next === (invoice.description ?? "")) {
+      cancelEditDescription();
+      return;
+    }
+    setSavingDescription(true);
+    try {
+      await onUpdate(invoice.id, { description: next }, invoice);
+      cancelEditDescription();
+    } catch {
+      // toast já exibido pelo hook
+    } finally {
+      setSavingDescription(false);
+    }
+  };
 
   const { canEdit: canEditFn } = useUserRole();
   const canEdit = canEditFn();
@@ -75,31 +143,13 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   };
 
   const handleEditClick = (invoice: Invoice) => {
+    setEditMode("editar");
     setEditingInvoice(invoice);
-    setEditFormData({
-      invoice_date: invoice.invoice_date,
-      amount: invoice.amount,
-      description: invoice.description || "",
-    });
   };
 
-  const handleEditSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEditSubmit = async (data: Partial<InvoiceFormData>) => {
     if (!editingInvoice) return;
-
-    const today = new Date().toISOString().split("T")[0];
-    if (editFormData.invoice_date > today) {
-      alert(t("A data da fatura não pode ser futura."));
-      return;
-    }
-
-    if (editFormData.amount <= 0) {
-      alert(t("O valor deve ser maior que zero."));
-      return;
-    }
-
-    onUpdate(editingInvoice.id, editFormData);
-    setEditingInvoice(null);
+    await onUpdate(editingInvoice.id, data, editingInvoice);
   };
 
   const handlePreview = (invoice: Invoice) => {
@@ -210,8 +260,88 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                       <TableCell className="font-semibold whitespace-nowrap">
                         {formatCurrencyEUR(invoice.amount)}
                       </TableCell>
-                      <TableCell className="max-w-[200px] truncate">
-                        {invoice.description || "-"}
+                      <TableCell
+                        className="max-w-[260px]"
+                        onClick={(e) => {
+                          if (editingDescriptionId === invoice.id) e.stopPropagation();
+                        }}
+                      >
+                        {editingDescriptionId === invoice.id ? (
+                          <div
+                            className="flex items-center gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Input
+                              autoFocus
+                              value={descriptionDraft}
+                              onChange={(e) => setDescriptionDraft(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  void saveDescription(invoice);
+                                } else if (e.key === "Escape") {
+                                  e.preventDefault();
+                                  cancelEditDescription();
+                                }
+                              }}
+                              disabled={savingDescription}
+                              className="bg-popover border-border/40 h-8 text-sm"
+                              placeholder="Adicionar descrição..."
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-success hover:bg-success/10"
+                              onClick={() => void saveDescription(invoice)}
+                              disabled={savingDescription}
+                              title="Salvar"
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-muted-foreground hover:bg-muted/40"
+                              onClick={cancelEditDescription}
+                              disabled={savingDescription}
+                              title="Cancelar"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (canEdit && !isRestrictedUser) startEditDescription(invoice);
+                            }}
+                            className={cn(
+                              "group/desc flex w-full items-center gap-2 text-left truncate",
+                              canEdit && !isRestrictedUser
+                                ? "cursor-text hover:text-primary"
+                                : "cursor-default"
+                            )}
+                            title={
+                              canEdit && !isRestrictedUser
+                                ? "Clique para editar descrição"
+                                : undefined
+                            }
+                          >
+                            <span className="truncate">
+                              {invoice.description || (
+                                <span className="text-muted-foreground italic">
+                                  Adicionar descrição...
+                                </span>
+                              )}
+                            </span>
+                            {canEdit && !isRestrictedUser && (
+                              <Pencil className="h-3 w-3 shrink-0 opacity-0 group-hover/desc:opacity-60 transition-opacity" />
+                            )}
+                          </button>
+                        )}
                       </TableCell>
                       <TableCell>
                         {invoice.attachment ? (
@@ -266,6 +396,19 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                                 <Edit className="h-4 w-4" />
                               </Button>
 
+                              {invoice.fatura_emitida_id && onCreate && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDuplicate(invoice)}
+                                  title="Duplicar Fatura"
+                                  disabled={loadingDuplicate}
+                                  className="hover:text-primary hover:bg-primary/10 transition-colors"
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </Button>
+                              )}
+
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -301,99 +444,25 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
       {/* Edit Modal */}
       {editingInvoice && (
         <Dialog open={!!editingInvoice} onOpenChange={() => setEditingInvoice(null)}>
-          <DialogContent className="bg-card dark:bg-[#1c202a] border-border/50 w-[95vw] max-w-md">
+          <DialogContent
+            className={cn(
+              "bg-card dark:bg-[#1c202a] border-border/50 w-[95vw] max-h-[90vh] overflow-y-auto transition-all",
+              editMode === "emitir" ? "max-w-4xl" : "max-w-2xl"
+            )}
+          >
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Edit className="text-primary h-5 w-5" />
                 Editar Fatura
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleEditSubmit} className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="edit_date"
-                  className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
-                >
-                  Data da Fatura
-                </Label>
-                <Input
-                  id="edit_date"
-                  type="date"
-                  value={editFormData.invoice_date}
-                  onChange={(e) =>
-                    setEditFormData((prev) => ({ ...prev, invoice_date: e.target.value }))
-                  }
-                  required
-                  max={new Date().toISOString().split("T")[0]}
-                  className="bg-popover border-border/40 h-11 font-semibold"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="edit_amount"
-                  className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
-                >
-                  Valor
-                </Label>
-                <div className="group relative">
-                  <Input
-                    id="edit_amount"
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    value={editFormData.amount || ""}
-                    onChange={(e) =>
-                      setEditFormData((prev) => ({
-                        ...prev,
-                        amount: parseFloat(e.target.value) || 0,
-                      }))
-                    }
-                    required
-                    className="bg-popover border-border/40 h-11 pl-8 font-semibold"
-                  />
-                  <span className="text-muted-foreground group-focus-within:text-primary absolute top-1/2 left-3 -translate-y-1/2 transition-colors">
-                    €
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="edit_description"
-                  className="text-muted-foreground text-xs font-bold tracking-wider uppercase"
-                >
-                  Descrição
-                </Label>
-                <Textarea
-                  id="edit_description"
-                  value={editFormData.description}
-                  onChange={(e) =>
-                    setEditFormData((prev) => ({ ...prev, description: e.target.value }))
-                  }
-                  rows={3}
-                  className="bg-popover border-border/40 resize-none py-2.5"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <Button
-                  type="submit"
-                  variant="gradient"
-                  className="h-12 flex-1 text-base font-bold"
-                >
-                  Salvar Alterações
-                </Button>
-                <Button
-                  type="button"
-                  variant="cancel"
-                  onClick={() => setEditingInvoice(null)}
-                  className="bg-popover border-border/40 h-12 flex-1 font-semibold"
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </form>
+            <EditInvoiceTabs
+              invoice={editingInvoice}
+              onSubmit={handleEditSubmit}
+              isSubmitting={isUpdating}
+              onSuccess={() => setEditingInvoice(null)}
+              onModeChange={setEditMode}
+            />
           </DialogContent>
         </Dialog>
       )}
@@ -453,6 +522,34 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                 />
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Duplicar Fatura Modal */}
+      {duplicateInitialData && onCreate && (
+        <Dialog
+          open={!!duplicateInitialData}
+          onOpenChange={(open) => !open && setDuplicateInitialData(null)}
+        >
+          <DialogContent className="bg-card dark:bg-[#1c202a] border-border/50 w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Copy className="text-primary h-5 w-5" />
+                Duplicar Fatura
+              </DialogTitle>
+            </DialogHeader>
+            <EmitirFaturaPanel
+              initialData={duplicateInitialData}
+              onSubmitEmission={(data) => onCreate(data)}
+              isSubmitting={isCreating}
+              onSuccess={() => {
+                setDuplicateInitialData(null);
+                onRefresh();
+              }}
+              submitLabel="Emitir Nova Fatura"
+              submittingLabel="A emitir..."
+            />
           </DialogContent>
         </Dialog>
       )}

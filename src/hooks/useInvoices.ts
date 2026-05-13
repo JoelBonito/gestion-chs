@@ -89,7 +89,6 @@ export const useInvoices = () => {
 
       console.log("useInvoices - Criando registro da fatura");
 
-      // Criar a fatura primeiro
       const { data: invoice, error: invoiceError } = await supabase
         .from("invoices")
         .insert({
@@ -97,6 +96,7 @@ export const useInvoices = () => {
           amount: invoiceData.amount,
           description: invoiceData.description || null,
           created_by: user.id,
+          fatura_emitida_id: invoiceData.fatura_emitida_id ?? null,
         })
         .select()
         .single();
@@ -171,20 +171,88 @@ export const useInvoices = () => {
   });
 
   const updateInvoiceMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<InvoiceFormData> }) => {
+    mutationFn: async ({
+      id,
+      data,
+      currentInvoice,
+    }: {
+      id: string;
+      data: Partial<InvoiceFormData>;
+      currentInvoice?: Invoice;
+    }) => {
       console.log("useInvoices - Atualizando fatura:", id);
 
-      // Usar type assertion temporário até sync dos tipos
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error("Usuário não autenticado");
+
+      const updatePayload: Record<string, unknown> = {};
+      if (data.invoice_date !== undefined) updatePayload.invoice_date = data.invoice_date;
+      if (data.amount !== undefined) updatePayload.amount = data.amount;
+      if (data.description !== undefined) updatePayload.description = data.description || null;
+      if (data.fatura_emitida_id !== undefined)
+        updatePayload.fatura_emitida_id = data.fatura_emitida_id ?? null;
+
+      let newAttachmentId: string | null = null;
+
+      if (data.file) {
+        const date = new Date((data.invoice_date ?? currentInvoice?.invoice_date) as string);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+
+        const uploadResult = await uploadFile(
+          data.file,
+          `faturas/${year}/${month}`,
+          `invoice-${Date.now()}`
+        );
+        if (!uploadResult) throw new Error("Erro no upload do arquivo");
+
+        const { data: newAttachment, error: attErr } = await supabase
+          .from("attachments")
+          .insert({
+            entity_type: "financeiro",
+            entity_id: id,
+            file_name: uploadResult.fileName,
+            file_type: uploadResult.mimeType,
+            storage_path: uploadResult.path,
+            storage_url: uploadResult.publicUrl,
+            file_size: uploadResult.size,
+            uploaded_by: user.id,
+          })
+          .select("id")
+          .single();
+        if (attErr) throw attErr;
+
+        newAttachmentId = newAttachment.id;
+        updatePayload.attachment_id = newAttachmentId;
+      }
+
       const { error } = await (supabase as any)
         .from("invoices")
-        .update({
-          invoice_date: data.invoice_date,
-          amount: data.amount,
-          description: data.description || null,
-        })
+        .update(updatePayload)
         .eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        if (newAttachmentId) {
+          await supabase.from("attachments").delete().eq("id", newAttachmentId);
+        }
+        throw error;
+      }
+
+      if (data.file && currentInvoice?.attachment) {
+        try {
+          if (currentInvoice.attachment.storage_path) {
+            await deleteFile(currentInvoice.attachment.storage_path);
+          }
+          if (currentInvoice.attachment_id) {
+            await supabase.from("attachments").delete().eq("id", currentInvoice.attachment_id);
+          }
+        } catch (cleanupErr) {
+          console.warn("useInvoices - Falha ao limpar anexo antigo:", cleanupErr);
+        }
+      }
 
       return { id, ...data };
     },
@@ -255,8 +323,9 @@ export const useInvoices = () => {
     createInvoice: createInvoiceMutation.mutateAsync,
     updateInvoice: (
       id: string,
-      data: { invoice_date: string; amount: number; description?: string }
-    ) => updateInvoiceMutation.mutateAsync({ id, data }),
+      data: Partial<InvoiceFormData>,
+      currentInvoice?: Invoice
+    ) => updateInvoiceMutation.mutateAsync({ id, data, currentInvoice }),
     deleteInvoice: deleteInvoiceMutation.mutateAsync,
     isCreating: createInvoiceMutation.isPending,
     isUpdating: updateInvoiceMutation.isPending,

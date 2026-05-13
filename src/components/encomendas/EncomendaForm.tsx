@@ -224,7 +224,7 @@ export default function EncomendaForm({
     peso_total: editingData?.peso_total || 0,
     valor_frete: editingData?.valor_frete || 0,
     custo_frete: editingData?.custo_frete || 0,
-    frete_ativo: isEditing && (editingData?.valor_frete || 0) > 0,
+    frete_ativo: editingData?.frete_ativo ?? (isEditing && (editingData?.valor_frete || 0) > 0),
   }));
 
   const isOnlusOrder = formData.fornecedor_id === FORNECEDOR_PRODUCAO_ID;
@@ -436,8 +436,9 @@ export default function EncomendaForm({
         data_envio_estimada: formData.data_envio_estimada ? formData.data_envio_estimada : null,
         // Garantir que números sejam enviados como números
         peso_total: Number(pesoBruto) || 0,
-        valor_frete: formData.frete_ativo ? Number(formData.valor_frete) || 0 : 0,
-        custo_frete: formData.frete_ativo ? Number(formData.custo_frete) || 0 : 0,
+        frete_ativo: formData.frete_ativo,
+        valor_frete: Number(formData.valor_frete) || 0,
+        custo_frete: Number(formData.custo_frete) || 0,
         valor_total: Number(valorTotal) || 0,
         valor_pago: 0,
         // Adicionar status explicitamente (será removido no update)

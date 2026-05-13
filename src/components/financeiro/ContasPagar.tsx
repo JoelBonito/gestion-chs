@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -11,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, Receipt, DollarSign, Plus, Paperclip, ChevronDown, ChevronRight } from "lucide-react";
+import { Eye, Receipt, DollarSign, Plus, Paperclip, ChevronDown, ChevronRight, Package, Droplets, Tag, Factory, Truck, Hand, Receipt as ReceiptIcon, CircleDollarSign, Ship, List, Layers3 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,17 +22,18 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { formatCurrencyEUR, formatCurrencyBRL, brlToEur, eurToBrl } from "@/lib/utils/currency";
+import { formatCurrencyEUR, formatCurrencyBRL, brlToEur } from "@/lib/utils/currency";
 import { useToast } from "@/hooks/use-toast";
 import { EncomendaView } from "@/components/encomendas";
 import { PagamentoFornecedorForm } from "@/components/financeiro";
-import { AttachmentManager } from "@/components/shared";
+import { AttachmentManager, FornecedorSelect } from "@/components/shared";
 import { IconWithBadge } from "@/components/ui/icon-with-badge";
 import { PaymentDetailsModal } from "@/components/financeiro";
 import { OrderItemsView } from "@/components/shared";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useContasPagarTranslation } from "@/hooks/useContasPagarTranslation";
+import { FornecedorBreakdown } from "@/types/database";
 
 interface ContaPagar {
   id: string;
@@ -46,34 +48,73 @@ interface ContaPagar {
   etiqueta: string;
   encomenda_id: string;
   sinal_pago?: boolean;
+  custo_frete?: number | null;
 }
 
-interface CustosPorDestinatario {
-  destinatario: string;
+interface LinhaPagavel {
+  id: string;
+  custoId?: string | null;
+  itemEncomendaId?: string | null;
+  fieldKey?: keyof FornecedorBreakdown;
+  key: string;
   label: string;
-  categorias: { categoria: string; label: string; previsto: number; pago: number }[];
-  totalPrevisto: number;
-  totalPago: number;
+  icon: React.ElementType;
+  previsto: number;
+  pago: number;
   saldo: number;
+  moeda: "BRL" | "EUR";
+  fornecedorSugeridoId?: string | null;
+  suggestedFornecedor?: { id: string; nome: string } | null;
 }
 
-const CATEGORIA_MAP: Record<string, { destinatario: string; label: string; categoriaLabel: string }> = {
-  garrafa: { destinatario: "nonato", label: "Nonato (Produção)", categoriaLabel: "Garrafa" },
-  tampa: { destinatario: "nonato", label: "Nonato (Produção)", categoriaLabel: "Tampa" },
-  producao_nonato: { destinatario: "nonato", label: "Nonato (Produção)", categoriaLabel: "Produção" },
-  embalagem_carol: { destinatario: "carol", label: "Carol (Manuseamento)", categoriaLabel: "Embalagem" },
-  imposto: { destinatario: "carol", label: "Carol (Manuseamento)", categoriaLabel: "Imposto" },
-  frete_sp: { destinatario: "carol", label: "Carol (Manuseamento)", categoriaLabel: "Frete" },
+interface ItemResumoPagavel extends LinhaPagavel {
+  lineItems: LinhaPagavel[];
+  multipleFornecedores: boolean;
+}
+
+interface SelectedPaymentItem {
+  id?: string;
+  itemEncomendaId?: string | null;
+  lineItems?: Array<{
+    id?: string;
+    itemEncomendaId?: string | null;
+    saldo: number;
+  }>;
+  key: string;
+  label: string;
+  moeda: "BRL" | "EUR";
+  saldo: number;
+  fornecedorSugeridoId?: string | null;
+  fornecedorFixo?: { id: string; nome: string } | null;
+}
+
+interface ItemLookupRow {
+  id: string;
+  quantidade: number | null;
+  produtos?: { nome?: string | null } | { nome?: string | null }[] | null;
+}
+
+const ITEM_CONFIG: Record<string, { label: string; icon: React.ElementType; moeda: "BRL" | "EUR"; suggestedFornecedor?: { id: string; nome: string } }> = {
+  garrafa: { label: "Garrafa", icon: Package, moeda: "BRL" },
+  tampa: { label: "Tampa", icon: Droplets, moeda: "BRL" },
+  rotulo: { label: "Rótulo", icon: Tag, moeda: "BRL" },
+  producao: { label: "Produção", icon: Factory, moeda: "BRL" },
+  frete_sp: { label: "Frete SP", icon: Truck, moeda: "BRL" },
+  embalagem: { label: "Embalagem", icon: Hand, moeda: "BRL" },
+  imposto: { label: "Imposto", icon: ReceiptIcon, moeda: "BRL" },
+  diversos: { label: "Diversos", icon: CircleDollarSign, moeda: "BRL" },
+  frete_internacional: { label: "Frete Internacional", icon: Ship, moeda: "EUR" },
 };
 
-// Map: DB field -> categoria key used in pagamentos_fornecedor
-const FIELD_TO_CATEGORIA_KEY: Record<string, string> = {
+const FIELD_TO_ITEM_KEY: Record<string, string> = {
   garrafa: "garrafa",
   tampa: "tampa",
+  rotulo: "rotulo",
   producao_nonato: "producao",
+  frete_sp: "frete_sp",
   embalagem_carol: "embalagem",
   imposto: "imposto",
-  frete_sp: "frete",
+  diversos: "diversos",
 };
 
 export default function ContasPagar() {
@@ -89,8 +130,11 @@ export default function ContasPagar() {
   const [selectedPaymentConta, setSelectedPaymentConta] = useState<ContaPagar | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-  const [custosData, setCustosData] = useState<Record<string, CustosPorDestinatario[]>>({});
-  const [selectedDestinatario, setSelectedDestinatario] = useState<string | null>(null);
+  const [itensData, setItensData] = useState<Record<string, LinhaPagavel[]>>({});
+  const [selectedItem, setSelectedItem] = useState<SelectedPaymentItem | null>(null);
+  const [selectedItems, setSelectedItems] = useState<SelectedPaymentItem[] | null>(null);
+  const [selectedGroupLabel, setSelectedGroupLabel] = useState<string | null>(null);
+  const [savingFornecedorLine, setSavingFornecedorLine] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { t, isHam, isFelipe } = useContasPagarTranslation();
@@ -103,106 +147,143 @@ export default function ContasPagar() {
     getUser();
   }, []);
 
-  const fetchCustosForOrders = useCallback(async (orderIds: string[]) => {
+  const fetchItensForOrders = useCallback(async (orderIds: string[]) => {
     if (orderIds.length === 0) return;
 
-    // Fetch custos_producao_encomenda for all orders
     const { data: custos } = await supabase
       .from("custos_producao_encomenda")
-      .select("encomenda_id, item_encomenda_id, garrafa, tampa, producao_nonato, embalagem_carol, imposto, frete_sp")
+      .select("id, encomenda_id, item_encomenda_id, produto_id, garrafa, tampa, producao_nonato, embalagem_carol, imposto, frete_sp, rotulo, diversos, fornecedor_breakdown")
       .in("encomenda_id", orderIds);
 
-    // Fetch quantities for each item to multiply unit costs
     const itemIds = (custos || []).map(c => c.item_encomenda_id).filter(Boolean);
     const { data: itensData } = itemIds.length > 0
       ? await supabase
           .from("itens_encomenda")
-          .select("id, quantidade")
+          .select("id, quantidade, produtos(nome)")
           .in("id", itemIds)
       : { data: [] };
-    const qtyByItemId: Record<string, number> = {};
-    (itensData || []).forEach(i => { qtyByItemId[i.id] = i.quantidade || 0; });
+    const itemById: Record<string, { quantidade: number; produtoNome?: string | null }> = {};
+    ((itensData || []) as ItemLookupRow[]).forEach((item) => {
+      const produto = Array.isArray(item.produtos) ? item.produtos[0] : item.produtos;
+      itemById[item.id] = {
+        quantidade: item.quantidade || 0,
+        produtoNome: produto?.nome ?? null,
+      };
+    });
 
-    // Fetch pagamentos_fornecedor with destinatario/categoria for all orders
     const { data: pagamentos } = await supabase
       .from("pagamentos_fornecedor")
-      .select("encomenda_id, destinatario, categoria, valor_pagamento")
+      .select("encomenda_id, item_encomenda_id, item_tipo, valor_pagamento, moeda")
       .in("encomenda_id", orderIds);
 
-    const result: Record<string, CustosPorDestinatario[]> = {};
+    const { data: encomendasData } = await supabase
+      .from("encomendas")
+      .select("id, custo_frete")
+      .in("id", orderIds);
+    const freteByOrder: Record<string, number> = {};
+    (encomendasData || []).forEach(e => { freteByOrder[e.id] = e.custo_frete || 0; });
+
+    const fornecedorIds = Array.from(
+      new Set(
+        (custos || []).flatMap((c) =>
+          Object.values((c.fornecedor_breakdown as FornecedorBreakdown | null) || {})
+            .filter((id): id is string => Boolean(id))
+        )
+      )
+    );
+    const { data: fornecedoresData } = fornecedorIds.length > 0
+      ? await supabase
+          .from("fornecedores")
+          .select("id, nome")
+          .in("id", fornecedorIds)
+      : { data: [] };
+    const fornecedorById: Record<string, { id: string; nome: string }> = {};
+    (fornecedoresData || []).forEach((fornecedor) => {
+      fornecedorById[fornecedor.id] = fornecedor;
+    });
+
+    const result: Record<string, LinhaPagavel[]> = {};
 
     for (const orderId of orderIds) {
       const orderCustos = (custos || []).filter(c => c.encomenda_id === orderId);
       const orderPagamentos = (pagamentos || []).filter(p => p.encomenda_id === orderId);
+      const fallbackPaidByTipo: Record<string, number> = {};
+      const paidByLine: Record<string, number> = {};
 
-      // Sum costs by categoria key across all items (unit cost × quantity)
-      const categoriaTotals: Record<string, number> = {};
-      for (const custo of orderCustos) {
-        const qty = qtyByItemId[custo.item_encomenda_id] || 1;
-        for (const [field] of Object.entries(CATEGORIA_MAP)) {
-          const unitValue = (custo as Record<string, unknown>)[field] as number || 0;
-          const catKey = FIELD_TO_CATEGORIA_KEY[field];
-          categoriaTotals[catKey] = (categoriaTotals[catKey] || 0) + (unitValue * qty);
-        }
-      }
-
-      // Sum payments by destinatario (+ optional categoria breakdown)
-      const pagamentoTotals: Record<string, number> = {};
-      const pagamentoPorDestinatario: Record<string, number> = {};
       for (const pag of orderPagamentos) {
-        if (pag.destinatario) {
-          pagamentoPorDestinatario[pag.destinatario] = (pagamentoPorDestinatario[pag.destinatario] || 0) + pag.valor_pagamento;
-          if (pag.categoria) {
-            const key = `${pag.destinatario}_${pag.categoria}`;
-            pagamentoTotals[key] = (pagamentoTotals[key] || 0) + pag.valor_pagamento;
-          }
+        if (!pag.item_tipo) continue;
+        if (pag.item_encomenda_id) {
+          const lineKey = `${pag.item_encomenda_id}-${pag.item_tipo}`;
+          paidByLine[lineKey] = (paidByLine[lineKey] || 0) + pag.valor_pagamento;
+        } else {
+          fallbackPaidByTipo[pag.item_tipo] = (fallbackPaidByTipo[pag.item_tipo] || 0) + pag.valor_pagamento;
         }
       }
 
-      // Build grouped structure by destinatário
-      const destinatarioMap: Record<string, CustosPorDestinatario> = {};
+      const lines: LinhaPagavel[] = [];
 
-      for (const [field, mapping] of Object.entries(CATEGORIA_MAP)) {
-        const catKey = FIELD_TO_CATEGORIA_KEY[field];
-        const previstoRaw = categoriaTotals[catKey] || 0;
-        // Nonato stays in BRL, Carol converts to EUR
-        const isNonato = mapping.destinatario === "nonato";
-        const previsto = isNonato ? previstoRaw : brlToEur(previstoRaw);
-        const pago = pagamentoTotals[`${mapping.destinatario}_${catKey}`] || 0;
+      for (const custo of orderCustos) {
+        const itemInfo = itemById[custo.item_encomenda_id];
+        const qty = itemInfo?.quantidade || 1;
+        const fb = (custo.fornecedor_breakdown as FornecedorBreakdown | null) || {};
 
-        if (!destinatarioMap[mapping.destinatario]) {
-          destinatarioMap[mapping.destinatario] = {
-            destinatario: mapping.destinatario,
-            label: mapping.label,
-            categorias: [],
-            totalPrevisto: 0,
-            totalPago: 0,
-            saldo: 0,
-          };
+        for (const [field, itemKey] of Object.entries(FIELD_TO_ITEM_KEY)) {
+          const unitValue = (custo as Record<string, unknown>)[field] as number || 0;
+          if (!unitValue) continue;
+
+          const config = ITEM_CONFIG[itemKey];
+          const previsto = unitValue * qty;
+          const specificPaid = paidByLine[`${custo.item_encomenda_id}-${itemKey}`] || 0;
+          const fallbackAvailable = fallbackPaidByTipo[itemKey] || 0;
+          const fallbackApplied = Math.min(Math.max(previsto - specificPaid, 0), fallbackAvailable);
+          fallbackPaidByTipo[itemKey] = fallbackAvailable - fallbackApplied;
+          const pago = specificPaid + fallbackApplied;
+          const fornecedorId = fb[field as keyof FornecedorBreakdown] || null;
+        const productSuffix = itemInfo?.produtoNome ? ` - ${itemInfo.produtoNome}` : "";
+
+          lines.push({
+            id: `${custo.item_encomenda_id}-${itemKey}`,
+            custoId: custo.id,
+            itemEncomendaId: custo.item_encomenda_id,
+            fieldKey: field as keyof FornecedorBreakdown,
+            key: itemKey,
+            label: `${config.label}${productSuffix}`,
+            icon: config.icon,
+            previsto,
+            pago,
+            saldo: previsto - pago,
+            moeda: config.moeda,
+            fornecedorSugeridoId: fornecedorId,
+            suggestedFornecedor: fornecedorId ? fornecedorById[fornecedorId] ?? null : null,
+          });
         }
+      }
 
-        destinatarioMap[mapping.destinatario].categorias.push({
-          categoria: catKey,
-          label: mapping.categoriaLabel,
-          previsto,
+      const fretePrevisto = freteByOrder[orderId] || 0;
+      if (fretePrevisto > 0) {
+        const specificPaid = paidByLine[`${orderId}-frete_internacional`] || 0;
+        const fallbackPaid = fallbackPaidByTipo.frete_internacional || 0;
+        const pago = specificPaid + fallbackPaid;
+        lines.push({
+          id: `${orderId}-frete_internacional`,
+          custoId: null,
+          itemEncomendaId: null,
+          key: "frete_internacional",
+          label: ITEM_CONFIG.frete_internacional.label,
+          icon: ITEM_CONFIG.frete_internacional.icon,
+          previsto: fretePrevisto,
           pago,
+          saldo: fretePrevisto - pago,
+          moeda: ITEM_CONFIG.frete_internacional.moeda,
+          fornecedorSugeridoId: null,
+          suggestedFornecedor: null,
         });
-        destinatarioMap[mapping.destinatario].totalPrevisto += previsto;
       }
 
-      // Set totalPago from aggregated payments per destinatario
-      // Nonato: convert EUR payments to BRL (previsto is in BRL)
-      // Carol: keep in EUR
-      for (const dest of Object.values(destinatarioMap)) {
-        const pagoEur = pagamentoPorDestinatario[dest.destinatario] || 0;
-        dest.totalPago = dest.destinatario === "nonato" ? eurToBrl(pagoEur) : pagoEur;
-        dest.saldo = dest.totalPrevisto - dest.totalPago;
-      }
-
-      result[orderId] = Object.values(destinatarioMap);
+      result[orderId] = lines;
     }
 
-    setCustosData(result);
+    setItensData(result);
   }, []);
 
   const fetchContas = useCallback(async () => {
@@ -219,6 +300,7 @@ export default function ContasPagar() {
           valor_total_custo,
           valor_pago_fornecedor,
           saldo_devedor_fornecedor,
+          custo_frete,
           sinal_pago,
           data_criacao,
           status,
@@ -226,14 +308,10 @@ export default function ContasPagar() {
         `
         );
 
-      // Filtro de saldo:
-      // Se NÃO mostrar concluídos: mostra apenas saldo > 0.01 (dívidas ativas)
-      // Se mostrar concluídos: mostra TUDO (dívidas, zerados e saldos negativos/créditos)
       if (!showCompleted) {
         query = query.gt("saldo_devedor_fornecedor", 0.01);
       }
 
-      // Filtro para Felipe - apenas fornecedores específicos
       if (isFelipe) {
         query = query.in("fornecedor_id", [
           "f0920a27-752c-4483-ba02-e7f32beceef6",
@@ -254,9 +332,8 @@ export default function ContasPagar() {
       });
       setContas(contasPagar);
 
-      // Fetch custos for all orders
       const orderIds = contasPagar.map(c => c.id);
-      fetchCustosForOrders(orderIds);
+      fetchItensForOrders(orderIds);
     } catch (error) {
       console.error("Erro ao carregar contas a pagar:", error);
       toast({
@@ -267,7 +344,7 @@ export default function ContasPagar() {
     } finally {
       setLoading(false);
     }
-  }, [showCompleted, isFelipe, toast, fetchCustosForOrders]);
+  }, [showCompleted, isFelipe, toast, fetchItensForOrders]);
 
   useEffect(() => {
     fetchContas();
@@ -301,12 +378,72 @@ export default function ContasPagar() {
     });
   };
 
+  const buildPaymentItem = (item: ItemResumoPagavel): SelectedPaymentItem => ({
+    id: item.id,
+    itemEncomendaId: item.itemEncomendaId,
+    key: item.key,
+    label: item.label,
+    moeda: item.moeda,
+    saldo: Math.max(item.saldo, 0),
+    fornecedorSugeridoId: item.fornecedorSugeridoId,
+    fornecedorFixo: item.suggestedFornecedor,
+    lineItems: item.lineItems.map((line) => ({
+      id: line.id,
+      itemEncomendaId: line.itemEncomendaId,
+      saldo: Math.max(line.saldo, 0),
+    })),
+  });
+
+  const handleFornecedorLineChange = async (item: ItemResumoPagavel, fornecedorId: string | null) => {
+    const editableLines = item.lineItems.filter((line) => line.custoId && line.fieldKey);
+
+    if (editableLines.length === 0) {
+      toast({
+        title: "Fornecedor não salvo",
+        description: "Este item não tem uma linha de custo editável.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSavingFornecedorLine(item.id);
+    try {
+      await Promise.all(
+        editableLines.map(async (line) => {
+          const { data, error: fetchError } = await supabase
+            .from("custos_producao_encomenda")
+            .select("fornecedor_breakdown")
+            .eq("id", line.custoId)
+            .single();
+
+          if (fetchError) throw fetchError;
+
+          const current = (data?.fornecedor_breakdown as FornecedorBreakdown | null) || {};
+          const next: FornecedorBreakdown = { ...current, [line.fieldKey!]: fornecedorId };
+
+          const { error } = await supabase
+            .from("custos_producao_encomenda")
+            .update({ fornecedor_breakdown: next })
+            .eq("id", line.custoId);
+
+          if (error) throw error;
+        })
+      );
+
+      await fetchContas();
+      toast({ title: "Fornecedor atualizado", description: "A visão por fornecedor foi recalculada." });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Erro ao atualizar fornecedor";
+      toast({ title: "Erro ao atualizar fornecedor", description: message, variant: "destructive" });
+    } finally {
+      setSavingFornecedorLine(null);
+    }
+  };
+
   const loadAttachmentCounts = useCallback(async () => {
     if (contas.length === 0) return;
-
     try {
       const counts: Record<string, number> = {};
-
       await Promise.all(
         contas.map(async (conta) => {
           const { count, error } = await supabase
@@ -314,13 +451,9 @@ export default function ContasPagar() {
             .select("*", { count: "exact", head: true })
             .eq("entity_type", "payable")
             .eq("entity_id", conta.id);
-
-          if (!error) {
-            counts[conta.id] = count || 0;
-          }
+          if (!error) counts[conta.id] = count || 0;
         })
       );
-
       setAttachmentCounts(counts);
     } catch (error) {
       console.error("Error loading attachment counts:", error);
@@ -329,23 +462,19 @@ export default function ContasPagar() {
 
   const loadPaymentCounts = useCallback(async () => {
     if (contas.length === 0) return;
-
     try {
       const counts: Record<string, number> = {};
-
       await Promise.all(
         contas.map(async (conta) => {
-          const { count, error } = await supabase
+          const { data, error } = await supabase
             .from("pagamentos_fornecedor")
-            .select("*", { count: "exact", head: true })
+            .select("id, payment_batch_id")
             .eq("encomenda_id", conta.id);
-
           if (!error) {
-            counts[conta.id] = count || 0;
+            counts[conta.id] = new Set((data || []).map((payment) => payment.payment_batch_id || payment.id)).size;
           }
         })
       );
-
       setPaymentCounts(counts);
     } catch (error) {
       console.error("Error loading payment counts:", error);
@@ -359,97 +488,258 @@ export default function ContasPagar() {
     }
   }, [contas, loadAttachmentCounts, loadPaymentCounts]);
 
-  // Render the expanded destinatário blocks for an order
-  const renderDestinatarioBlocks = (conta: ContaPagar) => {
-    const destData = custosData[conta.id];
-    if (!destData) return null;
+  // Render the expanded item cards for an order
+  const renderItemCards = (conta: ContaPagar) => {
+    const items = itensData[conta.id];
+    if (!items) return null;
+
+    const itemSummaries = Object.values(items.reduce<Record<string, ItemResumoPagavel>>((acc, line) => {
+      const summaryKey = `${line.key}-${line.moeda}`;
+      const existing = acc[summaryKey];
+      const fornecedorId = line.suggestedFornecedor?.id || line.fornecedorSugeridoId || null;
+
+      if (!existing) {
+        acc[summaryKey] = {
+          ...line,
+          id: summaryKey,
+          label: ITEM_CONFIG[line.key]?.label || line.label,
+          itemEncomendaId: null,
+          previsto: line.previsto,
+          pago: line.pago,
+          saldo: line.saldo,
+          fornecedorSugeridoId: fornecedorId,
+          suggestedFornecedor: line.suggestedFornecedor || null,
+          lineItems: [line],
+          multipleFornecedores: false,
+        };
+        return acc;
+      }
+
+      existing.previsto += line.previsto;
+      existing.pago += line.pago;
+      existing.saldo += line.saldo;
+      existing.lineItems.push(line);
+
+      const currentFornecedorId = existing.suggestedFornecedor?.id || existing.fornecedorSugeridoId || null;
+      if (currentFornecedorId !== fornecedorId) {
+        existing.multipleFornecedores = true;
+        existing.fornecedorSugeridoId = null;
+        existing.suggestedFornecedor = null;
+      }
+
+      return acc;
+    }, {}));
+
+    const groups = itemSummaries.reduce<Record<string, {
+      label: string;
+      fornecedor: { id: string; nome: string } | null;
+      moeda: "BRL" | "EUR";
+      items: ItemResumoPagavel[];
+      totalSaldo: number;
+      totalPrevisto: number;
+      totalPago: number;
+    }>>((acc, item) => {
+      const fornecedorId = item.suggestedFornecedor?.id || item.fornecedorSugeridoId || "a-definir";
+      const label = item.suggestedFornecedor?.nome || "A definir";
+      const key = `${fornecedorId}-${item.moeda}`;
+      if (!acc[key]) {
+        acc[key] = {
+          label,
+          fornecedor: item.suggestedFornecedor || null,
+          moeda: item.moeda,
+          items: [],
+          totalSaldo: 0,
+          totalPrevisto: 0,
+          totalPago: 0,
+        };
+      }
+      acc[key].items.push(item);
+      acc[key].totalSaldo += Math.max(item.saldo, 0);
+      acc[key].totalPrevisto += item.previsto;
+      acc[key].totalPago += item.pago;
+      return acc;
+    }, {});
+
+    const groupedView = (
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {Object.values(groups).map((group) => {
+            const pendingItems = group.items.filter((item) => item.saldo > 0.01);
+
+            return (
+              <div
+                key={`${group.label}-${group.moeda}`}
+                className="bg-card rounded-xl border border-border/50 p-3 shadow-sm"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Receipt className="h-4 w-4 text-emerald-500" />
+                      <h4 className="truncate text-sm font-black uppercase tracking-wide">
+                        {group.label}
+                      </h4>
+                      <Badge variant="outline" className="text-[9px]">
+                        {group.moeda}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {group.items.map((item) => item.label).join(", ")}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3 text-xs sm:min-w-[260px]">
+                    <div>
+                      <span className="text-muted-foreground text-[9px] font-bold uppercase">Previsto</span>
+                      <p className="font-semibold tabular-nums">
+                        {group.moeda === "BRL" ? formatCurrencyBRL(group.totalPrevisto) : formatCurrencyEUR(group.totalPrevisto)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-[9px] font-bold uppercase">Pago</span>
+                      <p className="font-bold text-success tabular-nums">
+                        {group.moeda === "BRL" ? formatCurrencyBRL(group.totalPago) : formatCurrencyEUR(group.totalPago)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-[9px] font-bold uppercase">Saldo</span>
+                      <p className="font-black text-warning tabular-nums">
+                        {group.moeda === "BRL" ? formatCurrencyBRL(group.totalSaldo) : formatCurrencyEUR(group.totalSaldo)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {pendingItems.length > 0 && !isFelipe && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-3 w-full border border-emerald-200/30 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 dark:border-emerald-800/30 dark:text-emerald-400"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedConta(conta);
+                      setSelectedItem(null);
+                      setSelectedItems(pendingItems.map(buildPaymentItem));
+                      setSelectedGroupLabel(`${group.label} (${group.moeda})`);
+                      setShowPaymentForm(true);
+                    }}
+                  >
+                    <Plus className="mr-2 h-4 w-4" /> Pagar grupo
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+      </div>
+    );
+
+    const itemView = (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {itemSummaries.map((item) => {
+            const Icon = item.icon;
+            const isPaid = item.saldo <= 0.01 && item.previsto > 0;
+            const isPending = item.saldo > 0.01;
+
+            return (
+              <div
+                key={item.id}
+                className={cn(
+                  "bg-popover rounded-xl border p-3 space-y-2 transition-all",
+                  isPaid
+                    ? "border-emerald-500/20 bg-emerald-500/5"
+                    : isPending
+                      ? "border-border/40"
+                      : "border-border/20 opacity-60"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-3.5 w-3.5 text-amber-500/70" />
+                    <h4 className="text-xs font-bold">{item.label}</h4>
+                  </div>
+                  {isPaid && (
+                    <Badge className="text-[8px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                      Pago
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <span className="text-muted-foreground text-[9px] font-bold uppercase">Previsto</span>
+                    <p className="font-semibold tabular-nums">
+                      {item.moeda === "BRL" ? formatCurrencyBRL(item.previsto) : formatCurrencyEUR(item.previsto)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-[9px] font-bold uppercase">Pago</span>
+                    <p className="font-bold text-success tabular-nums">
+                      {item.moeda === "BRL" ? formatCurrencyBRL(item.pago) : formatCurrencyEUR(item.pago)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground text-[9px] font-bold uppercase">Saldo</span>
+                    <p className={cn("font-black tabular-nums", item.saldo > 0 ? "text-warning" : "text-emerald-500")}>
+                      {item.moeda === "BRL" ? formatCurrencyBRL(item.saldo) : formatCurrencyEUR(item.saldo)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-muted-foreground text-[9px] font-bold uppercase">Fornecedor</span>
+                  {item.custoId && item.fieldKey && !isFelipe ? (
+                    <FornecedorSelect
+                      value={item.fornecedorSugeridoId}
+                      onChange={(fornecedorId) => handleFornecedorLineChange(item, fornecedorId)}
+                      placeholder={item.multipleFornecedores ? "Múltiplos fornecedores" : "A definir"}
+                      disabled={savingFornecedorLine === item.id}
+                    />
+                  ) : (
+                    <p className="text-[11px] font-medium text-foreground">
+                      {item.multipleFornecedores ? "Múltiplos fornecedores" : item.suggestedFornecedor?.nome || "A definir"}
+                    </p>
+                  )}
+                </div>
+
+                {/* Pay button */}
+                {!isFelipe && item.saldo > 0.01 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full border border-emerald-200/30 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 dark:border-emerald-800/30 dark:text-emerald-400 text-xs h-7"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedConta(conta);
+                      setSelectedItem(buildPaymentItem(item));
+                      setSelectedItems(null);
+                      setSelectedGroupLabel(null);
+                      setShowPaymentForm(true);
+                    }}
+                  >
+                    <Plus className="mr-1 h-3 w-3" /> Pagar
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+      </div>
+    );
 
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {destData.map(dest => (
-          <div key={dest.destinatario} className="bg-popover rounded-xl border border-border/40 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold flex items-center gap-2">
-                {dest.destinatario === "nonato" ? "👤" : "👩"} {dest.label}
-              </h4>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-0.5">
-                <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Previsto</span>
-                {dest.destinatario === "nonato" ? (
-                  <div>
-                    <p className="text-sm font-semibold">{formatCurrencyBRL(dest.totalPrevisto)}</p>
-                    <p className="text-xs text-muted-foreground">({formatCurrencyEUR(brlToEur(dest.totalPrevisto))})</p>
-                  </div>
-                ) : (
-                  <p className="text-sm font-semibold">{formatCurrencyEUR(dest.totalPrevisto)}</p>
-                )}
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Pago</span>
-                {dest.destinatario === "nonato" ? (
-                  <div>
-                    <p className="text-sm font-bold text-success">{formatCurrencyBRL(dest.totalPago)}</p>
-                    <p className="text-xs text-muted-foreground">({formatCurrencyEUR(brlToEur(dest.totalPago))})</p>
-                  </div>
-                ) : (
-                  <p className="text-sm font-bold text-success">{formatCurrencyEUR(dest.totalPago)}</p>
-                )}
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">Saldo</span>
-                {dest.destinatario === "nonato" ? (
-                  <div>
-                    <p className="text-sm font-black text-warning">{formatCurrencyBRL(dest.saldo)}</p>
-                    <p className="text-xs text-muted-foreground">({formatCurrencyEUR(brlToEur(dest.saldo))})</p>
-                  </div>
-                ) : (
-                  <p className="text-sm font-black text-warning">{formatCurrencyEUR(dest.saldo)}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              {!isFelipe && dest.destinatario === "nonato" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "flex-1 border text-xs font-semibold",
-                    conta.sinal_pago
-                      ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-500"
-                      : "border-amber-500/30 bg-amber-500/5 text-amber-500 hover:bg-amber-500/10"
-                  )}
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    const newValue = !conta.sinal_pago;
-                    await supabase.from("encomendas").update({ sinal_pago: newValue }).eq("id", conta.id);
-                    setContas(prev => prev.map(c => c.id === conta.id ? { ...c, sinal_pago: newValue } : c));
-                  }}
-                >
-                  {conta.sinal_pago ? "Sinal Pago" : "Marcar Sinal Pago"}
-                </Button>
-              )}
-              {!isFelipe && dest.saldo > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="flex-1 border border-emerald-200/30 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 dark:border-emerald-800/30 dark:text-emerald-400"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedConta(conta);
-                    setSelectedDestinatario(dest.destinatario);
-                    setShowPaymentForm(true);
-                  }}
-                >
-                  <Plus className="mr-2 h-4 w-4" /> Registrar Pagamento
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+      <Tabs defaultValue="supplier" className="space-y-4">
+        <TabsList className="h-9 rounded-md bg-muted/50 p-1">
+          <TabsTrigger value="supplier" className="h-7 gap-1.5 px-3 text-xs">
+            <Layers3 className="h-3.5 w-3.5" /> Por fornecedor
+          </TabsTrigger>
+          <TabsTrigger value="item" className="h-7 gap-1.5 px-3 text-xs">
+            <List className="h-3.5 w-3.5" /> Por item
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="supplier" className="mt-0">
+          {groupedView}
+        </TabsContent>
+        <TabsContent value="item" className="mt-0">
+          {itemView}
+        </TabsContent>
+      </Tabs>
     );
   };
 
@@ -610,7 +900,9 @@ export default function ContasPagar() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedConta(conta);
-                                setSelectedDestinatario(null);
+                                setSelectedItem(null);
+                                setSelectedItems(null);
+                                setSelectedGroupLabel(null);
                                 setShowPaymentForm(true);
                               }}
                             >
@@ -656,12 +948,12 @@ export default function ContasPagar() {
                       </TableCell>
                     </TableRow>
 
-                    {/* Expanded row with destinatário blocks */}
-                    {expandedRows.has(conta.id) && custosData[conta.id] && (
+                    {/* Expanded row with item cards */}
+                    {expandedRows.has(conta.id) && itensData[conta.id] && (
                       <TableRow className="hover:bg-transparent">
                         <TableCell colSpan={8} className="p-0">
                           <div className="bg-muted/20 border-t border-border/40 p-4">
-                            {renderDestinatarioBlocks(conta)}
+                            {renderItemCards(conta)}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -754,10 +1046,10 @@ export default function ContasPagar() {
                     )}
                   </div>
 
-                  {/* Expanded destinatário blocks for mobile */}
-                  {expandedRows.has(conta.id) && custosData[conta.id] && (
+                  {/* Expanded item cards for mobile */}
+                  {expandedRows.has(conta.id) && itensData[conta.id] && (
                     <div className="pt-2 border-t border-border/40" onClick={(e) => e.stopPropagation()}>
-                      {renderDestinatarioBlocks(conta)}
+                      {renderItemCards(conta)}
                     </div>
                   )}
 
@@ -780,7 +1072,9 @@ export default function ContasPagar() {
                         className="w-full border border-emerald-200/30 bg-emerald-500/5 text-emerald-600 hover:bg-emerald-500/10 sm:w-auto dark:border-emerald-800/30 dark:text-emerald-400"
                         onClick={() => {
                           setSelectedConta(conta);
-                          setSelectedDestinatario(null);
+                          setSelectedItem(null);
+                          setSelectedItems(null);
+                          setSelectedGroupLabel(null);
                           setShowPaymentForm(true);
                         }}
                       >
@@ -832,7 +1126,11 @@ export default function ContasPagar() {
       {!isFelipe && selectedConta && (
         <Dialog open={showPaymentForm} onOpenChange={(open) => {
           setShowPaymentForm(open);
-          if (!open) setSelectedDestinatario(null);
+          if (!open) {
+            setSelectedItem(null);
+            setSelectedItems(null);
+            setSelectedGroupLabel(null);
+          }
         }}>
           <DialogContent
             className="bg-card border-border max-h-[90vh] w-[95vw] max-w-2xl overflow-y-auto"
@@ -849,11 +1147,15 @@ export default function ContasPagar() {
             </DialogHeader>
             <PagamentoFornecedorForm
               conta={{ ...selectedConta, encomenda_id: selectedConta.id }}
-              defaultDestinatario={selectedDestinatario || undefined}
+              selectedItem={selectedItem || undefined}
+              selectedItems={selectedItems || undefined}
+              selectedGroupLabel={selectedGroupLabel || undefined}
               onSuccess={() => {
                 handlePaymentSuccess();
                 setShowPaymentForm(false);
-                setSelectedDestinatario(null);
+                setSelectedItem(null);
+                setSelectedItems(null);
+                setSelectedGroupLabel(null);
               }}
             />
           </DialogContent>
@@ -878,7 +1180,6 @@ export default function ContasPagar() {
             </DialogHeader>
 
             <div className="space-y-6">
-              {/* Detalhes da conta - Camada 3 (Destaque sobre Camada 2) */}
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="space-y-1">
                   <span className="text-muted-foreground text-xs font-bold tracking-wider uppercase">
@@ -946,12 +1247,10 @@ export default function ContasPagar() {
                 </div>
               </div>
 
-              {/* Itens da Encomenda */}
               <div className="pt-2">
                 <OrderItemsView encomendaId={selectedConta.id} showCostPrices={true} />
               </div>
 
-              {/* Anexos - Camada 3 (Destaque) */}
               <div className="border-border/40 border-t pt-6">
                 <AttachmentManager
                   entityType="payable"

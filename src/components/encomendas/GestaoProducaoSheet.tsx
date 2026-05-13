@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { formatCurrencyEUR } from "@/lib/utils/currency";
 import { cn } from "@/lib/utils";
-import { CustoProducaoEncomenda, CustoBreakdown } from "@/types/database";
+import { CustoProducaoEncomenda, CustoBreakdown, FornecedorBreakdown } from "@/types/database";
 import { CustoProducaoForm } from "./CustoProducaoForm";
 import type { ItemEncomenda } from "./ItensEncomendaManager";
 
@@ -41,7 +41,7 @@ export function GestaoProducaoSheet({
 }: GestaoProducaoSheetProps) {
   const [custosProducao, setCustosProducao] = useState<CustoProducaoEncomenda[]>([]);
   const [loading, setLoading] = useState(false);
-  const [produtosData, setProdutosData] = useState<Record<string, { size_weight?: number, custo_producao?: number, custo_nonato_breakdown?: CustoBreakdown | null }>>({});
+  const [produtosData, setProdutosData] = useState<Record<string, { size_weight?: number, custo_producao?: number, custo_nonato_breakdown?: CustoBreakdown | null, fornecedor_breakdown?: FornecedorBreakdown | null }>>({});
 
   const fetchCustos = useCallback(async () => {
     if (!encomendaId) return;
@@ -56,11 +56,11 @@ export function GestaoProducaoSheet({
     if (pIds.length > 0) {
       const { data: pData } = await supabase
         .from("produtos")
-        .select("id, custo_producao, size_weight, custo_nonato_breakdown")
+        .select("id, custo_producao, size_weight, custo_nonato_breakdown, fornecedor_breakdown")
         .in("id", pIds);
       if (pData) {
-        const pMap: Record<string, any> = {};
-        pData.forEach((p) => pMap[p.id] = p);
+        const pMap: Record<string, typeof produtosData[string]> = {};
+        pData.forEach((p) => { pMap[p.id] = p as typeof produtosData[string]; });
         setProdutosData(pMap);
       }
     }
@@ -244,6 +244,7 @@ export function GestaoProducaoSheet({
                         sizeWeight={prodData?.size_weight ?? item.peso_produto ?? undefined}
                         custoProducao={prodData?.custo_producao ?? undefined}
                         breakdownDefault={(prodData?.custo_nonato_breakdown as CustoBreakdown | null) ?? null}
+                        fornecedorBreakdownDefault={(prodData?.fornecedor_breakdown as FornecedorBreakdown | null) ?? null}
                         existingCusto={custo}
                         onSaved={handleDrillDownSaved}
                       />

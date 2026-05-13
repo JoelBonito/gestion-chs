@@ -4,6 +4,7 @@ export interface Invoice {
   amount: number;
   description?: string;
   attachment_id?: string;
+  fatura_emitida_id?: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -21,4 +22,5 @@ export interface InvoiceFormData {
   amount: number;
   description?: string;
   file?: File;
+  fatura_emitida_id?: string;
 }

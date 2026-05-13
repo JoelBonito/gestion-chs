@@ -5,3 +5,4 @@ export { default as StatCard } from './StatCard';
 export { GlassCard } from './GlassCard';
 export { PageContainer } from './PageContainer';
 export { OrderItemsView } from './OrderItemsView';
+export { FornecedorSelect } from './FornecedorSelect';

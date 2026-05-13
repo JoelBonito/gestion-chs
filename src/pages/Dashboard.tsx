@@ -101,13 +101,12 @@ export default function Dashboard() {
   const { data: encomendasAtivas = 0 } = useQuery({
     queryKey: ["encomendas-ativas"],
     queryFn: async () => {
-      // Only select id for count - reduces payload
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from("encomendas")
-        .select("id", { count: "exact", head: true })
+        .select("*", { count: "exact", head: true })
         .neq("status", "ENTREGUE");
       if (error) throw error;
-      return data?.length || 0;
+      return count ?? 0;
     },
     staleTime: 1000 * 60 * 2, // Cache for 2 minutes
   });

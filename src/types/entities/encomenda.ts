@@ -22,6 +22,7 @@ export interface Encomenda {
     valor_pago_fornecedor: number;
     saldo_devedor_fornecedor: number;
     valor_frete?: number | null;
+    frete_ativo?: boolean | null;
     data_criacao: string;
     data_producao_estimada?: string | null;
     data_entrega?: string | null;
@@ -41,6 +42,7 @@ export interface EncomendaFormData {
     data_producao_estimada?: string;
     data_entrega?: string;
     valor_frete?: number;
+    frete_ativo?: boolean;
     etiqueta?: string;
     observacoes?: string;
 }

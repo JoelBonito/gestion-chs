@@ -475,7 +475,10 @@ export default function EncomendasFinanceiro({
                   </span>
                   <p className="text-sm font-bold">
                     €
-                    {(selectedEncomenda.valor_total - selectedEncomenda.valor_frete).toLocaleString(
+                    {((selectedEncomenda.frete_ativo
+                      ? selectedEncomenda.valor_total - (selectedEncomenda.valor_frete || 0)
+                      : selectedEncomenda.valor_total
+                    )).toLocaleString(
                       undefined,
                       { minimumFractionDigits: 2 }
                     )}

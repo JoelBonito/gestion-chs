@@ -172,6 +172,9 @@ export type Database = {
       clientes: {
         Row: {
           active: boolean
+          cidade: string | null
+          codigo_cliente: string | null
+          codigo_postal: string | null
           contato: string | null
           created_at: string | null
           created_by: string
@@ -180,13 +183,19 @@ export type Database = {
           email: string | null
           endereco: string | null
           id: string
+          nif: string | null
           nome: string
+          nome_social: string | null
           observacoes: string | null
+          pais: string | null
           telefone: string | null
           updated_at: string | null
         }
         Insert: {
           active?: boolean
+          cidade?: string | null
+          codigo_cliente?: string | null
+          codigo_postal?: string | null
           contato?: string | null
           created_at?: string | null
           created_by?: string
@@ -195,13 +204,19 @@ export type Database = {
           email?: string | null
           endereco?: string | null
           id?: string
+          nif?: string | null
           nome: string
+          nome_social?: string | null
           observacoes?: string | null
+          pais?: string | null
           telefone?: string | null
           updated_at?: string | null
         }
         Update: {
           active?: boolean
+          cidade?: string | null
+          codigo_cliente?: string | null
+          codigo_postal?: string | null
           contato?: string | null
           created_at?: string | null
           created_by?: string
@@ -210,8 +225,11 @@ export type Database = {
           email?: string | null
           endereco?: string | null
           id?: string
+          nif?: string | null
           nome?: string
+          nome_social?: string | null
           observacoes?: string | null
+          pais?: string | null
           telefone?: string | null
           updated_at?: string | null
         }
@@ -225,6 +243,7 @@ export type Database = {
           diversos: number | null
           embalagem_carol: number | null
           encomenda_id: string
+          fornecedor_breakdown: Json | null
           frete_sp: number | null
           garrafa: number | null
           garrafa_incluso: boolean | null
@@ -246,6 +265,7 @@ export type Database = {
           diversos?: number | null
           embalagem_carol?: number | null
           encomenda_id: string
+          fornecedor_breakdown?: Json | null
           frete_sp?: number | null
           garrafa?: number | null
           garrafa_incluso?: boolean | null
@@ -267,6 +287,7 @@ export type Database = {
           diversos?: number | null
           embalagem_carol?: number | null
           encomenda_id?: string
+          fornecedor_breakdown?: Json | null
           frete_sp?: number | null
           garrafa?: number | null
           garrafa_incluso?: boolean | null
@@ -319,6 +340,7 @@ export type Database = {
           etiqueta: string | null
           fornecedor_id: string
           fornecedor_nome: string | null
+          frete_ativo: boolean
           frete_calculado: boolean | null
           id: string
           numero_encomenda: string
@@ -353,6 +375,7 @@ export type Database = {
           etiqueta?: string | null
           fornecedor_id: string
           fornecedor_nome?: string | null
+          frete_ativo?: boolean
           frete_calculado?: boolean | null
           id?: string
           numero_encomenda: string
@@ -387,6 +410,7 @@ export type Database = {
           etiqueta?: string | null
           fornecedor_id?: string
           fornecedor_nome?: string | null
+          frete_ativo?: boolean
           frete_calculado?: boolean | null
           id?: string
           numero_encomenda?: string
@@ -421,6 +445,93 @@ export type Database = {
             columns: ["fornecedor_id"]
             isOneToOne: false
             referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      faturas_emitidas: {
+        Row: {
+          ano: number
+          cliente_id: string | null
+          condicoes_pagamento: string | null
+          created_at: string
+          created_by: string | null
+          data_cotacao_brl: string | null
+          data_emissao: string
+          data_vencimento: string
+          id: string
+          invoice_id: string | null
+          linhas: Json
+          moeda: string | null
+          numero_completo: string
+          numero_serie: string
+          pdf_storage_path: string | null
+          resumo_iva: Json
+          sequencia: number
+          snapshot_cliente: Json
+          taxa_conversao_brl: number | null
+          totais: Json
+          total_brl: number | null
+        }
+        Insert: {
+          ano: number
+          cliente_id?: string | null
+          condicoes_pagamento?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_cotacao_brl?: string | null
+          data_emissao: string
+          data_vencimento: string
+          id?: string
+          invoice_id?: string | null
+          linhas: Json
+          moeda?: string | null
+          numero_completo: string
+          numero_serie?: string
+          pdf_storage_path?: string | null
+          resumo_iva: Json
+          sequencia: number
+          snapshot_cliente: Json
+          taxa_conversao_brl?: number | null
+          totais: Json
+          total_brl?: number | null
+        }
+        Update: {
+          ano?: number
+          cliente_id?: string | null
+          condicoes_pagamento?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_cotacao_brl?: string | null
+          data_emissao?: string
+          data_vencimento?: string
+          id?: string
+          invoice_id?: string | null
+          linhas?: Json
+          moeda?: string | null
+          numero_completo?: string
+          numero_serie?: string
+          pdf_storage_path?: string | null
+          resumo_iva?: Json
+          sequencia?: number
+          snapshot_cliente?: Json
+          taxa_conversao_brl?: number | null
+          totais?: Json
+          total_brl?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "faturas_emitidas_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "faturas_emitidas_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
         ]
@@ -516,6 +627,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           description: string | null
+          fatura_emitida_id: string | null
           id: string
           invoice_date: string
           updated_at: string | null
@@ -526,6 +638,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          fatura_emitida_id?: string | null
           id?: string
           invoice_date: string
           updated_at?: string | null
@@ -536,11 +649,20 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          fatura_emitida_id?: string | null
           id?: string
           invoice_date?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "invoices_fatura_emitida_id_fkey"
+            columns: ["fatura_emitida_id"]
+            isOneToOne: false
+            referencedRelation: "faturas_emitidas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoices_backup: {
         Row: {
@@ -675,10 +797,17 @@ export type Database = {
           destinatario: string | null
           encomenda_id: string
           forma_pagamento: string
+          fornecedor_id: string | null
           id: string
+          item_encomenda_id: string | null
+          item_tipo: string | null
+          moeda: string | null
           observacoes: string | null
+          payment_batch_id: string | null
+          taxa_cambio: number | null
           updated_at: string
           valor_pagamento: number
+          valor_pagamento_eur: number | null
         }
         Insert: {
           categoria?: string | null
@@ -687,10 +816,17 @@ export type Database = {
           destinatario?: string | null
           encomenda_id: string
           forma_pagamento: string
+          fornecedor_id?: string | null
           id?: string
+          item_encomenda_id?: string | null
+          item_tipo?: string | null
+          moeda?: string | null
           observacoes?: string | null
+          payment_batch_id?: string | null
+          taxa_cambio?: number | null
           updated_at?: string
           valor_pagamento: number
+          valor_pagamento_eur?: number | null
         }
         Update: {
           categoria?: string | null
@@ -699,10 +835,17 @@ export type Database = {
           destinatario?: string | null
           encomenda_id?: string
           forma_pagamento?: string
+          fornecedor_id?: string | null
           id?: string
+          item_encomenda_id?: string | null
+          item_tipo?: string | null
+          moeda?: string | null
           observacoes?: string | null
+          payment_batch_id?: string | null
+          taxa_cambio?: number | null
           updated_at?: string
           valor_pagamento?: number
+          valor_pagamento_eur?: number | null
         }
         Relationships: [
           {
@@ -710,6 +853,20 @@ export type Database = {
             columns: ["encomenda_id"]
             isOneToOne: false
             referencedRelation: "encomendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_fornecedor_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pagamentos_fornecedor_item_encomenda_id_fkey"
+            columns: ["item_encomenda_id"]
+            isOneToOne: false
+            referencedRelation: "itens_encomenda"
             referencedColumns: ["id"]
           },
         ]
@@ -729,6 +886,7 @@ export type Database = {
           estoque_garrafas: number
           estoque_rotulos: number
           estoque_tampas: number
+          fornecedor_breakdown: Json | null
           fornecedor_id: string | null
           garrafa_incluso: boolean | null
           id: string
@@ -760,6 +918,7 @@ export type Database = {
           estoque_garrafas?: number
           estoque_rotulos?: number
           estoque_tampas?: number
+          fornecedor_breakdown?: Json | null
           fornecedor_id?: string | null
           garrafa_incluso?: boolean | null
           id?: string
@@ -791,6 +950,7 @@ export type Database = {
           estoque_garrafas?: number
           estoque_rotulos?: number
           estoque_tampas?: number
+          fornecedor_breakdown?: Json | null
           fornecedor_id?: string | null
           garrafa_incluso?: boolean | null
           id?: string
@@ -1005,6 +1165,7 @@ export type Database = {
         Returns: boolean
       }
       exec_sql_readonly: { Args: { query: string }; Returns: Json }
+      get_brl_eur_rate: { Args: never; Returns: number }
       has_role:
         | {
             Args: {
@@ -1195,5 +1356,4 @@ export const Constants = {
     },
   },
 } as const
-A new version of Supabase CLI is available: v2.84.2 (currently installed v2.65.5)
-We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
+<claude-code-hint v="1" type="plugin" value="supabase@claude-plugins-official" />
